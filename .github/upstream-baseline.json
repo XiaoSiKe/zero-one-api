@@ -328,6 +328,7 @@
         "docs/adr/0001-separate-public-site-and-console.md",
         "docs/adr/0002-exact-root-routing-on-primary-api-domain.md",
         "docs/adr/0004-approved-ui-snapshot-at-edge.md",
+        "docs/adr/0005-canonical-product-domain.md",
         "frontend/src/api/admin/channels.ts",
         "frontend/.eslintignore",
         "tools/check_pnpm_audit_exceptions.py"

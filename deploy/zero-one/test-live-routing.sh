@@ -36,7 +36,6 @@ case "$routing_mode" in
 		sed \
 			-e 's/^api\.01yapi\.com {/http:\/\/api.01yapi.test:8080 {/' \
 			-e 's/^app\.01yapi\.com {/http:\/\/app.01yapi.test:8080 {/' \
-			-e 's/^api\.01yapi\.cc {/http:\/\/api-backup.01yapi.test:8080 {/' \
 			-e 's/^01yapi\.com, www\.01yapi\.com {/http:\/\/01yapi.test:8080, http:\/\/www.01yapi.test:8080 {/' \
 			"$repo_root/deploy/zero-one/Caddyfile" >"$test_dir/Caddyfile"
 		listen_port=8080
@@ -161,30 +160,21 @@ for spoofed_ip in 8.8.8.8 8.8.4.4 1.1.1.1 9.9.9.9 208.67.222.222 208.67.220.220 
 done
 
 if [ "$routing_mode" = production ]; then
-	console_root_get_headers=$(curl -fsS -D - -o /dev/null -H 'Host: app.01yapi.test' "$edge_url/?source=contract")
-	assert_text "$console_root_get_headers" 'HTTP/1.1 307 Temporary Redirect' 'Console GET root redirect status changed'
-	assert_text "$console_root_get_headers" 'Cache-Control: no-store' 'Console GET root redirect is cacheable'
-	assert_text "$console_root_get_headers" 'Location: https://api.01yapi.com/?source=contract' 'Console GET root did not redirect to the public site'
+	for legacy_uri in \
+		'/?source=contract' \
+		'/dashboard?source=contract' \
+		'/keys?source=contract' \
+		'/monitor?source=contract' \
+		'/v1/models?source=contract'; do
+		legacy_headers=$(curl -fsS -D - -o /dev/null -H 'Host: app.01yapi.test' "$edge_url$legacy_uri")
+		assert_text "$legacy_headers" 'HTTP/1.1 308 Permanent Redirect' "legacy domain did not permanently redirect $legacy_uri"
+		assert_text "$legacy_headers" 'Cache-Control: no-store' "legacy redirect is cacheable for $legacy_uri"
+		assert_text "$legacy_headers" "Location: https://api.01yapi.com$legacy_uri" "legacy redirect lost its path or query for $legacy_uri"
+	done
 
-	console_root_head_headers=$(curl -fsSI -H 'Host: app.01yapi.test' "$edge_url/?source=contract")
-	assert_text "$console_root_head_headers" 'HTTP/1.1 307 Temporary Redirect' 'Console HEAD root redirect status changed'
-	assert_text "$console_root_head_headers" 'Cache-Control: no-store' 'Console HEAD root redirect is cacheable'
-	assert_text "$console_root_head_headers" 'Location: https://api.01yapi.com/?source=contract' 'Console HEAD root did not redirect to the public site'
-
-	console_post_root=$(curl -fsS -X POST -H 'Host: app.01yapi.test' --data 'probe' "$edge_url/")
-	assert_text "$console_post_root" '"method":"POST"' 'Console non-GET root did not reach Sub2API'
-	assert_text "$console_post_root" '"url":"/"' 'Console proxied root path changed'
-
-	console_response=$(curl -fsS -H 'Host: app.01yapi.test' "$edge_url/login")
-	assert_text "$console_response" '<title>零一 API - AI API Gateway</title>' 'Console host did not return the recovered console'
-
-	backup_headers=$(curl -fsS -D - -o "$test_dir/backup.json" -H 'Host: api-backup.01yapi.test' "$edge_url/")
-	assert_text "$backup_headers" 'Cache-Control: no-store' 'backup root is cacheable'
-	backup_body=$(cat "$test_dir/backup.json")
-	assert_text "$backup_body" '"automatic_failover":false' 'backup metadata changed'
-
-	backup_api=$(curl -fsS -H 'Host: api-backup.01yapi.test' "$edge_url/v1/models")
-	assert_text "$backup_api" '"url":"/v1/models"' 'backup API path did not proxy unchanged'
+	legacy_post_headers=$(curl -fsS -X POST -D - -o /dev/null -H 'Host: app.01yapi.test' --data 'probe' "$edge_url/v1/messages?source=contract")
+	assert_text "$legacy_post_headers" 'HTTP/1.1 308 Permanent Redirect' 'legacy POST did not permanently redirect'
+	assert_text "$legacy_post_headers" 'Location: https://api.01yapi.com/v1/messages?source=contract' 'legacy POST redirect lost its path or query'
 fi
 
 set +e

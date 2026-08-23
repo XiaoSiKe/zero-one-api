@@ -20,13 +20,13 @@ _Avoid_: 最新前端、自动构建产物、临时截图
 由同一源码提交构建的 Sub2API 与 Edge 两个不可变镜像及其迁移账本；必须按 Backend-first 顺序部署并共同记录。
 _Avoid_: latest 发布、混合版本、独立前端发布
 
-**Primary API Domain（主 API 域名）**:
-零一 API 唯一公开推荐的模型调用地址。
-_Avoid_: 主线路组、官网域名
+**Canonical Product Domain（规范产品域名）**:
+零一 API 唯一公开推荐的产品入口；同一 origin 承载 Public Site、Console 和模型调用。
+_Avoid_: 独立 Console 域名、备用 API 域名、多个等价入口
 
-**Backup API Domain（备用 API 域名）**:
-主 API 域名不可用时由用户手动选择的备用调用地址，不代表自动故障转移或独立服务器。
-_Avoid_: 高可用地址、自动容灾地址
+**Compatibility Domain（兼容域名）**:
+仅为历史链接保留，并把任意请求以保留路径和查询参数的永久重定向送到 Canonical Product Domain；不承载产品页面或模型调用。
+_Avoid_: Console 域名、备用线路、第二 API 地址
 
 **User（用户）**:
 注册零一 API、创建 API Key 并消费模型服务的个人或团队成员。

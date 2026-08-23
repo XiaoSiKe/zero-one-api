@@ -12,7 +12,7 @@
    ```
 
 3. If operating remotely, open an SSH tunnel with `ssh -L 18080:127.0.0.1:18080 SERVER`. Log in at `http://127.0.0.1:18080/login`, enable administrator 2FA and apply every setting in `docs/TECHNICAL-PLAN.md`, including the site subtitle and `frontend_url`.
-4. From a release workstation with Node.js 20 or newer, run `node deploy/zero-one/verify-public-settings.mjs http://127.0.0.1:18080/api/v1/settings/public`. Confirm `frontend_url=https://app.01yapi.com` once more in `/admin/settings`.
+4. From a release workstation with Node.js 20 or newer, run `node deploy/zero-one/verify-public-settings.mjs http://127.0.0.1:18080/api/v1/settings/public`. Confirm `frontend_url=https://api.01yapi.com` once more in `/admin/settings`, and update every OAuth or captcha callback/origin allowlist to the same canonical origin before enabling that capability.
 5. Remove the temporary loopback port by recreating Sub2API from the production Compose file only, then confirm port `18080` is no longer listening:
 
    ```bash
@@ -21,7 +21,7 @@
    ```
 
    The final command must print nothing. Do not continue if it reports a host port.
-6. Start the pinned edge image with `pull` followed by `up -d --no-build`, then point DNS-only A/AAAA records for `api.01yapi.com`, `app.01yapi.com`, `api.01yapi.cc`, `01yapi.com` and `www.01yapi.com` to the server.
+6. Start the pinned edge image with `pull` followed by `up -d --no-build`, then point DNS-only A/AAAA records for `api.01yapi.com`, compatibility-only `app.01yapi.com`, `01yapi.com` and `www.01yapi.com` to the server. Do not add or manage `api.01yapi.cc`; it is not part of this product.
 7. Confirm Caddy has obtained certificates, every service reports healthy and the public release gate passes at `https://api.01yapi.com/api/v1/settings/public` before announcing the service.
 
 The bootstrap override binds `18080` to loopback only and must not be used after
@@ -68,12 +68,14 @@ Online purchasing stays disabled. `/admin/promo-codes` belongs to the purchase f
 
 Monitor container health, PostgreSQL readiness, Redis response, disk usage, TLS expiry, HTTP 5xx rate and latency. The `/health` endpoint checks process liveness only; it does not prove that PostgreSQL, Redis or upstream model calls work.
 
-Add two external probes:
+Add three external probes:
 
-- An unauthenticated `GET /api/v1/settings/public` check through both the primary and Console hosts.
+- An unauthenticated `GET /api/v1/settings/public` check through the Canonical Product Domain.
+- A non-following request to an `app.01yapi.com` path that verifies its same-URI `308` compatibility redirect.
 - A low-frequency authenticated model request using a dedicated probe User and tightly limited API Key.
 
-Alert separately for primary-host DNS/TLS failure and origin failure. A successful `.cc` DNS lookup does not indicate origin health because both API domains use the same deployment.
+Alert separately for canonical-host DNS/TLS failure, compatibility-redirect
+failure and origin failure.
 
 Inspect Caddy's JSON access logs for status, latency and client IP, but avoid
 adding request-body or authorization-header logging. Use the dashboard and
@@ -285,9 +287,9 @@ Rollback uses the previous image digests without rolling back the database unles
 - Confirm an omitted `long_context_pricing_enabled` field on a disposable admin group create defaults to `true`, while an explicit `false` remains false; delete the disposable group afterward.
 - For any enabled group-level model card, compare the configured price with one low-cost usage record. Include a long-context boundary check and, when Batch Image or Model Plaza is enabled, verify group-card precedence and an explicit zero-price tier without using a production customer key.
 - `GET https://api.01yapi.com/` returns the React page; `POST /v1/messages` reaches API authentication rather than HTML.
-- The public-settings release gate passes, and `/admin/settings` shows `frontend_url=https://app.01yapi.com`.
-- `GET` and `HEAD https://app.01yapi.com/` return a non-cacheable `307` to `https://api.01yapi.com/`; `POST /` and `GET /login` still reach Vue/Sub2API, and administrator and User redirects remain role-correct.
+- `GET https://api.01yapi.com/dashboard`, `/keys` and `/monitor` return the Approved UI Snapshot, while `/v1/*` continues to reach Sub2API.
+- The public-settings release gate passes, and `/admin/settings` shows `frontend_url=https://api.01yapi.com`.
+- `GET`, `HEAD` and `POST` requests to representative `app.01yapi.com` paths return non-cacheable `308` responses to the same path and query on `https://api.01yapi.com`; the compatibility host never serves Console or model traffic directly.
 - SSE sends its first event promptly and continues without buffering; `/responses` and administrator operations WebSockets upgrade successfully.
-- `api.01yapi.cc` accepts the same API Key, while its root returns no-store backup metadata.
 - Apex and `www` return `308` while preserving the path and query string.
 - Administrator creates a test Redeem Code, a User redeems it once, and a second redemption fails.

@@ -33,11 +33,10 @@ Pricing Projection` 只消费既有 `/api/v1/model-plaza` 并投影公开价目�
 ```text
 Internet
   -> Caddy :80/:443
-       -> React static files for exact api.01yapi.com/
-       -> Sub2API :8080 for every other API-host request
-       -> Public Site redirect for exact GET/HEAD app.01yapi.com/
-       -> Sub2API :8080 for every other app.01yapi.com request
-       -> Sub2API :8080 for backup API requests
+       -> React static files for exact GET/HEAD api.01yapi.com/
+       -> Approved UI Snapshot for documented api.01yapi.com Console paths
+       -> Sub2API :8080 for every other api.01yapi.com request
+       -> 308 same-URI compatibility redirect for every app.01yapi.com request
   -> Sub2API
        -> PostgreSQL
        -> Redis
@@ -56,12 +55,9 @@ The React app lives in `landing/`, uses Vite with base `/_landing/`, and is buil
 | `api.01yapi.com/_landing/THIRD_PARTY_NOTICES.txt` | No-cache third-party notice |
 | `GET /api/v1/announcements/public` | Anonymous, field-limited Public Announcement feed |
 | `GET /api/v1/channel-status/summary` | Anonymous aggregate only when its independent public switch is enabled |
-| Every other `api.01yapi.com` request | Transparent Sub2API proxy |
-| `app.01yapi.com`, exact `GET/HEAD /` | Non-cacheable 307 redirect to `https://api.01yapi.com/` with URI retained |
-| Approved `app.01yapi.com` Console page and asset routes | Recovered Approved UI Snapshot in the edge image |
-| Every other `app.01yapi.com` request | Transparent Sub2API proxy and embedded fallback |
-| Exact `GET/HEAD api.01yapi.cc/` | No-store backup metadata JSON |
-| Every other `api.01yapi.cc` request | Transparent Sub2API proxy |
+| Approved `api.01yapi.com` Console page and asset routes, including `/dashboard`, `/keys` and `/monitor` | Recovered Approved UI Snapshot in the edge image |
+| Every remaining `api.01yapi.com` request, including `/v1/*` | Transparent Sub2API proxy |
+| Every `app.01yapi.com` method and URI | Non-cacheable 308 redirect to the same path and query on `https://api.01yapi.com` |
 | `01yapi.com` and `www.01yapi.com` | 308 redirect to the primary host with URI retained |
 
 The Zero One overlay adds two deliberately narrow public product APIs. Public
@@ -136,7 +132,10 @@ Caddy is the only public process. PostgreSQL, Redis and Sub2API have no host por
 
 Caddy leaves streaming flush behavior at its automatic default, applies no proxy response compression, and does not cache API responses. Static React assets may use immutable caching. WebSocket upgrades and client cancellation pass through the normal Caddy reverse proxy transport.
 
-v1 uses DNS-only records to avoid adding a CDN buffering layer. All listed domains point at the same edge host. The `.cc` domain is a hostname fallback only and cannot survive a server or database outage.
+v1 uses DNS-only records to avoid adding a CDN buffering layer. The canonical,
+compatibility, apex and `www` domains point at the same edge host. The retired
+`api.01yapi.cc` host is not part of the product and must not be configured or
+monitored by this deployment.
 
 The edge image carries the Public Site and its third-party notice. The notice
 lives in `landing/public/` and therefore enters Vite's `dist/` output before
@@ -150,7 +149,7 @@ After first login, configure the existing administrator settings:
 - `site_name`: `零一 API`
 - `site_subtitle`: `从零到一，连接每一次模型调用。`
 - `api_base_url`: `https://api.01yapi.com`
-- `frontend_url`: `https://app.01yapi.com`
+- `frontend_url`: `https://api.01yapi.com`
 - `registration_enabled`: `true`
 - `payment_enabled`: `false`
 - `promo_code_enabled`: `false`
@@ -168,6 +167,7 @@ node deploy/zero-one/verify-public-settings.mjs https://api.01yapi.com/api/v1/se
 ```
 
 The public endpoint verifies every listed value except `frontend_url`, which is
-administrator-only and must be checked on `/admin/settings` during release. The
-gate requires Node.js 20 or newer on the release workstation; Node is not a
-runtime dependency of the production containers.
+administrator-only and must be checked on `/admin/settings` during release.
+Before enabling OAuth or captcha, update their callback and origin allowlists to
+the same canonical origin. The gate requires Node.js 20 or newer on the release
+workstation; Node is not a runtime dependency of the production containers.

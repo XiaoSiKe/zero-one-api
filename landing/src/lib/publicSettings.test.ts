@@ -102,8 +102,8 @@ describe('public settings normalization', () => {
 
   it('accepts only safe notice destinations while keeping omitted notices disabled', () => {
     expect(sanitizeLandingNoticeUrl('/keys?source=landing#new')).toBe('/keys?source=landing#new')
-    expect(sanitizeLandingNoticeUrl('https://app.01yapi.com/keys')).toBe(
-      'https://app.01yapi.com/keys',
+    expect(sanitizeLandingNoticeUrl('https://api.01yapi.com/keys')).toBe(
+      'https://api.01yapi.com/keys',
     )
     expect(sanitizeLandingNoticeUrl('//evil.example/keys')).toBe('')
     expect(sanitizeLandingNoticeUrl('/\\evil.example/keys')).toBe('')
