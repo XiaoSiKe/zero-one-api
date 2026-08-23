@@ -8,6 +8,7 @@ import {
 import type { ModelPlazaData } from "../lib/modelPlaza";
 import { consoleUrl, documentUrl } from "../siteConfig";
 import Action from "./Action";
+import ShinyText from "./ShinyText";
 
 interface ValuePricingSectionProps {
   modelPlazaData: ModelPlazaData | null;
@@ -46,7 +47,7 @@ export function ValuePricingSection({
         className="value-pricing-title"
         data-reveal
       >
-        每一份 token 按实际配置结算
+        <ShinyText text="每一份 token 按实际配置结算" speed={2} spread={120} />
       </h2>
       <div className="value-pricing-main section-layer">
         <div className="value-pricing-copy" data-reveal>
@@ -101,7 +102,7 @@ export function ValuePricingSection({
           <div className="value-pricing-action">
             <Action
               className="button-primary value-pricing-purchase"
-              href={consoleUrl("/purchase")}
+              href={consoleUrl("/purchase?tab=recharge")}
               size="md"
               radius={16}
               highlight={false}
@@ -258,7 +259,7 @@ export function StatusSection({ enabled = true }: { enabled?: boolean }) {
     >
       <div className="status-heading section-layer" data-reveal>
         <div className="section-heading section-heading-wide">
-          <h2 id="status-title">渠道状态</h2>
+          <h2 id="status-title"><ShinyText text="渠道状态" speed={2} spread={120} /></h2>
         </div>
       </div>
       <div
@@ -370,9 +371,9 @@ export function SiteFooter({
               loading="lazy"
             />
           ) : null}
-          <strong>{siteName}</strong>
+          <strong><ShinyText text={siteName} speed={2.6} spread={120} /></strong>
         </div>
-        <p>{subtitle}</p>
+        <p><ShinyText text={subtitle} speed={2.6} spread={120} /></p>
         <span>
           © {new Date().getFullYear()} {siteName}
         </span>

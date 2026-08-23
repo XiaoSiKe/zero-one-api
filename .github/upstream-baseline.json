@@ -282,6 +282,8 @@
         "landing/src/components/PublicAnnouncementsDialog.test.tsx",
         "landing/src/components/PublicAnnouncementsDialog.tsx",
         "landing/src/components/QuickStart.tsx",
+        "landing/src/components/ShinyText.test.tsx",
+        "landing/src/components/ShinyText.tsx",
         "landing/src/components/SiteHeader.tsx",
         "landing/src/components/SpecularAction.test.tsx",
         "landing/src/components/SpecularAction.tsx",

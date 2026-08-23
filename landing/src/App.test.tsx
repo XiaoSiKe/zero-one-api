@@ -151,6 +151,49 @@ describe("public site", () => {
     );
   });
 
+  it("adds a decorative shine layer to every requested landing title", async () => {
+    mocks.fetchPublicSettings.mockResolvedValue(
+      settings({
+        siteName: "零一 API 测试站",
+        siteSubtitle: "稳定的模型调用入口。",
+        modelPlazaEnabled: true,
+        channelMonitorEnabled: true,
+        publicChannelStatusEnabled: true,
+      }),
+    );
+
+    const { container } = render(<App />);
+    await waitFor(() => expect(container.querySelector("#status-title")).not.toBeNull());
+
+    for (const selector of [
+      "#quick-start-title",
+      "#pricing-title",
+      "#value-pricing-title",
+      "#status-title",
+      ".footer-brand strong",
+      ".footer-brand p",
+    ]) {
+      const target = container.querySelector(selector);
+      expect(target?.querySelector(":scope > .shiny-text")).not.toBeNull();
+      expect(
+        target
+          ?.querySelector(":scope > .shiny-text > .shiny-text__shine")
+          ?.getAttribute("aria-hidden"),
+      ).toBe("true");
+    }
+
+    for (const selector of [
+      ".footer-brand strong > .shiny-text",
+      ".footer-brand p > .shiny-text",
+    ]) {
+      expect(
+        (container.querySelector(selector) as HTMLElement | null)?.style.getPropertyValue(
+          "--shiny-text-speed",
+        ),
+      ).toBe("2.6s");
+    }
+  });
+
   it("does not render a default landing announcement", () => {
     render(<App />);
 
@@ -278,7 +321,7 @@ describe("public site", () => {
       within(billing!)
         .getByRole("link", { name: "购买额度" })
         .getAttribute("href"),
-    ).toBe("http://127.0.0.1:8080/purchase");
+    ).toBe("http://127.0.0.1:8080/purchase?tab=recharge");
     expect(document.querySelector("#advantages")).toBeNull();
   });
 

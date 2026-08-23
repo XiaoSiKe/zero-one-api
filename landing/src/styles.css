@@ -935,6 +935,48 @@ button { color: inherit; }
 
 .section-heading { max-width: 780px; }
 
+.shiny-text {
+  --shiny-text-color: inherit;
+  position: relative;
+  isolation: isolate;
+  width: fit-content;
+  max-width: 100%;
+  display: inline-grid;
+  color: var(--shiny-text-color);
+}
+
+.shiny-text__base,
+.shiny-text__shine {
+  min-width: 0;
+  grid-area: 1 / 1;
+}
+
+.shiny-text__base { color: var(--shiny-text-color); }
+
+.shiny-text__shine {
+  z-index: 1;
+  color: transparent;
+  background-image: linear-gradient(
+    var(--shiny-text-spread),
+    transparent 35%,
+    var(--shiny-text-shine) 50%,
+    transparent 65%
+  );
+  background-position: 150% 50%;
+  background-size: 250% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shiny-text-left var(--shiny-text-speed) linear var(--shiny-text-delay) infinite;
+  pointer-events: none;
+}
+
+.shiny-text--right .shiny-text__shine { animation-name: shiny-text-right; }
+.shiny-text--yoyo .shiny-text__shine { animation-direction: alternate; }
+.shiny-text--pause-on-hover:hover .shiny-text__shine { animation-play-state: paused; }
+.shiny-text--static .shiny-text__shine { animation: none; background-position: 50% 50%; }
+
 .section-heading .eyebrow, .eyebrow {
   margin: 0 0 14px;
   color: #aaa4ed;
@@ -956,8 +998,8 @@ button { color: inherit; }
 }
 
 @supports ((-webkit-background-clip: text) or (background-clip: text)) {
-  .section-heading h2,
-  .integration-copy h2,
+  .section-heading h2 > .shiny-text .shiny-text__base,
+  .integration-copy h2 > .shiny-text .shiny-text__base,
   .value-pricing-summary h3 {
     color: transparent;
     background: linear-gradient(100deg, #ffffff 0%, #e2deff 40%, #a79cff 68%, #8fc2ff 100%);
@@ -982,6 +1024,16 @@ button { color: inherit; }
 
 @keyframes terminal-caret-blink {
   50% { opacity: 0; }
+}
+
+@keyframes shiny-text-left {
+  from { background-position: 150% 50%; }
+  to { background-position: -50% 50%; }
+}
+
+@keyframes shiny-text-right {
+  from { background-position: -50% 50%; }
+  to { background-position: 150% 50%; }
 }
 
 .section {
@@ -1527,7 +1579,7 @@ button { color: inherit; }
 
 .status-section::before { inset: 24px 0; border-radius: 0; }
 .status-heading, .status-content { width: min(100%, var(--page)); margin: 0 auto; }
-.status-heading .section-heading h2 { max-width: 970px; font-size: clamp(42px, 4.6vw, 66px); }
+.status-heading .section-heading h2 { max-width: 970px; }
 
 .status-content {
   min-height: 234px;
@@ -1612,9 +1664,9 @@ button { color: inherit; }
 
 .footer-brand-lockup { display: inline-flex; align-items: center; gap: 12px; }
 .footer-brand-logo { width: 42px; height: 42px; flex: 0 0 42px; object-fit: contain; }
-.footer-brand strong { color: #f0f0f1; font-size: 19px; }
-.footer-brand p { max-width: 36ch; margin: 18px 0 0; color: #777780; font-size: 14px; line-height: 1.65; }
-.footer-brand span { margin-top: 32px; display: block; color: #74747e; font-size: 12px; }
+.footer-brand strong { color: #f0f0f1; font-size: 24px; }
+.footer-brand p { max-width: 36ch; margin: 18px 0 0; color: #777780; font-size: 16px; line-height: 1.65; }
+.footer-brand > span { margin-top: 32px; display: block; color: #74747e; font-size: 12px; }
 .footer-column { display: flex; flex-direction: column; align-items: start; gap: 12px; }
 .footer-column strong { margin-bottom: 7px; color: #b8b8bf; font-size: 13px; }
 .footer-column a { min-height: 30px; display: inline-flex; align-items: center; font-size: 13px; transition: color 150ms ease; }
@@ -1797,7 +1849,6 @@ button { color: inherit; }
   .value-pricing-detail { min-height: 44px; margin: 18px; padding-inline: 14px; font-size: 11px; }
   .value-pricing-action { padding: 20px; }
   .status-section { padding: 96px 14px 110px; }
-  .status-heading .section-heading h2 { font-size: 37px; }
   .status-content { margin-top: 42px; padding: 22px; align-items: stretch; flex-direction: column; }
   .status-meta { grid-template-columns: 1fr 1fr; }
   .status-actions { width: 100%; }
@@ -1857,6 +1908,7 @@ button { color: inherit; }
   }
   [data-hero-reveal], [data-reveal] { opacity: 1; transform: none; }
   .mobile-nav :is(a, button) { opacity: 1; transform: none; }
+  .shiny-text__shine { opacity: 0; }
 }
 
 @keyframes mobile-menu-in {
@@ -1923,8 +1975,7 @@ button { color: inherit; }
 }
 
 @supports ((-webkit-background-clip: text) or (background-clip: text)) {
-  .value-pricing-title,
-  .status-heading .section-heading h2 {
+  .value-pricing-title > .shiny-text .shiny-text__base {
     color: transparent;
     background: linear-gradient(100deg, #f9f8ff 0%, #d8d2ff 45%, #9b91ff 70%, #74aaff 100%);
     -webkit-background-clip: text;
@@ -1970,7 +2021,7 @@ button { color: inherit; }
 .value-pricing-action .value-pricing-purchase:hover { color: #050505; border-color: #fff; background: #fff; }
 
 .status-section { padding: 100px max(24px, calc((100vw - var(--page)) / 2)) 88px; }
-.status-heading .section-heading h2 { max-width: 970px; color: #dcd7ff; font-size: 52px; }
+.status-heading .section-heading h2 { max-width: 970px; }
 .status-content { width: min(100%, var(--page)); margin: 46px auto 0; padding: 0; display: flex; flex-direction: column; gap: 18px; border: 0; background: transparent; }
 .status-monitor-panel { overflow: hidden; width: 100%; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; background: rgba(14, 14, 15, 0.88); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035); }
 .status-monitor-header { min-height: 66px; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
@@ -2029,7 +2080,6 @@ button { color: inherit; }
   .value-pricing-summary h3 { font-size: 28px; }
   .value-pricing-action { padding: 18px; }
   .status-section { padding: 76px 14px 72px; }
-  .status-heading .section-heading h2 { font-size: 36px; }
   .status-content { margin-top: 32px; }
   .status-monitor-header { min-height: 0; padding: 18px; align-items: flex-start; flex-direction: column; gap: 12px; }
   .status-legend { justify-content: flex-start; font-size: 12px; }

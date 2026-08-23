@@ -103,10 +103,24 @@ assert_text "$asset_headers" 'Cache-Control: public, max-age=31536000, immutable
 console=$(curl -fsS -H "Host: $request_host" "$edge_url/login")
 assert_text "$console" '<title>零一 API - AI API Gateway</title>' 'primary login did not return the recovered console'
 assert_text "$console" 'fetch("/api/v1/settings/public"' 'recovered console did not bootstrap live public settings'
+assert_text "$console" 'await import("/assets/zero-one-local-preview-guard-v1.js")' 'recovered console local preview guard is missing'
+assert_text "$console" 'await import("/assets/zero-one-floating-panels-v1.js")' 'recovered console floating overlay is missing'
 console_asset_path=$(printf '%s' "$console" | grep -o '/assets/[^" ]*\.js' | head -n 1)
 [ -n "$console_asset_path" ] || fail 'console JavaScript asset was not discoverable'
 console_asset_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url$console_asset_path")
 assert_text "$console_asset_headers" 'Cache-Control: public, max-age=31536000, immutable' 'hashed console asset is not immutable'
+floating_overlay_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-floating-panels-v1.js")
+assert_text "$floating_overlay_headers" 'Cache-Control: public, max-age=31536000, immutable' 'floating overlay asset is not immutable'
+local_guard_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-local-preview-guard-v1.js")
+assert_text "$local_guard_headers" 'Cache-Control: public, max-age=31536000, immutable' 'local preview guard asset is not immutable'
+
+if [ "$routing_mode" = preview ]; then
+	console_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/login")
+	assert_text "$console_headers" "connect-src 'self'; frame-src 'none'" 'preview Console CSP is not local-only'
+	case "$console_headers" in
+		*airwallex.com* | *stripe.com*) fail 'preview Console CSP permits external payment scripts' ;;
+	esac
+fi
 
 custom_page_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/custom/iframe-contract")
 assert_text "$custom_page_headers" 'https://checkout-demo.airwallex.com https:; frame-ancestors' 'custom page CSP does not permit configured HTTPS iframes'

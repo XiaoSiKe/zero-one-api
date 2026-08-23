@@ -11,6 +11,7 @@ import {
 } from '../lib/modelPlaza'
 import { consoleUrl } from '../siteConfig'
 import Action from './Action'
+import ShinyText from './ShinyText'
 
 interface PricingSectionProps {
   enabled: boolean
@@ -274,7 +275,7 @@ export default function PricingSection({
     <section id="pricing" className="section pricing-section" aria-labelledby="pricing-title">
       <div className="pricing-heading-row" data-reveal>
         <div className="section-heading">
-          <h2 id="pricing-title">实时价格</h2>
+          <h2 id="pricing-title"><ShinyText text="实时价格" speed={2} spread={120} /></h2>
         </div>
         <Action
           className="button-secondary pricing-all-models"

@@ -1,9 +1,12 @@
 # Zero One Visual Regression
 
 This module owns deterministic Chromium snapshots for the Zero One Console and
-Public Site. It uses only browser-level API fixtures; no live database, monitor,
-or external service is consulted. Time, timezone, DPR, viewports and dynamic
-canvas inputs are fixed by the test configuration and visual-test adapters.
+Public Site. Console tests serve `deploy/zero-one/recovered-frontend/console`
+directly; they must never build or launch `frontend/src`, because that upstream
+tree is not the source of the protected production-equivalent Console snapshot.
+It uses only browser-level API fixtures; no live database, monitor, or external
+service is consulted. Time, timezone, DPR, viewports and dynamic canvas inputs
+are fixed by the test configuration and visual-test adapters.
 The versioned Playwright container is the source of truth for Linux, bundled
 Chromium and system font packages; local runs are smoke tests only.
 

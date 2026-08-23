@@ -2,6 +2,7 @@ import { defineConfig } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
+const chromiumExecutable = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
 
 export default defineConfig({
   testDir: './tests',
@@ -31,6 +32,7 @@ export default defineConfig({
     contextOptions: {
       reducedMotion: 'no-preference',
     },
+    launchOptions: chromiumExecutable ? { executablePath: chromiumExecutable } : undefined,
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
@@ -62,11 +64,10 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: './node_modules/.bin/vite --host 127.0.0.1 --port 4173 --strictPort',
-      cwd: `${root}frontend`,
-      env: { ...process.env, VITE_VISUAL_TEST: 'true' },
+      command: 'node serve-recovered-console.mjs --port 4173',
+      cwd: `${root}visual-regression`,
       url: 'http://127.0.0.1:4173',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
       timeout: 120_000,
     },
   ],

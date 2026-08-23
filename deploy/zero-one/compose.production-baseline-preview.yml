@@ -1,0 +1,7 @@
+# Local preview backend pinned to the verified production v0.1.179 image.
+# Keep this as the final Compose overlay so the development build cannot
+# silently replace the production-equivalent backend with an older image.
+services:
+  sub2api:
+    build: !reset null
+    image: ghcr.io/01-yang/zero-one-sub2api@sha256:7205c4879cc1e57c5939f3763f14d5e11fc0955f4fc9e5385f0b0e76a3221c77

@@ -253,6 +253,83 @@ const redeemCodes = {
   pages: 1,
 }
 
+const dashboardStats = {
+  total_users: 107,
+  today_new_users: 1,
+  active_users: 12,
+  hourly_active_users: 4,
+  stats_updated_at: observedAt,
+  stats_stale: false,
+  total_api_keys: 89,
+  active_api_keys: 87,
+  total_accounts: 7,
+  normal_accounts: 6,
+  error_accounts: 1,
+  ratelimit_accounts: 0,
+  overload_accounts: 0,
+  total_requests: 65_680,
+  total_input_tokens: 4_200_000_000,
+  total_output_tokens: 2_100_000_000,
+  total_cache_creation_tokens: 420_000_000,
+  total_cache_read_tokens: 950_000_000,
+  total_tokens: 7_670_000_000,
+  total_cost: 6_330,
+  total_actual_cost: 1_940,
+  total_account_cost: 7_830,
+  today_requests: 1_165,
+  today_input_tokens: 72_000_000,
+  today_output_tokens: 38_000_000,
+  today_cache_creation_tokens: 8_280_000,
+  today_cache_read_tokens: 20_000_000,
+  today_tokens: 138_280_000,
+  today_cost: 131.72,
+  today_actual_cost: 57.09,
+  today_account_cost: 134.3,
+  average_duration_ms: 26_790,
+  uptime: 864_000,
+  rpm: 0,
+  tpm: 0,
+}
+
+const dashboardTrend = [0, 1, 2, 3, 4, 5].map((index) => ({
+  date: `2026-08-16T${String(7 + index).padStart(2, '0')}:00:00+08:00`,
+  requests: 120 + index * 16,
+  input_tokens: 18_000_000 + index * 1_200_000,
+  output_tokens: 6_000_000 + index * 600_000,
+  cache_creation_tokens: 1_200_000,
+  cache_read_tokens: 2_800_000 + index * 220_000,
+  total_tokens: 28_000_000 + index * 2_020_000,
+  cost: 12 + index,
+  actual_cost: 5 + index * 0.4,
+}))
+
+const dashboardModels = [
+  {
+    model: 'gpt-5.6-sol',
+    requests: 5_097,
+    input_tokens: 410_000_000,
+    output_tokens: 138_000_000,
+    cache_creation_tokens: 12_000_000,
+    cache_read_tokens: 64_930_000,
+    total_tokens: 624_930_000,
+    cost: 669.24,
+    actual_cost: 286.15,
+    account_cost: 669.24,
+  },
+  {
+    model: 'claude-opus-5',
+    requests: 191,
+    input_tokens: 42_000_000,
+    output_tokens: 12_000_000,
+    cache_creation_tokens: 2_000_000,
+    cache_read_tokens: 9_880_000,
+    total_tokens: 65_880_000,
+    cost: 41.2,
+    actual_cost: 47.16,
+    account_cost: 42.88,
+  },
+]
+
 function envelope(data: unknown) {
   return JSON.stringify({ code: 0, message: 'ok', data })
 }
@@ -286,6 +363,39 @@ export async function seedConsole(page: Page, mode: 'v1' | 'v2' = 'v2') {
     if (path === '/admin/settings') return fulfill(route, publicSettings(mode))
     if (path === '/admin/groups/all') return fulfill(route, [])
     if (path === '/admin/redeem-codes') return fulfill(route, redeemCodes)
+    if (path === '/admin/dashboard/snapshot-v2') {
+      return fulfill(route, {
+        generated_at: observedAt,
+        start_date: '2026-08-15',
+        end_date: '2026-08-16',
+        granularity: 'hour',
+        stats: dashboardStats,
+        trend: dashboardTrend,
+        models: dashboardModels,
+        groups: [],
+      })
+    }
+    if (path === '/admin/dashboard/users-trend') {
+      return fulfill(route, {
+        trend: [
+          { date: '2026-08-16T10:00:00+08:00', user_id: 1, email: 'admin@01yapi.test', username: '零一场', requests: 88, tokens: 8_400_000, cost: 6.2, actual_cost: 2.4 },
+          { date: '2026-08-16T11:00:00+08:00', user_id: 1, email: 'admin@01yapi.test', username: '零一场', requests: 94, tokens: 9_100_000, cost: 6.8, actual_cost: 2.7 },
+        ],
+        start_date: '2026-08-15',
+        end_date: '2026-08-16',
+        granularity: 'hour',
+      })
+    }
+    if (path === '/admin/dashboard/users-ranking') {
+      return fulfill(route, {
+        ranking: [{ user_id: 1, email: 'admin@01yapi.test', username: '零一场', actual_cost: 286.15, requests: 5_097, tokens: 624_930_000 }],
+        total_actual_cost: 286.15,
+        total_requests: 5_097,
+        total_tokens: 624_930_000,
+        start_date: '2026-08-15',
+        end_date: '2026-08-16',
+      })
+    }
     if (path === '/model-plaza') return fulfill(route, modelPlaza)
     if (path === '/redeem/history') return fulfill(route, [])
     if (path === '/admin/announcements') {

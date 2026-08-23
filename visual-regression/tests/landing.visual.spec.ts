@@ -49,6 +49,84 @@ test.describe('Landing visual contracts', () => {
     await expect(status).toHaveScreenshot('landing-mobile-status-error.png')
   })
 
+  test('channel status title matches realtime pricing typography', async ({ page }) => {
+    await seedLanding(page)
+    await page.goto('http://127.0.0.1:4174')
+    await expect(page.locator('[data-visual-ready="true"]')).toBeVisible()
+
+    const styles = await page.evaluate(() => {
+      const read = (id: string) => {
+        const heading = document.getElementById(id)!
+        const base = heading.querySelector<HTMLElement>('.shiny-text__base')!
+        const headingStyle = getComputedStyle(heading)
+        const baseStyle = getComputedStyle(base)
+        return {
+          fontSize: headingStyle.fontSize,
+          fontWeight: headingStyle.fontWeight,
+          lineHeight: headingStyle.lineHeight,
+          letterSpacing: headingStyle.letterSpacing,
+          color: baseStyle.color,
+          backgroundImage: baseStyle.backgroundImage,
+        }
+      }
+      return { pricing: read('pricing-title'), status: read('status-title') }
+    })
+
+    expect(styles.status).toEqual(styles.pricing)
+  })
+
+  test('requested title shine is deterministic and reduced-motion safe', async ({ page }) => {
+    await seedLanding(page)
+    await page.goto('http://127.0.0.1:4174')
+    await expect(page.locator('[data-visual-ready="true"]')).toBeVisible()
+
+    const titles = page.locator([
+      '#quick-start-title > .shiny-text',
+      '#pricing-title > .shiny-text',
+      '#value-pricing-title > .shiny-text',
+      '#status-title > .shiny-text',
+      '.footer-brand strong > .shiny-text',
+      '.footer-brand p > .shiny-text',
+    ].join(','))
+    await expect(titles).toHaveCount(6)
+    await expect(titles.first()).toHaveClass(/shiny-text--static/)
+    await expect(titles.first().locator('.shiny-text__shine')).toHaveCSS('animation-name', 'none')
+
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await expect(titles.first().locator('.shiny-text__shine')).toHaveCSS('opacity', '0')
+    await expect(titles.first().locator('.shiny-text__base')).toBeVisible()
+  })
+
+  test('footer shine layers overlap at the larger, slower typography', async ({ page }) => {
+    await seedLanding(page)
+    await page.goto('http://127.0.0.1:4174')
+    await expect(page.locator('[data-visual-ready="true"]')).toBeVisible()
+
+    const footerText = page.locator('.footer-brand .shiny-text')
+    await expect(footerText).toHaveCount(2)
+
+    const result = await footerText.evaluateAll((roots) =>
+      roots.map((root) => {
+        const base = root.querySelector<HTMLElement>('.shiny-text__base')!
+        const shine = root.querySelector<HTMLElement>('.shiny-text__shine')!
+        const baseRect = base.getBoundingClientRect()
+        const shineRect = shine.getBoundingClientRect()
+        return {
+          speed: getComputedStyle(root).getPropertyValue('--shiny-text-speed'),
+          fontSize: getComputedStyle(root).fontSize,
+          baseRect: [baseRect.x, baseRect.y, baseRect.width, baseRect.height],
+          shineRect: [shineRect.x, shineRect.y, shineRect.width, shineRect.height],
+        }
+      }),
+    )
+
+    expect(result).toEqual([
+      expect.objectContaining({ speed: '2.6s', fontSize: '24px' }),
+      expect.objectContaining({ speed: '2.6s', fontSize: '16px' }),
+    ])
+    for (const item of result) expect(item.shineRect).toEqual(item.baseRect)
+  })
+
   test('desktop model plaza pricing', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
     await seedLanding(page)
