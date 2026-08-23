@@ -395,6 +395,16 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 	}, nil
 }
 
+// GetPublicSiteLogo reads only the public logo setting. The logo response must
+// not pay the cost of loading every public setting again.
+func (s *SettingService) GetPublicSiteLogo(ctx context.Context) (string, error) {
+	settings, err := s.settingRepo.GetMultiple(ctx, []string{SettingKeySiteLogo})
+	if err != nil {
+		return "", fmt.Errorf("get public site logo: %w", err)
+	}
+	return settings[SettingKeySiteLogo], nil
+}
+
 // channelMonitorIntervalMin / channelMonitorIntervalMax bound the default interval
 // (mirrors the monitor-level constraint but lives here so setting_service stays decoupled).
 const (

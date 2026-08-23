@@ -352,6 +352,25 @@ type DefaultSubscriptionSetting struct {
 	ValidityDays int   `json:"validity_days"`
 }
 
+// LandingPublicSettings is the small public-settings projection required by
+// the standalone landing page. Keep the full PublicSettings response intact
+// for the Console and existing API consumers.
+type LandingPublicSettings struct {
+	SiteName                   string `json:"site_name"`
+	SiteLogo                   string `json:"site_logo"`
+	SiteSubtitle               string `json:"site_subtitle"`
+	DocURL                     string `json:"doc_url"`
+	RegistrationEnabled        bool   `json:"registration_enabled"`
+	ModelPlazaEnabled          bool   `json:"model_plaza_enabled"`
+	ModelPlazaRequireAuth      bool   `json:"model_plaza_require_auth"`
+	ChannelMonitorEnabled      bool   `json:"channel_monitor_enabled"`
+	PublicChannelStatusEnabled bool   `json:"public_channel_status_enabled"`
+	ServerUTCOffset            string `json:"server_utc_offset"`
+	LandingNoticeEnabled       bool   `json:"landing_notice_enabled"`
+	LandingNoticeText          string `json:"landing_notice_text"`
+	LandingNoticeURL           string `json:"landing_notice_url"`
+}
+
 type PublicSettings struct {
 	RegistrationEnabled                 bool                     `json:"registration_enabled"`
 	EmailVerifyEnabled                  bool                     `json:"email_verify_enabled"`

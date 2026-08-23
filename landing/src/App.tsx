@@ -12,13 +12,13 @@ import PublicAnnouncementsDialog from './components/PublicAnnouncementsDialog'
 import QuickStart from './components/QuickStart'
 import SiteHeader from './components/SiteHeader'
 import Threads from './components/Threads'
-import {
-  DEFAULT_PUBLIC_SETTINGS,
-  fetchPublicSettings,
-  type PublicSettings,
-} from './lib/publicSettings'
+import type { PublicSettings } from './lib/publicSettings'
 import type { ModelPlazaData } from './lib/modelPlaza'
 import { canLoadBrandImage } from './siteConfig'
+
+interface AppProps {
+  initialSettings: PublicSettings
+}
 
 function readConsoleHomePath(): '/dashboard' | '/admin/dashboard' | null {
   try {
@@ -33,8 +33,7 @@ function readConsoleHomePath(): '/dashboard' | '/admin/dashboard' | null {
   }
 }
 
-export default function App() {
-  const [settings, setSettings] = useState<PublicSettings>({ ...DEFAULT_PUBLIC_SETTINGS })
+export default function App({ initialSettings: settings }: AppProps) {
   const [modelPlazaData, setModelPlazaData] = useState<ModelPlazaData | null>(null)
   const [failedLogoUrls, setFailedLogoUrls] = useState<ReadonlySet<string>>(() => new Set())
   const [publicAnnouncementsOpen, setPublicAnnouncementsOpen] = useState(false)
@@ -43,16 +42,6 @@ export default function App() {
 
   const openPublicAnnouncements = useCallback(() => setPublicAnnouncementsOpen(true), [])
   const closePublicAnnouncements = useCallback(() => setPublicAnnouncementsOpen(false), [])
-
-  useEffect(() => {
-    let active = true
-    void fetchPublicSettings().then((nextSettings) => {
-      if (active) setSettings(nextSettings)
-    })
-    return () => {
-      active = false
-    }
-  }, [])
 
   useEffect(() => {
     const refreshSession = () => setConsoleHomePath(readConsoleHomePath())

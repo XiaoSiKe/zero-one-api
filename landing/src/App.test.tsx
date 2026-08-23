@@ -16,7 +16,6 @@ import {
 } from "./lib/publicSettings";
 
 const mocks = vi.hoisted(() => ({
-  fetchPublicSettings: vi.fn(),
   fetchModelPlaza: vi.fn(),
   fetchChannelStatus: vi.fn(),
   fetchPublicAnnouncements: vi.fn(),
@@ -38,15 +37,6 @@ vi.mock("./components/Threads", () => ({
     />
   ),
 }));
-
-vi.mock("./lib/publicSettings", async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import("./lib/publicSettings")>();
-  return {
-    ...original,
-    fetchPublicSettings: mocks.fetchPublicSettings,
-  };
-});
 
 vi.mock("./lib/modelPlaza", async (importOriginal) => {
   const original = await importOriginal<typeof import("./lib/modelPlaza")>();
@@ -75,12 +65,13 @@ const settings = (overrides: Partial<PublicSettings> = {}): PublicSettings => ({
   ...overrides,
 });
 
+const renderApp = (initialSettings = settings()) =>
+  render(<App initialSettings={initialSettings} />);
+
 describe("public site", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
-    mocks.fetchPublicSettings.mockReset();
-    mocks.fetchPublicSettings.mockResolvedValue(settings());
     mocks.fetchModelPlaza.mockReset();
     mocks.fetchModelPlaza.mockResolvedValue({
       status: "empty",
@@ -109,7 +100,7 @@ describe("public site", () => {
   });
 
   it("renders configured public settings and hides registration when disabled", async () => {
-    mocks.fetchPublicSettings.mockResolvedValue(
+    renderApp(
       settings({
         siteName: "零一 API 测试站",
         siteSubtitle: "稳定的模型调用入口。",
@@ -117,8 +108,6 @@ describe("public site", () => {
         registrationEnabled: false,
       }),
     );
-
-    render(<App />);
 
     expect(
       (await screen.findAllByText("稳定的模型调用入口。")).length,
@@ -141,7 +130,7 @@ describe("public site", () => {
   });
 
   it("uses exactly one persistent page-level Threads background", () => {
-    render(<App />);
+    renderApp();
 
     const backgrounds = screen.getAllByTestId("threads");
     expect(backgrounds).toHaveLength(1);
@@ -152,7 +141,7 @@ describe("public site", () => {
   });
 
   it("adds a decorative shine layer to every requested landing title", async () => {
-    mocks.fetchPublicSettings.mockResolvedValue(
+    const { container } = renderApp(
       settings({
         siteName: "零一 API 测试站",
         siteSubtitle: "稳定的模型调用入口。",
@@ -161,8 +150,6 @@ describe("public site", () => {
         publicChannelStatusEnabled: true,
       }),
     );
-
-    const { container } = render(<App />);
     await waitFor(() => expect(container.querySelector("#status-title")).not.toBeNull());
 
     for (const selector of [
@@ -195,7 +182,7 @@ describe("public site", () => {
   });
 
   it("does not render a default landing announcement", () => {
-    render(<App />);
+    renderApp();
 
     expect(
       screen.queryByRole("complementary", { name: "站点公告" }),
@@ -206,7 +193,7 @@ describe("public site", () => {
   });
 
   it("renders the fixed two-line hero without the retired title or duplicate subtitle", () => {
-    render(<App />);
+    renderApp();
 
     const hero = document.querySelector(".hero");
     const heading = screen.getByRole("heading", { level: 1 });
@@ -225,7 +212,7 @@ describe("public site", () => {
   });
 
   it("routes local landing console actions to the real local backend", async () => {
-    mocks.fetchPublicSettings.mockResolvedValue(
+    const { container } = renderApp(
       settings({
         docUrl: "https://docs.01yapi.com/guide",
         registrationEnabled: true,
@@ -234,7 +221,6 @@ describe("public site", () => {
         publicChannelStatusEnabled: true,
       }),
     );
-    const { container } = render(<App />);
 
     await waitFor(() =>
       expect(container.querySelector("#status")).not.toBeNull(),
@@ -273,12 +259,8 @@ describe("public site", () => {
     async (role, path) => {
       localStorage.setItem("auth_token", "saved-token");
       localStorage.setItem("auth_user", JSON.stringify({ role }));
-      mocks.fetchPublicSettings.mockResolvedValue(
-        settings({ registrationEnabled: true }),
-      );
 
-      render(<App />);
-      await waitFor(() => expect(mocks.fetchPublicSettings).toHaveBeenCalledOnce());
+      renderApp(settings({ registrationEnabled: true }));
 
       expect(screen.queryByRole("link", { name: "登录" })).toBeNull();
       expect(screen.queryByRole("link", { name: "注册账号" })).toBeNull();
@@ -293,15 +275,12 @@ describe("public site", () => {
   );
 
   it("does not request or render public status when only the authenticated monitor is enabled", async () => {
-    mocks.fetchPublicSettings.mockResolvedValue(
+    const { container } = renderApp(
       settings({
         channelMonitorEnabled: true,
         publicChannelStatusEnabled: false,
       }),
     );
-
-    const { container } = render(<App />);
-    await waitFor(() => expect(mocks.fetchPublicSettings).toHaveBeenCalledOnce());
 
     expect(container.querySelector("#status")).toBeNull();
     expect(mocks.fetchChannelStatus).not.toHaveBeenCalled();
@@ -309,7 +288,7 @@ describe("public site", () => {
   });
 
   it("removes the advantages module while keeping the value-pricing section", () => {
-    render(<App />);
+    renderApp();
 
     const billing = document.querySelector<HTMLElement>("#billing");
     expect(billing).not.toBeNull();
@@ -326,17 +305,14 @@ describe("public site", () => {
   });
 
   it("keeps value-pricing copy accurate when the public model plaza is disabled", () => {
-    render(<App />);
+    renderApp();
 
     expect(screen.getByText("按实际配置结算")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "显示计费说明" })).toBeNull();
   });
 
   it("merges pricing and model plaza navigation without a separate advantages entry", async () => {
-    mocks.fetchPublicSettings.mockResolvedValue(
-      settings({ modelPlazaEnabled: true }),
-    );
-    render(<App />);
+    renderApp(settings({ modelPlazaEnabled: true }));
 
     const navigation = within(
       screen.getByRole("navigation", { name: "主要导航" }),
@@ -352,13 +328,12 @@ describe("public site", () => {
   });
 
   it("uses configured documentation and brand imagery in local development", async () => {
-    mocks.fetchPublicSettings.mockResolvedValue(
+    renderApp(
       settings({
         siteLogo: "https://cdn.01yapi.com/logo.svg",
         docUrl: "https://docs.01yapi.com/guide",
       }),
     );
-    render(<App />);
 
     await screen.findByRole("link", { name: "零一 API 首页" });
     const logo = document.querySelector<HTMLImageElement>(".wordmark-logo");
@@ -382,28 +357,28 @@ describe("public site", () => {
     ).toBe("https://docs.01yapi.com/guide");
   });
 
-  it("keeps capability switches closed while public settings are unavailable", () => {
-    mocks.fetchPublicSettings.mockReturnValue(
-      new Promise<PublicSettings>(() => {}),
+  it("uses resolved capability switches on the first render", () => {
+    renderApp(
+      settings({
+        registrationEnabled: true,
+        publicChannelStatusEnabled: true,
+      }),
     );
 
-    render(<App />);
-
+    const navigation = within(
+      screen.getByRole("navigation", { name: "主要导航" }),
+    );
+    expect(navigation.getByRole("link", { name: "登录" })).toBeTruthy();
+    expect(navigation.getByRole("link", { name: "注册账号" })).toBeTruthy();
+    expect(navigation.getByRole("link", { name: "渠道状态" })).toBeTruthy();
     expect(
-      screen
-        .queryAllByRole("link")
-        .some((link) => link.getAttribute("href")?.endsWith("/register")),
-    ).toBe(false);
-    expect(
-      screen.getAllByRole("link", { name: "登录控制台" }).length,
-    ).toBeGreaterThan(0);
-    expect(screen.queryByText("渠道状态")).toBeNull();
-    expect(mocks.fetchChannelStatus).not.toHaveBeenCalled();
+      navigation.queryByRole("link", { name: "登录控制台" }),
+    ).toBeNull();
   });
 
   it("opens and closes the mobile navigation with accessible state", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
 
     const menuButton = screen.getByRole("button", { name: "打开导航" });
     expect(menuButton.getAttribute("aria-expanded")).toBe("false");
@@ -454,7 +429,7 @@ describe("public site", () => {
         content: "新的模型版本现已可用。",
       },
     ]);
-    render(<App />);
+    renderApp();
 
     const navigation = within(
       screen.getByRole("navigation", { name: "主要导航" }),
@@ -494,7 +469,7 @@ describe("public site", () => {
     mocks.fetchPublicAnnouncements.mockRejectedValue(
       new Error("Public announcements request failed"),
     );
-    render(<App />);
+    renderApp();
 
     const navigation = within(
       screen.getByRole("navigation", { name: "主要导航" }),
@@ -514,7 +489,7 @@ describe("public site", () => {
 
   it("opens the same public announcement dialog from the mobile navigation", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
 
     await user.click(screen.getByRole("button", { name: "打开导航" }));
     const mobileNavigation = within(
@@ -537,7 +512,7 @@ describe("public site", () => {
 
   it("isolates background focus and traps keyboard navigation inside the mobile menu", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
 
     const menuButton = screen.getByRole("button", { name: "打开导航" });
     const main = document.querySelector<HTMLElement>("main")!;
@@ -607,7 +582,7 @@ describe("public site", () => {
       ),
     );
 
-    render(<App />);
+    renderApp();
     const menuButton = screen.getByRole("button", { name: "打开导航" });
     const main = document.querySelector<HTMLElement>("main")!;
     const footer = document.querySelector<HTMLElement>("footer")!;
@@ -637,7 +612,7 @@ describe("public site", () => {
       configurable: true,
       value: { writeText },
     });
-    render(<App />);
+    renderApp();
 
     await user.click(screen.getByRole("button", { name: "复制首页 API 地址" }));
 
@@ -657,7 +632,7 @@ describe("public site", () => {
 
   it("renders only the four requested integration tabs and updates their guide", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
 
     expect(
       screen.getAllByRole("tab").map((tab) => tab.textContent?.trim()),
@@ -706,7 +681,7 @@ describe("public site", () => {
       configurable: true,
       value: { writeText },
     });
-    render(<App />);
+    renderApp();
 
     const ccSwitchTab = screen.getByRole("tab", { name: "CC-Switch" });
     await user.click(ccSwitchTab);
@@ -735,18 +710,14 @@ describe("public site", () => {
   });
 
   it("falls back to the quick-start anchor when no documentation URL is configured", async () => {
-    mocks.fetchPublicSettings.mockResolvedValue(settings({ docUrl: "" }));
-    render(<App />);
+    renderApp(settings({ docUrl: "" }));
 
     const fallback = await screen.findByRole("link", { name: "查看接入方式" });
     expect(fallback.getAttribute("href")).toBe("#quick-start");
   });
 
   it("falls back from a failed configured logo to the bundled brand mark", async () => {
-    mocks.fetchPublicSettings.mockResolvedValue(
-      settings({ siteLogo: "/missing-logo.svg" }),
-    );
-    render(<App />);
+    renderApp(settings({ siteLogo: "/missing-logo.svg" }));
 
     await waitFor(() => {
       expect(

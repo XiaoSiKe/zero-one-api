@@ -162,7 +162,7 @@ export function normalizePublicSettings(payload: unknown): PublicSettings {
 
 export async function fetchPublicSettings(
   request: typeof fetch = fetch,
-  endpoint = '/api/v1/settings/public',
+  endpoint = '/api/v1/settings/public?scope=landing',
 ): Promise<PublicSettings> {
   const controller = new AbortController()
   const timeoutId = globalThis.setTimeout(() => controller.abort(), 3_000)

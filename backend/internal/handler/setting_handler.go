@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"html"
 	"net/http"
 	"strings"
@@ -12,6 +15,17 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+const (
+	publicSettingsPath     = "/api/v1/settings/public"
+	maxPublicSiteLogoBytes = 300 * 1024
+)
+
+type publicSiteLogo struct {
+	mimeType string
+	content  []byte
+	revision string
+}
 
 // SettingHandler 公开设置处理器（无需认证）
 type SettingHandler struct {
@@ -37,9 +51,32 @@ func (h *SettingHandler) SetNotificationEmailService(notificationEmailService *s
 // GetPublicSettings 获取公开设置
 // GET /api/v1/settings/public
 func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
+	if c.Query("scope") == "logo" {
+		h.getPublicSiteLogo(c)
+		return
+	}
+
 	settings, err := h.settingService.GetPublicSettings(c.Request.Context())
 	if err != nil {
 		response.ErrorFrom(c, err)
+		return
+	}
+	if c.Query("scope") == "landing" {
+		response.Success(c, dto.LandingPublicSettings{
+			SiteName:                   settings.SiteName,
+			SiteLogo:                   landingSiteLogoURL(settings.SiteLogo),
+			SiteSubtitle:               settings.SiteSubtitle,
+			DocURL:                     settings.DocURL,
+			RegistrationEnabled:        settings.RegistrationEnabled,
+			ModelPlazaEnabled:          settings.ModelPlazaEnabled,
+			ModelPlazaRequireAuth:      settings.ModelPlazaRequireAuth,
+			ChannelMonitorEnabled:      settings.ChannelMonitorEnabled,
+			PublicChannelStatusEnabled: settings.PublicChannelStatusEnabled,
+			ServerUTCOffset:            timezone.UTCOffset(),
+			LandingNoticeEnabled:       settings.LandingNoticeEnabled,
+			LandingNoticeText:          settings.LandingNoticeText,
+			LandingNoticeURL:           settings.LandingNoticeURL,
+		})
 		return
 	}
 
@@ -124,6 +161,83 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 
 		AllowUserViewErrorRequests: settings.AllowUserViewErrorRequests,
 	})
+}
+
+// getPublicSiteLogo serves a configured data-URI logo as a cacheable image.
+// URL-based logos stay URL-based and therefore do not use this endpoint.
+func (h *SettingHandler) getPublicSiteLogo(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
+	c.Header("X-Content-Type-Options", "nosniff")
+
+	rawLogo, err := h.settingService.GetPublicSiteLogo(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	logo, ok := decodePublicSiteLogo(rawLogo)
+	if !ok {
+		response.NotFound(c, "site logo not found")
+		return
+	}
+
+	etag := `"` + logo.revision + `"`
+	c.Header("ETag", etag)
+	if c.Query("v") == logo.revision {
+		c.Header("Cache-Control", "public, max-age=31536000, immutable")
+	}
+	if c.Request.Header.Get("If-None-Match") == etag {
+		c.AbortWithStatus(http.StatusNotModified)
+		return
+	}
+	c.Data(http.StatusOK, logo.mimeType, logo.content)
+}
+
+func landingSiteLogoURL(rawLogo string) string {
+	logo, ok := decodePublicSiteLogo(rawLogo)
+	if ok {
+		return publicSettingsPath + "?scope=logo&v=" + logo.revision
+	}
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(rawLogo)), "data:") {
+		return ""
+	}
+	return rawLogo
+}
+
+func decodePublicSiteLogo(rawLogo string) (publicSiteLogo, bool) {
+	metadata, encoded, ok := strings.Cut(strings.TrimSpace(rawLogo), ",")
+	if !ok || encoded == "" || strings.IndexAny(encoded, " \t\r\n") >= 0 {
+		return publicSiteLogo{}, false
+	}
+	metadataParts := strings.Split(metadata, ";")
+	if len(metadataParts) != 2 || !strings.EqualFold(metadataParts[1], "base64") {
+		return publicSiteLogo{}, false
+	}
+	mimeType := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(strings.ToLower(metadataParts[0]), "data:")))
+	if !isAllowedPublicSiteLogoMIME(mimeType) || len(encoded) > base64.StdEncoding.EncodedLen(maxPublicSiteLogoBytes) {
+		return publicSiteLogo{}, false
+	}
+	content, err := base64.StdEncoding.Strict().DecodeString(encoded)
+	if err != nil || len(content) == 0 || len(content) > maxPublicSiteLogoBytes {
+		return publicSiteLogo{}, false
+	}
+	hash := sha256.New()
+	_, _ = hash.Write([]byte(mimeType))
+	_, _ = hash.Write([]byte{0})
+	_, _ = hash.Write(content)
+	return publicSiteLogo{
+		mimeType: mimeType,
+		content:  content,
+		revision: hex.EncodeToString(hash.Sum(nil)),
+	}, true
+}
+
+func isAllowedPublicSiteLogoMIME(mimeType string) bool {
+	switch mimeType {
+	case "image/avif", "image/gif", "image/jpeg", "image/jpg", "image/png", "image/webp":
+		return true
+	default:
+		return false
+	}
 }
 
 // UnsubscribeNotificationEmail handles optional notification email opt-outs.

@@ -120,7 +120,7 @@ describe('public settings normalization', () => {
     await fetchPublicSettings(request)
 
     expect(request).toHaveBeenCalledTimes(1)
-    expect(request.mock.calls[0]?.[0]).toBe('/api/v1/settings/public')
+    expect(request.mock.calls[0]?.[0]).toBe('/api/v1/settings/public?scope=landing')
     expect(request.mock.calls[0]?.[1]).toMatchObject({
       cache: 'no-store',
       credentials: 'omit',
