@@ -36,6 +36,24 @@ test.describe('Console public auth contracts', () => {
     await expect(page).toHaveURL('http://127.0.0.1:4173/forgot-password')
     await expect(page.getByRole('heading', { name: '重置密码' })).toBeVisible()
   })
+
+  test('password recovery actions match the login button', async ({ page }) => {
+    await page.goto('http://127.0.0.1:4173/login')
+    const login = page.getByRole('button', { name: '登录', exact: true })
+    const loginClass = await login.getAttribute('class')
+
+    await page.goto('http://127.0.0.1:4173/forgot-password')
+    const sendResetLink = page.getByRole('button', { name: '发送重置链接', exact: true })
+    const backToLogin = page.getByRole('link', { name: /想起密码了？\s*登录/ })
+
+    expect(await sendResetLink.getAttribute('class')).toBe(loginClass)
+    expect(await backToLogin.getAttribute('class')).toBe(loginClass)
+    await expect(sendResetLink).toHaveAttribute('type', 'submit')
+    await expect(backToLogin).toHaveAttribute('href', '/login')
+
+    await backToLogin.click()
+    await expect(page).toHaveURL('http://127.0.0.1:4173/login')
+  })
 })
 
 test.describe('Console visual contracts', () => {

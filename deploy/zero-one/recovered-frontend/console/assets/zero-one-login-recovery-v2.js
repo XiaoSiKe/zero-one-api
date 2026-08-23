@@ -1,9 +1,10 @@
-// Login footer overlay for the approved recovered Console snapshot.
+// Authentication action overlay for the approved recovered Console snapshot.
 // The protected production-equivalent Console is served from this snapshot,
 // not rebuilt from frontend/src.
 
 const RECOVERY_PATH = '/forgot-password'
 const RECOVERY_SELECTOR = '[data-zero-one-login-recovery="true"]'
+const LOGIN_BUTTON_CLASS = 'btn btn-primary btn-specular w-full'
 let scanFrame = 0
 
 function recoveryLabel() {
@@ -12,9 +13,6 @@ function recoveryLabel() {
 }
 
 function installRecoveryLink() {
-  scanFrame = 0
-  if (window.location.pathname !== '/login') return
-
   for (const inlineLink of document.querySelectorAll('form a[href="/forgot-password"]')) {
     inlineLink.remove()
   }
@@ -35,9 +33,39 @@ function installRecoveryLink() {
   registrationLink.after(recoveryLink)
 }
 
+function styleForgotPasswordActions() {
+  const sendResetLink = document.querySelector('form button[type="submit"]')
+  if (sendResetLink instanceof HTMLButtonElement) {
+    sendResetLink.className = LOGIN_BUTTON_CLASS
+  }
+
+  const backToLogin = document.querySelector('a[href="/login"]')
+  if (!(backToLogin instanceof HTMLAnchorElement)) return
+  if (backToLogin.dataset.zeroOneAuthButtonStyle === 'true') return
+
+  const backWrapper = backToLogin.parentElement
+  const label = backWrapper?.textContent?.replace(/\s+/g, ' ').trim()
+  if (!(backWrapper instanceof HTMLElement) || !label) return
+
+  backToLogin.className = LOGIN_BUTTON_CLASS
+  backToLogin.dataset.zeroOneAuthButtonStyle = 'true'
+  backToLogin.textContent = label
+  backWrapper.removeAttribute('class')
+  backWrapper.replaceChildren(backToLogin)
+}
+
+function installAuthActions() {
+  scanFrame = 0
+  if (window.location.pathname === '/login') {
+    installRecoveryLink()
+  } else if (window.location.pathname === '/forgot-password') {
+    styleForgotPasswordActions()
+  }
+}
+
 function scheduleScan() {
   if (scanFrame) return
-  scanFrame = window.requestAnimationFrame(installRecoveryLink)
+  scanFrame = window.requestAnimationFrame(installAuthActions)
 }
 
 new MutationObserver(scheduleScan).observe(document.documentElement, {

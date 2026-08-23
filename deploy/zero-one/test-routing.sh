@@ -15,7 +15,7 @@ recovered_console_promo_chunk="$repo_root/deploy/zero-one/recovered-frontend/con
 recovered_asset_alias="$repo_root/deploy/zero-one/recovered-frontend/console/assets/redeem-cachebust-20260820-fix6"
 recovered_floating_overlay="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-floating-panels-v1.js"
 recovered_local_guard="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-local-preview-guard-v1.js"
-recovered_login_recovery="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-login-recovery-v1.js"
+recovered_login_recovery="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-login-recovery-v2.js"
 
 require() {
 	file=$1
@@ -70,7 +70,7 @@ require "$recovered_console_index" 'fetch("/api/v1/settings/public"'
 require "$recovered_console_index" "$recovered_console_entry"
 require "$recovered_console_index" 'await import("/assets/zero-one-local-preview-guard-v1.js")'
 require "$recovered_console_index" 'await import("/assets/zero-one-floating-panels-v1.js")'
-require "$recovered_console_index" 'await import("/assets/zero-one-login-recovery-v1.js")'
+require "$recovered_console_index" 'await import("/assets/zero-one-login-recovery-v2.js")'
 forbid "$recovered_pricing_chunk" 'getModelDefaultPricing('
 require "$recovered_console_redeem_chunk" 'redeem'
 require "$recovered_console_admin_redeem_chunk" 'box'
@@ -88,6 +88,10 @@ require "$recovered_login_recovery" "const RECOVERY_PATH = '/forgot-password'"
 require "$recovered_login_recovery" 'a[href="/register"].btn.btn-secondary'
 require "$recovered_login_recovery" 'recoveryLink.className = registrationLink.className'
 require "$recovered_login_recovery" 'registrationLink.after(recoveryLink)'
+require "$recovered_login_recovery" "const LOGIN_BUTTON_CLASS = 'btn btn-primary btn-specular w-full'"
+require "$recovered_login_recovery" "window.location.pathname === '/forgot-password'"
+require "$recovered_login_recovery" 'sendResetLink.className = LOGIN_BUTTON_CLASS'
+require "$recovered_login_recovery" 'backWrapper.replaceChildren(backToLogin)'
 
 if [ "$(readlink "$recovered_asset_alias")" != '.' ]; then
 	echo 'recovered Console cache-busting asset alias is missing' >&2
