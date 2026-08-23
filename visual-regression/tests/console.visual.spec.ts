@@ -1,6 +1,43 @@
 import { expect, test } from '@playwright/test'
 import { seedConsole } from './fixtures/api'
 
+test.describe('Console public auth contracts', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-08-16T12:00:00+08:00'))
+    await seedConsole(page, 'v2', { authenticated: false })
+  })
+
+  test('login footer provides a matching password recovery button', async ({ page }) => {
+    await page.goto('http://127.0.0.1:4173/login')
+
+    const registration = page.getByRole('link', { name: /还没有账户？\s*注册/ })
+    const recovery = page.locator('[data-zero-one-login-recovery="true"]')
+    await expect(registration).toBeVisible()
+    await expect(recovery).toHaveText('找回密码')
+    await expect(recovery).toHaveAttribute('href', '/forgot-password')
+    await expect(page.locator('a[href="/forgot-password"]')).toHaveCount(1)
+
+    expect(await recovery.getAttribute('class')).toBe(await registration.getAttribute('class'))
+    expect(
+      await registration.evaluate(
+        (element) => element.nextElementSibling?.matches('[data-zero-one-login-recovery="true"]'),
+      ),
+    ).toBe(true)
+
+    const registrationBox = await registration.boundingBox()
+    const recoveryBox = await recovery.boundingBox()
+    expect(registrationBox).not.toBeNull()
+    expect(recoveryBox).not.toBeNull()
+    expect(recoveryBox!.width).toBe(registrationBox!.width)
+    expect(recoveryBox!.height).toBe(registrationBox!.height)
+    expect(recoveryBox!.y).toBeGreaterThan(registrationBox!.y + registrationBox!.height)
+
+    await recovery.click()
+    await expect(page).toHaveURL('http://127.0.0.1:4173/forgot-password')
+    await expect(page.getByRole('heading', { name: '重置密码' })).toBeVisible()
+  })
+})
+
 test.describe('Console visual contracts', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')

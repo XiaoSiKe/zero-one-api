@@ -343,14 +343,24 @@ async function fulfill(route: Route, data: unknown, status = 200) {
   })
 }
 
-export async function seedConsole(page: Page, mode: 'v1' | 'v2' = 'v2') {
-  await page.addInitScript(({ user }) => {
-    localStorage.setItem('auth_token', 'visual-fixture-token')
-    localStorage.setItem('auth_user', JSON.stringify(user))
+export async function seedConsole(
+  page: Page,
+  mode: 'v1' | 'v2' = 'v2',
+  options: { authenticated?: boolean } = {},
+) {
+  const authenticated = options.authenticated ?? true
+  await page.addInitScript(({ user, authenticated }) => {
+    if (authenticated) {
+      localStorage.setItem('auth_token', 'visual-fixture-token')
+      localStorage.setItem('auth_user', JSON.stringify(user))
+    } else {
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_user')
+    }
     localStorage.setItem('sub2api_locale', 'zh')
     localStorage.setItem('theme', 'light')
     localStorage.setItem('admin_guide_1_admin_v4_interactive', 'true')
-  }, { user: adminUser })
+  }, { user: adminUser, authenticated })
 
   await page.route('**/setup/status', (route) =>
     fulfill(route, { needs_setup: false, step: 'completed' }),
