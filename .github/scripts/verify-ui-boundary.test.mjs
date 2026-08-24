@@ -12,8 +12,8 @@ const manifest = validateManifest(
 )
 
 test('validates the approved UI baseline manifest', () => {
-  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-20-r5')
-  assert.equal(manifest.baseline_commit, '45b7c1435a2ba8605c51a964e191171fefe86046')
+  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-24-r6')
+  assert.equal(manifest.baseline_commit, 'a960f30bcfb055a04af4762b9cf7f9abdb5118af')
   assert.equal(manifest.edge_build.console_source, 'deploy/zero-one/recovered-frontend/console')
   assert.deepEqual(
     manifest.protected_surfaces.map(({ name }) => name),
