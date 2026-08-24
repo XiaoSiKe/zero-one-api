@@ -145,7 +145,6 @@ const approvedLegacyHotfixPaths = [
   'backend/internal/repository/api_key_repo_profit_projection_integration_test.go',
   'backend/internal/repository/auth_cache_invalidation_profit_integration_test.go',
   'backend/internal/repository/migrations_schema_integration_test.go',
-  'backend/internal/repository/group_usage_rollup_trigger_integration_test.go',
   'backend/internal/service/admin_group.go',
   'backend/internal/service/admin_group_duplicate.go',
   'backend/internal/service/admin_group_duplicate_test.go',

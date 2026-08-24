@@ -342,14 +342,6 @@
       ]
     },
     {
-      "name": "approved-v0.1.179-ci-timezone-correctness",
-      "valid_for_release": "v0.1.181",
-      "exit_condition": "Remove this test-only hotfix when the first stable upstream release makes the group usage rollup trigger tests session-timezone relative.",
-      "paths": [
-        "backend/internal/repository/group_usage_rollup_trigger_integration_test.go"
-      ]
-    },
-    {
       "name": "approved-v0.1.179-version-metadata-alignment",
       "valid_for_release": "v0.1.181",
       "exit_condition": "Remove this metadata alignment when the first stable upstream release makes backend/cmd/server/VERSION match the baseline release.",
