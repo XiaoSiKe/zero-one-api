@@ -107,7 +107,7 @@ jobs:
           check-latest: false
           cache-dependency-path: backend/go.sum
       - name: Verify Go version
-        run: go version | grep -q 'go1.26.6'
+        run: go version | grep -q 'go1.27.0'
       - name: Test backend unit suite
         working-directory: backend
         run: make test-unit
