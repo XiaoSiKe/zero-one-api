@@ -59,7 +59,28 @@ docker compose \
 
 升级只允许重建容器，不允许执行 `docker compose down -v`、`docker volume prune`、`docker system prune --volumes`，也不允许删除或覆盖上述目录。生产仓库中已有 `.release-backups/`、`.release-builds/` 和历史 `.env.before-*` 文件；它们是发布恢复材料，不得使用 `git clean` 清理。
 
-## 当前回滚基线
+## 当前生产基线
+
+2026-08-25 已原地部署 v0.1.181，运行源码和不可变镜像为：
+
+```text
+源码    ff9bc448e6467e4e7b66ad3bd51ec98860587d93
+Sub2API ghcr.io/01-yang/zero-one-sub2api@sha256:a7f51cd0403112db8438356bf1d2fef5df10410a28b690d3cdc58ada1417fee7
+Edge    ghcr.io/01-yang/zero-one-edge@sha256:4c7031422feb2dfa87e6402225740885556bbe3398763ac14dcacce17c0d94d6
+```
+
+生产迁移账本共 `274` 条，v0.1.181 的三项新迁移均已登记。部署完成时共有 `114` 个用户、`124` 个 API Key、`1,170` 个兑换码、`110` 条邀请关系和 `71,509` 条 usage log；业务计数会继续增长。
+
+本次已验证的静态备份位于：
+
+```text
+服务器 /srv/zero-one/.release-backups/20260824T181247Z-cold-pre-v181-ff9bc448e
+维护机 /Users/yangzi/Documents/个人项目/零一中转站-production-backups/20260824T181247Z-cold-pre-v181-ff9bc448e
+```
+
+该备份已通过 SHA-256、`pg_restore --list`、状态包展开和一次性 PostgreSQL 18 隔离恢复；恢复后 `98` 张业务表、`271` 条升级前迁移及六张核心表计数与冻结清单逐项一致。目录中的 `DEPLOYMENT_RESULT` 记录实际部署提交、镜像摘要和部署后计数，不包含密码或私钥。
+
+## v0.1.179 回滚基线
 
 升级 v0.1.181 前的生产源码为 `b82c5cab50ded5db5e40bff6127a23e3b08210a7`，镜像为：
 
@@ -68,7 +89,7 @@ Sub2API ghcr.io/01-yang/zero-one-sub2api@sha256:7205c4879cc1e57c5939f3763f14d5e1
 Edge    ghcr.io/01-yang/zero-one-edge@sha256:e13d994b8196db1c599cc33e5e33508571734cce425e70aa392e99f2b141fd99
 ```
 
-2026-08-25 升级前只读盘点：数据库约 `605 MB`，共有 `114` 个用户、`124` 个 API Key、`71,077` 条 usage log。数量会随业务变化，只用于升级前后异常检测，不能当作长期固定值。
+2026-08-25 静态备份盘点：数据库约 `610 MB`，共有 `114` 个用户、`124` 个 API Key、`1,170` 个兑换码、`110` 条邀请关系和 `71,471` 条 usage log。数量会随业务变化，只用于升级前后异常检测，不能当作长期固定值。
 
 ## 每次发布前
 
