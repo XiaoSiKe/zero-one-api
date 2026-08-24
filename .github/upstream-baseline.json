@@ -1,13 +1,13 @@
 {
   "schema_version": 4,
   "repository": "Wei-Shaw/sub2api",
-  "release": "v0.1.179",
-  "commit": "75f88be5f75c27771836b586f7de1503afa0e3bc",
+  "release": "v0.1.181",
+  "commit": "3af5443b224823ae507a50c7b113aa50604409c8",
   "upstream_sync": {
-    "previous_release": "v0.1.178",
-    "previous_commit": "e0c48a19ed794a565e3858662520afe0a1f9f0ba",
-    "product_commit": "b0955fda95108f3455c2b974287f31b7b2ed3bae",
-    "merge_commit": "a764e92ef96d6c5aa735840f2b95961425eda0b7"
+    "previous_release": "v0.1.179",
+    "previous_commit": "75f88be5f75c27771836b586f7de1503afa0e3bc",
+    "product_commit": "3f6d59d6fbe977b913c086a74d7144575288fe6b",
+    "merge_commit": "f7e72a6dc6fa96a2b3207e52df815876edfb77f9"
   },
   "approved_backports": [],
   "preserve_on_upstream_sync": [
@@ -312,7 +312,7 @@
   "legacy_hotfixes": [
     {
       "name": "approved-v0.1.179-production-correctness-and-billing-compatibility",
-      "valid_for_release": "v0.1.179",
+      "valid_for_release": "v0.1.181",
       "exit_condition": "Remove each path when the first stable upstream release containing its equivalent production-correctness fix becomes the baseline; remove the entire block when no listed path remains.",
       "paths": [
         "backend/internal/handler/admin/admin_basic_handlers_test.go",
@@ -333,8 +333,6 @@
         "backend/internal/service/batch_image_public_test.go",
         "backend/internal/service/billing_service.go",
         "backend/internal/service/billing_service_unified_test.go",
-        "backend/internal/service/channel_plaza.go",
-        "backend/internal/service/channel_plaza_test.go",
         "backend/internal/service/model_pricing_resolver.go",
         "backend/internal/service/openai_gateway_record_usage_test.go",
         "backend/internal/service/channel_pricing_multipliers_test.go",
@@ -344,7 +342,7 @@
     },
     {
       "name": "approved-v0.1.179-ci-timezone-correctness",
-      "valid_for_release": "v0.1.179",
+      "valid_for_release": "v0.1.181",
       "exit_condition": "Remove this test-only hotfix when the first stable upstream release makes the group usage rollup trigger tests session-timezone relative.",
       "paths": [
         "backend/internal/repository/group_usage_rollup_trigger_integration_test.go"
@@ -352,7 +350,7 @@
     },
     {
       "name": "approved-v0.1.179-version-metadata-alignment",
-      "valid_for_release": "v0.1.179",
+      "valid_for_release": "v0.1.181",
       "exit_condition": "Remove this metadata alignment when the first stable upstream release makes backend/cmd/server/VERSION match the baseline release.",
       "paths": [
         "backend/cmd/server/VERSION"
@@ -360,7 +358,7 @@
     },
     {
       "name": "approved-v0.1.179-race-safety",
-      "valid_for_release": "v0.1.179",
+      "valid_for_release": "v0.1.181",
       "exit_condition": "Remove each path when the first stable upstream release contains the equivalent race-safe runtime cache and asynchronous test fixture handling.",
       "paths": [
         "backend/internal/service/content_moderation.go",
@@ -371,10 +369,9 @@
     },
     {
       "name": "approved-v0.1.179-go-format-normalization",
-      "valid_for_release": "v0.1.179",
+      "valid_for_release": "v0.1.181",
       "exit_condition": "Remove each path when the first stable upstream release contains the same Go 1.26 formatting normalization.",
       "paths": [
-        "backend/cmd/server/wire.go",
         "backend/internal/handler/auth_current_user_test.go",
         "backend/internal/service/billing_cache_service_user_platform_quota_test.go",
         "backend/internal/service/grok_oauth_service_test.go",
@@ -383,7 +380,7 @@
     },
     {
       "name": "approved-v0.1.179-remove-unconditional-sticky-debug-logs",
-      "valid_for_release": "v0.1.179",
+      "valid_for_release": "v0.1.181",
       "exit_condition": "Remove this hotfix when the first stable upstream release removes or explicitly gates the equivalent per-request sticky-session debug logs.",
       "paths": [
         "backend/internal/handler/gateway_handler.go",
@@ -400,6 +397,7 @@
         "frontend/src/App.vue",
         "frontend/src/__tests__/consoleShellOwnership.spec.ts",
         "frontend/src/components/",
+        "frontend/src/composables/__tests__/useModelWhitelist.spec.ts",
         "frontend/src/composables/useChannelMonitorFormat.ts",
         "frontend/src/composables/useModelWhitelist.ts",
         "frontend/src/constants/__tests__/platforms.spec.ts",
@@ -408,11 +406,18 @@
         "frontend/src/features/prompt-audit/",
         "frontend/src/features/redeem/",
         "frontend/src/i18n/__tests__/openaiFastPolicyLocales.spec.ts",
+        "frontend/src/i18n/__tests__/opsLocaleKeys.spec.ts",
         "frontend/src/i18n/locales/en/admin/accounts.ts",
         "frontend/src/i18n/locales/en/admin/channels.ts",
+        "frontend/src/i18n/locales/en/admin/index.ts",
+        "frontend/src/i18n/locales/en/admin/ops.ts",
         "frontend/src/i18n/locales/en/admin/overview.ts",
+        "frontend/src/i18n/locales/en/admin/plugins.ts",
         "frontend/src/i18n/locales/zh/admin/channels.ts",
+        "frontend/src/i18n/locales/zh/admin/index.ts",
+        "frontend/src/i18n/locales/zh/admin/ops.ts",
         "frontend/src/i18n/locales/zh/admin/overview.ts",
+        "frontend/src/i18n/locales/zh/admin/plugins.ts",
         "frontend/src/i18n/locales/en/dashboard.ts",
         "frontend/src/i18n/locales/en/landing.ts",
         "frontend/src/i18n/locales/en/misc.ts",
@@ -437,6 +442,7 @@
         "frontend/src/views/HomeView.vue",
         "frontend/src/views/KeyUsageView.vue",
         "frontend/src/views/NotFoundView.vue",
+        "frontend/src/views/__tests__/HomeView.compact.spec.ts",
         "frontend/src/views/admin/AccountsView.vue",
         "frontend/src/views/admin/AuditLogView.vue",
         "frontend/src/views/admin/BackupView.vue",
@@ -444,6 +450,7 @@
         "frontend/src/views/admin/ChannelsView.vue",
         "frontend/src/views/admin/DashboardView.vue",
         "frontend/src/views/admin/GroupsView.vue",
+        "frontend/src/views/admin/PluginsView.vue",
         "frontend/src/views/admin/PromoCodesView.vue",
         "frontend/src/views/admin/ProxiesView.vue",
         "frontend/src/views/admin/RedeemView.vue",
@@ -451,13 +458,18 @@
         "frontend/src/views/admin/SubscriptionsView.vue",
         "frontend/src/views/admin/UsageView.vue",
         "frontend/src/views/admin/UsersView.vue",
+        "frontend/src/views/admin/__tests__/AccountsView.priorityColumn.spec.ts",
         "frontend/src/views/admin/__tests__/ChannelMonitorView.checkModeBadge.spec.ts",
         "frontend/src/views/admin/__tests__/GroupsView.compositePlatforms.spec.ts",
         "frontend/src/views/admin/__tests__/MonitorFormDialog.accountSelector.spec.ts",
+        "frontend/src/views/admin/__tests__/PluginsView.spec.ts",
+        "frontend/src/views/admin/__tests__/ProxiesView.ipv6.spec.ts",
         "frontend/src/views/admin/__tests__/channelPlatformOptions.spec.ts",
+        "frontend/src/views/admin/__tests__/groupsMessagesDispatch.spec.ts",
         "frontend/src/views/admin/__tests__/platformFilterCatalogUsage.spec.ts",
         "frontend/src/views/admin/__tests__/RedeemView.batchUpdate.spec.ts",
         "frontend/src/views/admin/affiliates/",
+        "frontend/src/views/admin/groupsMessagesDispatch.ts",
         "frontend/src/views/admin/ops/",
         "frontend/src/views/admin/orders/",
         "frontend/src/views/admin/settings/",

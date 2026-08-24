@@ -137,7 +137,6 @@ function baselineWithApprovedBackport() {
 
 const approvedLegacyHotfixPaths = [
   'backend/cmd/server/VERSION',
-  'backend/cmd/server/wire.go',
   'backend/internal/handler/auth_current_user_test.go',
   'backend/internal/handler/gateway_handler.go',
   'backend/internal/handler/admin/admin_basic_handlers_test.go',
@@ -160,8 +159,6 @@ const approvedLegacyHotfixPaths = [
   'backend/internal/service/billing_service.go',
   'backend/internal/service/billing_service_unified_test.go',
   'backend/internal/service/billing_cache_service_user_platform_quota_test.go',
-  'backend/internal/service/channel_plaza.go',
-  'backend/internal/service/channel_plaza_test.go',
   'backend/internal/service/model_pricing_resolver.go',
   'backend/internal/service/openai_gateway_record_usage_test.go',
   'backend/internal/service/channel_pricing_multipliers_test.go',
