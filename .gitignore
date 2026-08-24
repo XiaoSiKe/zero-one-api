@@ -141,6 +141,7 @@ docs/*
 !docs/ASYNC_IMAGE_TASKS.md
 !docs/TECHNICAL-PLAN.md
 !docs/OPERATIONS.md
+!docs/PRODUCTION_SERVER_CN.md
 !docs/adr/
 !docs/adr/*.md
 !docs/legal/
