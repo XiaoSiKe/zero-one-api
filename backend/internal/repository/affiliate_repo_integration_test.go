@@ -5,11 +5,13 @@ package repository
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 )
 
@@ -141,7 +143,7 @@ func TestAffiliateRepository_AccrueQuota_ReusesOuterTransaction(t *testing.T) {
 	_, err = repo.EnsureUserAffiliate(txCtx, invitee.ID)
 	require.NoError(t, err)
 
-	bound, err := repo.BindInviter(txCtx, invitee.ID, inviter.ID)
+	bound, err := repo.BindInviter(txCtx, invitee.ID, inviter.ID, nil)
 	require.NoError(t, err)
 	require.True(t, bound, "invitee must bind to inviter")
 
@@ -168,6 +170,316 @@ func TestAffiliateRepository_AccrueQuota_ReusesOuterTransaction(t *testing.T) {
 	require.NoError(t, rows.Scan(&postRollbackCount))
 	require.Equal(t, 0, postRollbackCount,
 		"AccrueQuota must propagate the outer tx — found persisted rows after rollback")
+}
+
+func TestAffiliateRepository_BindInviterStoresMetadataAndRejectsCycles(t *testing.T) {
+	ctx := context.Background()
+	tx := testEntTx(t)
+	txCtx := dbent.NewTxContext(ctx, tx)
+	client := tx.Client()
+	repo := NewAffiliateRepository(client, integrationDB)
+
+	admin := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-bind-admin-%d@example.com", time.Now().UnixNano()), PasswordHash: "hash",
+		Role: service.RoleAdmin, Status: service.StatusActive, Concurrency: 5,
+	})
+	a := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-bind-a-%d@example.com", time.Now().UnixNano()), PasswordHash: "hash",
+		Role: service.RoleUser, Status: service.StatusActive, Concurrency: 5,
+	})
+	b := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-bind-b-%d@example.com", time.Now().UnixNano()), PasswordHash: "hash",
+		Role: service.RoleUser, Status: service.StatusActive, Concurrency: 5,
+	})
+	c := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-bind-c-%d@example.com", time.Now().UnixNano()), PasswordHash: "hash",
+		Role: service.RoleUser, Status: service.StatusActive, Concurrency: 5,
+	})
+	for _, userID := range []int64{a.ID, b.ID, c.ID} {
+		_, err := repo.EnsureUserAffiliate(txCtx, userID)
+		require.NoError(t, err)
+	}
+
+	bound, err := repo.BindInviter(txCtx, a.ID, a.ID, &admin.ID)
+	require.ErrorIs(t, err, service.ErrAffiliateSelfBind)
+	require.False(t, bound)
+
+	bound, err = repo.BindInviter(txCtx, b.ID, a.ID, nil)
+	require.NoError(t, err)
+	require.True(t, bound)
+	bound, err = repo.BindInviter(txCtx, c.ID, b.ID, &admin.ID)
+	require.NoError(t, err)
+	require.True(t, bound)
+
+	rows, err := client.QueryContext(txCtx, `
+SELECT inviter_id, inviter_bound_at, inviter_bound_by_admin_id
+FROM user_affiliates
+WHERE user_id = $1`, c.ID)
+	require.NoError(t, err)
+	require.True(t, rows.Next())
+	var inviterID int64
+	var boundAt time.Time
+	var actorID int64
+	require.NoError(t, rows.Scan(&inviterID, &boundAt, &actorID))
+	require.NoError(t, rows.Close())
+	require.Equal(t, b.ID, inviterID)
+	require.Equal(t, admin.ID, actorID)
+	require.False(t, boundAt.IsZero())
+
+	// a -> c would close a -> c -> b -> a and must be rejected.
+	bound, err = repo.BindInviter(txCtx, a.ID, c.ID, &admin.ID)
+	require.ErrorIs(t, err, service.ErrAffiliateCycle)
+	require.False(t, bound)
+
+	// Existing c -> b is immutable even when the new inviter would be valid.
+	bound, err = repo.BindInviter(txCtx, c.ID, a.ID, &admin.ID)
+	require.NoError(t, err)
+	require.False(t, bound)
+	summary, err := repo.EnsureUserAffiliate(txCtx, c.ID)
+	require.NoError(t, err)
+	require.NotNil(t, summary.InviterID)
+	require.Equal(t, b.ID, *summary.InviterID)
+	require.NotNil(t, summary.InviterBoundAt)
+
+	// inviter_id uses ON DELETE SET NULL. A retained bound_at is an immutable
+	// tombstone and must still block replacement after the old inviter vanishes.
+	originalBoundAt := *summary.InviterBoundAt
+	_, err = client.ExecContext(txCtx,
+		"UPDATE user_affiliates SET inviter_id = NULL WHERE user_id = $1", c.ID)
+	require.NoError(t, err)
+	bound, err = repo.BindInviter(txCtx, c.ID, a.ID, &admin.ID)
+	require.NoError(t, err)
+	require.False(t, bound)
+	summary, err = repo.EnsureUserAffiliate(txCtx, c.ID)
+	require.NoError(t, err)
+	require.Nil(t, summary.InviterID)
+	require.NotNil(t, summary.InviterBoundAt)
+	require.True(t, summary.InviterBoundAt.Equal(originalBoundAt))
+}
+
+func TestAffiliateRepository_BindInviterConcurrentCAS(t *testing.T) {
+	ctx := context.Background()
+	repo := NewAffiliateRepository(integrationEntClient, integrationDB)
+	suffix := time.Now().UnixNano()
+
+	admin := mustCreateUser(t, integrationEntClient, &service.User{
+		Email: fmt.Sprintf("affiliate-cas-admin-%d@example.com", suffix), PasswordHash: "hash",
+		Role: service.RoleAdmin, Status: service.StatusActive, Concurrency: 5,
+	})
+	inviterA := mustCreateUser(t, integrationEntClient, &service.User{
+		Email: fmt.Sprintf("affiliate-cas-a-%d@example.com", suffix), PasswordHash: "hash",
+		Role: service.RoleUser, Status: service.StatusActive, Concurrency: 5,
+	})
+	inviterB := mustCreateUser(t, integrationEntClient, &service.User{
+		Email: fmt.Sprintf("affiliate-cas-b-%d@example.com", suffix), PasswordHash: "hash",
+		Role: service.RoleUser, Status: service.StatusActive, Concurrency: 5,
+	})
+	invitee := mustCreateUser(t, integrationEntClient, &service.User{
+		Email: fmt.Sprintf("affiliate-cas-invitee-%d@example.com", suffix), PasswordHash: "hash",
+		Role: service.RoleUser, Status: service.StatusActive, Concurrency: 5,
+	})
+	userIDs := []int64{admin.ID, inviterA.ID, inviterB.ID, invitee.ID}
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(),
+			"DELETE FROM user_affiliates WHERE user_id IN ($1, $2, $3, $4)", userIDs[0], userIDs[1], userIDs[2], userIDs[3])
+		_, _ = integrationDB.ExecContext(context.Background(),
+			"DELETE FROM users WHERE id IN ($1, $2, $3, $4)", userIDs[0], userIDs[1], userIDs[2], userIDs[3])
+	})
+	for _, userID := range []int64{inviterA.ID, inviterB.ID, invitee.ID} {
+		_, err := repo.EnsureUserAffiliate(ctx, userID)
+		require.NoError(t, err)
+	}
+
+	start := make(chan struct{})
+	type result struct {
+		bound bool
+		err   error
+	}
+	results := make(chan result, 2)
+	var wg sync.WaitGroup
+	for _, inviterID := range []int64{inviterA.ID, inviterB.ID} {
+		wg.Add(1)
+		go func(candidateID int64) {
+			defer wg.Done()
+			<-start
+			bound, err := repo.BindInviter(ctx, invitee.ID, candidateID, &admin.ID)
+			results <- result{bound: bound, err: err}
+		}(inviterID)
+	}
+	close(start)
+	wg.Wait()
+	close(results)
+
+	successes := 0
+	for item := range results {
+		require.NoError(t, item.err)
+		if item.bound {
+			successes++
+		}
+	}
+	require.Equal(t, 1, successes, "exactly one concurrent binding may win")
+
+	summary, err := repo.EnsureUserAffiliate(ctx, invitee.ID)
+	require.NoError(t, err)
+	require.NotNil(t, summary.InviterID)
+	require.Contains(t, []int64{inviterA.ID, inviterB.ID}, *summary.InviterID)
+	totalCount := querySingleInt(t, ctx, integrationEntClient,
+		"SELECT SUM(aff_count) FROM user_affiliates WHERE user_id IN ($1, $2)", inviterA.ID, inviterB.ID)
+	require.Equal(t, 1, totalCount)
+}
+
+func TestAffiliateRepository_BindInviterSerializesDisjointCycleClosure(t *testing.T) {
+	ctx := context.Background()
+	repo := NewAffiliateRepository(integrationEntClient, integrationDB)
+	suffix := time.Now().UnixNano()
+	makeUser := func(label string, role string) *service.User {
+		return mustCreateUser(t, integrationEntClient, &service.User{
+			Email: fmt.Sprintf("affiliate-cycle-%s-%d@example.com", label, suffix), PasswordHash: "hash",
+			Role: role, Status: service.StatusActive, Concurrency: 5,
+		})
+	}
+	admin := makeUser("admin", service.RoleAdmin)
+	a := makeUser("a", service.RoleUser)
+	b := makeUser("b", service.RoleUser)
+	c := makeUser("c", service.RoleUser)
+	d := makeUser("d", service.RoleUser)
+	userIDs := []int64{admin.ID, a.ID, b.ID, c.ID, d.ID}
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(),
+			"DELETE FROM user_affiliates WHERE user_id = ANY($1)", pq.Array(userIDs))
+		_, _ = integrationDB.ExecContext(context.Background(),
+			"DELETE FROM users WHERE id = ANY($1)", pq.Array(userIDs))
+	})
+	for _, userID := range []int64{a.ID, b.ID, c.ID, d.ID} {
+		_, err := repo.EnsureUserAffiliate(ctx, userID)
+		require.NoError(t, err)
+	}
+
+	// Baseline paths are B -> C and D -> A. Concurrently accepting both
+	// A -> B and C -> D would close A -> B -> C -> D -> A.
+	bound, err := repo.BindInviter(ctx, b.ID, c.ID, &admin.ID)
+	require.NoError(t, err)
+	require.True(t, bound)
+	bound, err = repo.BindInviter(ctx, d.ID, a.ID, &admin.ID)
+	require.NoError(t, err)
+	require.True(t, bound)
+
+	type bindResult struct {
+		bound bool
+		err   error
+	}
+	start := make(chan struct{})
+	results := make(chan bindResult, 2)
+	edges := [][2]int64{{a.ID, b.ID}, {c.ID, d.ID}}
+	var wg sync.WaitGroup
+	for _, edge := range edges {
+		wg.Add(1)
+		go func(inviteeID, inviterID int64) {
+			defer wg.Done()
+			<-start
+			bound, err := repo.BindInviter(ctx, inviteeID, inviterID, &admin.ID)
+			results <- bindResult{bound: bound, err: err}
+		}(edge[0], edge[1])
+	}
+	close(start)
+	wg.Wait()
+	close(results)
+
+	successes := 0
+	cycleRejects := 0
+	for result := range results {
+		if result.bound {
+			require.NoError(t, result.err)
+			successes++
+			continue
+		}
+		require.ErrorIs(t, result.err, service.ErrAffiliateCycle)
+		cycleRejects++
+	}
+	require.Equal(t, 1, successes)
+	require.Equal(t, 1, cycleRejects)
+
+	for _, startID := range []int64{a.ID, b.ID, c.ID, d.ID} {
+		seen := make(map[int64]bool, 4)
+		currentID := startID
+		for currentID > 0 {
+			require.False(t, seen[currentID], "affiliate graph contains a cycle from user %d", startID)
+			seen[currentID] = true
+			summary, err := repo.EnsureUserAffiliate(ctx, currentID)
+			require.NoError(t, err)
+			if summary.InviterID == nil {
+				break
+			}
+			currentID = *summary.InviterID
+		}
+	}
+}
+
+func TestAffiliateRepository_BindInviterMapsUnknownUsers(t *testing.T) {
+	ctx := context.Background()
+	repo := NewAffiliateRepository(integrationEntClient, integrationDB)
+	valid := mustCreateUser(t, integrationEntClient, &service.User{
+		Email: fmt.Sprintf("affiliate-unknown-user-%d@example.com", time.Now().UnixNano()), PasswordHash: "hash",
+		Role: service.RoleUser, Status: service.StatusActive, Concurrency: 5,
+	})
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(),
+			"DELETE FROM user_affiliates WHERE user_id = $1", valid.ID)
+		_, _ = integrationDB.ExecContext(context.Background(),
+			"DELETE FROM users WHERE id = $1", valid.ID)
+	})
+
+	const missingInviteeID int64 = 9_000_000_000_000_000_001
+	const missingInviterID int64 = 9_000_000_000_000_000_002
+	bound, err := repo.BindInviter(ctx, missingInviteeID, valid.ID, nil)
+	require.False(t, bound)
+	require.ErrorIs(t, err, service.ErrUserNotFound)
+
+	bound, err = repo.BindInviter(ctx, valid.ID, missingInviterID, nil)
+	require.False(t, bound)
+	require.ErrorIs(t, err, service.ErrUserNotFound)
+}
+
+func TestAffiliateRepository_BindInviterRejectsSoftDeletedUsersWithoutSideEffects(t *testing.T) {
+	ctx := context.Background()
+	tx := testEntTx(t)
+	txCtx := dbent.NewTxContext(ctx, tx)
+	client := tx.Client()
+	repo := NewAffiliateRepository(client, integrationDB)
+
+	makeUser := func(label string) *service.User {
+		return mustCreateUser(t, client, &service.User{
+			Email:        fmt.Sprintf("affiliate-soft-delete-%s-%d@example.com", label, time.Now().UnixNano()),
+			PasswordHash: "hash",
+			Role:         service.RoleUser,
+			Status:       service.StatusActive,
+			Concurrency:  5,
+		})
+	}
+	deletedInvitee := makeUser("invitee")
+	activeInviter := makeUser("active-inviter")
+	activeInvitee := makeUser("active-invitee")
+	deletedInviter := makeUser("inviter")
+
+	_, err := client.ExecContext(txCtx,
+		"UPDATE users SET deleted_at = NOW() WHERE id IN ($1, $2)",
+		deletedInvitee.ID, deletedInviter.ID)
+	require.NoError(t, err)
+
+	bound, err := repo.BindInviter(txCtx, deletedInvitee.ID, activeInviter.ID, nil)
+	require.False(t, bound)
+	require.ErrorIs(t, err, service.ErrUserNotFound)
+
+	bound, err = repo.BindInviter(txCtx, activeInvitee.ID, deletedInviter.ID, nil)
+	require.False(t, bound)
+	require.ErrorIs(t, err, service.ErrUserNotFound)
+
+	require.Equal(t, 0, querySingleInt(t, txCtx, client, `
+SELECT COUNT(*)
+FROM user_affiliates
+WHERE user_id IN ($1, $2, $3, $4)`,
+		deletedInvitee.ID, activeInviter.ID, activeInvitee.ID, deletedInviter.ID),
+		"rejected bindings must not create profiles or relationships for either endpoint")
 }
 
 func TestAffiliateRepository_TransferQuotaToBalance_EmptyQuota(t *testing.T) {
@@ -201,6 +513,74 @@ VALUES ($1, $2, 0, 0, NOW(), NOW())`, u.ID, affCode)
 	persistedBalance := querySingleFloat(t, txCtx, client,
 		"SELECT balance::double precision FROM users WHERE id = $1", u.ID)
 	require.InDelta(t, 3.21, persistedBalance, 1e-9)
+}
+
+func TestAffiliateRepository_GetAffiliateUserOverviewReadsProfilelessUserWithoutCreatingProfile(t *testing.T) {
+	ctx := context.Background()
+	tx := testEntTx(t)
+	txCtx := dbent.NewTxContext(ctx, tx)
+	client := tx.Client()
+	repo := NewAffiliateRepository(client, integrationDB)
+
+	profileless := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("affiliate-overview-profileless-%d@example.com", time.Now().UnixNano()),
+		Username:     "Profileless Customer",
+		PasswordHash: "hash",
+		Role:         service.RoleUser,
+		Status:       service.StatusActive,
+		Concurrency:  5,
+	})
+	require.Equal(t, 0, querySingleInt(t, txCtx, client,
+		"SELECT COUNT(*) FROM user_affiliates WHERE user_id = $1", profileless.ID))
+
+	settingRepo := NewSettingRepository(client)
+	require.NoError(t, settingRepo.Set(txCtx, service.SettingKeyAffiliateRebateRate, "37.5"))
+	affiliateService := service.NewAffiliateService(
+		repo,
+		service.NewSettingService(settingRepo, nil),
+		nil,
+		nil,
+	)
+	overview, err := affiliateService.AdminGetUserOverview(txCtx, profileless.ID)
+	require.NoError(t, err)
+	require.Equal(t, profileless.ID, overview.UserID)
+	require.Equal(t, profileless.Email, overview.Email)
+	require.Equal(t, profileless.Username, overview.Username)
+	require.Empty(t, overview.AffCode)
+	require.False(t, overview.RebateRateCustom)
+	require.InDelta(t, 37.5, overview.RebateRatePercent, 1e-9, "service must fall back to the global rebate rate")
+	require.Zero(t, overview.InvitedCount)
+	require.Zero(t, overview.RebatedInviteeCount)
+	require.Zero(t, overview.AvailableQuota)
+	require.Zero(t, overview.HistoryQuota)
+	require.Equal(t, 0, querySingleInt(t, txCtx, client,
+		"SELECT COUNT(*) FROM user_affiliates WHERE user_id = $1", profileless.ID),
+		"overview reads must not create an affiliate profile")
+
+	const missingUserID int64 = 9_000_000_000_000_000_003
+	overview, err = affiliateService.AdminGetUserOverview(txCtx, missingUserID)
+	require.Nil(t, overview)
+	require.ErrorIs(t, err, service.ErrUserNotFound)
+
+	deleted := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("affiliate-overview-deleted-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+		Role:         service.RoleUser,
+		Status:       service.StatusActive,
+		Concurrency:  5,
+	})
+	_, err = repo.EnsureUserAffiliate(txCtx, deleted.ID)
+	require.NoError(t, err)
+	_, err = client.ExecContext(txCtx,
+		"UPDATE users SET deleted_at = NOW() WHERE id = $1", deleted.ID)
+	require.NoError(t, err)
+
+	overview, err = repo.GetAffiliateUserOverview(txCtx, deleted.ID)
+	require.Nil(t, overview)
+	require.ErrorIs(t, err, service.ErrUserNotFound)
+	require.Equal(t, 1, querySingleInt(t, txCtx, client,
+		"SELECT COUNT(*) FROM user_affiliates WHERE user_id = $1", deleted.ID),
+		"overview reads must not mutate an existing affiliate profile")
 }
 
 // TestAffiliateRepository_AdminCustomCode covers the success path of admin
@@ -294,6 +674,50 @@ func TestAffiliateRepository_AdminCustomCode_Conflict(t *testing.T) {
 	// Now requester tries to grab the same code → conflict.
 	err := repo.UpdateUserAffCode(txCtx, requester.ID, takenCode)
 	require.ErrorIs(t, err, service.ErrAffiliateCodeTaken)
+}
+
+func TestAffiliateRepository_AdminUserSettingsRollsBackOnCodeConflict(t *testing.T) {
+	ctx := context.Background()
+	repo := NewAffiliateRepository(integrationEntClient, integrationDB)
+	suffix := time.Now().UnixNano()
+
+	taker := mustCreateUser(t, integrationEntClient, &service.User{
+		Email: fmt.Sprintf("affiliate-atomic-taker-%d@example.com", suffix), PasswordHash: "hash",
+		Role: service.RoleUser, Status: service.StatusActive, Concurrency: 5,
+	})
+	requester := mustCreateUser(t, integrationEntClient, &service.User{
+		Email: fmt.Sprintf("affiliate-atomic-requester-%d@example.com", suffix), PasswordHash: "hash",
+		Role: service.RoleUser, Status: service.StatusActive, Concurrency: 5,
+	})
+	userIDs := []int64{taker.ID, requester.ID}
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(),
+			"DELETE FROM user_affiliates WHERE user_id = ANY($1)", pq.Array(userIDs))
+		_, _ = integrationDB.ExecContext(context.Background(),
+			"DELETE FROM users WHERE id = ANY($1)", pq.Array(userIDs))
+	})
+
+	takenCode := fmt.Sprintf("TAK%09d", suffix%1_000_000_000)
+	originalCode := fmt.Sprintf("OWN%09d", suffix%1_000_000_000)
+	require.NoError(t, repo.UpdateUserAffCode(ctx, taker.ID, takenCode))
+	require.NoError(t, repo.UpdateUserAffCode(ctx, requester.ID, originalCode))
+	originalRate := 12.5
+	require.NoError(t, repo.SetUserRebateRate(ctx, requester.ID, &originalRate))
+
+	newRate := 48.0
+	err := repo.UpdateUserSettings(ctx, requester.ID, service.AffiliateUserSettingsUpdate{
+		AffCode:              &takenCode,
+		UpdateRebateRate:     true,
+		AffRebateRatePercent: &newRate,
+	})
+	require.ErrorIs(t, err, service.ErrAffiliateCodeTaken)
+
+	got, err := repo.EnsureUserAffiliate(ctx, requester.ID)
+	require.NoError(t, err)
+	require.Equal(t, originalCode, got.AffCode)
+	require.NotNil(t, got.AffRebateRatePercent)
+	require.InDelta(t, originalRate, *got.AffRebateRatePercent, 1e-9,
+		"rate update must roll back when the later code update conflicts")
 }
 
 // TestAffiliateRepository_AdminRebateRate covers per-user exclusive rate
@@ -416,4 +840,137 @@ func TestAffiliateRepository_ListUsersWithCustomSettings(t *testing.T) {
 	require.InDelta(t, 33.3, *rateEntry.AffRebateRatePercent, 1e-9)
 
 	require.GreaterOrEqual(t, total, int64(2), "total must include at least our 2 custom rows")
+}
+
+func TestAffiliateRepository_ListInviteRecordsFiltersExactInviterAndUsesBoundAt(t *testing.T) {
+	ctx := context.Background()
+	tx := testEntTx(t)
+	txCtx := dbent.NewTxContext(ctx, tx)
+	client := tx.Client()
+	repo := NewAffiliateRepository(client, integrationDB)
+
+	makeUser := func(label string) *service.User {
+		return mustCreateUser(t, client, &service.User{
+			Email:        fmt.Sprintf("affiliate-list-%s-%d@example.com", label, time.Now().UnixNano()),
+			PasswordHash: "hash",
+			Role:         service.RoleUser,
+			Status:       service.StatusActive,
+			Concurrency:  5,
+		})
+	}
+	inviterA := makeUser("inviter-a")
+	inviterB := makeUser("inviter-b")
+	zeroInviteInviter := makeUser("inviter-zero")
+	inviteeA1 := makeUser("invitee-a1")
+	inviteeA2 := makeUser("invitee-a2")
+	inviteeA3 := makeUser("invitee-a3")
+	inviteeB := makeUser("invitee-b")
+	for _, userID := range []int64{
+		inviterA.ID,
+		inviterB.ID,
+		inviteeA1.ID,
+		inviteeA2.ID,
+		inviteeA3.ID,
+		inviteeB.ID,
+	} {
+		_, err := repo.EnsureUserAffiliate(txCtx, userID)
+		require.NoError(t, err)
+	}
+
+	baseBoundAt := time.Date(2026, time.August, 24, 8, 30, 0, 0, time.UTC)
+	bindings := []struct {
+		invitee *service.User
+		inviter *service.User
+		boundAt time.Time
+	}{
+		{invitee: inviteeA1, inviter: inviterA, boundAt: baseBoundAt},
+		{invitee: inviteeA2, inviter: inviterA, boundAt: baseBoundAt.Add(time.Hour)},
+		{invitee: inviteeA3, inviter: inviterA, boundAt: baseBoundAt.Add(2 * time.Hour)},
+		{invitee: inviteeB, inviter: inviterB, boundAt: baseBoundAt.Add(3 * time.Hour)},
+	}
+	for _, binding := range bindings {
+		bound, err := repo.BindInviter(txCtx, binding.invitee.ID, binding.inviter.ID, nil)
+		require.NoError(t, err)
+		require.True(t, bound)
+		_, err = client.ExecContext(txCtx,
+			"UPDATE user_affiliates SET inviter_bound_at = $1 WHERE user_id = $2",
+			binding.boundAt, binding.invitee.ID)
+		require.NoError(t, err)
+	}
+
+	for _, accrual := range []struct {
+		inviteeID int64
+		amount    float64
+	}{
+		{inviteeID: inviteeA1.ID, amount: 1.25},
+		{inviteeID: inviteeA1.ID, amount: 2.50},
+		{inviteeID: inviteeA2.ID, amount: 5.00},
+	} {
+		applied, err := repo.AccrueQuota(txCtx, inviterA.ID, accrual.inviteeID, accrual.amount, 0, nil)
+		require.NoError(t, err)
+		require.True(t, applied)
+	}
+	transferred, _, err := repo.TransferQuotaToBalance(txCtx, inviterA.ID)
+	require.NoError(t, err)
+	require.InDelta(t, 8.75, transferred, 1e-9)
+	require.Equal(t, 1, querySingleInt(t, txCtx, client,
+		"SELECT COUNT(*) FROM user_affiliate_ledger WHERE user_id = $1 AND action = 'transfer'", inviterA.ID))
+
+	emptyItems, total, err := repo.ListAffiliateInviteRecords(txCtx, service.AffiliateRecordFilter{
+		Page: 1, PageSize: 20, InviterID: zeroInviteInviter.ID,
+	})
+	require.NoError(t, err)
+	require.Empty(t, emptyItems)
+	require.Zero(t, total, "a valid user with zero invitations must return an empty relationship page")
+
+	pageOne, total, err := repo.ListAffiliateInviteRecords(txCtx, service.AffiliateRecordFilter{
+		Page: 1, PageSize: 2, InviterID: inviterA.ID, SortBy: "created_at", SortDesc: true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(3), total, "total must count only the exact inviter before pagination")
+	require.Len(t, pageOne, 2)
+	require.Equal(t, []int64{inviteeA3.ID, inviteeA2.ID}, []int64{pageOne[0].InviteeID, pageOne[1].InviteeID})
+	require.True(t, pageOne[0].CreatedAt.Equal(bindings[2].boundAt))
+
+	pageTwo, total, err := repo.ListAffiliateInviteRecords(txCtx, service.AffiliateRecordFilter{
+		Page: 2, PageSize: 2, InviterID: inviterA.ID, SortBy: "created_at", SortDesc: true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(3), total)
+	require.Len(t, pageTwo, 1)
+	require.Equal(t, inviteeA1.ID, pageTwo[0].InviteeID)
+
+	searched, total, err := repo.ListAffiliateInviteRecords(txCtx, service.AffiliateRecordFilter{
+		Search: "invitee-a2", Page: 1, PageSize: 20, InviterID: inviterA.ID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), total)
+	require.Len(t, searched, 1)
+	require.Equal(t, inviteeA2.ID, searched[0].InviteeID)
+
+	startAt := bindings[1].boundAt
+	endAt := bindings[2].boundAt
+	bounded, total, err := repo.ListAffiliateInviteRecords(txCtx, service.AffiliateRecordFilter{
+		Page: 1, PageSize: 20, InviterID: inviterA.ID,
+		StartAt: &startAt, EndAt: &endAt, SortBy: "created_at",
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(2), total, "start_at and end_at must be inclusive")
+	require.Len(t, bounded, 2)
+	require.Equal(t, []int64{inviteeA2.ID, inviteeA3.ID}, []int64{bounded[0].InviteeID, bounded[1].InviteeID})
+
+	byRebate, total, err := repo.ListAffiliateInviteRecords(txCtx, service.AffiliateRecordFilter{
+		Page: 1, PageSize: 20, InviterID: inviterA.ID, SortBy: "total_rebate", SortDesc: true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(3), total)
+	require.Len(t, byRebate, 3)
+	require.Equal(t, []int64{inviteeA2.ID, inviteeA1.ID, inviteeA3.ID}, []int64{
+		byRebate[0].InviteeID,
+		byRebate[1].InviteeID,
+		byRebate[2].InviteeID,
+	})
+	require.InDelta(t, 5.00, byRebate[0].TotalRebate, 1e-9)
+	require.InDelta(t, 3.75, byRebate[1].TotalRebate, 1e-9, "multiple accruals for one invitee must be summed")
+	require.Zero(t, byRebate[2].TotalRebate, "invitees without accruals must report zero")
 }

@@ -54,17 +54,14 @@ onUnmounted(() => {
   @apply flex-shrink-0;
   position: relative;
   z-index: 40;
-  animation: table-surface-stack-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .layout-section-fixed + .layout-section-fixed {
   z-index: 30;
-  animation-delay: 40ms;
 }
 
 .layout-section-scrollable {
   @apply flex-1 min-h-0 flex flex-col;
-  animation: table-surface-stack-enter 240ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
 }
 
 /* 表格滚动容器 - 增强版表体滚动方案 */
@@ -115,22 +112,4 @@ onUnmounted(() => {
   min-width: 100%;
 }
 
-@keyframes table-surface-stack-enter {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .layout-section-fixed,
-  .layout-section-scrollable {
-    animation: none;
-  }
-}
 </style>

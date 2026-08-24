@@ -99,6 +99,16 @@ func (s *SettingService) refreshCachedSettingsAfterWrite(ctx context.Context, se
 }
 
 func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, settings *SystemSettings) (map[string]string, error) {
+	communityQREnabled, communityQRImage, err := NormalizeCommunityQRSettings(
+		settings.CommunityQREnabled,
+		settings.CommunityQRImage,
+	)
+	if err != nil {
+		return nil, infraerrors.BadRequest("INVALID_COMMUNITY_QR", err.Error())
+	}
+	settings.CommunityQREnabled = communityQREnabled
+	settings.CommunityQRImage = communityQRImage
+
 	landingNoticeEnabled, landingNoticeText, landingNoticeURL, err := NormalizeLandingNoticeSettings(
 		settings.LandingNoticeEnabled,
 		settings.LandingNoticeText,
@@ -350,6 +360,10 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	// OEM设置
 	updates[SettingKeySiteName] = settings.SiteName
 	updates[SettingKeySiteLogo] = settings.SiteLogo
+	updates[SettingKeyCommunityQREnabled] = strconv.FormatBool(settings.CommunityQREnabled)
+	updates[SettingKeyCommunityQRImage] = settings.CommunityQRImage
+	updates[SettingKeyCommunityQRTitle] = settings.CommunityQRTitle
+	updates[SettingKeyCommunityQRDescription] = settings.CommunityQRDescription
 	updates[SettingKeySiteSubtitle] = settings.SiteSubtitle
 	updates[SettingKeyLandingNoticeEnabled] = strconv.FormatBool(settings.LandingNoticeEnabled)
 	updates[SettingKeyLandingNoticeText] = settings.LandingNoticeText
@@ -439,7 +453,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	if v := strings.TrimSpace(settings.GrokDefaultTextModel); v != "" {
 		updates[SettingKeyGrokDefaultTextModel] = v
 	} else {
-		updates[SettingKeyGrokDefaultTextModel] = "grok-4.5"
+		updates[SettingKeyGrokDefaultTextModel] = "grok-4.6"
 	}
 	updates[SettingKeyGrokCrossClientModelMapEnabled] = strconv.FormatBool(settings.GrokCrossClientModelMapEnabled)
 	updates[SettingKeyGrokDefaultBaseURLMode] = normalizeGrokDefaultBaseURLMode(settings.GrokDefaultBaseURLMode)

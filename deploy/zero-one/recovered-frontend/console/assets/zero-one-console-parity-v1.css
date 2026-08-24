@@ -1,0 +1,144 @@
+html {
+  scroll-behavior: auto !important;
+}
+
+.layout-section-fixed,
+.layout-section-scrollable {
+  animation: none !important;
+}
+
+/* A remounted route starts its selected sidebar link in the active state. */
+:is(.console-skin-sidebar, .sidebar) .sidebar-link-active,
+:is(.console-skin-sidebar, .sidebar) .sidebar-link-active::before,
+:is(.console-skin-sidebar, .sidebar) .sidebar-link-active > * {
+  transition: none !important;
+}
+
+.console-card-motion-surface
+  .card:not(:where(.console-card-motion-static, .sticky)):not(
+    :has(.card, iframe)
+  ) {
+  position: relative;
+  transition:
+    border-color 180ms ease-out,
+    background-color 180ms ease-out;
+}
+
+.console-card-motion-surface
+  .card:not(:where(.console-card-motion-static, .sticky)):not(
+    :has(.card, iframe)
+  )::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--console-card-angle, var(--dashboard-panel-angle, 135deg)),
+    transparent 0deg 292deg,
+    rgb(255 255 255 / 0.1) 306deg,
+    rgb(255 255 255 / 0.56) 330deg,
+    rgb(255 255 255 / 0.1) 348deg,
+    transparent 360deg
+  );
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.console-card-motion-surface
+  .card:not(
+    :where(
+      .console-card-motion-static,
+      .console-card-motion-glow-only,
+      .console-skin-table,
+      .frosted-table-shell,
+      .sticky
+    )
+  ):not(:has(.card, iframe, table, .fixed, .sticky)) {
+  isolation: isolate;
+  transition:
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease-out,
+    background-color 180ms ease-out;
+}
+
+@media (any-hover: hover) and (any-pointer: fine) {
+  .console-card-motion-surface
+    .card:not(:where(.console-card-motion-static, .sticky)):not(
+      :has(.card, iframe)
+    ):hover {
+    border-color: rgb(113 113 122 / 0.38);
+  }
+
+  .dark
+    .console-card-motion-surface
+    .card:not(:where(.console-card-motion-static, .sticky)):not(
+      :has(.card, iframe)
+    ):hover {
+    border-color: rgb(244 244 245 / 0.24);
+  }
+
+  .console-card-motion-surface
+    .card:not(:where(.console-card-motion-static, .sticky)):not(
+      :has(.card, iframe)
+    ):hover::after {
+    opacity: 1;
+  }
+
+  .console-card-motion-surface
+    .card:not(
+      :where(
+        .console-card-motion-static,
+        .console-card-motion-glow-only,
+        .console-skin-table,
+        .frosted-table-shell,
+        .sticky
+      )
+    ):not(:has(.card, iframe, table, .fixed, .sticky)):hover {
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .console-card-motion-surface
+    .card:not(:where(.console-card-motion-static, .sticky)):not(
+      :has(.card, iframe)
+    ),
+  .console-card-motion-surface
+    .card:not(:where(.console-card-motion-static, .sticky)):not(
+      :has(.card, iframe)
+    )::after {
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .console-card-motion-surface
+    .card:not(:where(.console-card-motion-static, .sticky)):not(
+      :has(.card, iframe)
+    )::after {
+    display: none;
+  }
+
+  .console-card-motion-surface
+    .card:not(
+      :where(
+        .console-card-motion-static,
+        .console-card-motion-glow-only,
+        .console-skin-table,
+        .frosted-table-shell,
+        .sticky
+      )
+    ):not(:has(.card, iframe, table, .fixed, .sticky)):hover {
+    transform: none !important;
+  }
+}

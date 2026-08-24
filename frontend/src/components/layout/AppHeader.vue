@@ -48,6 +48,25 @@
           <span class="hidden sm:inline">{{ t('nav.modelPlaza') }}</span>
         </router-link>
 
+        <!-- Custom Header Pages -->
+        <router-link
+          v-for="item in headerCustomMenuItems"
+          :key="item.id"
+          :to="`/custom/${item.id}`"
+          class="hidden max-w-36 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white sm:flex"
+          :data-testid="`header-custom-menu-${item.id}`"
+        >
+          <Icon name="link" size="sm" />
+          <span class="truncate">{{ item.label }}</span>
+        </router-link>
+
+        <!-- Community QR Entry -->
+        <CommunityQrEntry
+          v-if="user && communityQrEnabled"
+          :title="communityQrTitle"
+          :description="communityQrDescription"
+        />
+
         <!-- Language Switcher -->
         <LocaleSwitcher />
 
@@ -258,6 +277,7 @@ import { useAdminSettingsStore } from '@/stores/adminSettings'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMini.vue'
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
+import CommunityQrEntry from '@/components/layout/CommunityQrEntry.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, isFeatureFlagEnabled } from '@/utils/featureFlags'
@@ -277,13 +297,31 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const contactInfo = computed(() => appStore.contactInfo)
 const docUrl = computed(() => sanitizeUrl(appStore.docUrl))
 const modelPlazaEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.modelPlaza))
+const communityQrEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.communityQr))
+const communityQrTitle = computed(() => appStore.cachedPublicSettings?.community_qr_title || '')
+const communityQrDescription = computed(
+  () => appStore.cachedPublicSettings?.community_qr_description || ''
+)
+const headerCustomMenuItems = computed(() => {
+  const visibility = authStore.isAdmin ? 'admin' : 'user'
+  const items = authStore.isAdmin
+    ? adminSettingsStore.customMenuItems
+    : appStore.cachedPublicSettings?.custom_menu_items ?? []
+  return items
+    .filter(
+      (item) =>
+        (item.visibility === visibility || item.visibility === 'all') &&
+        (item.placement === 'header' || item.placement === 'both')
+    )
+    .sort((a, b) => a.sort_order - b.sort_order)
+})
 const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
 const availableBalance = computed(() => Number(user.value?.balance || 0))
 const frozenBalance = computed(() => Number(user.value?.frozen_balance || 0))
 const totalBalance = computed(() => availableBalance.value + frozenBalance.value)
-const balanceAvailableText = computed(() => t('common.availableBalance') === 'common.availableBalance' ? '可用余额' : t('common.availableBalance'))
-const balanceFrozenText = computed(() => t('common.frozenBalance') === 'common.frozenBalance' ? '冻结金额' : t('common.frozenBalance'))
-const balanceTotalText = computed(() => t('common.totalBalance') === 'common.totalBalance' ? '总余额' : t('common.totalBalance'))
+const balanceAvailableText = computed(() => t('common.availableBalance'))
+const balanceFrozenText = computed(() => t('common.frozenBalance'))
+const balanceTotalText = computed(() => t('common.totalBalance'))
 const balanceFrozenLabel = computed(() => `${balanceFrozenText.value} ${formatHeaderMoney(frozenBalance.value)}`)
 
 // 只在标准模式的管理员下显示新手引导按钮
@@ -310,6 +348,32 @@ const displayName = computed(() => {
   return user.value.username || user.value.email?.split('@')[0] || ''
 })
 
+const affiliateHeaderKeys = computed(() => {
+  if (route.name !== 'AdminAffiliateInvites') return null
+  const section = typeof route.query.section === 'string' ? route.query.section : ''
+  if (section === 'settings') {
+    return {
+      title: 'admin.affiliates.tabs.settings',
+      description: 'admin.affiliates.settings.description',
+    }
+  }
+  if (section === 'customers') {
+    const rawUserId = typeof route.query.user_id === 'string' ? route.query.user_id : ''
+    const userId = Number(rawUserId)
+    const detailVisible = /^\d+$/.test(rawUserId) && Number.isSafeInteger(userId) && userId > 0
+    return detailVisible
+      ? {
+          title: 'admin.affiliates.customers.detailTitle',
+          description: 'admin.affiliates.customers.detailDescription',
+        }
+      : {
+          title: 'admin.affiliates.tabs.customers',
+          description: 'admin.affiliates.customers.description',
+        }
+  }
+  return null
+})
+
 const pageTitle = computed(() => {
   // For custom pages, use the menu item's label instead of generic "自定义页面"
   if (route.name === 'CustomPage') {
@@ -319,6 +383,7 @@ const pageTitle = computed(() => {
       ?? (authStore.isAdmin ? adminSettingsStore.customMenuItems.find((item) => item.id === id) : undefined)
     if (menuItem?.label) return menuItem.label
   }
+  if (affiliateHeaderKeys.value) return t(affiliateHeaderKeys.value.title)
   const titleKey = route.meta.titleKey as string
   if (titleKey) {
     return t(titleKey)
@@ -327,6 +392,7 @@ const pageTitle = computed(() => {
 })
 
 const pageDescription = computed(() => {
+  if (affiliateHeaderKeys.value) return t(affiliateHeaderKeys.value.description)
   const descKey = route.meta.descriptionKey as string
   if (descKey) {
     return t(descKey)

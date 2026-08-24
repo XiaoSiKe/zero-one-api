@@ -386,7 +386,10 @@ func (r *oauthEmailAffiliateRepoStub) GetAffiliateByCode(_ context.Context, code
 	return &service.AffiliateSummary{UserID: userID, AffCode: strings.ToUpper(strings.TrimSpace(code))}, nil
 }
 
-func (r *oauthEmailAffiliateRepoStub) BindInviter(_ context.Context, userID, inviterID int64) (bool, error) {
+func (r *oauthEmailAffiliateRepoStub) BindInviter(_ context.Context, userID, inviterID int64, boundByAdminID *int64) (bool, error) {
+	if boundByAdminID != nil {
+		panic("public OAuth binding must not carry an admin actor")
+	}
 	r.bindCalls = append(r.bindCalls, oauthEmailAffiliateBindCall{userID: userID, inviterID: inviterID})
 	return true, nil
 }
@@ -413,6 +416,10 @@ func (r *oauthEmailAffiliateRepoStub) ListInvitees(context.Context, int64, int) 
 
 func (r *oauthEmailAffiliateRepoStub) UpdateUserAffCode(context.Context, int64, string) error {
 	panic("unexpected UpdateUserAffCode call")
+}
+
+func (r *oauthEmailAffiliateRepoStub) UpdateUserSettings(context.Context, int64, service.AffiliateUserSettingsUpdate) error {
+	panic("unexpected UpdateUserSettings call")
 }
 
 func (r *oauthEmailAffiliateRepoStub) ResetUserAffCode(context.Context, int64) (string, error) {

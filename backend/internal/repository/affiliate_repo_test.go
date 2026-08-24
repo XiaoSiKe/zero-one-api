@@ -11,8 +11,10 @@ import (
 func TestAffiliateUserOverviewSQLIncludesMaturedFrozenQuota(t *testing.T) {
 	query := strings.Join(strings.Fields(affiliateUserOverviewSQL), " ")
 
-	require.Contains(t, query, "ua.aff_quota + COALESCE(matured.matured_frozen_quota, 0)")
+	require.Contains(t, query, "FROM users u LEFT JOIN user_affiliates ua ON ua.user_id = u.id")
+	require.Contains(t, query, "COALESCE(ua.aff_quota, 0) + COALESCE(matured.matured_frozen_quota, 0)")
 	require.Contains(t, query, "frozen_until <= NOW()")
+	require.Contains(t, query, "u.deleted_at IS NULL")
 }
 
 func TestAffiliateRecordQueriesUseLedgerAuditFields(t *testing.T) {

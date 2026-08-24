@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
+import type { CustomMenuItem } from '@/types'
 
 const componentPath = resolve(dirname(fileURLToPath(import.meta.url)), '../AppSidebar.vue')
 const componentSource = readFileSync(componentPath, 'utf8')
@@ -29,6 +30,65 @@ describe('AppSidebar custom SVG styles', () => {
   })
 })
 
+describe('AppSidebar custom menu placement', () => {
+  it('keeps legacy, sidebar, and dual-placement items while excluding header-only items', () => {
+    expect(componentSource).toContain(
+      "(item.visibility === 'user' || item.visibility === 'all') &&"
+    )
+    expect(componentSource).toContain(
+      "(item.visibility === 'admin' || item.visibility === 'all') &&"
+    )
+    expect(componentSource).toContain('...(withDashboard ? customMenuItemsForUser.value : []).map')
+
+    const placements: CustomMenuItem['placement'][] = [undefined, 'sidebar', 'header', 'both']
+    expect(placements.filter((placement) => placement !== 'header')).toEqual([
+      undefined,
+      'sidebar',
+      'both',
+    ])
+  })
+
+  it('keeps an all-role, dual-placement item in both role-specific sidebar lists', () => {
+    const item: CustomMenuItem = {
+      id: 'shared-both',
+      label: '全员双栏',
+      icon_svg: '',
+      url: 'https://example.com/shared',
+      visibility: 'all',
+      placement: 'both',
+      sort_order: 0,
+    }
+
+    expect(
+      (item.visibility === 'user' || item.visibility === 'all') && item.placement !== 'header'
+    ).toBe(true)
+    expect(
+      (item.visibility === 'admin' || item.visibility === 'all') && item.placement !== 'header'
+    ).toBe(true)
+  })
+})
+
+describe('AppSidebar affiliate navigation', () => {
+  it('keeps the admin entry top-level and always reachable while gating the user entry', () => {
+    const adminStart = componentSource.indexOf("      path: '/admin/affiliates',")
+    const nextAdminItem = componentSource.indexOf("      path: '/admin/orders',", adminStart)
+    const adminBlock = componentSource.slice(adminStart, nextAdminItem)
+
+    expect(adminStart).toBeGreaterThan(-1)
+    expect(adminBlock).not.toContain('children:')
+    expect(adminBlock).not.toContain('expandOnly:')
+    expect(adminBlock).not.toContain('featureFlag:')
+    expect(adminBlock).not.toContain('hideInSimpleMode:')
+
+    expect(componentSource).toContain(
+      "{ path: '/affiliate', label: t('nav.affiliate'), icon: UsersIcon, hideInSimpleMode: true, featureFlag: flagAffiliate }"
+    )
+    expect(componentSource).toContain(
+      "finalizeNav(buildSelfNavItems(false).filter((item) => item.path !== '/affiliate'))"
+    )
+  })
+})
+
 describe('AppSidebar scroll position persistence', () => {
   it('binds a template ref to the sidebar nav element', () => {
     expect(componentSource).toContain('ref="sidebarNavRef"')
@@ -45,10 +105,11 @@ describe('AppSidebar scroll position persistence', () => {
     expect(componentSource).toContain('sidebarNavRef.value.scrollTop')
   })
 
-  it('restores scroll position on mount', () => {
+  it('restores scroll position synchronously when the shell mounts', () => {
     expect(componentSource).toContain('onMounted')
     expect(componentSource).toContain('appStore.sidebarScrollTop')
-    expect(componentSource).toContain('nextTick')
+    expect(componentSource).toContain('sidebarNavRef.value.scrollTop = appStore.sidebarScrollTop')
+    expect(componentSource).not.toContain('void nextTick(')
   })
 })
 

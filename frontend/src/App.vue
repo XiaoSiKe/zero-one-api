@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterView, useRouter, useRoute } from 'vue-router'
-import { onMounted, onBeforeUnmount, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import AppLayout from '@/components/layout/AppLayout.vue'
 import Toast from '@/components/common/Toast.vue'
 import NavigationProgress from '@/components/common/NavigationProgress.vue'
 import AdminComplianceDialog from '@/components/admin/AdminComplianceDialog.vue'
@@ -18,6 +19,11 @@ const subscriptionStore = useSubscriptionStore()
 const announcementStore = useAnnouncementStore()
 const adminComplianceStore = useAdminComplianceStore()
 const adminSettingsStore = useAdminSettingsStore()
+const usesConsoleShell = computed(() =>
+  route.meta.consoleShell === true &&
+  route.query.fullscreen !== '1' &&
+  route.query.fullscreen !== 'true'
+)
 
 function updateDocumentTitle() {
   const customMenuItems = [
@@ -138,7 +144,10 @@ onMounted(async () => {
 
 <template>
   <NavigationProgress />
-  <RouterView />
+  <AppLayout v-if="usesConsoleShell">
+    <RouterView />
+  </AppLayout>
+  <RouterView v-else />
   <Toast />
   <AnnouncementPopup />
   <AdminComplianceDialog />

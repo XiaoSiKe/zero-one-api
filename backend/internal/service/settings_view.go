@@ -151,6 +151,10 @@ type SystemSettings struct {
 
 	SiteName                    string
 	SiteLogo                    string
+	CommunityQREnabled          bool
+	CommunityQRImage            string
+	CommunityQRTitle            string
+	CommunityQRDescription      string
 	SiteSubtitle                string
 	LandingNoticeEnabled        bool
 	LandingNoticeText           string
@@ -344,6 +348,9 @@ type PublicSettings struct {
 	AliyunCaptchaRegion                 string
 	SiteName                            string
 	SiteLogo                            string
+	CommunityQREnabled                  bool
+	CommunityQRTitle                    string
+	CommunityQRDescription              string
 	SiteSubtitle                        string
 	LandingNoticeEnabled                bool
 	LandingNoticeText                   string
@@ -569,6 +576,23 @@ type RateLimit429CooldownSettings struct {
 	Enabled bool `json:"enabled"`
 	// CooldownSeconds 默认回避时长（秒）
 	CooldownSeconds int `json:"cooldown_seconds"`
+}
+
+// OpenAIAPIKeyHealthBreakerSettings controls cross-instance failure counting for OpenAI pool API keys.
+type OpenAIAPIKeyHealthBreakerSettings struct {
+	Enabled          bool `json:"enabled"`
+	WindowMinutes    int  `json:"window_minutes"`
+	FailureThreshold int  `json:"failure_threshold"`
+	CooldownMinutes  int  `json:"cooldown_minutes"`
+}
+
+func DefaultOpenAIAPIKeyHealthBreakerSettings() *OpenAIAPIKeyHealthBreakerSettings {
+	return &OpenAIAPIKeyHealthBreakerSettings{
+		Enabled:          false,
+		WindowMinutes:    2,
+		FailureThreshold: 10,
+		CooldownMinutes:  5,
+	}
 }
 
 // DefaultOverloadCooldownSettings 返回默认的过载冷却配置（启用，10分钟）

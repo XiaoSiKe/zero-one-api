@@ -8,6 +8,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,11 +23,14 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - name: Fetch declared upstream release tag
+      - name: Fetch declared upstream release tags
         run: |
-          release="$(jq -er '.release | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))' .github/upstream-baseline.json)"
-          git fetch --no-tags --force https://github.com/Wei-Shaw/sub2api.git "refs/tags/$release:refs/tags/$release"
-          git fetch --no-tags --force https://github.com/Wei-Shaw/sub2api.git "refs/tags/v0.1.178:refs/tags/v0.1.178"
+          jq -er '[.release, .upstream_sync.previous_release][] | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))' \
+            .github/upstream-baseline.json \
+            | while IFS= read -r release; do
+                git fetch --no-tags --force https://github.com/Wei-Shaw/sub2api.git \
+                  "refs/tags/$release:refs/tags/$release"
+              done
       - name: Test upstream-boundary policy
         run: node --test .github/scripts/*.test.mjs
       - name: Verify approved UI baseline
@@ -37,8 +41,8 @@ jobs:
         run: node .github/scripts/verify-upstream-boundary.mjs
       - name: Verify complete worktree upstream boundary
         run: node .github/scripts/verify-upstream-boundary.mjs --worktree
-      - name: Verify complete v179 upgrade readiness
-        run: node .github/scripts/verify-upgrade-readiness.mjs --old-ref v0.1.178 --new-ref v0.1.179 --worktree
+      - name: Verify recorded upstream upgrade readiness
+        run: node .github/scripts/verify-upgrade-readiness.mjs --recorded-sync --worktree
 
   landing:
     runs-on: ubuntu-latest
@@ -103,7 +107,7 @@ jobs:
           check-latest: false
           cache-dependency-path: backend/go.sum
       - name: Verify Go version
-        run: go version | grep -q 'go1.26.6'
+        run: go version | grep -q 'go1.27.0'
       - name: Test backend unit suite
         working-directory: backend
         run: make test-unit

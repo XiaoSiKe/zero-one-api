@@ -12,6 +12,7 @@ import {
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { DISPLAY_API_ENDPOINT, consoleUrl, documentUrl } from '../siteConfig'
 import Action from './Action'
+import ShinyText from './ShinyText'
 import { copyText } from './copyText'
 
 type IntegrationId = 'cc-switch' | 'codex-plus-plus' | 'codex-cli' | 'claude-code'
@@ -154,8 +155,10 @@ export default function QuickStart({ docUrl }: QuickStartProps) {
               接入指南
             </p>
             <h2 id="quick-start-title">
-              <span className="integration-api-phrase">把零一 API 接入</span>{' '}
-              <span className="integration-tool-name">{activeGuide.label}</span>
+              <ShinyText speed={2} spread={120}>
+                <span className="integration-api-phrase">把零一 API 接入</span>{' '}
+                <span className="integration-tool-name">{activeGuide.label}</span>
+              </ShinyText>
             </h2>
 
             <ol className="integration-steps">
@@ -171,7 +174,6 @@ export default function QuickStart({ docUrl }: QuickStartProps) {
               <Action
                 className="integration-primary-action"
                 href={consoleUrl('/keys')}
-                highlight={false}
               >
                 <KeyRound aria-hidden="true" />
                 创建 API Key
@@ -179,7 +181,6 @@ export default function QuickStart({ docUrl }: QuickStartProps) {
               <Action
                 className="integration-secondary-action"
                 href={docsHref}
-                highlight={false}
               >
                 <BookOpen aria-hidden="true" />
                 查看接入教学文档

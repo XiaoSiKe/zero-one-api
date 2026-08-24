@@ -129,28 +129,13 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 	}
 
 	var stickyAccountID int64
-	var stickySource string
 	if prefetch := prefetchedStickyAccountIDFromContext(ctx, groupID); prefetch > 0 {
 		stickyAccountID = prefetch
-		stickySource = "prefetch"
 	} else if sessionHash != "" && s.cache != nil {
 		if accountID, err := s.cache.GetSessionAccountID(ctx, derefGroupID(groupID), sessionHash); err == nil {
 			stickyAccountID = accountID
-			stickySource = "cache"
 		}
 	}
-
-	// [DEBUG-STICKY] 调度器入口日志
-	slog.Info("sticky.scheduler_entry",
-		"group_id", derefGroupID(groupID),
-		"session_hash", shortSessionHash(sessionHash),
-		"sticky_account_id", stickyAccountID,
-		"sticky_source", stickySource,
-		"model", requestedModel,
-		"load_batch", cfg.LoadBatchEnabled,
-		"has_concurrency_svc", s.concurrencyService != nil,
-		"excluded_count", len(excludedIDs),
-	)
 
 	if s.debugModelRoutingEnabled() && requestedModel != "" {
 		groupPlatform := ""

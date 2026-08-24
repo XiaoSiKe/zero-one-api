@@ -392,8 +392,56 @@ export default {
       invitesDescription: 'View site-wide inviter and invitee relationships',
       rebatesDescription: 'View recharge orders that generated affiliate rebates',
       transfersDescription: 'View affiliate quota transfers into account balance',
+      tabs: {
+        label: 'Affiliate management',
+        invites: 'Invite Records',
+        customers: 'Customer Relationships',
+        relationships: 'Customer Relationships',
+        rebates: 'Rebate Records',
+        transfers: 'Transfer Records',
+        settings: 'Operations Settings'
+      },
+      settings: {
+        description: 'Manage global affiliate rules and per-user overrides',
+        saved: 'Affiliate settings saved',
+        loadFailed: 'Failed to load affiliate settings',
+        saveFailed: 'Failed to save affiliate settings'
+      },
+      binding: {
+        button: 'Bind Missing Customer',
+        title: 'Bind Missing Customer',
+        description: 'The inviter is locked to the current customer. Search for the user who omitted the invite code.',
+        inviter: 'Inviter',
+        invitee: 'Unbound Customer',
+        searchPlaceholder: 'Search by email, username, or user ID',
+        sameUser: 'The inviter and customer must be different users.',
+        confirmation: 'This only creates a relationship for a currently unbound customer. It cannot overwrite an existing relationship, self-bind, or create a cycle; it does not grant historical rebates. The rebate duration still starts from the customer profile’s original creation time.',
+        confirm: 'Confirm Binding',
+        binding: 'Binding...',
+        success: 'Customer relationship bound. Only future payments earn rebates; historical rebates are not granted.',
+        failed: 'Failed to bind customer relationship'
+      },
+      customers: {
+        detailTitle: 'Customer Detail',
+        description: 'View every user and open their invitation relationship details',
+        detailDescription: 'View users invited by this customer and cumulative rebate from each invitee',
+        searchPlaceholder: 'Search by email or username',
+        inviteeSearchPlaceholder: 'Search users invited by this customer',
+        userId: 'User ID',
+        email: 'Email',
+        username: 'Username',
+        role: 'Role',
+        status: 'Status',
+        registeredAt: 'Registered At',
+        back: 'Back to Customer Relationships',
+        loadFailed: 'Failed to load customer relationships',
+        detailLoadFailed: 'Failed to load customer details'
+      },
       errors: {
-        loadFailed: 'Failed to load affiliate records'
+        loadFailed: 'Failed to load affiliate records',
+        AFFILIATE_ALREADY_BOUND: 'This customer already has an inviter; the existing relationship cannot be overwritten',
+        AFFILIATE_SELF_BINDING: 'A user cannot be bound as their own inviter',
+        AFFILIATE_CYCLE: 'This binding would create an invitation cycle and was rejected'
       },
       records: {
         search: 'Search',

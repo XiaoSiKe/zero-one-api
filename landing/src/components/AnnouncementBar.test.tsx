@@ -12,7 +12,7 @@ describe('AnnouncementBar', () => {
     const props = {
       enabled: true,
       text: 'Claude Code 与 Codex CLI 接入配置已支持一键复制。',
-      url: 'https://app.01yapi.com/keys',
+      url: 'https://api.01yapi.com/keys',
     }
     const view = render(<AnnouncementBar {...props} />)
 

@@ -6,9 +6,9 @@
 | --- | --- |
 | Product name | 零一 API |
 | Product type | Model API relay service built on Sub2API |
-| Public entry | `https://api.01yapi.com` |
-| Console entry | `https://app.01yapi.com` |
-| Backup entry | `https://api.01yapi.cc` (manual fallback only) |
+| Canonical product entry | `https://api.01yapi.com` |
+| Console entry | `https://api.01yapi.com/dashboard` |
+| Compatibility entry | `https://app.01yapi.com/*` permanently redirects to the same path on `api.01yapi.com` |
 | Registration | Public registration is enabled |
 | Billing in v1 | Redeem Code only; online purchase remains disabled |
 | Brand form in v1 | Text wordmark only until an approved logo is supplied |
@@ -30,7 +30,7 @@
 - 不做青紫渐变、霓虹发光、玻璃拟态或装饰光球组成的通用 AI SaaS 页面。
 - 不复制 Apple 的商标、字体文件、图片或版式细节；只借鉴其克制、留白和动效节奏。
 - 不把运维控制台做成营销首页，不用大字号和重复卡片妨碍高频操作。
-- 不公开宣传多个等价 API 主地址；`api.01yapi.com` 始终是唯一推荐入口。
+- 不公开宣传多个等价产品地址；`api.01yapi.com` 始终是官网、Console 和模型调用的唯一推荐入口。
 
 ## Design Principles
 
@@ -38,7 +38,7 @@
 2. 官网负责建立信任并引导行动，控制台负责高效完成任务。
 3. 品牌改造不改变 Sub2API 的业务行为和权限边界。
 4. 通过稳定的层级、间距和反馈表达质感，不靠装饰制造高级感。
-5. 所有状态、故障和备用线路说明都应准确，不暗示不存在的高可用能力。
+5. 所有状态、故障和域名兼容说明都应准确，不暗示不存在的高可用能力。
 
 ## Accessibility & Inclusion
 
@@ -47,5 +47,5 @@
 ## Product Boundaries
 
 - 常规产品工作仅限品牌、Public Site、Console 主题和部署边缘层，不改变 Sub2API 的业务范围、权限或兑换规则。仅当稳定上游版本存在会阻断生产正确性的已确认缺陷，或稳定基线依赖出现可达的高危/严重供应链漏洞时，才允许有测试、精确文件边界和退出条件的临时 backport。对依赖锁文件等不可变表面，还必须锁定最终文件 SHA-256 与 Git mode；下一个包含等价修复的稳定 tag 发布后必须收敛回上游实现并删除临时权限。
-- `api.01yapi.com` 是唯一在官网和文档中推荐的调用地址。备用域名仅在故障公告或运维文档中提供。
+- `api.01yapi.com` 是官网、Console 和模型调用的唯一推荐地址；`app.01yapi.com` 只保留同路径兼容重定向，不承载产品能力。
 - 不承诺自动故障转移、多机高可用、无限额度或未经验证的模型能力。

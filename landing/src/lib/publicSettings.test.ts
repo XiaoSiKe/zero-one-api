@@ -102,8 +102,8 @@ describe('public settings normalization', () => {
 
   it('accepts only safe notice destinations while keeping omitted notices disabled', () => {
     expect(sanitizeLandingNoticeUrl('/keys?source=landing#new')).toBe('/keys?source=landing#new')
-    expect(sanitizeLandingNoticeUrl('https://app.01yapi.com/keys')).toBe(
-      'https://app.01yapi.com/keys',
+    expect(sanitizeLandingNoticeUrl('https://api.01yapi.com/keys')).toBe(
+      'https://api.01yapi.com/keys',
     )
     expect(sanitizeLandingNoticeUrl('//evil.example/keys')).toBe('')
     expect(sanitizeLandingNoticeUrl('/\\evil.example/keys')).toBe('')
@@ -120,7 +120,7 @@ describe('public settings normalization', () => {
     await fetchPublicSettings(request)
 
     expect(request).toHaveBeenCalledTimes(1)
-    expect(request.mock.calls[0]?.[0]).toBe('/api/v1/settings/public')
+    expect(request.mock.calls[0]?.[0]).toBe('/api/v1/settings/public?scope=landing')
     expect(request.mock.calls[0]?.[1]).toMatchObject({
       cache: 'no-store',
       credentials: 'omit',

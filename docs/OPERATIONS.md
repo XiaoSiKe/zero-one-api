@@ -1,5 +1,9 @@
 # 零一 API 运维手册
 
+生产主机、SSH、本机私钥路径、持久化目录和原地发布速查见
+[`PRODUCTION_SERVER_CN.md`](PRODUCTION_SERVER_CN.md)。私钥正文和任何运行时 secret
+不得写入仓库。
+
 ## Initial Deployment
 
 1. Keep the public DNS records unpointed. Copy `deploy/zero-one/.env.example` to `deploy/zero-one/.env`, replace every placeholder secret and replace all four runtime image values with approved registry digests.
@@ -12,7 +16,7 @@
    ```
 
 3. If operating remotely, open an SSH tunnel with `ssh -L 18080:127.0.0.1:18080 SERVER`. Log in at `http://127.0.0.1:18080/login`, enable administrator 2FA and apply every setting in `docs/TECHNICAL-PLAN.md`, including the site subtitle and `frontend_url`.
-4. From a release workstation with Node.js 20 or newer, run `node deploy/zero-one/verify-public-settings.mjs http://127.0.0.1:18080/api/v1/settings/public`. Confirm `frontend_url=https://app.01yapi.com` once more in `/admin/settings`.
+4. From a release workstation with Node.js 20 or newer, run `node deploy/zero-one/verify-public-settings.mjs http://127.0.0.1:18080/api/v1/settings/public`. Confirm `frontend_url=https://api.01yapi.com` once more in `/admin/settings`, and update every OAuth or captcha callback/origin allowlist to the same canonical origin before enabling that capability.
 5. Remove the temporary loopback port by recreating Sub2API from the production Compose file only, then confirm port `18080` is no longer listening:
 
    ```bash
@@ -21,7 +25,7 @@
    ```
 
    The final command must print nothing. Do not continue if it reports a host port.
-6. Start the pinned edge image with `pull` followed by `up -d --no-build`, then point DNS-only A/AAAA records for `api.01yapi.com`, `app.01yapi.com`, `api.01yapi.cc`, `01yapi.com` and `www.01yapi.com` to the server.
+6. Start the pinned edge image with `pull` followed by `up -d --no-build`, then point DNS-only A/AAAA records for `api.01yapi.com`, compatibility-only `app.01yapi.com`, `01yapi.com` and `www.01yapi.com` to the server. Do not add or manage `api.01yapi.cc`; it is not part of this product.
 7. Confirm Caddy has obtained certificates, every service reports healthy and the public release gate passes at `https://api.01yapi.com/api/v1/settings/public` before announcing the service.
 
 The bootstrap override binds `18080` to loopback only and must not be used after
@@ -68,12 +72,14 @@ Online purchasing stays disabled. `/admin/promo-codes` belongs to the purchase f
 
 Monitor container health, PostgreSQL readiness, Redis response, disk usage, TLS expiry, HTTP 5xx rate and latency. The `/health` endpoint checks process liveness only; it does not prove that PostgreSQL, Redis or upstream model calls work.
 
-Add two external probes:
+Add three external probes:
 
-- An unauthenticated `GET /api/v1/settings/public` check through both the primary and Console hosts.
+- An unauthenticated `GET /api/v1/settings/public` check through the Canonical Product Domain.
+- A non-following request to an `app.01yapi.com` path that verifies its same-URI `308` compatibility redirect.
 - A low-frequency authenticated model request using a dedicated probe User and tightly limited API Key.
 
-Alert separately for primary-host DNS/TLS failure and origin failure. A successful `.cc` DNS lookup does not indicate origin health because both API domains use the same deployment.
+Alert separately for canonical-host DNS/TLS failure, compatibility-redirect
+failure and origin failure.
 
 Inspect Caddy's JSON access logs for status, latency and client IP, but avoid
 adding request-body or authorization-header logging. Use the dashboard and
@@ -258,17 +264,32 @@ this repository.
 Before release, record the deployed Sub2API and edge image digests and take a database backup. Deploy immutable images, run the routing and smoke checks, then announce completion.
 
 The approved UI is a separate release boundary. The current protected snapshot
-is the `ui-approved-2026-08-20-r5` tag at commit
-`45b7c1435a2ba8605c51a964e191171fefe86046`. The original
-`ui-approved-2026-08-19` tag remains immutable as the previous accepted UI.
+is the `ui-approved-2026-08-25-r7` tag at commit
+`a05ae3883d81291adc18a08a03844aed2c09a7e7`. The
+`ui-approved-2026-08-24-r6` tag remains immutable as the previous accepted UI.
 An upstream version update must not modify `landing/src`, the protected console
 source paths, or `deploy/zero-one/recovered-frontend`. This explicitly covers
 the landing page, login/register pages, the console shell, model-plaza pricing,
-and the redeem, benefit-code, and mystery-box surfaces. The API and shared type
+the community entry, Affiliate Attribution, and the redeem, benefit-code, and
+mystery-box surfaces. The API and shared type
 paths under `frontend/src/api` and `frontend/src/types` remain available for
 compatibility work. CI runs `verify-ui-boundary.mjs` and fails before a build if
 the protected UI changes or if `Dockerfile.edge` switches away from the pinned
 recovered landing and console sources.
+
+Every CI and publish run validates the repository-owned `upstream_sync`
+attestation in `.github/upstream-baseline.json`. It binds the previous stable
+Tag/commit, the full product commit captured before the merge, and the resulting
+two-parent merge commit. The merge must use that product commit as its first
+parent and the pinned upstream commit as its second parent, and every
+`preserve_on_upstream_sync` file must be unchanged across that merge. Missing,
+stale, malformed, self-`HEAD`, or non-ancestor metadata fails closed. Ordinary
+feature releases replay the recorded historical boundary and need no optional
+workflow input, so omitting an input cannot bypass the publish gate.
+The v0.1.178 schema-v3 product manifest predates the preserve registry and is
+treated as an empty list for this one bootstrap only. Every schema-v4 successor
+must retain all paths protected by its pre-merge product manifest; additions
+are allowed, but removing a path during a sync fails the release gate.
 
 To approve an intentional UI release, review desktop and mobile visual
 regression output first, commit the reviewed UI, create a new dated
@@ -280,14 +301,17 @@ Rollback uses the previous image digests without rolling back the database unles
 
 ## Required Smoke Tests
 
-- For releases based on v0.1.179, confirm `schema_migrations` contains both `226_channel_monitor_quota_mode.sql` and `226_add_usage_log_effective_model_indexes_notx.sql`, followed by `227_composite_routes_add_cn_providers.sql` and `228_channel_pricing_multipliers.sql`, in addition to the existing 221–225 Zero One migrations. Verify the two effective-model indexes are valid and ready, channel multiplier columns are nullable with positive-value constraints, `groups.long_context_pricing_enabled` remains non-null with default `true`, the group auth-cache trigger function still compares both pricing columns, and the Zero One group-and-account long-context billing gate is covered by the release tests.
+- For releases based on v0.1.181, confirm `schema_migrations` contains both `226_channel_monitor_quota_mode.sql` and `226_add_usage_log_effective_model_indexes_notx.sql`, followed by `227_composite_routes_add_cn_providers.sql` and `228_channel_pricing_multipliers.sql`, in addition to the existing 221–225 Zero One migrations. Verify the two effective-model indexes are valid and ready, channel multiplier columns are nullable with positive-value constraints, `groups.long_context_pricing_enabled` remains non-null with default `true`, the group auth-cache trigger function still compares both pricing columns, and the Zero One group-and-account long-context billing gate is covered by the release tests.
+- Confirm `schema_migrations` contains `229_affiliate_manual_binding.sql`. Verify `user_affiliates.inviter_bound_at`, the no-self-inviter check, and `inviter_bound_by_admin_id` as an immutable audit snapshot without a deleting user foreign key; deleting an administrator must not erase the recorded actor ID. Legacy bound rows must retain their original profile creation time as the backfilled binding time and have no administrator actor.
+- Confirm `schema_migrations` also contains `229_plugins.sql` and `230_plugin_artifacts.sql`. Migration identity is the complete filename, so `229_affiliate_manual_binding.sql` and `229_plugins.sql` are separate ordered migrations rather than a numeric-version collision. Verify both plugin tables and the package artifact column exist; no existing user, key, order, usage or affiliate rows may be rewritten by these additive migrations.
 - Exercise one dedicated probe API Key after deploy, then verify its hashed Redis `apikey:auth:` entry reports snapshot `version: 20` and carries `long_context_pricing_enabled` plus `model_pricing`. Never print or store the raw API Key or the complete cache document.
 - Confirm an omitted `long_context_pricing_enabled` field on a disposable admin group create defaults to `true`, while an explicit `false` remains false; delete the disposable group afterward.
+- With disposable users and no production orders, confirm manual Affiliate Attribution accepts only a human JWT administrator and rejects an Admin API Key. When the sensitive-operation step-up policy is enabled, confirm it rejects the operation until a recent TOTP step-up. Also confirm it rejects self/cyclic/second bindings, persists actor and binding time, and treats the retained binding time as a no-rebind tombstone after inviter deletion. Payments from before the binding must remain without rebate; only otherwise-eligible payments after the binding may earn one. Confirm the validity deadline still derives from the invitee affiliate profile creation time.
 - For any enabled group-level model card, compare the configured price with one low-cost usage record. Include a long-context boundary check and, when Batch Image or Model Plaza is enabled, verify group-card precedence and an explicit zero-price tier without using a production customer key.
 - `GET https://api.01yapi.com/` returns the React page; `POST /v1/messages` reaches API authentication rather than HTML.
-- The public-settings release gate passes, and `/admin/settings` shows `frontend_url=https://app.01yapi.com`.
-- `GET` and `HEAD https://app.01yapi.com/` return a non-cacheable `307` to `https://api.01yapi.com/`; `POST /` and `GET /login` still reach Vue/Sub2API, and administrator and User redirects remain role-correct.
+- `GET https://api.01yapi.com/dashboard`, `/keys` and `/monitor` return the Approved UI Snapshot, while `/v1/*` continues to reach Sub2API.
+- The public-settings release gate passes, and `/admin/settings` shows `frontend_url=https://api.01yapi.com`.
+- `GET`, `HEAD` and `POST` requests to representative `app.01yapi.com` paths return non-cacheable `308` responses to the same path and query on `https://api.01yapi.com`; the compatibility host never serves Console or model traffic directly.
 - SSE sends its first event promptly and continues without buffering; `/responses` and administrator operations WebSockets upgrade successfully.
-- `api.01yapi.cc` accepts the same API Key, while its root returns no-store backup metadata.
 - Apex and `www` return `308` while preserving the path and query string.
 - Administrator creates a test Redeem Code, a User redeems it once, and a second redemption fails.

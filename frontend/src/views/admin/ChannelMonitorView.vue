@@ -1,5 +1,4 @@
 <template>
-  <AppLayout>
     <div class="w-full min-w-0 space-y-6 pb-8">
       <header
         class="page-header mb-0 px-1 py-2"
@@ -161,7 +160,6 @@
       @confirm="confirmDelete"
       @cancel="showDeleteDialog = false"
     />
-  </AppLayout>
 </template>
 
 <script setup lang="ts">
@@ -177,7 +175,6 @@ import type {
   Provider,
 } from '@/api/admin/channelMonitor'
 import type { Column } from '@/components/common/types'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import DataTable from '@/components/common/DataTable.vue'
 import Pagination from '@/components/common/Pagination.vue'

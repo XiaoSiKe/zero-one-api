@@ -11,6 +11,7 @@ import {
 } from '../lib/modelPlaza'
 import { consoleUrl } from '../siteConfig'
 import Action from './Action'
+import ShinyText from './ShinyText'
 
 interface PricingSectionProps {
   enabled: boolean
@@ -51,7 +52,7 @@ function PriceValues({ row, field }: { row: LandingPriceRow; field: 'input' | 'o
 function PlatformPrice({ row, field }: { row: LandingPriceRow; field: 'input' | 'output' }) {
   const hasCache = row.prices.some((line) => line.cacheWrite !== '—' || line.cacheRead !== '—')
   return (
-    <div className="platform-price-cell">
+    <div className={`platform-price-cell${hasCache ? ' platform-price-cell--with-cache-line' : ''}`}>
       <PriceValues row={row} field={row.billingMode === 'token' ? field : field === 'input' ? 'request' : 'output'} />
       {hasCache && field === 'input' ? (
         <small className="cache-note">
@@ -59,13 +60,11 @@ function PlatformPrice({ row, field }: { row: LandingPriceRow; field: 'input' | 
         </small>
       ) : null}
       <small className="price-unit">{row.unit}</small>
-      {field === 'input' ? (
-        <span className="rate-badge">
-          <span className="rate-badge-rate">{row.effectiveRateLabel}</span>
-          <span className="rate-badge-separator" aria-hidden="true">·</span>
-          <span className="rate-badge-discount">{discountLabel(row.effectiveRateLabel)}</span>
-        </span>
-      ) : null}
+      <span className="rate-badge">
+        <span className="rate-badge-rate">{row.effectiveRateLabel}</span>
+        <span className="rate-badge-separator" aria-hidden="true">·</span>
+        <span className="rate-badge-discount">{discountLabel(row.effectiveRateLabel)}</span>
+      </span>
     </div>
   )
 }
@@ -190,10 +189,7 @@ function PricingMessage({ state, onRetry }: PricingMessageProps) {
       </div>
       {needsLogin ? (
         <Action
-          className="button-secondary"
           href={consoleUrl('/login?redirect=/model-plaza')}
-          size="md"
-          radius={14}
         >
           登录查看
           <ArrowRight aria-hidden="true" />
@@ -201,10 +197,7 @@ function PricingMessage({ state, onRetry }: PricingMessageProps) {
       ) : null}
       {retry ? (
         <Action
-          className="button-secondary"
           type="button"
-          size="md"
-          radius={14}
           onClick={onRetry}
         >
           <RefreshCw aria-hidden="true" />
@@ -274,13 +267,11 @@ export default function PricingSection({
     <section id="pricing" className="section pricing-section" aria-labelledby="pricing-title">
       <div className="pricing-heading-row" data-reveal>
         <div className="section-heading">
-          <h2 id="pricing-title">实时价格</h2>
+          <h2 id="pricing-title"><ShinyText text="实时价格" speed={2} spread={120} /></h2>
         </div>
         <Action
-          className="button-secondary pricing-all-models"
+          className="pricing-all-models"
           href={consoleUrl('/model-plaza')}
-          size="md"
-          radius={8}
         >
           进入模型广场
           <ExternalLink aria-hidden="true" />

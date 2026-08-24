@@ -205,7 +205,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, h, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAdminSettingsStore, useAppStore, useAuthStore, useOnboardingStore } from '@/stores'
@@ -727,7 +727,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
     { path: '/affiliate', label: t('nav.affiliate'), icon: UsersIcon, hideInSimpleMode: true, featureFlag: flagAffiliate },
     { path: '/profile', label: t('nav.profile'), icon: UserIcon },
-    ...customMenuItemsForUser.value.map((item): NavItem => ({
+    ...(withDashboard ? customMenuItemsForUser.value : []).map((item): NavItem => ({
       path: `/custom/${item.id}`,
       label: item.label,
       icon: null,
@@ -748,20 +748,31 @@ const userNavItems = computed((): NavItem[] => finalizeNav(buildSelfNavItems(tru
 
 // Personal navigation items (for admin's "My Account" section, without Dashboard).
 // Admins access 可用渠道 from this section just like regular users — there is no
-// separate admin entry, since the page is purely a user-facing view.
-const personalNavItems = computed((): NavItem[] => finalizeNav(buildSelfNavItems(false)))
+// separate admin entry, since the page is purely a user-facing view. Affiliate is
+// excluded because administrators use the single top-level affiliate workspace.
+const personalNavItems = computed((): NavItem[] =>
+  finalizeNav(buildSelfNavItems(false).filter((item) => item.path !== '/affiliate'))
+)
 
 // Custom menu items filtered by visibility
 const customMenuItemsForUser = computed(() => {
   const items = appStore.cachedPublicSettings?.custom_menu_items ?? []
   return items
-    .filter((item) => item.visibility === 'user')
+    .filter(
+      (item) =>
+        (item.visibility === 'user' || item.visibility === 'all') &&
+        item.placement !== 'header'
+    )
     .sort((a, b) => a.sort_order - b.sort_order)
 })
 
 const customMenuItemsForAdmin = computed(() => {
   return adminSettingsStore.customMenuItems
-    .filter((item) => item.visibility === 'admin')
+    .filter(
+      (item) =>
+        (item.visibility === 'admin' || item.visibility === 'all') &&
+        item.placement !== 'header'
+    )
     .sort((a, b) => a.sort_order - b.sort_order)
 })
 
@@ -804,14 +815,6 @@ const adminNavItems = computed((): NavItem[] => {
       path: '/admin/affiliates',
       label: t('nav.affiliateManagement'),
       icon: UsersIcon,
-      hideInSimpleMode: true,
-      expandOnly: true,
-      featureFlag: flagAffiliate,
-      children: [
-        { path: '/admin/affiliates/invites', label: t('nav.affiliateInviteRecords'), icon: UsersIcon },
-        { path: '/admin/affiliates/rebates', label: t('nav.affiliateRebateRecords'), icon: OrderIcon },
-        { path: '/admin/affiliates/transfers', label: t('nav.affiliateTransferRecords'), icon: CreditCardIcon },
-      ],
     },
     {
       path: '/admin/orders',
@@ -864,7 +867,19 @@ function closeMobile() {
   appStore.setMobileOpen(false)
 }
 
+function markSidebarLinkActive(itemPath: string) {
+  for (const link of document.querySelectorAll('aside a.sidebar-link')) {
+    if (!(link instanceof HTMLAnchorElement)) continue
+    const active = new URL(link.href, window.location.origin).pathname === itemPath
+    link.classList.toggle('sidebar-link-active', active)
+    if (active) link.setAttribute('aria-current', 'page')
+    else link.removeAttribute('aria-current')
+  }
+}
+
 function handleMenuItemClick(itemPath: string) {
+  markSidebarLinkActive(itemPath)
+
   if (mobileOpen.value) {
     setTimeout(() => {
       appStore.setMobileOpen(false)
@@ -948,13 +963,11 @@ onMounted(() => {
   if (isAdmin.value) {
     adminSettingsStore.fetch()
   }
-  // Restore sidebar scroll position after route change re-mounts the component
+  // The stable Console shell keeps this instance through ordinary route changes.
+  // When the shell is mounted after leaving a full-screen/public route, restore
+  // before the next paint instead of waiting for a nextTick frame.
   if (appStore.sidebarScrollTop > 0 && sidebarNavRef.value) {
-    void nextTick(() => {
-      if (sidebarNavRef.value) {
-        sidebarNavRef.value.scrollTop = appStore.sidebarScrollTop
-      }
-    })
+    sidebarNavRef.value.scrollTop = appStore.sidebarScrollTop
   }
 })
 

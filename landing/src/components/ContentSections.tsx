@@ -8,6 +8,7 @@ import {
 import type { ModelPlazaData } from "../lib/modelPlaza";
 import { consoleUrl, documentUrl } from "../siteConfig";
 import Action from "./Action";
+import ShinyText from "./ShinyText";
 
 interface ValuePricingSectionProps {
   modelPlazaData: ModelPlazaData | null;
@@ -46,7 +47,7 @@ export function ValuePricingSection({
         className="value-pricing-title"
         data-reveal
       >
-        每一份 token 按实际配置结算
+        <ShinyText text="每一份 token 按实际配置结算" speed={2} spread={120} />
       </h2>
       <div className="value-pricing-main section-layer">
         <div className="value-pricing-copy" data-reveal>
@@ -73,7 +74,7 @@ export function ValuePricingSection({
                 <span className="value-pricing-reason-icon" aria-hidden="true">
                   <Zap />
                 </span>
-                <h4>不再担心限流和 token 焦虑。</h4>
+                <h4>不再 token 焦虑。</h4>
                 <p>按任务选择合适分组，减少限流干扰，调用成本更容易预估。</p>
               </article>
               <article className="value-pricing-reason-card">
@@ -94,17 +95,14 @@ export function ValuePricingSection({
           </p>
           <div className="value-pricing-summary">
             <div>
-              <h3>{priceSummary}</h3>
+              <h3><ShinyText text={priceSummary} speed={2} spread={120} /></h3>
               <p>按选择的计费分组自动计价。</p>
             </div>
           </div>
           <div className="value-pricing-action">
             <Action
-              className="button-primary value-pricing-purchase"
-              href={consoleUrl("/purchase")}
-              size="md"
-              radius={16}
-              highlight={false}
+              className="value-pricing-purchase"
+              href={consoleUrl("/purchase?tab=recharge")}
             >
               购买额度
             </Action>
@@ -117,6 +115,11 @@ export function ValuePricingSection({
 
 type ChannelStatusViewState = { status: "loading" } | ChannelStatusResult;
 const CHANNEL_STATUS_REFRESH_MS = 30_000;
+const CHANNEL_STATUS_STATE_ORDER: Record<ChannelStatusItem["state"], number> = {
+  operational: 0,
+  degraded: 1,
+  unknown: 2,
+};
 
 function statusLabel(state: ChannelStatusItem["state"]): string {
   if (state === "operational") return "正常";
@@ -248,7 +251,14 @@ export function StatusSection({ enabled = true }: { enabled?: boolean }) {
 
   const shouldRetry = state.status === "error" || state.status === "rate-limited";
   const note = statusNote(state);
-  const items = state.status === "success" ? (state.data.items ?? []) : [];
+  const items =
+    state.status === "success"
+      ? [...(state.data.items ?? [])].sort(
+          (left, right) =>
+            CHANNEL_STATUS_STATE_ORDER[left.state] -
+            CHANNEL_STATUS_STATE_ORDER[right.state],
+        )
+      : [];
 
   return (
     <section
@@ -258,7 +268,7 @@ export function StatusSection({ enabled = true }: { enabled?: boolean }) {
     >
       <div className="status-heading section-layer" data-reveal>
         <div className="section-heading section-heading-wide">
-          <h2 id="status-title">渠道状态</h2>
+          <h2 id="status-title"><ShinyText text="渠道状态" speed={2} spread={120} /></h2>
         </div>
       </div>
       <div
@@ -321,10 +331,7 @@ export function StatusSection({ enabled = true }: { enabled?: boolean }) {
         {shouldRetry ? (
           <div className="status-actions">
             <Action
-              className="button-secondary"
               type="button"
-              size="lg"
-              radius={16}
               onClick={() => setAttempt((value) => value + 1)}
             >
               <RefreshCw aria-hidden="true" />
@@ -370,9 +377,9 @@ export function SiteFooter({
               loading="lazy"
             />
           ) : null}
-          <strong>{siteName}</strong>
+          <strong><ShinyText text={siteName} speed={2.6} spread={120} /></strong>
         </div>
-        <p>{subtitle}</p>
+        <p><ShinyText text={subtitle} speed={2.6} spread={120} /></p>
         <span>
           © {new Date().getFullYear()} {siteName}
         </span>

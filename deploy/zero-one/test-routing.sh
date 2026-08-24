@@ -13,6 +13,19 @@ recovered_console_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/co
 recovered_console_admin_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-Bn5PLb3-.js"
 recovered_console_promo_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/PromoCodesView-D-9XRE_y.js"
 recovered_asset_alias="$repo_root/deploy/zero-one/recovered-frontend/console/assets/redeem-cachebust-20260820-fix6"
+recovered_floating_overlay="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-floating-panels-v1.js"
+recovered_navigation_reconciliation="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-navigation-reconciliation-v1.js"
+recovered_local_guard="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-local-preview-guard-v2.js"
+recovered_console_parity="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-console-parity-v1.js"
+recovered_console_parity_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-console-parity-v1.css"
+recovered_community_qr="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.js"
+recovered_community_qr_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.css"
+recovered_header_custom_menu="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.js"
+recovered_header_custom_menu_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.css"
+recovered_ccswitch_launch="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-ccswitch-launch-v1.js"
+recovered_affiliate_admin="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-affiliate-admin-v1.js"
+recovered_affiliate_admin_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-affiliate-admin-v1.css"
+recovered_login_recovery="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-login-recovery-v2.js"
 
 require() {
 	file=$1
@@ -35,18 +48,18 @@ forbid() {
 require "$production_caddyfile" 'import Caddyfile.shared'
 require "$production_caddyfile" 'api.01yapi.com {'
 require "$production_caddyfile" 'import landing_routes'
-require "$production_caddyfile" '@public_home {'
-require "$production_caddyfile" 'header @public_home Cache-Control "no-store"'
-require "$production_caddyfile" 'redir @public_home https://api.01yapi.com{uri} 307'
-require "$production_caddyfile" 'api.01yapi.cc {'
-require "$production_caddyfile" 'header @backup_root Cache-Control "no-store"'
-require "$production_caddyfile" 'respond @backup_root'
+require "$production_caddyfile" 'app.01yapi.com {'
+require "$production_caddyfile" 'header Cache-Control "no-store"'
+require "$production_caddyfile" 'redir https://api.01yapi.com{uri} 308'
+forbid "$production_caddyfile" 'api.01yapi.cc'
 require "$production_caddyfile" '01yapi.com, www.01yapi.com {'
 require "$production_caddyfile" 'redir https://api.01yapi.com{uri} 308'
 
 require "$preview_caddyfile" 'auto_https off'
 require "$preview_caddyfile" 'import Caddyfile.shared'
 require "$preview_caddyfile" ':80 {'
+require "$preview_caddyfile" '@preview_console_pages {'
+require "$preview_caddyfile" "connect-src 'self'; frame-src http: https:"
 require "$preview_caddyfile" 'import landing_routes'
 
 require "$shared_caddyfile" '(landing_routes) {'
@@ -65,12 +78,91 @@ require "$shared_caddyfile" 'https://checkout-demo.airwallex.com https:; frame-a
 
 require "$recovered_console_index" 'fetch("/api/v1/settings/public"'
 require "$recovered_console_index" "$recovered_console_entry"
+require "$recovered_console_index" 'await import("/assets/zero-one-local-preview-guard-v2.js")'
+require "$recovered_console_index" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=2")'
+require "$recovered_console_index" 'await import("/assets/zero-one-console-parity-v1.js?v=4")'
+require "$recovered_console_index" 'href="/assets/zero-one-console-parity-v1.css?v=4"'
+require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=5")'
+require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=2"'
+require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=6")'
+require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=3"'
+require "$recovered_console_index" 'await import("/assets/zero-one-ccswitch-launch-v1.js?v=1")'
+require "$recovered_console_index" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=4")'
+require "$recovered_console_index" 'href="/assets/zero-one-affiliate-admin-v1.css?v=3"'
+require "$recovered_console_index" 'await import("/assets/zero-one-floating-panels-v1.js?v=2")'
+require "$recovered_console_index" 'await import("/assets/zero-one-login-recovery-v2.js?v=3")'
 forbid "$recovered_pricing_chunk" 'getModelDefaultPricing('
 require "$recovered_console_redeem_chunk" 'redeem'
 require "$recovered_console_admin_redeem_chunk" 'box'
 require "$recovered_console_entry_asset" 'i.min_value=l,i.max_value=d'
 require "$recovered_console_entry_asset" 'ModelPlaza'
 require "$recovered_console_promo_chunk" 'promo.create'
+require "$recovered_floating_overlay" 'Runtime overlay for the approved recovered Console snapshot.'
+require "$recovered_floating_overlay" "selector: '.date-picker-dropdown'"
+require "$recovered_floating_overlay" "selector: '.select-dropdown[data-v-60ed8961]'"
+require "$recovered_floating_overlay" 'dataset.zeroOneFloatingPanel'
+require "$recovered_navigation_reconciliation" 'window.__ZERO_ONE_NAVIGATION_RECONCILIATION__ = { register, request }'
+require "$recovered_navigation_reconciliation" "appObserver.observe(app, { childList: true, subtree: true })"
+require "$recovered_navigation_reconciliation" "for (const method of ['pushState', 'replaceState'])"
+require "$recovered_navigation_reconciliation" "data-zero-one-sidebar-continuity"
+require "$recovered_local_guard" "const loopbackHosts = new Set(['127.0.0.1', 'localhost', '::1'])"
+require "$recovered_local_guard" 'Local preview blocked an external request:'
+require "$recovered_local_guard" '本地预览已阻止外部跳转，当前页面仍连接本地 Docker。'
+require "$recovered_local_guard" 'External iframe pages are an intentional Custom Page feature'
+forbid "$recovered_local_guard" 'node instanceof HTMLIFrameElement'
+require "$recovered_console_parity" "const USER_DASHBOARD_PATH = '/dashboard'"
+require "$recovered_console_parity" "const ADMIN_DASHBOARD_PATH = '/admin/dashboard'"
+require "$recovered_console_parity" "window.location.pathname === '/login'"
+require "$recovered_console_parity" "surface.dataset.zeroOneCardMotion = 'true'"
+require "$recovered_console_parity" "surface.classList.add('console-card-motion-surface', 'console-dashboard-surface')"
+require "$recovered_console_parity_css" '.console-card-motion-surface'
+require "$recovered_console_parity_css" '.console-skin-table'
+require "$recovered_console_parity_css" ':has(.card, iframe, table, .fixed, .sticky)'
+forbid "$recovered_console_parity_css" '.console-dashboard-surface .card:hover'
+require "$recovered_community_qr" "const COMMUNITY_QR_IMAGE_URL = '/api/v1/settings/community-qr'"
+require "$recovered_community_qr" 'loadAuthenticatedCommunityQrImage'
+require "$recovered_community_qr" 'URL.createObjectURL(imageBlob)'
+forbid "$recovered_community_qr" '/api/v1/settings/public?scope=community-qr'
+require "$recovered_community_qr" "'data-testid': 'community-qr-button'"
+require "$recovered_community_qr" "'data-testid': 'community-qr-settings'"
+require "$recovered_community_qr" "method: 'PUT'"
+require "$recovered_community_qr" "'X-Admin-UI-Request': '1'"
+require "$recovered_community_qr" "'data-testid': 'community-qr-title-input'"
+require "$recovered_community_qr" "'data-testid': 'community-qr-description-input'"
+require "$recovered_community_qr_css" '.zero-one-community-qr-dialog'
+require "$recovered_community_qr_css" '.zero-one-community-qr-settings'
+require "$recovered_header_custom_menu" "item.placement === 'header'"
+require "$recovered_header_custom_menu" 'data-zero-one-header-menu-placement'
+require "$recovered_header_custom_menu" 'window.__ZERO_ONE_BIND_INTERNAL_LINK__ = bind'
+require "$recovered_header_custom_menu" 'description.textContent !== CUSTOM_MENU_DESCRIPTION'
+require "$recovered_header_custom_menu" 'XMLHttpRequest.prototype.send'
+require "$recovered_header_custom_menu_css" '.zero-one-header-custom-menu-link'
+require "$recovered_ccswitch_launch" "href.startsWith('ccswitch://')"
+require "$recovered_ccswitch_launch" 'delay === LEGACY_PROBE_DELAY_MS'
+require "$recovered_ccswitch_launch" "includes('keys.ccSwitchNotInstalled')"
+require "$recovered_affiliate_admin" "'data-testid': 'admin-affiliate-nav'"
+require "$recovered_affiliate_admin" "'data-testid': 'affiliate-bind-open'"
+require "$recovered_affiliate_admin" "tabLink('邀请记录'"
+require "$recovered_affiliate_admin" '/admin/users?'
+require "$recovered_affiliate_admin" '/overview'
+require "$recovered_affiliate_admin" "method: 'POST'"
+require "$recovered_affiliate_admin" "body: { inviter_id: inviterId, invitee_id: inviteeId }"
+require "$recovered_affiliate_admin" "'data-testid': 'affiliate-bind-inviter-fixed'"
+require "$recovered_affiliate_admin" "'/user/totp/step-up'"
+require "$recovered_affiliate_admin" "for (const key of AFFILIATE_SETTING_KEYS) delete parsed[key]"
+forbid "$recovered_affiliate_admin" "userPicker('邀请人'"
+require "$recovered_affiliate_admin_css" '.zero-one-affiliate-workspace'
+require "$recovered_affiliate_admin_css" '.zero-one-affiliate-legacy-hidden'
+require "$recovered_affiliate_admin_css" 'display: none !important;'
+require "$recovered_affiliate_admin_css" '.zero-one-affiliate-dialog-overlay'
+require "$recovered_login_recovery" "const RECOVERY_PATH = '/forgot-password'"
+require "$recovered_login_recovery" 'a[href="/register"].btn.btn-secondary'
+require "$recovered_login_recovery" 'recoveryLink.className = registrationLink.className'
+require "$recovered_login_recovery" 'registrationLink.after(recoveryLink)'
+require "$recovered_login_recovery" "const LOGIN_BUTTON_CLASS = 'btn btn-primary btn-specular w-full'"
+require "$recovered_login_recovery" "window.location.pathname === '/forgot-password'"
+require "$recovered_login_recovery" 'sendResetLink.className = LOGIN_BUTTON_CLASS'
+require "$recovered_login_recovery" 'backWrapper.replaceChildren(backToLogin)'
 
 if [ "$(readlink "$recovered_asset_alias")" != '.' ]; then
 	echo 'recovered Console cache-busting asset alias is missing' >&2

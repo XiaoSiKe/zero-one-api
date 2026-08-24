@@ -1,6 +1,6 @@
 # ADR 0002: Serve the Public Site only at the exact API-domain root
 
-Status: Accepted
+Status: Superseded by ADR 0005
 
 ## Decision
 

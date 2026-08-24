@@ -120,7 +120,7 @@ func RegisterAdminRoutes(
 		registerPromptAuditRoutes(admin, h)
 
 		// 邀请返利（专属用户管理）
-		registerAffiliateRoutes(admin, h)
+		registerAffiliateRoutes(admin, h, stepUpAuth)
 
 		// 操作审计日志
 		registerAuditLogRoutes(admin, h, stepUpAuth)
@@ -787,10 +787,11 @@ func registerChannelMonitorRoutes(admin *gin.RouterGroup, h *handler.Handlers, s
 }
 
 // registerAffiliateRoutes 注册邀请返利的管理端路由（专属用户配置）
-func registerAffiliateRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerAffiliateRoutes(admin *gin.RouterGroup, h *handler.Handlers, stepUpAuth middleware.StepUpAuthMiddleware) {
 	affiliates := admin.Group("/affiliates")
 	{
 		affiliates.GET("/invites", h.Admin.Affiliate.ListInviteRecords)
+		affiliates.POST("/invites", requireAffiliateHumanSession, gin.HandlerFunc(stepUpAuth), h.Admin.Affiliate.BindInviter)
 		affiliates.GET("/rebates", h.Admin.Affiliate.ListRebateRecords)
 		affiliates.GET("/transfers", h.Admin.Affiliate.ListTransferRecords)
 
@@ -804,6 +805,16 @@ func registerAffiliateRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 			users.DELETE("/:user_id", h.Admin.Affiliate.ClearUserSettings)
 		}
 	}
+}
+
+func requireAffiliateHumanSession(c *gin.Context) {
+	middleware.SetAuditAction(c, "admin.affiliates.invite.bind")
+	if c.GetString("auth_method") == service.AuditAuthMethodAdminAPIKey {
+		middleware.AbortWithError(c, 403, "STEP_UP_ADMIN_API_KEY_FORBIDDEN",
+			"Admin API key cannot bind affiliate relationships; an administrator session is required")
+		return
+	}
+	c.Next()
 }
 
 func registerChannelMonitorV2Routes(admin *gin.RouterGroup, h *handler.Handlers, settingService *service.SettingService) {

@@ -351,7 +351,20 @@ const ImageUploadStub = defineComponent({
       type: String,
       default: "",
     },
+    acceptedMimeTypes: {
+      type: Array,
+      default: () => [],
+    },
+    maxSize: {
+      type: Number,
+      default: 0,
+    },
+    hint: {
+      type: String,
+      default: "",
+    },
   },
+  emits: ["update:modelValue"],
   setup(props) {
     return () =>
       h("div", {
@@ -360,6 +373,9 @@ const ImageUploadStub = defineComponent({
         "data-upload-label": props.uploadLabel,
         "data-remove-label": props.removeLabel,
         "data-placeholder": props.placeholder,
+        "data-accepted-mime-types": JSON.stringify(props.acceptedMimeTypes),
+        "data-max-size": props.maxSize,
+        "data-hint": props.hint,
       });
   },
 });
@@ -386,6 +402,10 @@ const baseSettingsResponse = {
   landing_notice_enabled: false,
   landing_notice_text: "",
   landing_notice_url: "",
+  community_qr_enabled: false,
+  community_qr_image: "",
+  community_qr_title: "交流群",
+  community_qr_description: "扫码加入交流群获取支持",
   api_base_url: "",
   contact_info: "",
   doc_url: "",
@@ -839,6 +859,137 @@ describe("admin SettingsView payment visible method controls", () => {
     ).toBe("");
   });
 
+  it("loads, validates, and submits the community QR entry through the shared save flow", async () => {
+    const image = "data:image/png;base64,iVBORw0KGgo=";
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      community_qr_enabled: true,
+      community_qr_image: image,
+      community_qr_title: "售后二群",
+      community_qr_description: "扫码加入售后群获取支持",
+    });
+
+    const wrapper = mountView();
+    await flushPromises();
+
+    const toggle = wrapper.get('[data-testid="community-qr-toggle"]');
+    const upload = wrapper
+      .findAllComponents(ImageUploadStub)
+      .find((node) => node.attributes("data-testid") === "community-qr-upload");
+
+    expect((toggle.element as HTMLInputElement).checked).toBe(true);
+    expect(toggle.attributes("disabled")).toBeUndefined();
+    expect(upload).toBeDefined();
+    expect(upload?.attributes("data-model-value")).toBe(image);
+    expect(upload?.attributes("data-accepted-mime-types")).toBe(
+      JSON.stringify(["image/png", "image/jpeg", "image/webp"]),
+    );
+    expect(upload?.attributes("data-max-size")).toBe(String(300 * 1024));
+    expect(
+      (wrapper.get('[data-testid="community-qr-title-input"]').element as HTMLInputElement).value,
+    ).toBe("售后二群");
+    expect(
+      (wrapper.get('[data-testid="community-qr-description-input"]').element as HTMLInputElement).value,
+    ).toBe("扫码加入售后群获取支持");
+
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        community_qr_enabled: true,
+        community_qr_image: image,
+        community_qr_title: "售后二群",
+        community_qr_description: "扫码加入售后群获取支持",
+      }),
+    );
+
+    upload?.vm.$emit("update:modelValue", "");
+    await flushPromises();
+
+    expect((toggle.element as HTMLInputElement).checked).toBe(false);
+    expect(toggle.attributes("disabled")).toBeDefined();
+  });
+
+  it("fails closed when an older admin-settings response omits community QR fields", async () => {
+    const response: Record<string, unknown> = { ...baseSettingsResponse };
+    delete response.community_qr_enabled;
+    delete response.community_qr_image;
+    delete response.community_qr_title;
+    delete response.community_qr_description;
+    getSettings.mockResolvedValueOnce(response);
+
+    const wrapper = mountView();
+    await flushPromises();
+
+    const toggle = wrapper.get('[data-testid="community-qr-toggle"]');
+    const upload = wrapper
+      .findAllComponents(ImageUploadStub)
+      .find((node) => node.attributes("data-testid") === "community-qr-upload");
+
+    expect((toggle.element as HTMLInputElement).checked).toBe(false);
+    expect(toggle.attributes("disabled")).toBeDefined();
+    expect(upload?.attributes("data-model-value")).toBe("");
+    expect(
+      (wrapper.get('[data-testid="community-qr-title-input"]').element as HTMLInputElement).value,
+    ).toBe("交流群");
+    expect(
+      (wrapper.get('[data-testid="community-qr-description-input"]').element as HTMLInputElement).value,
+    ).toBe("扫码加入交流群获取支持");
+  });
+
+  it("loads and saves all-role dual-placement custom menus without downgrading them", async () => {
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      custom_menu_items: [
+        {
+          id: "shared-tools",
+          label: "全员工具",
+          icon_svg: "",
+          url: "https://example.com/admin",
+          visibility: "all",
+          placement: "both",
+          sort_order: 0,
+        },
+      ],
+    });
+
+    const wrapper = mountView();
+    await flushPromises();
+
+    const visibility = wrapper.get('[data-testid="custom-menu-visibility-0"]');
+    const visibilityElement = visibility.element as HTMLSelectElement;
+    expect(Array.from(visibilityElement.options, (option) => option.value)).toEqual([
+      "user",
+      "admin",
+      "all",
+    ]);
+    expect(visibilityElement.value).toBe("all");
+
+    const placement = wrapper.get('[data-testid="custom-menu-placement-0"]');
+    const placementElement = placement.element as HTMLSelectElement;
+    expect(Array.from(placementElement.options, (option) => option.value)).toEqual([
+      "sidebar",
+      "header",
+      "both",
+    ]);
+    expect(placementElement.value).toBe("both");
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        custom_menu_items: [
+          expect.objectContaining({
+            id: "shared-tools",
+            visibility: "all",
+            placement: "both",
+          }),
+        ],
+      }),
+    );
+  });
+
   it("renders panel rate limit card and saves settings", async () => {
     getPanelRateLimitSettings.mockClear();
     updatePanelRateLimitSettings.mockClear();
@@ -1178,10 +1329,14 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(payload).not.toHaveProperty("payment_visible_method_wxpay_enabled");
   });
 
-  it("submits the admin recharge affiliate rebate setting", async () => {
+  it("does not submit affiliate settings owned by the dedicated affiliate page", async () => {
     getSettings.mockResolvedValueOnce({
       ...baseSettingsResponse,
       affiliate_enabled: true,
+      affiliate_rebate_rate: 35,
+      affiliate_rebate_freeze_hours: 24,
+      affiliate_rebate_duration_days: 180,
+      affiliate_rebate_per_invitee_cap: 500,
       affiliate_admin_recharge_enabled: true,
     });
 
@@ -1192,11 +1347,17 @@ describe("admin SettingsView payment visible method controls", () => {
     await flushPromises();
 
     expect(updateSettings).toHaveBeenCalledTimes(1);
-    expect(updateSettings).toHaveBeenCalledWith(
-      expect.objectContaining({
-        affiliate_admin_recharge_enabled: true,
-      }),
-    );
+    const payload = updateSettings.mock.calls[0]?.[0];
+    for (const key of [
+      "affiliate_enabled",
+      "affiliate_rebate_rate",
+      "affiliate_rebate_freeze_hours",
+      "affiliate_rebate_duration_days",
+      "affiliate_rebate_per_invitee_cap",
+      "affiliate_admin_recharge_enabled",
+    ]) {
+      expect(payload).not.toHaveProperty(key);
+    }
   });
 
   it("submits Anthropic cache TTL injection gateway setting", async () => {

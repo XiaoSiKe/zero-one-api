@@ -4,11 +4,171 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestAffiliateSummaryJSONHidesBindingTimestamp(t *testing.T) {
+	t.Parallel()
+
+	inviterID := int64(10)
+	boundAt := time.Now().UTC()
+	payload, err := json.Marshal(AffiliateSummary{
+		UserID:         20,
+		InviterID:      &inviterID,
+		InviterBoundAt: &boundAt,
+	})
+	require.NoError(t, err)
+	require.Contains(t, string(payload), `"inviter_id":10`)
+	require.NotContains(t, string(payload), "inviter_bound_at")
+}
+
+type affiliateAdminBindRepoStub struct {
+	AffiliateRepository
+	invitee       AffiliateSummary
+	bindResult    bool
+	bindErr       error
+	boundActorID  *int64
+	bindCallCount int
+}
+
+func (r *affiliateAdminBindRepoStub) EnsureUserAffiliate(_ context.Context, userID int64) (*AffiliateSummary, error) {
+	if userID != r.invitee.UserID {
+		return &AffiliateSummary{UserID: userID}, nil
+	}
+	copy := r.invitee
+	return &copy, nil
+}
+
+func (r *affiliateAdminBindRepoStub) BindInviter(_ context.Context, userID, inviterID int64, boundByAdminID *int64) (bool, error) {
+	r.bindCallCount++
+	if boundByAdminID != nil {
+		v := *boundByAdminID
+		r.boundActorID = &v
+	}
+	if r.bindErr != nil || !r.bindResult {
+		return r.bindResult, r.bindErr
+	}
+	now := time.Now().UTC()
+	r.invitee.UserID = userID
+	r.invitee.InviterID = &inviterID
+	r.invitee.InviterBoundAt = &now
+	return true, nil
+}
+
+func TestAdminBindInviterEnforcesImmutableRelationship(t *testing.T) {
+	t.Parallel()
+
+	t.Run("persists admin actor and returns relationship", func(t *testing.T) {
+		repo := &affiliateAdminBindRepoStub{
+			invitee:    AffiliateSummary{UserID: 20},
+			bindResult: true,
+		}
+		svc := NewAffiliateService(repo, nil, nil, nil)
+
+		binding, err := svc.AdminBindInviter(context.Background(), 20, 10, 99)
+		require.NoError(t, err)
+		require.Equal(t, int64(10), binding.InviterID)
+		require.Equal(t, int64(20), binding.InviteeID)
+		require.False(t, binding.InviterBoundAt.IsZero())
+		require.NotNil(t, repo.boundActorID)
+		require.Equal(t, int64(99), *repo.boundActorID)
+	})
+
+	t.Run("rejects self binding before repository call", func(t *testing.T) {
+		repo := &affiliateAdminBindRepoStub{invitee: AffiliateSummary{UserID: 20}, bindResult: true}
+		svc := NewAffiliateService(repo, nil, nil, nil)
+
+		_, err := svc.AdminBindInviter(context.Background(), 20, 20, 99)
+		require.ErrorIs(t, err, ErrAffiliateSelfBind)
+		require.Zero(t, repo.bindCallCount)
+	})
+
+	t.Run("maps lost CAS to already bound conflict", func(t *testing.T) {
+		repo := &affiliateAdminBindRepoStub{invitee: AffiliateSummary{UserID: 20}}
+		svc := NewAffiliateService(repo, nil, nil, nil)
+
+		_, err := svc.AdminBindInviter(context.Background(), 20, 10, 99)
+		require.ErrorIs(t, err, ErrAffiliateAlreadyBound)
+	})
+
+	t.Run("preserves cycle rejection", func(t *testing.T) {
+		repo := &affiliateAdminBindRepoStub{
+			invitee: AffiliateSummary{UserID: 20},
+			bindErr: ErrAffiliateCycle,
+		}
+		svc := NewAffiliateService(repo, nil, nil, nil)
+
+		_, err := svc.AdminBindInviter(context.Background(), 20, 10, 99)
+		require.True(t, errors.Is(err, ErrAffiliateCycle))
+	})
+}
+
+type affiliateAdminSettingsRepoStub struct {
+	AffiliateRepository
+	updates []AffiliateUserSettingsUpdate
+}
+
+func (r *affiliateAdminSettingsRepoStub) UpdateUserSettings(_ context.Context, _ int64, update AffiliateUserSettingsUpdate) error {
+	r.updates = append(r.updates, update)
+	return nil
+}
+
+func TestAdminUpdateUserSettingsUsesOneValidatedMutation(t *testing.T) {
+	t.Parallel()
+
+	t.Run("normalizes code and combines rate update", func(t *testing.T) {
+		repo := &affiliateAdminSettingsRepoStub{}
+		svc := NewAffiliateService(repo, nil, nil, nil)
+		rawCode := "  vip-2026  "
+		rate := 35.5
+
+		err := svc.AdminUpdateUserSettings(context.Background(), 42, AffiliateUserSettingsUpdate{
+			AffCode:              &rawCode,
+			UpdateRebateRate:     true,
+			AffRebateRatePercent: &rate,
+		})
+		require.NoError(t, err)
+		require.Len(t, repo.updates, 1)
+		require.Equal(t, "VIP-2026", *repo.updates[0].AffCode)
+		require.True(t, repo.updates[0].UpdateRebateRate)
+		require.InDelta(t, rate, *repo.updates[0].AffRebateRatePercent, 1e-9)
+	})
+
+	t.Run("rejects invalid combinations before repository call", func(t *testing.T) {
+		repo := &affiliateAdminSettingsRepoStub{}
+		svc := NewAffiliateService(repo, nil, nil, nil)
+		code := "VIP2026"
+		rate := 25.0
+
+		err := svc.AdminUpdateUserSettings(context.Background(), 42, AffiliateUserSettingsUpdate{
+			AffCode:      &code,
+			ResetAffCode: true,
+		})
+		require.Error(t, err)
+		err = svc.AdminUpdateUserSettings(context.Background(), 42, AffiliateUserSettingsUpdate{
+			AffRebateRatePercent: &rate,
+		})
+		require.Error(t, err)
+		require.Empty(t, repo.updates)
+	})
+
+	t.Run("clear is one atomic mutation", func(t *testing.T) {
+		repo := &affiliateAdminSettingsRepoStub{}
+		svc := NewAffiliateService(repo, nil, nil, nil)
+
+		require.NoError(t, svc.AdminClearUserSettings(context.Background(), 42))
+		require.Len(t, repo.updates, 1)
+		require.True(t, repo.updates[0].ResetAffCode)
+		require.True(t, repo.updates[0].UpdateRebateRate)
+		require.Nil(t, repo.updates[0].AffRebateRatePercent)
+	})
+}
 
 // TestResolveRebateRatePercent_PerUserOverride verifies that per-inviter
 // AffRebateRatePercent overrides the global rate, that NULL falls back to the

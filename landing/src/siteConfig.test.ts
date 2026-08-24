@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   API_ENDPOINT,
   API_V1_ENDPOINT,
+  CANONICAL_PRODUCT_ORIGIN,
   DISPLAY_API_ENDPOINT,
   IS_LOCAL_PREVIEW,
   canLoadBrandImage,
@@ -14,6 +15,7 @@ describe('site configuration', () => {
     expect(IS_LOCAL_PREVIEW).toBe(true)
     expect(API_ENDPOINT).toBe(window.location.origin)
     expect(API_V1_ENDPOINT).toBe(`${window.location.origin}/v1`)
+    expect(CANONICAL_PRODUCT_ORIGIN).toBe('https://api.01yapi.com')
     expect(DISPLAY_API_ENDPOINT).toBe('https://api.01yapi.com')
   })
 

@@ -36,7 +36,6 @@ case "$routing_mode" in
 		sed \
 			-e 's/^api\.01yapi\.com {/http:\/\/api.01yapi.test:8080 {/' \
 			-e 's/^app\.01yapi\.com {/http:\/\/app.01yapi.test:8080 {/' \
-			-e 's/^api\.01yapi\.cc {/http:\/\/api-backup.01yapi.test:8080 {/' \
 			-e 's/^01yapi\.com, www\.01yapi\.com {/http:\/\/01yapi.test:8080, http:\/\/www.01yapi.test:8080 {/' \
 			"$repo_root/deploy/zero-one/Caddyfile" >"$test_dir/Caddyfile"
 		listen_port=8080
@@ -103,10 +102,45 @@ assert_text "$asset_headers" 'Cache-Control: public, max-age=31536000, immutable
 console=$(curl -fsS -H "Host: $request_host" "$edge_url/login")
 assert_text "$console" '<title>零一 API - AI API Gateway</title>' 'primary login did not return the recovered console'
 assert_text "$console" 'fetch("/api/v1/settings/public"' 'recovered console did not bootstrap live public settings'
+assert_text "$console" 'await import("/assets/zero-one-local-preview-guard-v2.js")' 'recovered console local preview guard is missing'
+assert_text "$console" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=2")' 'recovered Console navigation reconciliation is missing'
+assert_text "$console" 'await import("/assets/zero-one-console-parity-v1.js?v=4")' 'recovered console parity overlay is missing'
+assert_text "$console" 'await import("/assets/zero-one-community-qr-v1.js?v=5")' 'recovered console community QR adapter is missing'
+assert_text "$console" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=6")' 'recovered console header custom-menu adapter is missing'
+assert_text "$console" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=4")' 'recovered console affiliate administration adapter is missing'
+assert_text "$console" 'await import("/assets/zero-one-floating-panels-v1.js?v=2")' 'recovered console floating overlay is missing'
 console_asset_path=$(printf '%s' "$console" | grep -o '/assets/[^" ]*\.js' | head -n 1)
 [ -n "$console_asset_path" ] || fail 'console JavaScript asset was not discoverable'
 console_asset_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url$console_asset_path")
 assert_text "$console_asset_headers" 'Cache-Control: public, max-age=31536000, immutable' 'hashed console asset is not immutable'
+floating_overlay_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-floating-panels-v1.js")
+assert_text "$floating_overlay_headers" 'Cache-Control: public, max-age=31536000, immutable' 'floating overlay asset is not immutable'
+local_guard_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-local-preview-guard-v2.js")
+assert_text "$local_guard_headers" 'Cache-Control: public, max-age=31536000, immutable' 'local preview guard asset is not immutable'
+console_parity_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-console-parity-v1.js")
+assert_text "$console_parity_headers" 'Cache-Control: public, max-age=31536000, immutable' 'console parity overlay is not immutable'
+console_parity_css_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-console-parity-v1.css")
+assert_text "$console_parity_css_headers" 'Cache-Control: public, max-age=31536000, immutable' 'console parity stylesheet is not immutable'
+community_qr_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-community-qr-v1.js")
+assert_text "$community_qr_headers" 'Cache-Control: public, max-age=31536000, immutable' 'community QR adapter is not immutable'
+community_qr_css_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-community-qr-v1.css")
+assert_text "$community_qr_css_headers" 'Cache-Control: public, max-age=31536000, immutable' 'community QR stylesheet is not immutable'
+header_custom_menu_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-header-custom-menu-v1.js")
+assert_text "$header_custom_menu_headers" 'Cache-Control: public, max-age=31536000, immutable' 'header custom-menu adapter is not immutable'
+header_custom_menu_css_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-header-custom-menu-v1.css")
+assert_text "$header_custom_menu_css_headers" 'Cache-Control: public, max-age=31536000, immutable' 'header custom-menu stylesheet is not immutable'
+affiliate_admin_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-affiliate-admin-v1.js")
+assert_text "$affiliate_admin_headers" 'Cache-Control: public, max-age=31536000, immutable' 'affiliate administration adapter is not immutable'
+affiliate_admin_css_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-affiliate-admin-v1.css")
+assert_text "$affiliate_admin_css_headers" 'Cache-Control: public, max-age=31536000, immutable' 'affiliate administration stylesheet is not immutable'
+
+if [ "$routing_mode" = preview ]; then
+	console_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/login")
+	assert_text "$console_headers" "connect-src 'self'; frame-src http: https:" 'preview Console CSP does not allow configured iframe pages'
+	case "$console_headers" in
+		*airwallex.com* | *stripe.com*) fail 'preview Console CSP permits external payment scripts' ;;
+	esac
+fi
 
 custom_page_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/custom/iframe-contract")
 assert_text "$custom_page_headers" 'https://checkout-demo.airwallex.com https:; frame-ancestors' 'custom page CSP does not permit configured HTTPS iframes'
@@ -147,30 +181,21 @@ for spoofed_ip in 8.8.8.8 8.8.4.4 1.1.1.1 9.9.9.9 208.67.222.222 208.67.220.220 
 done
 
 if [ "$routing_mode" = production ]; then
-	console_root_get_headers=$(curl -fsS -D - -o /dev/null -H 'Host: app.01yapi.test' "$edge_url/?source=contract")
-	assert_text "$console_root_get_headers" 'HTTP/1.1 307 Temporary Redirect' 'Console GET root redirect status changed'
-	assert_text "$console_root_get_headers" 'Cache-Control: no-store' 'Console GET root redirect is cacheable'
-	assert_text "$console_root_get_headers" 'Location: https://api.01yapi.com/?source=contract' 'Console GET root did not redirect to the public site'
+	for legacy_uri in \
+		'/?source=contract' \
+		'/dashboard?source=contract' \
+		'/keys?source=contract' \
+		'/monitor?source=contract' \
+		'/v1/models?source=contract'; do
+		legacy_headers=$(curl -fsS -D - -o /dev/null -H 'Host: app.01yapi.test' "$edge_url$legacy_uri")
+		assert_text "$legacy_headers" 'HTTP/1.1 308 Permanent Redirect' "legacy domain did not permanently redirect $legacy_uri"
+		assert_text "$legacy_headers" 'Cache-Control: no-store' "legacy redirect is cacheable for $legacy_uri"
+		assert_text "$legacy_headers" "Location: https://api.01yapi.com$legacy_uri" "legacy redirect lost its path or query for $legacy_uri"
+	done
 
-	console_root_head_headers=$(curl -fsSI -H 'Host: app.01yapi.test' "$edge_url/?source=contract")
-	assert_text "$console_root_head_headers" 'HTTP/1.1 307 Temporary Redirect' 'Console HEAD root redirect status changed'
-	assert_text "$console_root_head_headers" 'Cache-Control: no-store' 'Console HEAD root redirect is cacheable'
-	assert_text "$console_root_head_headers" 'Location: https://api.01yapi.com/?source=contract' 'Console HEAD root did not redirect to the public site'
-
-	console_post_root=$(curl -fsS -X POST -H 'Host: app.01yapi.test' --data 'probe' "$edge_url/")
-	assert_text "$console_post_root" '"method":"POST"' 'Console non-GET root did not reach Sub2API'
-	assert_text "$console_post_root" '"url":"/"' 'Console proxied root path changed'
-
-	console_response=$(curl -fsS -H 'Host: app.01yapi.test' "$edge_url/login")
-	assert_text "$console_response" '<title>零一 API - AI API Gateway</title>' 'Console host did not return the recovered console'
-
-	backup_headers=$(curl -fsS -D - -o "$test_dir/backup.json" -H 'Host: api-backup.01yapi.test' "$edge_url/")
-	assert_text "$backup_headers" 'Cache-Control: no-store' 'backup root is cacheable'
-	backup_body=$(cat "$test_dir/backup.json")
-	assert_text "$backup_body" '"automatic_failover":false' 'backup metadata changed'
-
-	backup_api=$(curl -fsS -H 'Host: api-backup.01yapi.test' "$edge_url/v1/models")
-	assert_text "$backup_api" '"url":"/v1/models"' 'backup API path did not proxy unchanged'
+	legacy_post_headers=$(curl -fsS -X POST -D - -o /dev/null -H 'Host: app.01yapi.test' --data 'probe' "$edge_url/v1/messages?source=contract")
+	assert_text "$legacy_post_headers" 'HTTP/1.1 308 Permanent Redirect' 'legacy POST did not permanently redirect'
+	assert_text "$legacy_post_headers" 'Location: https://api.01yapi.com/v1/messages?source=contract' 'legacy POST redirect lost its path or query'
 fi
 
 set +e

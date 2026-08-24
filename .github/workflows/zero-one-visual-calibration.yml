@@ -28,17 +28,12 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "24"
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 9
       - name: Install visual test dependencies
         run: npm ci --prefix visual-regression
       - name: Audit visual test dependencies
         run: npm audit --prefix visual-regression --audit-level=high
       - name: Install Landing dependencies
         run: npm ci --prefix landing
-      - name: Install Console dependencies
-        run: pnpm --dir frontend install --frozen-lockfile
       - name: Typecheck visual contracts
         run: npm run typecheck --prefix visual-regression
       - name: List visual contracts

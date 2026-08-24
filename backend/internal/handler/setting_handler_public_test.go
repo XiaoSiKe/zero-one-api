@@ -3,10 +3,13 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
@@ -16,7 +19,8 @@ import (
 )
 
 type settingHandlerPublicRepoStub struct {
-	values map[string]string
+	values        map[string]string
+	requestedKeys []string
 }
 
 func (s *settingHandlerPublicRepoStub) Get(ctx context.Context, key string) (*service.Setting, error) {
@@ -32,6 +36,7 @@ func (s *settingHandlerPublicRepoStub) Set(ctx context.Context, key, value strin
 }
 
 func (s *settingHandlerPublicRepoStub) GetMultiple(ctx context.Context, keys []string) (map[string]string, error) {
+	s.requestedKeys = append([]string(nil), keys...)
 	out := make(map[string]string, len(keys))
 	for _, key := range keys {
 		if value, ok := s.values[key]; ok {
@@ -114,6 +119,105 @@ func TestSettingHandler_GetPublicSettings_ExposesLandingNotice(t *testing.T) {
 	require.False(t, resp.Data.LandingNoticeEnabled)
 	require.Equal(t, "Maintenance tonight", resp.Data.LandingNoticeText)
 	require.Equal(t, "/status", resp.Data.LandingNoticeURL)
+}
+
+func TestSettingHandler_GetPublicSettings_ProjectsUserAndAllCustomMenus(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repo := &settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeyCustomMenuItems: `[
+			{"id":"user-help","visibility":"user"},
+			{"id":"shared-help","visibility":"all"},
+			{"id":"admin-help","visibility":"admin"},
+			{"id":"invalid-help","visibility":"guest"}
+		]`,
+	}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, publicSettingsPath, nil)
+	h.GetPublicSettings(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	var resp struct {
+		Data struct {
+			CustomMenuItems []struct {
+				ID         string `json:"id"`
+				Visibility string `json:"visibility"`
+			} `json:"custom_menu_items"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
+	require.Len(t, resp.Data.CustomMenuItems, 2)
+	require.Equal(t, []string{"user-help", "shared-help"}, []string{
+		resp.Data.CustomMenuItems[0].ID,
+		resp.Data.CustomMenuItems[1].ID,
+	})
+	require.Equal(t, []string{"user", "all"}, []string{
+		resp.Data.CustomMenuItems[0].Visibility,
+		resp.Data.CustomMenuItems[1].Visibility,
+	})
+}
+
+func TestSettingHandler_PublicSettingsMatchesFirstFrameInjection(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repo := &settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeyForceEmailOnThirdPartySignup: "true",
+		service.SettingKeyAffiliateEnabled:             "true",
+		service.SettingKeyCustomMenuItems:              `[{"id":"shared","visibility":"all"},{"id":"admin","visibility":"admin"}]`,
+		service.SettingKeyCustomEndpoints:              `[{"name":"OpenAI","endpoint":"/v1","description":"public"}]`,
+	}}
+	settingService := service.NewSettingService(repo, &config.Config{})
+	h := NewSettingHandler(settingService, "projection-version")
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, publicSettingsPath, nil)
+	h.GetPublicSettings(c)
+	require.Equal(t, http.StatusOK, recorder.Code)
+
+	var responseBody struct {
+		Data json.RawMessage `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &responseBody))
+	injected, err := settingService.GetPublicSettingsForInjection(context.Background())
+	require.NoError(t, err)
+	injectedJSON, err := json.Marshal(injected)
+	require.NoError(t, err)
+	require.JSONEq(t, string(responseBody.Data), string(injectedJSON))
+}
+
+func TestSettingHandler_GetPublicSettings_ExposesOnlyCommunityQRSwitch(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rawImage := "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP8zwACTGCSAQANHQEDgslx/wAAAABJRU5ErkJggg=="
+	repo := &settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeyCommunityQREnabled:     "true",
+		service.SettingKeyCommunityQRImage:       rawImage,
+		service.SettingKeyCommunityQRTitle:       "售后二群",
+		service.SettingKeyCommunityQRDescription: "扫码加入售后群获取支持",
+	}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, publicSettingsPath, nil)
+	h.GetPublicSettings(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Contains(t, recorder.Body.String(), `"community_qr_enabled":true`)
+	require.Contains(t, recorder.Body.String(), `"community_qr_title":"售后二群"`)
+	require.Contains(t, recorder.Body.String(), `"community_qr_description":"扫码加入售后群获取支持"`)
+	require.NotContains(t, recorder.Body.String(), "community_qr_image")
+	require.NotContains(t, recorder.Body.String(), rawImage)
+
+	repo.values[service.SettingKeyCommunityQRImage] = "data:image/png;base64,PGh0bWw+YmFkPC9odG1sPg=="
+	invalidRecorder := httptest.NewRecorder()
+	invalidContext, _ := gin.CreateTestContext(invalidRecorder)
+	invalidContext.Request = httptest.NewRequest(http.MethodGet, publicSettingsPath, nil)
+	h.GetPublicSettings(invalidContext)
+	require.Equal(t, http.StatusOK, invalidRecorder.Code)
+	require.Contains(t, invalidRecorder.Body.String(), `"community_qr_enabled":true`)
+	require.NotContains(t, invalidRecorder.Body.String(), "community_qr_image")
 }
 
 func TestSettingHandler_GetPublicSettings_ExposesPublicChannelStatusSwitch(t *testing.T) {
@@ -212,4 +316,268 @@ func TestSettingHandler_GetPublicSettings_ExposesWeChatOAuthModeCapabilities(t *
 	require.True(t, resp.Data.WeChatOAuthEnabled)
 	require.True(t, resp.Data.WeChatOAuthOpenEnabled)
 	require.True(t, resp.Data.WeChatOAuthMPEnabled)
+}
+
+func TestSettingHandler_GetPublicSettings_DefaultResponsePreservesDataSiteLogo(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rawLogo := "data:image/png;base64," + base64.StdEncoding.EncodeToString([]byte("legacy-logo"))
+	h := NewSettingHandler(service.NewSettingService(&settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeySiteLogo: rawLogo,
+	}}, &config.Config{}), "test-version")
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/public", nil)
+	h.GetPublicSettings(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	var resp struct {
+		Data map[string]json.RawMessage `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
+	var returnedLogo string
+	require.NoError(t, json.Unmarshal(resp.Data["site_logo"], &returnedLogo))
+	require.Equal(t, rawLogo, returnedLogo)
+	require.Contains(t, resp.Data, "payment_enabled")
+	require.Contains(t, resp.Data, "email_verify_enabled")
+}
+
+func TestSettingHandler_GetPublicSettings_LandingScopeIsSmallProjection(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	logoBytes := append([]byte("\x89PNG\r\n\x1a\n"), bytes.Repeat([]byte{0x42}, 64*1024)...)
+	rawLogo := "data:image/png;base64," + base64.StdEncoding.EncodeToString(logoBytes)
+	h := NewSettingHandler(service.NewSettingService(&settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeySiteName:                   "Zero One",
+		service.SettingKeySiteLogo:                   rawLogo,
+		service.SettingKeySiteSubtitle:               "API Gateway",
+		service.SettingKeyDocURL:                     "https://docs.example.com",
+		service.SettingKeyRegistrationEnabled:        "true",
+		service.SettingKeyModelPlazaEnabled:          "true",
+		service.SettingKeyModelPlazaRequireAuth:      "true",
+		service.SettingKeyChannelMonitorEnabled:      "true",
+		service.SettingKeyPublicChannelStatusEnabled: "true",
+		service.SettingKeyLandingNoticeEnabled:       "true",
+		service.SettingKeyLandingNoticeText:          "Maintenance tonight",
+		service.SettingKeyLandingNoticeURL:           "/status",
+	}}, &config.Config{}), "test-version")
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/public?scope=landing", nil)
+	h.GetPublicSettings(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Less(t, recorder.Body.Len(), 2_048)
+	require.NotContains(t, recorder.Body.String(), base64.StdEncoding.EncodeToString(logoBytes[:64]))
+	var resp struct {
+		Data map[string]json.RawMessage `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
+	require.ElementsMatch(t, []string{
+		"site_name",
+		"site_logo",
+		"site_subtitle",
+		"doc_url",
+		"registration_enabled",
+		"model_plaza_enabled",
+		"model_plaza_require_auth",
+		"channel_monitor_enabled",
+		"public_channel_status_enabled",
+		"server_utc_offset",
+		"landing_notice_enabled",
+		"landing_notice_text",
+		"landing_notice_url",
+	}, mapKeys(resp.Data))
+	require.NotContains(t, resp.Data, "payment_enabled")
+	require.NotContains(t, resp.Data, "email_verify_enabled")
+	require.NotContains(t, resp.Data, "version")
+
+	var returnedLogo string
+	require.NoError(t, json.Unmarshal(resp.Data["site_logo"], &returnedLogo))
+	require.Equal(t, landingSiteLogoURL(rawLogo), returnedLogo)
+	require.True(t, strings.HasPrefix(returnedLogo, publicSettingsPath+"?scope=logo&v="))
+}
+
+func TestLandingSiteLogoURLPreservesURLLogos(t *testing.T) {
+	for _, logoURL := range []string{
+		"https://cdn.example.com/logo.png",
+		"/uploads/logo.webp",
+	} {
+		require.Equal(t, logoURL, landingSiteLogoURL(logoURL))
+	}
+	require.Empty(t, landingSiteLogoURL("data:image/png;base64,not-valid-base64"))
+}
+
+func TestSettingHandler_GetPublicSiteLogoServesRevisionedImage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	content := []byte("\x89PNG\r\n\x1a\nlogo-content")
+	rawLogo := "data:image/png;base64," + base64.StdEncoding.EncodeToString(content)
+	logo, ok := decodePublicSiteLogo(rawLogo)
+	require.True(t, ok)
+	repo := &settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeySiteLogo: rawLogo,
+		service.SettingKeySiteName: "must not be read",
+	}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, publicSettingsPath+"?scope=logo&v="+logo.revision, nil)
+	h.GetPublicSettings(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, content, recorder.Body.Bytes())
+	require.Equal(t, "image/png", recorder.Header().Get("Content-Type"))
+	require.Equal(t, "nosniff", recorder.Header().Get("X-Content-Type-Options"))
+	require.Equal(t, `"`+logo.revision+`"`, recorder.Header().Get("ETag"))
+	require.Equal(t, "public, max-age=31536000, immutable", recorder.Header().Get("Cache-Control"))
+	require.Equal(t, []string{service.SettingKeySiteLogo}, repo.requestedKeys)
+
+	uncachedRecorder := httptest.NewRecorder()
+	uncachedContext, _ := gin.CreateTestContext(uncachedRecorder)
+	uncachedContext.Request = httptest.NewRequest(http.MethodGet, publicSettingsPath+"?scope=logo&v=stale", nil)
+	h.GetPublicSettings(uncachedContext)
+	require.Equal(t, http.StatusOK, uncachedRecorder.Code)
+	require.Equal(t, "no-store", uncachedRecorder.Header().Get("Cache-Control"))
+
+	notModifiedRecorder := httptest.NewRecorder()
+	notModifiedContext, _ := gin.CreateTestContext(notModifiedRecorder)
+	notModifiedContext.Request = httptest.NewRequest(http.MethodGet, publicSettingsPath+"?scope=logo&v="+logo.revision, nil)
+	notModifiedContext.Request.Header.Set("If-None-Match", `"`+logo.revision+`"`)
+	h.GetPublicSettings(notModifiedContext)
+	require.Equal(t, http.StatusNotModified, notModifiedRecorder.Code)
+	require.Empty(t, notModifiedRecorder.Body.Bytes())
+}
+
+func TestSettingHandler_GetPublicSiteLogoRejectsInvalidValues(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	tooLarge := "data:image/png;base64," + base64.StdEncoding.EncodeToString(make([]byte, maxPublicSiteLogoBytes+1))
+	for name, rawLogo := range map[string]string{
+		"empty":               "",
+		"external URL":        "https://cdn.example.com/logo.png",
+		"unsupported MIME":    "data:text/html;base64,PGgxPmJhZDwvaDE+",
+		"active SVG":          "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(`<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>`)),
+		"not base64":          "data:image/png,plain-text",
+		"malformed base64":    "data:image/png;base64,%%%",
+		"embedded whitespace": "data:image/png;base64,bG9n b2J5dGVz",
+		"too large":           tooLarge,
+	} {
+		t.Run(name, func(t *testing.T) {
+			h := NewSettingHandler(service.NewSettingService(&settingHandlerPublicRepoStub{values: map[string]string{
+				service.SettingKeySiteLogo: rawLogo,
+			}}, &config.Config{}), "test-version")
+			recorder := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(recorder)
+			c.Request = httptest.NewRequest(http.MethodGet, publicSettingsPath+"?scope=logo", nil)
+			h.GetPublicSettings(c)
+
+			require.Equal(t, http.StatusNotFound, recorder.Code)
+			require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"))
+			require.Equal(t, "nosniff", recorder.Header().Get("X-Content-Type-Options"))
+		})
+	}
+}
+
+func TestSettingHandler_PublicCommunityQRScopeNeverServesImage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rawImage := "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP8zwACTGCSAQANHQEDgslx/wAAAABJRU5ErkJggg=="
+	repo := &settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeyCommunityQREnabled: "true",
+		service.SettingKeyCommunityQRImage:   rawImage,
+	}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, publicSettingsPath+"?scope=community-qr", nil)
+	h.GetPublicSettings(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Contains(t, recorder.Header().Get("Content-Type"), "application/json")
+	require.Contains(t, recorder.Body.String(), `"community_qr_enabled":true`)
+	require.NotContains(t, recorder.Body.String(), rawImage)
+	require.NotContains(t, repo.requestedKeys, service.SettingKeyCommunityQRImage)
+}
+
+func TestSettingHandler_GetCommunityQRImageServesValidatedBytesFromNarrowSettingsRead(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	encoded := "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP8zwACTGCSAQANHQEDgslx/wAAAABJRU5ErkJggg=="
+	content, err := base64.StdEncoding.DecodeString(encoded)
+	require.NoError(t, err)
+	rawImage := "data:image/png;base64," + encoded
+	repo := &settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeyCommunityQREnabled: "true",
+		service.SettingKeyCommunityQRImage:   rawImage,
+		service.SettingKeySiteName:           "must not be read",
+	}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/community-qr", nil)
+	h.GetCommunityQRImage(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, content, recorder.Body.Bytes())
+	require.Equal(t, "image/png", recorder.Header().Get("Content-Type"))
+	require.Equal(t, "nosniff", recorder.Header().Get("X-Content-Type-Options"))
+	require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"))
+	require.Equal(t, []string{service.SettingKeyCommunityQREnabled, service.SettingKeyCommunityQRImage}, repo.requestedKeys)
+}
+
+func TestSettingHandler_GetCommunityQRImageRejectsInvalidValues(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	tooLarge := append([]byte("\x89PNG\r\n\x1a\n"), make([]byte, service.MaxCommunityQRImageBytes-7)...)
+	for name, rawImage := range map[string]string{
+		"empty":               "",
+		"active SVG":          "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(`<svg><script>alert(1)</script></svg>`)),
+		"HTML disguised PNG":  "data:image/png;base64," + base64.StdEncoding.EncodeToString([]byte(`<html>bad</html>`)),
+		"malformed base64":    "data:image/png;base64,%%%",
+		"embedded whitespace": "data:image/png;base64,iVBO Rw0KGgo=",
+		"too large":           "data:image/png;base64," + base64.StdEncoding.EncodeToString(tooLarge),
+	} {
+		t.Run(name, func(t *testing.T) {
+			repo := &settingHandlerPublicRepoStub{values: map[string]string{
+				service.SettingKeyCommunityQREnabled: "true",
+				service.SettingKeyCommunityQRImage:   rawImage,
+			}}
+			h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+			recorder := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(recorder)
+			c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/community-qr", nil)
+			h.GetCommunityQRImage(c)
+
+			require.Equal(t, http.StatusNotFound, recorder.Code)
+			require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"))
+			require.Equal(t, "nosniff", recorder.Header().Get("X-Content-Type-Options"))
+			require.Equal(t, []string{service.SettingKeyCommunityQREnabled, service.SettingKeyCommunityQRImage}, repo.requestedKeys)
+		})
+	}
+}
+
+func TestSettingHandler_GetCommunityQRImageIsHiddenWhileDisabled(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rawImage := "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP8zwACTGCSAQANHQEDgslx/wAAAABJRU5ErkJggg=="
+	repo := &settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeyCommunityQREnabled: "false",
+		service.SettingKeyCommunityQRImage:   rawImage,
+	}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/community-qr", nil)
+	h.GetCommunityQRImage(c)
+
+	require.Equal(t, http.StatusNotFound, recorder.Code)
+	require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"))
+	require.Equal(t, "nosniff", recorder.Header().Get("X-Content-Type-Options"))
+	require.Equal(t, []string{service.SettingKeyCommunityQREnabled, service.SettingKeyCommunityQRImage}, repo.requestedKeys)
+}
+
+func mapKeys(values map[string]json.RawMessage) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	return keys
 }

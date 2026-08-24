@@ -1,0 +1,76 @@
+.zero-one-header-custom-menu-group {
+  display: contents;
+}
+
+aside a[data-zero-one-header-hidden='true'],
+aside a[data-zero-one-role-hidden='true'] {
+  display: none !important;
+}
+
+.zero-one-header-custom-menu-link {
+  display: none;
+  max-width: 9rem;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.625rem;
+  color: rgb(75 85 99);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  text-decoration: none;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.zero-one-header-custom-menu-link:hover {
+  background: rgb(243 244 246);
+  color: rgb(17 24 39);
+}
+
+.dark .zero-one-header-custom-menu-link {
+  color: rgb(156 163 175);
+}
+
+.dark .zero-one-header-custom-menu-link:hover {
+  background: rgb(31 41 55);
+  color: white;
+}
+
+.zero-one-header-custom-menu-link:focus-visible {
+  outline: 2px solid rgb(59 130 246);
+  outline-offset: 2px;
+}
+
+.zero-one-header-custom-menu-link span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zero-one-header-custom-menu-icon {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+
+.zero-one-header-menu-placement-field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.zero-one-header-menu-placement-field label {
+  color: rgb(75 85 99);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+}
+
+.dark .zero-one-header-menu-placement-field label {
+  color: rgb(156 163 175);
+}
+
+@media (min-width: 640px) {
+  .zero-one-header-custom-menu-link {
+    display: flex;
+  }
+}

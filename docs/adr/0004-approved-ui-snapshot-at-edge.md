@@ -21,6 +21,20 @@ Snapshot for the documented Console routes. The snapshot is fixed by the
 `ui-approved-*` tag and `.github/scripts/ui-baseline.json`; an upstream upgrade
 may change only the named API/type compatibility paths without moving that tag.
 
+The maintained Vue source has one stable authenticated Console shell: the
+sidebar and header are owned above route content, and ordinary Console
+navigation replaces only the route content. A page must not acquire a second
+`AppLayout` ownership. The shell route metadata, its leaf-page contract and its
+regression test are protected product paths, including the named exception for
+the upstream router file.
+
+The recovered snapshot remains an approved base package. Its maintained
+overlays use one navigation reconciliation asset with one Router history hook,
+one `#app` child-list observer and one microtask batch. Overlay-specific work
+registers idempotent reconciliation instead of adding another global observer,
+history wrapper or navigation-time animation frame. This is an overlay change,
+not permission to replace or rewrite the approved recovered base package.
+
 Every Backend and Edge image in a Coherent Release is still built from the same
 source commit. Backend migrations and API contracts are deployed and verified
 first, followed by the matching Edge image. The recovered Console routing and
@@ -37,3 +51,10 @@ An upstream backend release can be adopted without an unreviewed visual change,
 and rollback retains a known Console asset set. New upstream features that need
 new Console controls remain unavailable in the protected snapshot until a
 separate visual review creates a new immutable UI approval tag.
+
+Any release that changes the stable Console shell or its recovered navigation
+reconciliation must run the desktop and mobile visual suite plus frame-level
+navigation checks before a new immutable approval tag is created. The approval
+must demonstrate that a key-to-usage route change does not reload the document,
+remove the sidebar, restore its scroll position on a later frame, or keep
+observer/reconciliation work alive while the page is idle.

@@ -25,34 +25,8 @@ api.01yapi.com {
 
 app.01yapi.com {
 	import access_log
-
-	@public_home {
-		method GET HEAD
-		path /
-	}
-
-	header @public_home Cache-Control "no-store"
-	redir @public_home https://api.01yapi.com{uri} 307
-
-	import recovered_console_routes
-
-	header X-Robots-Tag "noindex, nofollow"
-	import sub2api_proxy
-}
-
-api.01yapi.cc {
-	import access_log
-
-	@backup_root {
-		method GET HEAD
-		path /
-	}
-
-	header @backup_root Cache-Control "no-store"
-	header @backup_root Content-Type "application/json; charset=utf-8"
-	respond @backup_root `{"role":"backup","primary":"https://api.01yapi.com","automatic_failover":false}` 200
-
-	import sub2api_proxy
+	header Cache-Control "no-store"
+	redir https://api.01yapi.com{uri} 308
 }
 
 01yapi.com, www.01yapi.com {

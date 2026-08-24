@@ -24,6 +24,16 @@ test('uses the pinned stable release as the published server version', () => {
   assert.equal(stableReleaseVersion(baseline), baseline.release.slice(1))
 })
 
+test('publish source rejects missing or empty pre-upgrade sync metadata', () => {
+  const missing = structuredClone(baseline)
+  delete missing.upstream_sync
+  assert.throws(() => stableReleaseVersion(missing), /upstream_sync metadata is required/)
+
+  const emptyProductCommit = structuredClone(baseline)
+  emptyProductCommit.upstream_sync.product_commit = ''
+  assert.throws(() => stableReleaseVersion(emptyProductCommit), /product_commit must be a lowercase/)
+})
+
 test('rejects non-stable release identifiers', () => {
   assert.throws(
     () => stableReleaseVersion(baselineForRelease('v0.1.174-rc.1')),

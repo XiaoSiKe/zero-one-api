@@ -323,6 +323,18 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.SiteLogo != after.SiteLogo {
 		changed = append(changed, "site_logo")
 	}
+	if before.CommunityQREnabled != after.CommunityQREnabled {
+		changed = append(changed, service.SettingKeyCommunityQREnabled)
+	}
+	if before.CommunityQRImage != after.CommunityQRImage {
+		changed = append(changed, service.SettingKeyCommunityQRImage)
+	}
+	if before.CommunityQRTitle != after.CommunityQRTitle {
+		changed = append(changed, service.SettingKeyCommunityQRTitle)
+	}
+	if before.CommunityQRDescription != after.CommunityQRDescription {
+		changed = append(changed, service.SettingKeyCommunityQRDescription)
+	}
 	if before.SiteSubtitle != after.SiteSubtitle {
 		changed = append(changed, "site_subtitle")
 	}

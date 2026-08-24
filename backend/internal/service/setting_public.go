@@ -182,6 +182,9 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyAPIKeyACLTrustForwardedIP,
 		SettingKeySiteName,
 		SettingKeySiteLogo,
+		SettingKeyCommunityQREnabled,
+		SettingKeyCommunityQRTitle,
+		SettingKeyCommunityQRDescription,
 		SettingKeySiteSubtitle,
 		SettingKeyLandingNoticeEnabled,
 		SettingKeyLandingNoticeText,
@@ -342,6 +345,9 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		AliyunCaptchaRegion:                 normalizeAliyunCaptchaRegion(settings[SettingKeyAliyunCaptchaRegion]),
 		SiteName:                            s.getStringOrDefault(settings, SettingKeySiteName, "Sub2API"),
 		SiteLogo:                            settings[SettingKeySiteLogo],
+		CommunityQREnabled:                  settings[SettingKeyCommunityQREnabled] == "true",
+		CommunityQRTitle:                    s.getStringOrDefault(settings, SettingKeyCommunityQRTitle, DefaultCommunityQRTitle),
+		CommunityQRDescription:              s.getStringOrDefault(settings, SettingKeyCommunityQRDescription, DefaultCommunityQRDescription),
 		SiteSubtitle:                        s.getStringOrDefault(settings, SettingKeySiteSubtitle, "Subscription to API Conversion Platform"),
 		LandingNoticeEnabled:                landingNoticeEnabled,
 		LandingNoticeText:                   landingNoticeText,
@@ -393,6 +399,27 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 
 		AllowUserViewErrorRequests: settings[SettingKeyAllowUserViewErrorRequests] == "true",
 	}, nil
+}
+
+// GetPublicSiteLogo reads only the public logo setting. The logo response must
+// not pay the cost of loading every public setting again.
+func (s *SettingService) GetPublicSiteLogo(ctx context.Context) (string, error) {
+	settings, err := s.settingRepo.GetMultiple(ctx, []string{SettingKeySiteLogo})
+	if err != nil {
+		return "", fmt.Errorf("get public site logo: %w", err)
+	}
+	return settings[SettingKeySiteLogo], nil
+}
+
+// GetCommunityQRImage reads only the entry switch and image setting so the
+// authenticated binary endpoint does not load the complete settings record or
+// expose a retained image while the administrator has disabled the entry.
+func (s *SettingService) GetCommunityQRImage(ctx context.Context) (string, bool, error) {
+	settings, err := s.settingRepo.GetMultiple(ctx, []string{SettingKeyCommunityQREnabled, SettingKeyCommunityQRImage})
+	if err != nil {
+		return "", false, fmt.Errorf("get community QR image: %w", err)
+	}
+	return settings[SettingKeyCommunityQRImage], settings[SettingKeyCommunityQREnabled] == "true", nil
 }
 
 // channelMonitorIntervalMin / channelMonitorIntervalMax bound the default interval
@@ -577,22 +604,30 @@ func (s *SettingService) IsUserErrorViewAllowed(ctx context.Context) bool {
 	return vals[SettingKeyAllowUserViewErrorRequests] == "true"
 }
 
-// PublicSettingsInjectionPayload is the JSON shape embedded into HTML as
-// `window.__APP_CONFIG__` so the frontend can hydrate feature flags & site
-// config before the first XHR finishes.
-//
-// INVARIANT: every `json` tag here MUST also exist on handler/dto.PublicSettings.
-// If you forget a feature-flag field here, the frontend's
-// `cachedPublicSettings.xxx_enabled` will be `undefined` on refresh until the
-// async `/api/v1/settings/public` call returns — which causes opt-in menus
-// (strict `=== true`) to flicker off/on. See
-// frontend/src/utils/featureFlags.ts for the matching registry.
-//
-// A unit test diffs this struct's JSON keys against dto.PublicSettings to catch
-// drift automatically (see setting_service_injection_test.go).
-type PublicSettingsInjectionPayload struct {
+type PublicCustomMenuItem struct {
+	ID         string `json:"id"`
+	Label      string `json:"label"`
+	IconSVG    string `json:"icon_svg"`
+	URL        string `json:"url"`
+	PageSlug   string `json:"page_slug,omitempty"`
+	Visibility string `json:"visibility"`
+	Placement  string `json:"placement,omitempty"`
+	SortOrder  int    `json:"sort_order"`
+}
+
+type PublicCustomEndpoint struct {
+	Name        string `json:"name"`
+	Endpoint    string `json:"endpoint"`
+	Description string `json:"description"`
+}
+
+// PublicSettingsProjection is the single explicit public-settings shape used
+// by both the HTTP response and window.__APP_CONFIG__ first-frame injection.
+// Adding a field here is an authorization decision under ADR 0003.
+type PublicSettingsProjection struct {
 	RegistrationEnabled                 bool                     `json:"registration_enabled"`
 	EmailVerifyEnabled                  bool                     `json:"email_verify_enabled"`
+	ForceEmailOnThirdPartySignup        bool                     `json:"force_email_on_third_party_signup"`
 	RegistrationEmailSuffixWhitelist    []string                 `json:"registration_email_suffix_whitelist"`
 	RegistrationEmailDomainQuotaEnabled bool                     `json:"registration_email_domain_quota_enabled"`
 	PromoCodeEnabled                    bool                     `json:"promo_code_enabled"`
@@ -616,6 +651,9 @@ type PublicSettingsInjectionPayload struct {
 	AliyunCaptchaRegion                 string                   `json:"aliyun_captcha_region"`
 	SiteName                            string                   `json:"site_name"`
 	SiteLogo                            string                   `json:"site_logo"`
+	CommunityQREnabled                  bool                     `json:"community_qr_enabled"`
+	CommunityQRTitle                    string                   `json:"community_qr_title"`
+	CommunityQRDescription              string                   `json:"community_qr_description"`
 	SiteSubtitle                        string                   `json:"site_subtitle"`
 	LandingNoticeEnabled                bool                     `json:"landing_notice_enabled"`
 	LandingNoticeText                   string                   `json:"landing_notice_text"`
@@ -630,8 +668,8 @@ type PublicSettingsInjectionPayload struct {
 	PurchaseSubscriptionURL             string                   `json:"purchase_subscription_url"`
 	TableDefaultPageSize                int                      `json:"table_default_page_size"`
 	TablePageSizeOptions                []int                    `json:"table_page_size_options"`
-	CustomMenuItems                     json.RawMessage          `json:"custom_menu_items"`
-	CustomEndpoints                     json.RawMessage          `json:"custom_endpoints"`
+	CustomMenuItems                     []PublicCustomMenuItem   `json:"custom_menu_items"`
+	CustomEndpoints                     []PublicCustomEndpoint   `json:"custom_endpoints"`
 	LinuxDoOAuthEnabled                 bool                     `json:"linuxdo_oauth_enabled"`
 	DingTalkOAuthEnabled                bool                     `json:"dingtalk_oauth_enabled"`
 	WeChatOAuthEnabled                  bool                     `json:"wechat_oauth_enabled"`
@@ -674,17 +712,20 @@ type PublicSettingsInjectionPayload struct {
 	AllowUserViewErrorRequests bool `json:"allow_user_view_error_requests"`
 }
 
-// GetPublicSettingsForInjection returns public settings in a format suitable for HTML injection.
-// This implements the web.PublicSettingsProvider interface.
-func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any, error) {
+// PublicSettingsInjectionPayload remains as an alias for existing web provider
+// callers; there is one projection implementation and therefore one test surface.
+type PublicSettingsInjectionPayload = PublicSettingsProjection
+
+func (s *SettingService) GetPublicSettingsProjection(ctx context.Context) (*PublicSettingsProjection, error) {
 	settings, err := s.GetPublicSettings(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return &PublicSettingsInjectionPayload{
+	return &PublicSettingsProjection{
 		RegistrationEnabled:                 settings.RegistrationEnabled,
 		EmailVerifyEnabled:                  settings.EmailVerifyEnabled,
+		ForceEmailOnThirdPartySignup:        settings.ForceEmailOnThirdPartySignup,
 		RegistrationEmailSuffixWhitelist:    settings.RegistrationEmailSuffixWhitelist,
 		RegistrationEmailDomainQuotaEnabled: settings.RegistrationEmailDomainQuotaEnabled,
 		PromoCodeEnabled:                    settings.PromoCodeEnabled,
@@ -708,6 +749,9 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		AliyunCaptchaRegion:                 settings.AliyunCaptchaRegion,
 		SiteName:                            settings.SiteName,
 		SiteLogo:                            settings.SiteLogo,
+		CommunityQREnabled:                  settings.CommunityQREnabled,
+		CommunityQRTitle:                    settings.CommunityQRTitle,
+		CommunityQRDescription:              settings.CommunityQRDescription,
 		SiteSubtitle:                        settings.SiteSubtitle,
 		LandingNoticeEnabled:                settings.LandingNoticeEnabled,
 		LandingNoticeText:                   settings.LandingNoticeText,
@@ -722,8 +766,8 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		PurchaseSubscriptionURL:             settings.PurchaseSubscriptionURL,
 		TableDefaultPageSize:                settings.TableDefaultPageSize,
 		TablePageSizeOptions:                settings.TablePageSizeOptions,
-		CustomMenuItems:                     filterUserVisibleMenuItems(settings.CustomMenuItems),
-		CustomEndpoints:                     safeRawJSONArray(settings.CustomEndpoints),
+		CustomMenuItems:                     parsePublicCustomMenuItems(settings.CustomMenuItems),
+		CustomEndpoints:                     parsePublicCustomEndpoints(settings.CustomEndpoints),
 		LinuxDoOAuthEnabled:                 settings.LinuxDoOAuthEnabled,
 		DingTalkOAuthEnabled:                settings.DingTalkOAuthEnabled,
 		WeChatOAuthEnabled:                  settings.WeChatOAuthEnabled,
@@ -759,52 +803,40 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 	}, nil
 }
 
-// filterUserVisibleMenuItems filters out admin-only menu items from a raw JSON
-// array string, returning only items with visibility != "admin".
-func filterUserVisibleMenuItems(raw string) json.RawMessage {
-	raw = strings.TrimSpace(raw)
-	if raw == "" || raw == "[]" {
-		return json.RawMessage("[]")
-	}
-	var items []struct {
-		Visibility string `json:"visibility"`
-	}
-	if err := json.Unmarshal([]byte(raw), &items); err != nil {
-		return json.RawMessage("[]")
-	}
-
-	// Parse full items to preserve all fields
-	var fullItems []json.RawMessage
-	if err := json.Unmarshal([]byte(raw), &fullItems); err != nil {
-		return json.RawMessage("[]")
-	}
-
-	var filtered []json.RawMessage
-	for i, item := range items {
-		if item.Visibility != "admin" {
-			filtered = append(filtered, fullItems[i])
-		}
-	}
-	if len(filtered) == 0 {
-		return json.RawMessage("[]")
-	}
-	result, err := json.Marshal(filtered)
-	if err != nil {
-		return json.RawMessage("[]")
-	}
-	return result
+// GetPublicSettingsForInjection implements web.PublicSettingsProvider using the
+// same projection returned by the public HTTP endpoint.
+func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any, error) {
+	return s.GetPublicSettingsProjection(ctx)
 }
 
-// safeRawJSONArray returns raw as json.RawMessage if it's valid JSON, otherwise "[]".
-func safeRawJSONArray(raw string) json.RawMessage {
+func parsePublicCustomMenuItems(raw string) []PublicCustomMenuItem {
 	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return json.RawMessage("[]")
+	if raw == "" || raw == "[]" {
+		return []PublicCustomMenuItem{}
 	}
-	if json.Valid([]byte(raw)) {
-		return json.RawMessage(raw)
+	var items []PublicCustomMenuItem
+	if err := json.Unmarshal([]byte(raw), &items); err != nil {
+		return []PublicCustomMenuItem{}
 	}
-	return json.RawMessage("[]")
+	filtered := make([]PublicCustomMenuItem, 0, len(items))
+	for _, item := range items {
+		if item.Visibility == "user" || item.Visibility == "all" {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
+}
+
+func parsePublicCustomEndpoints(raw string) []PublicCustomEndpoint {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw == "[]" {
+		return []PublicCustomEndpoint{}
+	}
+	var endpoints []PublicCustomEndpoint
+	if err := json.Unmarshal([]byte(raw), &endpoints); err != nil {
+		return []PublicCustomEndpoint{}
+	}
+	return endpoints
 }
 
 // GetFrameSrcOrigins returns deduplicated http(s) origins from home_content URL,

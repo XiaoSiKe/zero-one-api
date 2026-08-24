@@ -189,7 +189,8 @@ export interface CustomMenuItem {
   icon_svg: string
   url: string
   page_slug?: string
-  visibility: 'user' | 'admin'
+  visibility: 'user' | 'admin' | 'all'
+  placement?: 'sidebar' | 'header' | 'both'
   sort_order: number
 }
 
@@ -275,6 +276,10 @@ export interface PublicSettings {
   available_channels_enabled: boolean
   model_plaza_enabled: boolean
   model_plaza_require_auth: boolean
+  /** Optional for compatibility with servers deployed before the community entry was added. */
+  community_qr_enabled?: boolean
+  community_qr_title?: string
+  community_qr_description?: string
   service_quota_enabled: boolean
   affiliate_enabled: boolean
   allow_user_view_error_requests?: boolean

@@ -260,12 +260,6 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 	}
 	sessionHash := h.gatewayService.GenerateSessionHash(parsedReq)
 
-	// [DEBUG-STICKY] 打印会话 hash 生成结果
-	reqLog.Info("sticky.session_hash_generated",
-		zap.String("session_hash", sessionHash),
-		zap.String("metadata_user_id_raw", parsedReq.MetadataUserID),
-	)
-
 	// 获取平台：优先使用强制平台（/antigravity 路由），其次使用 composite 解析出的目标平台，否则使用分组平台
 	platform := ""
 	if forcePlatform, ok := middleware2.GetForcePlatformFromContext(c); ok {
@@ -284,11 +278,6 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 	var sessionBoundAccountID int64
 	if sessionKey != "" {
 		sessionBoundAccountID, _ = h.gatewayService.GetCachedSessionAccountID(c.Request.Context(), apiKey.GroupID, sessionKey)
-		// [DEBUG-STICKY] 打印粘性会话查询结果
-		reqLog.Info("sticky.cache_lookup",
-			zap.String("session_key", sessionKey),
-			zap.Int64("bound_account_id", sessionBoundAccountID),
-		)
 		if sessionBoundAccountID > 0 {
 			prefetchedGroupID := int64(0)
 			if apiKey.GroupID != nil {
@@ -668,16 +657,6 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			}
 			account := selection.Account
 			setOpsSelectedAccount(c, account.ID, account.Platform)
-
-			// [DEBUG-STICKY] 打印账号选择结果
-			reqLog.Info("sticky.account_selected",
-				zap.Int64("selected_account_id", account.ID),
-				zap.String("account_name", account.Name),
-				zap.Bool("slot_acquired", selection.Acquired),
-				zap.Bool("has_wait_plan", selection.WaitPlan != nil),
-				zap.Int64("sticky_bound_account_id", sessionBoundAccountID),
-				zap.Bool("sticky_honored", sessionBoundAccountID > 0 && sessionBoundAccountID == account.ID),
-			)
 
 			// 检查请求拦截（预热请求、SUGGESTION MODE等）
 			if account.IsInterceptWarmupEnabled() {

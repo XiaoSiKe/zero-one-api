@@ -1,150 +1,102 @@
 <template>
-  <AppLayout>
-    <TablePageLayout>
-      <template #filters>
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="relative w-full md:w-80">
-            <Icon name="search" size="md" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input v-model="filters.search" type="text" class="input pl-10" :placeholder="t('admin.affiliates.records.searchPlaceholder')" @input="debounceLoad" />
+  <TablePageLayout>
+    <template #filters>
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="relative w-full md:w-80">
+          <Icon name="search" size="md" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input v-model="filters.search" type="text" class="input pl-10" :placeholder="t('admin.affiliates.records.searchPlaceholder')" @input="debounceLoad" />
+        </div>
+        <input v-model="filters.start_at" type="date" class="input w-full sm:w-44" :title="t('admin.affiliates.records.startAt')" @change="reloadFromFirstPage" />
+        <input v-model="filters.end_at" type="date" class="input w-full sm:w-44" :title="t('admin.affiliates.records.endAt')" @change="reloadFromFirstPage" />
+        <button class="btn btn-secondary px-2 md:px-3" :disabled="loading" :title="t('common.refresh')" @click="loadRecords">
+          <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
+        </button>
+      </div>
+    </template>
+
+    <template #table>
+      <DataTable
+        :columns="columns"
+        :data="records"
+        :loading="loading"
+        :server-side-sort="true"
+        default-sort-key="created_at"
+        default-sort-order="desc"
+        :sort-storage-key="sortStorageKey"
+        @sort="handleSort"
+      >
+        <template #cell-inviter="{ row }">
+          <UserCell :id="row.inviter_id" :email="row.inviter_email" :username="row.inviter_username" :clickable="props.type !== 'transfers'" @open="openUserOverview" />
+        </template>
+        <template #cell-invitee="{ row }">
+          <UserCell :id="row.invitee_id" :email="row.invitee_email" :username="row.invitee_username" :clickable="props.type !== 'transfers'" @open="openUserOverview" />
+        </template>
+        <template #cell-user="{ row }">
+          <UserCell :id="row.user_id" :email="row.user_email" :username="row.username" :clickable="true" @open="openUserOverview" />
+        </template>
+        <template #cell-aff_code="{ row }">
+          <span class="font-mono text-sm text-gray-700 dark:text-gray-300">{{ row.aff_code || '-' }}</span>
+        </template>
+        <template #cell-order="{ row }">
+          <div class="space-y-0.5">
+            <div class="font-mono text-sm text-gray-900 dark:text-white">#{{ row.order_id }}</div>
+            <div class="max-w-56 truncate text-sm text-gray-500 dark:text-dark-400">{{ row.out_trade_no }}</div>
           </div>
-          <input v-model="filters.start_at" type="date" class="input w-full sm:w-44" :title="t('admin.affiliates.records.startAt')" @change="reloadFromFirstPage" />
-          <input v-model="filters.end_at" type="date" class="input w-full sm:w-44" :title="t('admin.affiliates.records.endAt')" @change="reloadFromFirstPage" />
-          <button class="btn btn-secondary px-2 md:px-3" :disabled="loading" :title="t('common.refresh')" @click="loadRecords">
-            <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
-          </button>
-        </div>
-      </template>
+        </template>
+        <template #cell-payment_type="{ row }">{{ t('payment.methods.' + row.payment_type, row.payment_type || '-') }}</template>
+        <template #cell-order_status="{ row }"><OrderStatusBadge :status="row.order_status" /></template>
+        <template #cell-total_rebate="{ row }"><AmountText :value="row.total_rebate" /></template>
+        <template #cell-order_amount="{ row }"><AmountText :value="row.order_amount" /></template>
+        <template #cell-pay_amount="{ row }"><span class="text-sm text-gray-900 dark:text-white">¥{{ formatAmount(row.pay_amount) }}</span></template>
+        <template #cell-rebate_amount="{ row }"><AmountText :value="row.rebate_amount" strong /></template>
+        <template #cell-amount="{ row }"><AmountText :value="row.amount" strong /></template>
+        <template #cell-balance_after="{ row }"><NullableAmountText :value="row.balance_after" /></template>
+        <template #cell-available_quota_after="{ row }"><NullableAmountText :value="row.available_quota_after" /></template>
+        <template #cell-frozen_quota_after="{ row }"><NullableAmountText :value="row.frozen_quota_after" /></template>
+        <template #cell-history_quota_after="{ row }"><NullableAmountText :value="row.history_quota_after" /></template>
+        <template #cell-created_at="{ row }">
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{ formatDateTime(row.created_at) }}</span>
+        </template>
+      </DataTable>
+    </template>
 
-      <template #table>
-        <DataTable
-          :columns="columns"
-          :data="records"
-          :loading="loading"
-          :server-side-sort="true"
-          default-sort-key="created_at"
-          default-sort-order="desc"
-          :sort-storage-key="sortStorageKey"
-          @sort="handleSort"
-        >
-          <template #cell-inviter="{ row }">
-            <UserCell
-              :id="row.inviter_id"
-              :email="row.inviter_email"
-              :username="row.inviter_username"
-              :clickable="props.type !== 'transfers'"
-              @open="openUserOverview"
-            />
-          </template>
-          <template #cell-invitee="{ row }">
-            <UserCell
-              :id="row.invitee_id"
-              :email="row.invitee_email"
-              :username="row.invitee_username"
-              :clickable="props.type !== 'transfers'"
-              @open="openUserOverview"
-            />
-          </template>
-          <template #cell-user="{ row }">
-            <UserCell
-              :id="row.user_id"
-              :email="row.user_email"
-              :username="row.username"
-              :clickable="true"
-              @open="openUserOverview"
-            />
-          </template>
-          <template #cell-aff_code="{ row }">
-            <span class="font-mono text-sm text-gray-700 dark:text-gray-300">{{ row.aff_code || '-' }}</span>
-          </template>
-          <template #cell-order="{ row }">
-            <div class="space-y-0.5">
-              <div class="font-mono text-sm text-gray-900 dark:text-white">#{{ row.order_id }}</div>
-              <div class="max-w-56 truncate text-sm text-gray-500 dark:text-dark-400">{{ row.out_trade_no }}</div>
-            </div>
-          </template>
-          <template #cell-payment_type="{ row }">
-            {{ t('payment.methods.' + row.payment_type, row.payment_type || '-') }}
-          </template>
-          <template #cell-order_status="{ row }">
-            <OrderStatusBadge :status="row.order_status" />
-          </template>
-          <template #cell-total_rebate="{ row }">
-            <AmountText :value="row.total_rebate" />
-          </template>
-          <template #cell-order_amount="{ row }">
-            <AmountText :value="row.order_amount" />
-          </template>
-          <template #cell-pay_amount="{ row }">
-            <span class="text-sm text-gray-900 dark:text-white">¥{{ formatAmount(row.pay_amount) }}</span>
-          </template>
-          <template #cell-rebate_amount="{ row }">
-            <AmountText :value="row.rebate_amount" strong />
-          </template>
-          <template #cell-amount="{ row }">
-            <AmountText :value="row.amount" strong />
-          </template>
-          <template #cell-balance_after="{ row }">
-            <NullableAmountText :value="row.balance_after" />
-          </template>
-          <template #cell-available_quota_after="{ row }">
-            <NullableAmountText :value="row.available_quota_after" />
-          </template>
-          <template #cell-frozen_quota_after="{ row }">
-            <NullableAmountText :value="row.frozen_quota_after" />
-          </template>
-          <template #cell-history_quota_after="{ row }">
-            <NullableAmountText :value="row.history_quota_after" />
-          </template>
-          <template #cell-created_at="{ row }">
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ formatDateTime(row.created_at) }}</span>
-          </template>
-        </DataTable>
-      </template>
+    <template #pagination>
+      <Pagination
+        v-if="pagination.total > 0"
+        :page="pagination.page"
+        :total="pagination.total"
+        :page-size="pagination.page_size"
+        @update:page="handlePageChange"
+        @update:pageSize="handlePageSizeChange"
+      />
+    </template>
+  </TablePageLayout>
 
-      <template #pagination>
-        <Pagination
-          v-if="pagination.total > 0"
-          :page="pagination.page"
-          :total="pagination.total"
-          :page-size="pagination.page_size"
-          @update:page="handlePageChange"
-          @update:pageSize="handlePageSizeChange"
-        />
-      </template>
-    </TablePageLayout>
-
-    <BaseDialog
-      :show="overviewDialog"
-      :title="t('admin.affiliates.overview.title')"
-      width="normal"
-      @close="overviewDialog = false"
-    >
-      <div v-if="overviewLoading" class="flex justify-center py-8">
-        <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
+  <BaseDialog :show="overviewDialog" :title="t('admin.affiliates.overview.title')" width="normal" @close="overviewDialog = false">
+    <div v-if="overviewLoading" class="flex justify-center py-8">
+      <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
+    </div>
+    <div v-else-if="selectedOverview" class="space-y-4">
+      <div class="rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-800">
+        <div class="font-mono text-sm text-gray-900 dark:text-white">#{{ selectedOverview.user_id }}</div>
+        <div class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ selectedOverview.email || '-' }}</div>
+        <div class="mt-0.5 text-sm text-gray-500 dark:text-dark-400">{{ selectedOverview.username || '-' }}</div>
       </div>
-      <div v-else-if="selectedOverview" class="space-y-4">
-        <div class="rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-800">
-          <div class="font-mono text-sm text-gray-900 dark:text-white">#{{ selectedOverview.user_id }}</div>
-          <div class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ selectedOverview.email || '-' }}</div>
-          <div class="mt-0.5 text-sm text-gray-500 dark:text-dark-400">{{ selectedOverview.username || '-' }}</div>
-        </div>
-        <div class="grid gap-3 sm:grid-cols-2">
-          <OverviewStat :label="t('admin.affiliates.overview.affCode')" :value="selectedOverview.aff_code || '-'" mono />
-          <OverviewStat :label="t('admin.affiliates.overview.rebateRate')" :value="formatPercent(selectedOverview.rebate_rate_percent)" />
-          <OverviewStat :label="t('admin.affiliates.overview.invitedCount')" :value="String(selectedOverview.invited_count)" />
-          <OverviewStat :label="t('admin.affiliates.overview.rebatedInviteeCount')" :value="String(selectedOverview.rebated_invitee_count)" />
-          <OverviewStat :label="t('admin.affiliates.overview.availableQuota')" :value="'$' + formatAmount(selectedOverview.available_quota)" />
-          <OverviewStat :label="t('admin.affiliates.overview.historyQuota')" :value="'$' + formatAmount(selectedOverview.history_quota)" />
-        </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <OverviewStat :label="t('admin.affiliates.overview.affCode')" :value="selectedOverview.aff_code || '-'" mono />
+        <OverviewStat :label="t('admin.affiliates.overview.rebateRate')" :value="formatPercent(selectedOverview.rebate_rate_percent)" />
+        <OverviewStat :label="t('admin.affiliates.overview.invitedCount')" :value="String(selectedOverview.invited_count)" />
+        <OverviewStat :label="t('admin.affiliates.overview.rebatedInviteeCount')" :value="String(selectedOverview.rebated_invitee_count)" />
+        <OverviewStat :label="t('admin.affiliates.overview.availableQuota')" :value="'$' + formatAmount(selectedOverview.available_quota)" />
+        <OverviewStat :label="t('admin.affiliates.overview.historyQuota')" :value="'$' + formatAmount(selectedOverview.history_quota)" />
       </div>
-    </BaseDialog>
-  </AppLayout>
+    </div>
+  </BaseDialog>
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h, onMounted, reactive, ref, type PropType } from 'vue'
+import { computed, defineComponent, h, onBeforeUnmount, onMounted, reactive, ref, type PropType } from 'vue'
 import { useI18n } from 'vue-i18n'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import DataTable from '@/components/common/DataTable.vue'
 import Pagination from '@/components/common/Pagination.vue'
@@ -161,10 +113,7 @@ import { formatDateTime as formatDisplayDateTime } from '@/utils/format'
 type RecordType = 'invites' | 'rebates' | 'transfers'
 type AffiliateRecord = AffiliateInviteRecord | AffiliateRebateRecord | AffiliateTransferRecord
 
-const props = defineProps<{
-  type: RecordType
-}>()
-
+const props = defineProps<{ type: RecordType }>()
 const { t } = useI18n()
 const appStore = useAppStore()
 const loading = ref(false)
@@ -220,10 +169,7 @@ function loadInitialSortState(): { sort_by: string; sort_order: 'asc' | 'desc' }
     const parsed = JSON.parse(raw) as { key?: string; order?: string }
     const key = typeof parsed.key === 'string' ? parsed.key : ''
     if (!columns.value.some((column) => column.key === key && column.sortable)) return fallback
-    return {
-      sort_by: key,
-      sort_order: parsed.order === 'asc' ? 'asc' : 'desc',
-    }
+    return { sort_by: key, sort_order: parsed.order === 'asc' ? 'asc' : 'desc' }
   } catch {
     return fallback
   }
@@ -253,21 +199,17 @@ function buildParams(): ListAffiliateRecordsParams {
 }
 
 async function fetchRecords(params: ListAffiliateRecordsParams): Promise<PaginatedResponse<AffiliateRecord>> {
-  if (props.type === 'invites') {
-    return affiliatesAPI.listInviteRecords(params)
-  }
-  if (props.type === 'rebates') {
-    return affiliatesAPI.listRebateRecords(params)
-  }
+  if (props.type === 'invites') return affiliatesAPI.listInviteRecords(params)
+  if (props.type === 'rebates') return affiliatesAPI.listRebateRecords(params)
   return affiliatesAPI.listTransferRecords(params)
 }
 
 async function loadRecords() {
   loading.value = true
   try {
-    const res = await fetchRecords(buildParams())
-    records.value = res.items || []
-    pagination.total = res.total || 0
+    const response = await fetchRecords(buildParams())
+    records.value = response.items || []
+    pagination.total = response.total || 0
   } catch (error) {
     appStore.showError(extractI18nErrorMessage(error, t, 'admin.affiliates.errors', t('common.error')))
   } finally {
@@ -309,7 +251,7 @@ function formatAmount(value: number | null | undefined): string {
 
 function formatPercent(value: number | null | undefined): string {
   const rounded = Math.round(Number(value || 0) * 100) / 100
-  return `${Number.isInteger(rounded) ? rounded.toString() : rounded.toString()}%`
+  return `${rounded}%`
 }
 
 function formatDateTime(value: string | null | undefined): string {
@@ -373,13 +315,9 @@ const NullableAmountText = defineComponent({
     value: { type: Number as PropType<number | null | undefined>, default: null },
   },
   setup(amountProps) {
-    return () => {
-      const value = amountProps.value
-      if (value === null || value === undefined) {
-        return h('span', { class: 'text-sm text-gray-400 dark:text-dark-500' }, '-')
-      }
-      return h(AmountText, { value })
-    }
+    return () => amountProps.value == null
+      ? h('span', { class: 'text-sm text-gray-400 dark:text-dark-500' }, '-')
+      : h(AmountText, { value: amountProps.value })
   },
 })
 
@@ -401,7 +339,9 @@ const OverviewStat = defineComponent({
   },
 })
 
-onMounted(() => {
-  void loadRecords()
+onMounted(() => void loadRecords())
+
+onBeforeUnmount(() => {
+  if (debounceTimer) clearTimeout(debounceTimer)
 })
 </script>

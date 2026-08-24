@@ -34,6 +34,7 @@ backend/.gocache/
 node_modules/
 frontend/node_modules/
 frontend/dist/
+.pnpm-store/
 *.local
 *.tsbuildinfo
 vite.config.d.ts
@@ -140,6 +141,7 @@ docs/*
 !docs/ASYNC_IMAGE_TASKS.md
 !docs/TECHNICAL-PLAN.md
 !docs/OPERATIONS.md
+!docs/PRODUCTION_SERVER_CN.md
 !docs/adr/
 !docs/adr/*.md
 !docs/legal/
