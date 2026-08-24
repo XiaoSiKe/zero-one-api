@@ -16,6 +16,8 @@ var (
 	ErrAffiliateCodeInvalid     = infraerrors.BadRequest("AFFILIATE_CODE_INVALID", "invalid affiliate code")
 	ErrAffiliateCodeTaken       = infraerrors.Conflict("AFFILIATE_CODE_TAKEN", "affiliate code already in use")
 	ErrAffiliateAlreadyBound    = infraerrors.Conflict("AFFILIATE_ALREADY_BOUND", "affiliate inviter already bound")
+	ErrAffiliateSelfBind        = infraerrors.BadRequest("AFFILIATE_SELF_BINDING", "cannot bind a user as their own inviter")
+	ErrAffiliateCycle           = infraerrors.BadRequest("AFFILIATE_CYCLE", "affiliate binding would create a cycle")
 	ErrAffiliateQuotaEmpty      = infraerrors.BadRequest("AFFILIATE_QUOTA_EMPTY", "no affiliate quota available to transfer")
 )
 
@@ -58,17 +60,18 @@ func isValidAffiliateCodeFormat(code string) bool {
 }
 
 type AffiliateSummary struct {
-	UserID               int64     `json:"user_id"`
-	AffCode              string    `json:"aff_code"`
-	AffCodeCustom        bool      `json:"aff_code_custom"`
-	AffRebateRatePercent *float64  `json:"aff_rebate_rate_percent,omitempty"`
-	InviterID            *int64    `json:"inviter_id,omitempty"`
-	AffCount             int       `json:"aff_count"`
-	AffQuota             float64   `json:"aff_quota"`
-	AffFrozenQuota       float64   `json:"aff_frozen_quota"`
-	AffHistoryQuota      float64   `json:"aff_history_quota"`
-	CreatedAt            time.Time `json:"created_at"`
-	UpdatedAt            time.Time `json:"updated_at"`
+	UserID               int64      `json:"user_id"`
+	AffCode              string     `json:"aff_code"`
+	AffCodeCustom        bool       `json:"aff_code_custom"`
+	AffRebateRatePercent *float64   `json:"aff_rebate_rate_percent,omitempty"`
+	InviterID            *int64     `json:"inviter_id,omitempty"`
+	InviterBoundAt       *time.Time `json:"-"`
+	AffCount             int        `json:"aff_count"`
+	AffQuota             float64    `json:"aff_quota"`
+	AffFrozenQuota       float64    `json:"aff_frozen_quota"`
+	AffHistoryQuota      float64    `json:"aff_history_quota"`
+	CreatedAt            time.Time  `json:"created_at"`
+	UpdatedAt            time.Time  `json:"updated_at"`
 }
 
 type AffiliateInvitee struct {
@@ -97,7 +100,7 @@ type AffiliateDetail struct {
 type AffiliateRepository interface {
 	EnsureUserAffiliate(ctx context.Context, userID int64) (*AffiliateSummary, error)
 	GetAffiliateByCode(ctx context.Context, code string) (*AffiliateSummary, error)
-	BindInviter(ctx context.Context, userID, inviterID int64) (bool, error)
+	BindInviter(ctx context.Context, userID, inviterID int64, boundByAdminID *int64) (bool, error)
 	AccrueQuota(ctx context.Context, inviterID, inviteeUserID int64, amount float64, freezeHours int, sourceOrderID *int64) (bool, error)
 	GetAccruedRebateFromInvitee(ctx context.Context, inviterID, inviteeUserID int64) (float64, error)
 	ThawFrozenQuota(ctx context.Context, userID int64) (float64, error)
@@ -105,6 +108,7 @@ type AffiliateRepository interface {
 	ListInvitees(ctx context.Context, inviterID int64, limit int) ([]AffiliateInvitee, error)
 
 	// 管理端：用户级专属配置
+	UpdateUserSettings(ctx context.Context, userID int64, update AffiliateUserSettingsUpdate) error
 	UpdateUserAffCode(ctx context.Context, userID int64, newCode string) error
 	ResetUserAffCode(ctx context.Context, userID int64) (string, error)
 	SetUserRebateRate(ctx context.Context, userID int64, ratePercent *float64) error
@@ -114,6 +118,16 @@ type AffiliateRepository interface {
 	ListAffiliateRebateRecords(ctx context.Context, filter AffiliateRecordFilter) ([]AffiliateRebateRecord, int64, error)
 	ListAffiliateTransferRecords(ctx context.Context, filter AffiliateRecordFilter) ([]AffiliateTransferRecord, int64, error)
 	GetAffiliateUserOverview(ctx context.Context, userID int64) (*AffiliateUserOverview, error)
+}
+
+// AffiliateUserSettingsUpdate is one atomic administrator mutation for a
+// user's invite code and exclusive rebate rate. UpdateRebateRate distinguishes
+// "leave unchanged" from a nil AffRebateRatePercent, which means clear.
+type AffiliateUserSettingsUpdate struct {
+	AffCode              *string
+	ResetAffCode         bool
+	UpdateRebateRate     bool
+	AffRebateRatePercent *float64
 }
 
 // AffiliateAdminFilter 列表筛选条件
@@ -135,13 +149,14 @@ type AffiliateAdminEntry struct {
 }
 
 type AffiliateRecordFilter struct {
-	Search   string
-	Page     int
-	PageSize int
-	StartAt  *time.Time
-	EndAt    *time.Time
-	SortBy   string
-	SortDesc bool
+	Search    string
+	Page      int
+	PageSize  int
+	InviterID int64
+	StartAt   *time.Time
+	EndAt     *time.Time
+	SortBy    string
+	SortDesc  bool
 }
 
 type AffiliateInviteRecord struct {
@@ -154,6 +169,12 @@ type AffiliateInviteRecord struct {
 	AffCode         string    `json:"aff_code"`
 	TotalRebate     float64   `json:"total_rebate"`
 	CreatedAt       time.Time `json:"created_at"`
+}
+
+type AffiliateBinding struct {
+	InviterID      int64     `json:"inviter_id"`
+	InviteeID      int64     `json:"invitee_id"`
+	InviterBoundAt time.Time `json:"inviter_bound_at"`
 }
 
 type AffiliateRebateRecord struct {
@@ -286,7 +307,7 @@ func (s *AffiliateService) BindInviterByCode(ctx context.Context, userID int64, 
 	if err != nil {
 		return err
 	}
-	if selfSummary.InviterID != nil {
+	if selfSummary.InviterID != nil || selfSummary.InviterBoundAt != nil {
 		return nil
 	}
 
@@ -301,7 +322,7 @@ func (s *AffiliateService) BindInviterByCode(ctx context.Context, userID int64, 
 		return ErrAffiliateCodeInvalid
 	}
 
-	bound, err := s.repo.BindInviter(ctx, userID, inviterSummary.UserID)
+	bound, err := s.repo.BindInviter(ctx, userID, inviterSummary.UserID, nil)
 	if err != nil {
 		return err
 	}
@@ -312,10 +333,11 @@ func (s *AffiliateService) BindInviterByCode(ctx context.Context, userID int64, 
 }
 
 func (s *AffiliateService) AccrueInviteRebate(ctx context.Context, inviteeUserID int64, baseRechargeAmount float64) (float64, error) {
-	return s.AccrueInviteRebateForOrder(ctx, inviteeUserID, baseRechargeAmount, nil)
+	occurredAt := time.Now()
+	return s.AccrueInviteRebateForOrder(ctx, inviteeUserID, baseRechargeAmount, nil, &occurredAt)
 }
 
-func (s *AffiliateService) AccrueInviteRebateForOrder(ctx context.Context, inviteeUserID int64, baseRechargeAmount float64, sourceOrderID *int64) (float64, error) {
+func (s *AffiliateService) AccrueInviteRebateForOrder(ctx context.Context, inviteeUserID int64, baseRechargeAmount float64, sourceOrderID *int64, occurredAt *time.Time) (float64, error) {
 	if s == nil || s.repo == nil {
 		return 0, nil
 	}
@@ -334,13 +356,20 @@ func (s *AffiliateService) AccrueInviteRebateForOrder(ctx context.Context, invit
 	if inviteeSummary.InviterID == nil || *inviteeSummary.InviterID <= 0 {
 		return 0, nil
 	}
+	// A bound relationship only earns rebate for events that occur on or after
+	// the real binding time. Payment callers pass paid_at; a missing timestamp
+	// fails closed so a late manual repair can never reward an older order.
+	if occurredAt == nil || inviteeSummary.InviterBoundAt == nil || occurredAt.Before(*inviteeSummary.InviterBoundAt) {
+		return 0, nil
+	}
 
 	// 加载邀请人 profile，优先使用专属比例（覆盖全局）
 	inviterSummary, err := s.repo.EnsureUserAffiliate(ctx, *inviteeSummary.InviterID)
 	if err != nil {
 		return 0, err
 	}
-	// 有效期检查：超过返利有效期后不再产生返利
+	// 有效期仍从 invitee 的 affiliate profile 创建时间起算。
+	// 管理员晚补绑只修复关系，不延长原有返利有效期。
 	if s.settingService != nil {
 		if durationDays := s.settingService.GetAffiliateRebateDurationDays(ctx); durationDays > 0 {
 			if time.Now().After(inviteeSummary.CreatedAt.AddDate(0, 0, durationDays)) {
@@ -510,14 +539,40 @@ func validateExclusiveRate(ratePercent *float64) error {
 
 // AdminUpdateUserAffCode 管理员改写用户的邀请码（专属邀请码）。
 func (s *AffiliateService) AdminUpdateUserAffCode(ctx context.Context, userID int64, rawCode string) error {
+	return s.AdminUpdateUserSettings(ctx, userID, AffiliateUserSettingsUpdate{AffCode: &rawCode})
+}
+
+// AdminUpdateUserSettings atomically applies every requested user-level
+// affiliate setting so callers cannot leave a half-updated configuration.
+func (s *AffiliateService) AdminUpdateUserSettings(ctx context.Context, userID int64, update AffiliateUserSettingsUpdate) error {
+	if userID <= 0 {
+		return infraerrors.BadRequest("INVALID_USER", "invalid user")
+	}
+	if update.AffCode != nil && update.ResetAffCode {
+		return infraerrors.BadRequest("INVALID_AFFILIATE_UPDATE", "invite code update and reset are mutually exclusive")
+	}
+	if !update.UpdateRebateRate && update.AffRebateRatePercent != nil {
+		return infraerrors.BadRequest("INVALID_AFFILIATE_UPDATE", "rebate rate value requires an update")
+	}
 	if s == nil || s.repo == nil {
 		return infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")
 	}
-	code := strings.ToUpper(strings.TrimSpace(rawCode))
-	if !isValidAffiliateCodeFormat(code) {
-		return ErrAffiliateCodeInvalid
+	if update.AffCode != nil {
+		code := strings.ToUpper(strings.TrimSpace(*update.AffCode))
+		if !isValidAffiliateCodeFormat(code) {
+			return ErrAffiliateCodeInvalid
+		}
+		update.AffCode = &code
 	}
-	return s.repo.UpdateUserAffCode(ctx, userID, code)
+	if update.UpdateRebateRate {
+		if err := validateExclusiveRate(update.AffRebateRatePercent); err != nil {
+			return err
+		}
+	}
+	if update.AffCode == nil && !update.ResetAffCode && !update.UpdateRebateRate {
+		return nil
+	}
+	return s.repo.UpdateUserSettings(ctx, userID, update)
 }
 
 // AdminResetUserAffCode 重置用户邀请码为系统随机码。
@@ -530,13 +585,19 @@ func (s *AffiliateService) AdminResetUserAffCode(ctx context.Context, userID int
 
 // AdminSetUserRebateRate 设置/清除用户专属返利比例。ratePercent==nil 表示清除。
 func (s *AffiliateService) AdminSetUserRebateRate(ctx context.Context, userID int64, ratePercent *float64) error {
-	if s == nil || s.repo == nil {
-		return infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")
-	}
-	if err := validateExclusiveRate(ratePercent); err != nil {
-		return err
-	}
-	return s.repo.SetUserRebateRate(ctx, userID, ratePercent)
+	return s.AdminUpdateUserSettings(ctx, userID, AffiliateUserSettingsUpdate{
+		UpdateRebateRate:     true,
+		AffRebateRatePercent: ratePercent,
+	})
+}
+
+// AdminClearUserSettings atomically removes the exclusive rate and resets the
+// invite code so the user cannot remain half-present in the custom list.
+func (s *AffiliateService) AdminClearUserSettings(ctx context.Context, userID int64) error {
+	return s.AdminUpdateUserSettings(ctx, userID, AffiliateUserSettingsUpdate{
+		ResetAffCode:     true,
+		UpdateRebateRate: true,
+	})
 }
 
 // AdminBatchSetUserRebateRate 批量设置/清除用户专属返利比例。
@@ -565,6 +626,41 @@ func (s *AffiliateService) AdminListCustomUsers(ctx context.Context, filter Affi
 		return nil, 0, infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")
 	}
 	return s.repo.ListUsersWithCustomSettings(ctx, filter)
+}
+
+// AdminBindInviter repairs one missing inviter relationship. Existing
+// relationships are immutable: retries and overwrite attempts return conflict.
+func (s *AffiliateService) AdminBindInviter(ctx context.Context, inviteeID, inviterID, actorAdminID int64) (*AffiliateBinding, error) {
+	if inviteeID <= 0 || inviterID <= 0 || actorAdminID <= 0 {
+		return nil, infraerrors.BadRequest("INVALID_USER", "invalid user")
+	}
+	if inviteeID == inviterID {
+		return nil, ErrAffiliateSelfBind
+	}
+	if s == nil || s.repo == nil {
+		return nil, infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")
+	}
+
+	bound, err := s.repo.BindInviter(ctx, inviteeID, inviterID, &actorAdminID)
+	if err != nil {
+		return nil, err
+	}
+	if !bound {
+		return nil, ErrAffiliateAlreadyBound
+	}
+
+	summary, err := s.repo.EnsureUserAffiliate(ctx, inviteeID)
+	if err != nil {
+		return nil, err
+	}
+	if summary.InviterID == nil || *summary.InviterID != inviterID || summary.InviterBoundAt == nil {
+		return nil, infraerrors.InternalServer("AFFILIATE_BINDING_INCONSISTENT", "affiliate binding was not persisted")
+	}
+	return &AffiliateBinding{
+		InviterID:      inviterID,
+		InviteeID:      inviteeID,
+		InviterBoundAt: *summary.InviterBoundAt,
+	}, nil
 }
 
 func (s *AffiliateService) AdminListInviteRecords(ctx context.Context, filter AffiliateRecordFilter) ([]AffiliateInviteRecord, int64, error) {

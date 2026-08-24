@@ -4,6 +4,14 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import {
+  changedPaths,
+  changedPathsBetween,
+  evaluatePreservedPaths,
+  evaluateProductReference,
+  inspectRecordedUpstreamSync,
+  validateBaseline,
+} from './verify-upstream-boundary.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const stableReleasePattern = /^v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/u
@@ -21,9 +29,13 @@ function matchesPath(path, rule) {
 }
 
 export function parseArguments(argv) {
-  const options = { worktree: false }
+  const options = { recordedSync: false, worktree: false }
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index]
+    if (argument === '--recorded-sync') {
+      options.recordedSync = true
+      continue
+    }
     if (argument === '--worktree') {
       options.worktree = true
       continue
@@ -35,7 +47,21 @@ export function parseArguments(argv) {
       index += 1
       continue
     }
+    if (argument === '--product-ref') {
+      const value = argv[index + 1]
+      if (!value || value.startsWith('--')) throw new Error('--product-ref requires a git ref')
+      options.productRef = value
+      index += 1
+      continue
+    }
     throw new Error(`unknown argument: ${argument}`)
+  }
+
+  if (options.recordedSync) {
+    if (options.oldRef || options.newRef || options.productRef) {
+      throw new Error('--recorded-sync cannot be combined with explicit release or product refs')
+    }
+    return options
   }
 
   if (!stableReleasePattern.test(options.oldRef || '')) {
@@ -45,6 +71,9 @@ export function parseArguments(argv) {
     throw new Error('--new-ref must be a stable vMAJOR.MINOR.PATCH tag')
   }
   if (options.oldRef === options.newRef) throw new Error('old and new release tags must differ')
+  if (!options.productRef) {
+    throw new Error('--product-ref is required to protect product overlays during an upstream sync')
+  }
   return options
 }
 
@@ -59,6 +88,44 @@ export function classifyUIPaths(paths, manifest) {
       !manifest.compatibility_paths.some((rule) => matchesPath(path, rule)),
   )
   return { compatibility, protected: protectedPaths }
+}
+
+export function evaluateProductChangeProtection(paths, baseline, uiManifest) {
+  const preserved = new Set(baseline.preserve_on_upstream_sync)
+  const legacyHotfix = new Set(baseline.legacy_hotfixes.flatMap((hotfix) => hotfix.paths))
+  const approvedBackport = new Set(
+    baseline.approved_backports.flatMap((backport) => Object.keys(backport.files)),
+  )
+  const result = {
+    preserved: [],
+    approved_ui: [],
+    legacy_hotfix: [],
+    approved_backport: [],
+    unprotected: [],
+  }
+
+  for (const path of [...new Set(paths)].sort()) {
+    if (preserved.has(path)) {
+      result.preserved.push(path)
+      continue
+    }
+    if (legacyHotfix.has(path)) {
+      result.legacy_hotfix.push(path)
+      continue
+    }
+    if (approvedBackport.has(path)) {
+      result.approved_backport.push(path)
+      continue
+    }
+    const uiProtected = uiManifest.protected_paths.some((rule) => matchesPath(path, rule))
+    const uiCompatibility = uiManifest.compatibility_paths.some((rule) => matchesPath(path, rule))
+    if (uiProtected && !uiCompatibility) {
+      result.approved_ui.push(path)
+      continue
+    }
+    result.unprotected.push(path)
+  }
+  return result
 }
 
 export function evaluateDirtyPreflight(statusLines) {
@@ -80,6 +147,13 @@ export function evaluatePinnedRelease({ newRef, newCommit, baseline }) {
     violations.push(`new release ${newRef} peels to ${newCommit}, expected ${baseline.commit}`)
   }
   return violations
+}
+
+export function evaluateRecordedPreviousRelease({ oldRef, oldCommit, baseline, recordedSync }) {
+  if (!recordedSync || oldCommit === baseline.upstream_sync.previous_commit) return []
+  return [
+    `previous release ${oldRef} peels to ${oldCommit}, expected ${baseline.upstream_sync.previous_commit}`,
+  ]
 }
 
 export function evaluateHotfixAudit(hotfixes, upstreamChangedPaths, matchesUpstreamPaths = []) {
@@ -113,11 +187,17 @@ function runAdapter(name, command, args) {
   }
 }
 
-function matchingUpstreamHotfixPaths(hotfixes, newCommit) {
+export function upstreamComparisonArgs(newCommit, path, includeWorktree) {
+  return includeWorktree
+    ? ['diff', '--quiet', newCommit, '--', path]
+    : ['diff', '--quiet', newCommit, 'HEAD', '--', path]
+}
+
+function matchingUpstreamHotfixPaths(hotfixes, newCommit, includeWorktree) {
   return hotfixes
     .flatMap((hotfix) => hotfix.paths)
     .filter((path) => {
-      const result = spawnSync('git', ['diff', '--quiet', newCommit, 'HEAD', '--', path], {
+      const result = spawnSync('git', upstreamComparisonArgs(newCommit, path, includeWorktree), {
         cwd: repoRoot,
         stdio: 'ignore',
       })
@@ -131,10 +211,28 @@ function printResult(result, stream = process.stdout) {
 
 export function main(argv = process.argv.slice(2)) {
   const options = parseArguments(argv)
-  const baseline = JSON.parse(readFileSync(resolve(repoRoot, '.github/upstream-baseline.json'), 'utf8'))
+  const baseline = validateBaseline(
+    JSON.parse(readFileSync(resolve(repoRoot, '.github/upstream-baseline.json'), 'utf8')),
+  )
   const uiManifest = JSON.parse(readFileSync(resolve(repoRoot, '.github/scripts/ui-baseline.json'), 'utf8'))
-  const oldCommit = git(['rev-parse', '--verify', `${options.oldRef}^{commit}`])
-  const newCommit = git(['rev-parse', '--verify', `${options.newRef}^{commit}`])
+  const oldRef = options.recordedSync ? baseline.upstream_sync.previous_release : options.oldRef
+  const newRef = options.recordedSync ? baseline.release : options.newRef
+  const productRef = options.recordedSync
+    ? baseline.upstream_sync.product_commit
+    : options.productRef
+  const oldCommit = git(['rev-parse', '--verify', `${oldRef}^{commit}`])
+  const newCommit = git(['rev-parse', '--verify', `${newRef}^{commit}`])
+  const productCommit = git(['rev-parse', '--verify', `${productRef}^{commit}`])
+  const headCommit = git(['rev-parse', '--verify', 'HEAD^{commit}'])
+  const targetCommit = options.recordedSync ? baseline.upstream_sync.merge_commit : headCommit
+  try {
+    execFileSync('git', ['merge-base', '--is-ancestor', productCommit, targetCommit], {
+      cwd: repoRoot,
+      stdio: 'ignore',
+    })
+  } catch {
+    throw new Error(`product ref ${productCommit} is not an ancestor of target ${targetCommit}`)
+  }
   const changedOutput = git([
     'diff',
     '--no-renames',
@@ -151,43 +249,80 @@ export function main(argv = process.argv.slice(2)) {
     statusOutput ? statusOutput.split(/\r?\n/u) : [],
   )
   const pinnedViolations = evaluatePinnedRelease({
-    newRef: options.newRef,
+    newRef,
     newCommit,
     baseline,
+  })
+  const previousReleaseViolations = evaluateRecordedPreviousRelease({
+    oldRef,
+    oldCommit,
+    baseline,
+    recordedSync: options.recordedSync,
   })
   const hotfixAudit = evaluateHotfixAudit(
     baseline.legacy_hotfixes,
     upstreamChangedPaths,
-    matchingUpstreamHotfixPaths(baseline.legacy_hotfixes, newCommit),
+    matchingUpstreamHotfixPaths(baseline.legacy_hotfixes, newCommit, options.worktree),
   )
   const exitCandidates = hotfixAudit.flatMap((hotfix) => hotfix.exit_candidates)
-  const adapterArgs = options.worktree ? ['--worktree'] : []
+  const productReferenceViolations = evaluateProductReference(productCommit, headCommit)
+  const productChangePaths = changedPaths(baseline.commit, options.worktree, repoRoot)
+  const productChangeProtection = evaluateProductChangeProtection(
+    productChangePaths,
+    baseline,
+    uiManifest,
+  )
+  const preservedChanges = options.recordedSync
+    ? changedPathsBetween(productCommit, targetCommit, repoRoot)
+    : changedPaths(productCommit, options.worktree, repoRoot)
+  const recordedSyncViolations = options.recordedSync
+    ? inspectRecordedUpstreamSync(baseline, headCommit, repoRoot)
+    : []
+  const preservedViolations = options.recordedSync
+    ? []
+    : evaluatePreservedPaths(preservedChanges, baseline)
+  const worktreeArgs = options.worktree ? ['--worktree'] : []
+  const upstreamAdapterArgs = options.recordedSync
+    ? worktreeArgs
+    : [...worktreeArgs, '--product-ref', productCommit]
   const adapters = [
     runAdapter(
       'upstream-boundary',
       process.execPath,
-      ['.github/scripts/verify-upstream-boundary.mjs', ...adapterArgs],
+      ['.github/scripts/verify-upstream-boundary.mjs', ...upstreamAdapterArgs],
     ),
     runAdapter(
       'ui-boundary',
       process.execPath,
-      ['.github/scripts/verify-ui-boundary.mjs', ...adapterArgs],
+      ['.github/scripts/verify-ui-boundary.mjs', ...worktreeArgs],
     ),
     runAdapter('recovered-console-contract', 'sh', ['deploy/zero-one/test-routing.sh']),
   ]
   const violations = [
     ...preflightViolations,
     ...pinnedViolations,
+    ...previousReleaseViolations,
+    ...productReferenceViolations,
+    ...recordedSyncViolations,
+    ...preservedViolations,
+    ...productChangeProtection.unprotected.map(
+      (path) => `product change lacks a retention policy: ${path}`,
+    ),
     ...exitCandidates.map((path) => `legacy hotfix matches upstream and must exit: ${path}`),
     ...adapters.filter((adapter) => !adapter.ok).map((adapter) => `${adapter.name} failed`),
   ]
   const result = {
     verdict: violations.length === 0 ? 'PASS' : 'FAIL',
+    mode: options.recordedSync ? 'recorded-sync' : 'explicit-sync',
     releases: {
-      old_ref: options.oldRef,
+      old_ref: oldRef,
       old_commit: oldCommit,
-      new_ref: options.newRef,
+      new_ref: newRef,
       new_commit: newCommit,
+      product_ref: productRef,
+      product_commit: productCommit,
+      target_commit: targetCommit,
+      head_commit: headCommit,
     },
     worktree: {
       included_in_adapters: options.worktree,
@@ -198,6 +333,13 @@ export function main(argv = process.argv.slice(2)) {
       protected_ui: uiChanges.protected,
       compatibility_ui: uiChanges.compatibility,
     },
+    preserve_on_upstream_sync: {
+      registered: baseline.preserve_on_upstream_sync.length,
+      changed: baseline.preserve_on_upstream_sync.filter((path) =>
+        preservedChanges.includes(path),
+      ),
+    },
+    product_change_protection: productChangeProtection,
     legacy_hotfixes: hotfixAudit,
     adapters,
     violations,

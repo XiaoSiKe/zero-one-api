@@ -42,7 +42,6 @@ const panelSpecs = [
 ]
 
 const activePanels = new Set()
-let scanFrame = 0
 let positionFrame = 0
 
 function clamp(value, minimum, maximum) {
@@ -133,7 +132,6 @@ function registerPanel(panel, spec) {
 }
 
 function scanForPanels() {
-  scanFrame = 0
   unregisterDetachedPanels()
   for (const spec of panelSpecs) {
     for (const panel of document.querySelectorAll(spec.selector)) {
@@ -143,8 +141,7 @@ function scanForPanels() {
 }
 
 function scheduleScan() {
-  if (scanFrame) return
-  scanFrame = requestAnimationFrame(scanForPanels)
+  window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.request()
 }
 
 function schedulePosition() {
@@ -156,11 +153,6 @@ function schedulePosition() {
   })
 }
 
-new MutationObserver(scheduleScan).observe(document.documentElement, {
-  childList: true,
-  subtree: true,
-})
-
 window.addEventListener('resize', schedulePosition)
 window.addEventListener('scroll', schedulePosition, true)
 window.addEventListener('keydown', (event) => {
@@ -170,4 +162,4 @@ window.addEventListener('keydown', (event) => {
   requestAnimationFrame(() => entry.trigger.focus())
 })
 
-scheduleScan()
+window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.register('floating-panels', scanForPanels)

@@ -1,12 +1,14 @@
 package admin
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
+	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -71,23 +73,16 @@ func (h *AffiliateHandler) UpdateUserSettings(c *gin.Context) {
 		return
 	}
 
-	if req.AffCode != nil {
-		if err := h.affiliateService.AdminUpdateUserAffCode(c.Request.Context(), userID, *req.AffCode); err != nil {
-			response.ErrorFrom(c, err)
-			return
-		}
-	}
-
+	update := service.AffiliateUserSettingsUpdate{AffCode: req.AffCode}
 	if req.ClearRebateRate {
-		if err := h.affiliateService.AdminSetUserRebateRate(c.Request.Context(), userID, nil); err != nil {
-			response.ErrorFrom(c, err)
-			return
-		}
+		update.UpdateRebateRate = true
 	} else if req.AffRebateRatePercent != nil {
-		if err := h.affiliateService.AdminSetUserRebateRate(c.Request.Context(), userID, req.AffRebateRatePercent); err != nil {
-			response.ErrorFrom(c, err)
-			return
-		}
+		update.UpdateRebateRate = true
+		update.AffRebateRatePercent = req.AffRebateRatePercent
+	}
+	if err := h.affiliateService.AdminUpdateUserSettings(c.Request.Context(), userID, update); err != nil {
+		response.ErrorFrom(c, err)
+		return
 	}
 
 	response.Success(c, gin.H{"user_id": userID})
@@ -97,8 +92,6 @@ func (h *AffiliateHandler) UpdateUserSettings(c *gin.Context) {
 // the exclusive rebate rate AND regenerates the invite code as a new system
 // random one. Conceptually this "removes the user from the custom list".
 //
-// Both writes happen in this handler; failure of one leaves the other applied,
-// but the operation is idempotent so the admin can re-run it safely.
 // DELETE /api/v1/admin/affiliates/users/:user_id
 func (h *AffiliateHandler) ClearUserSettings(c *gin.Context) {
 	userID, err := strconv.ParseInt(c.Param("user_id"), 10, 64)
@@ -106,11 +99,7 @@ func (h *AffiliateHandler) ClearUserSettings(c *gin.Context) {
 		response.BadRequest(c, "Invalid user_id")
 		return
 	}
-	if err := h.affiliateService.AdminSetUserRebateRate(c.Request.Context(), userID, nil); err != nil {
-		response.ErrorFrom(c, err)
-		return
-	}
-	if _, err := h.affiliateService.AdminResetUserAffCode(c.Request.Context(), userID); err != nil {
+	if err := h.affiliateService.AdminClearUserSettings(c.Request.Context(), userID); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -165,13 +154,30 @@ type AffiliateUserSummary struct {
 	Username string `json:"username"`
 }
 
-// LookupUsers searches users by email/username for the "add custom user" modal.
+// LookupUsers searches users by exact ID or by email/username for the admin
+// affiliate pickers. A numeric query prefers the exact user so an operator
+// cannot accidentally select a fuzzy match while repairing attribution.
 // GET /api/v1/admin/affiliates/users/lookup?q=
 func (h *AffiliateHandler) LookupUsers(c *gin.Context) {
-	keyword := c.Query("q")
+	keyword := strings.TrimSpace(c.Query("q"))
 	if keyword == "" {
 		response.Success(c, []AffiliateUserSummary{})
 		return
+	}
+	if userID, parseErr := strconv.ParseInt(keyword, 10, 64); parseErr == nil && userID > 0 {
+		user, err := h.adminService.GetUser(c.Request.Context(), userID)
+		if err == nil {
+			response.Success(c, []AffiliateUserSummary{{
+				ID:       user.ID,
+				Email:    user.Email,
+				Username: user.Username,
+			}})
+			return
+		}
+		if !errors.Is(err, service.ErrUserNotFound) {
+			response.ErrorFrom(c, err)
+			return
+		}
 	}
 	users, _, err := h.adminService.ListUsers(c.Request.Context(), 1, 20, service.UserListFilters{Search: keyword}, "email", "asc")
 	if err != nil {
@@ -201,11 +207,64 @@ func (h *AffiliateHandler) GetUserOverview(c *gin.Context) {
 	response.Success(c, overview)
 }
 
+type BindAffiliateInviterRequest struct {
+	InviterID int64 `json:"inviter_id" binding:"required"`
+	InviteeID int64 `json:"invitee_id" binding:"required"`
+}
+
+// BindInviter repairs an invitee's omitted signup code. The relationship is
+// immutable after this call; overwrite and repeat attempts return conflict.
+// POST /api/v1/admin/affiliates/invites
+func (h *AffiliateHandler) BindInviter(c *gin.Context) {
+	middleware.SetAuditAction(c, "admin.affiliates.invite.bind")
+
+	subject, ok := middleware.GetAuthSubjectFromContext(c)
+	role, hasRole := middleware.GetUserRoleFromContext(c)
+	if !ok || subject.UserID <= 0 {
+		response.Unauthorized(c, "Unauthorized")
+		return
+	}
+	if !hasRole || role != service.RoleAdmin || c.GetString("auth_method") != service.AuditAuthMethodJWT {
+		response.Forbidden(c, "A JWT-authenticated administrator session is required")
+		return
+	}
+
+	var req BindAffiliateInviterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if req.InviterID <= 0 || req.InviteeID <= 0 {
+		response.BadRequest(c, "inviter_id and invitee_id must be positive")
+		return
+	}
+
+	binding, err := h.affiliateService.AdminBindInviter(
+		c.Request.Context(),
+		req.InviteeID,
+		req.InviterID,
+		subject.UserID,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, binding)
+}
+
 // ListInviteRecords returns all inviter-invitee relationships.
 // GET /api/v1/admin/affiliates/invites
 func (h *AffiliateHandler) ListInviteRecords(c *gin.Context) {
 	page, pageSize := response.ParsePagination(c)
 	filter := parseAffiliateRecordFilter(c, page, pageSize)
+	if rawInviterID := strings.TrimSpace(c.Query("inviter_id")); rawInviterID != "" {
+		inviterID, err := strconv.ParseInt(rawInviterID, 10, 64)
+		if err != nil || inviterID <= 0 {
+			response.BadRequest(c, "Invalid inviter_id")
+			return
+		}
+		filter.InviterID = inviterID
+	}
 	items, total, err := h.affiliateService.AdminListInviteRecords(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)

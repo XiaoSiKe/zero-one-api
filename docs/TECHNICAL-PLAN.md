@@ -8,12 +8,12 @@
 配置为 `origin`，官方仓库 `Wei-Shaw/sub2api` 配置为只读
 `upstream`。`main` 是零一 API 唯一产品、CI 和发布分支；不保留第二产品分支。
 
-`.github/upstream-baseline.json` 是 schema v3 Overlay Registry，所有常规回放路径必须唯一归属 `Console Skin`、`Public Capabilities`、`Supported Preview`、`Visual Regression` 或 `Marketing Source Assets`。Registry 只接受精确文件或精确目录，不接受 glob 或未命名的顺带改动。临时生产正确性修补保留在带退出条件的独立 legacy hotfix 区块；安全 backport 继续锁定逐文件 SHA-256 与 Git mode。`frontend/src/api/` 与 `frontend/src/types/` 默认不可变，只有 Registry 中精确命名并绑定 owner 的兼容文件例外可以通过，相邻文件仍被拒绝。v179 的渠道定价 API 例外只把数据库可空的 multiplier 字段表达为可选且可空，使已批准 Console 能继续构建，不改变请求或响应字段。
+`.github/upstream-baseline.json` 是 schema v4 Overlay Registry，所有常规回放路径必须唯一归属 `Console Skin`、`Public Capabilities`、`Supported Preview`、`Visual Regression` 或 `Marketing Source Assets`。Registry 只接受精确文件或精确目录，不接受 glob 或未命名的顺带改动。Product Change Protection 会对固定 Upstream Baseline 后的全部产品差异做闭包检查：每个差异必须由 `preserve_on_upstream_sync`、Approved UI Snapshot、带退出条件的 legacy hotfix 或精确 backport 之一保留，仅有 Overlay 归属会使 readiness 失败。`preserve_on_upstream_sync` 禁止目录和 glob，每一项必须唯一归属一个 Overlay，且从 schema v4 开始只能新增、不能在上游同步时删除。`upstream_sync` 持久绑定旧 upstream Tag/commit、合并前 product tip 和真实双亲 merge commit，CI 与 publish 会重放 product-to-merge 差异并拒绝任一受保护文件被覆盖。临时生产正确性修补保留在带退出条件的独立 legacy hotfix 区块；安全 backport 继续锁定逐文件 SHA-256 与 Git mode。`frontend/src/api/` 与 `frontend/src/types/` 默认不可变，只有 Registry 中精确命名并绑定 owner 且逐文件进入 `preserve_on_upstream_sync` 的兼容文件例外可以通过，相邻文件仍被拒绝。v179 的渠道定价 API 例外只把数据库可空的 multiplier 字段表达为可选且可空，使已批准 Console 能继续构建，不改变请求或响应字段。
 
 | Overlay owner | Interface and seam |
 | --- | --- |
 | `Console Skin` | Console 表面、共享壳层、色板与展示组件；不授权数据或权限语义变更。 |
-| `Public Capabilities` | Public Site 及公告、公开状态与可选展示名的后端/Console/Landing 合约；只拥有列出的路径和两个 immutable 单文件例外。 |
+| `Public Capabilities` | Public Site、公告、公开状态，以及受鉴权的邀请归属等产品合约；只拥有列出的路径和具名 immutable 单文件例外。 |
 | `Supported Preview` | Zero One Compose、Caddy、镜像与 CI 合约；不授权通用上游部署路径。 |
 | `Visual Regression` | 固定环境的像素门禁及设计核对源 artifact；历史 `artifacts/design-qa/` 不是正式 snapshot baseline。 |
 | `Marketing Source Assets` | 四张受管海报及用途清单；不得进入运行时镜像或被产品代码引用。 |
@@ -75,6 +75,17 @@ silently removing it. The separate Landing Notice banner is a single site-level
 message and optional link from public settings; it does not read Announcement
 rows and cannot grant `public_visible` authorization.
 
+Manual Affiliate Attribution is an authenticated administrator capability, not
+a public API. It repairs only a never-attributed invitee, accepts only a human
+JWT administrator, rejects Admin API Keys, and follows the existing sensitive-
+operation step-up policy (recent TOTP is required when that policy is enabled).
+It persists the actor and binding time, treats the binding time as a no-rebind
+tombstone, rejects self, cyclic and replacement relationships, and never
+recalculates historical rebates.
+Eligibility begins at the binding timestamp while the existing validity window
+remains anchored to the invitee affiliate profile's creation time. See
+[ADR 0006](adr/0006-admin-affiliate-attribution.md).
+
 The Console keeps the server-provided site settings authoritative, but its compiled display fallback is also `零一 API` with the approved tagline. This prevents a settings timeout or first-paint race from exposing the upstream product name; it does not change the settings API or persistence behavior.
 
 Two presentation-only differences are intentional and reviewed. An unset local
@@ -109,7 +120,7 @@ edge image. Image rollback does not reverse a database migration; see
 合回 `main`。每次同步同时更新本节的 tag 与完整提交 SHA。
 主题改动保持集中，使新增上游页面继承设计系统，避免逐页分叉。
 
-`v0.1.179` 保留 Zero One 已验证的深拷贝隔离、分组定价快照 v20、创建默认值、复制/校验、durable cache invalidation、Batch Image 和 Model Plaza 传播修复。上游本版本将长上下文计费门控改为分组或账号任一启用即生效；Zero One 为避免存量账号静默改变账单，继续采用分组与账号同时启用的口径，同时兼容 v179 的渠道区间倍率。后端权限仅限 `.github/upstream-baseline.json` 的 `legacy_hotfixes` 区块所列精确文件。下一个稳定 tag 一旦包含等价修复，同步 PR 必须删除重复 backport 和对应 legacy path，不得将临时权限永久化。
+`v0.1.179` 保留 Zero One 已验证的深拷贝隔离、分组定价快照 v20、创建默认值、复制/校验、durable cache invalidation、Batch Image 和 Model Plaza 传播修复。上游本版本将长上下文计费门控改为分组或账号任一启用即生效；Zero One 为避免存量账号静默改变账单，继续采用分组与账号同时启用的口径，同时兼容 v179 的渠道区间倍率。本版本还移除每个模型请求都会输出完整会话关联信息的四段 `[DEBUG-STICKY]` 日志。后端权限仅限 `.github/upstream-baseline.json` 的 `legacy_hotfixes` 区块所列精确文件。下一个稳定 tag 一旦包含等价修复，同步 PR 必须删除重复 backport 和对应 legacy path，不得将临时权限永久化。
 
 `v0.1.179` 延续 Go `1.26.6` 基线，`.github/upstream-baseline.json` 的 `approved_backports` 保持为空列表。退出判定依据是稳定 Tag 中的等价内容，而不是将精确 commit 误记为已合并。
 

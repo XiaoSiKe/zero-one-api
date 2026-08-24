@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
@@ -155,6 +156,10 @@ type UpdateSettingsRequest struct {
 	// OEM设置
 	SiteName                    string                `json:"site_name"`
 	SiteLogo                    string                `json:"site_logo"`
+	CommunityQREnabled          *bool                 `json:"community_qr_enabled"`
+	CommunityQRImage            *string               `json:"community_qr_image"`
+	CommunityQRTitle            *string               `json:"community_qr_title"`
+	CommunityQRDescription      *string               `json:"community_qr_description"`
 	SiteSubtitle                string                `json:"site_subtitle"`
 	LandingNoticeEnabled        *bool                 `json:"landing_notice_enabled"`
 	LandingNoticeText           *string               `json:"landing_notice_text"`
@@ -533,6 +538,33 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	landingNoticeURL := previousSettings.LandingNoticeURL
 	if req.LandingNoticeURL != nil {
 		landingNoticeURL = *req.LandingNoticeURL
+	}
+	communityQREnabled := previousSettings.CommunityQREnabled
+	if req.CommunityQREnabled != nil {
+		communityQREnabled = *req.CommunityQREnabled
+	}
+	communityQRImage := previousSettings.CommunityQRImage
+	if req.CommunityQRImage != nil {
+		communityQRImage = *req.CommunityQRImage
+	}
+	communityQRTitle := previousSettings.CommunityQRTitle
+	if req.CommunityQRTitle != nil {
+		communityQRTitle = strings.TrimSpace(*req.CommunityQRTitle)
+		if communityQRTitle == "" {
+			communityQRTitle = service.DefaultCommunityQRTitle
+		}
+	}
+	communityQRDescription := previousSettings.CommunityQRDescription
+	if req.CommunityQRDescription != nil {
+		communityQRDescription = strings.TrimSpace(*req.CommunityQRDescription)
+	}
+	if utf8.RuneCountInString(communityQRTitle) > 80 {
+		response.BadRequest(c, "Community QR title is too long (max 80 characters)")
+		return
+	}
+	if utf8.RuneCountInString(communityQRDescription) > 240 {
+		response.BadRequest(c, "Community QR description is too long (max 240 characters)")
+		return
 	}
 	landingNoticeEnabled, landingNoticeText, landingNoticeURL, err = service.NormalizeLandingNoticeSettings(
 		landingNoticeEnabled,
@@ -1322,8 +1354,14 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 					return
 				}
 			}
-			if item.Visibility != "user" && item.Visibility != "admin" {
-				response.BadRequest(c, "Custom menu item visibility must be 'user' or 'admin'")
+			if item.Visibility != "user" && item.Visibility != "admin" && item.Visibility != "all" {
+				response.BadRequest(c, "Custom menu item visibility must be 'user', 'admin', or 'all'")
+				return
+			}
+			if item.Placement == "" {
+				items[i].Placement = "sidebar"
+			} else if item.Placement != "sidebar" && item.Placement != "header" && item.Placement != "both" {
+				response.BadRequest(c, "Custom menu item placement must be 'sidebar', 'header', or 'both'")
 				return
 			}
 			if len(item.IconSVG) > maxMenuItemIconSVGLen {
@@ -1636,6 +1674,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		GoogleOAuthFrontendRedirectURL:         req.GoogleOAuthFrontendRedirectURL,
 		SiteName:                               req.SiteName,
 		SiteLogo:                               req.SiteLogo,
+		CommunityQREnabled:                     communityQREnabled,
+		CommunityQRImage:                       communityQRImage,
+		CommunityQRTitle:                       communityQRTitle,
+		CommunityQRDescription:                 communityQRDescription,
 		SiteSubtitle:                           req.SiteSubtitle,
 		LandingNoticeEnabled:                   landingNoticeEnabled,
 		LandingNoticeText:                      landingNoticeText,
@@ -2063,9 +2105,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	if h.opsService != nil {
-		h.opsService.SetMonitoringEnabled(settings.OpsMonitoringEnabled)
-	}
 
 	// Update OpenAI fast policy (stored under dedicated key, only when provided).
 	if req.OpenAIFastPolicySettings != nil {
@@ -2113,20 +2152,26 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 	}
 
-	h.auditSettingsUpdate(c, previousSettings, settings, previousAuthSourceDefaults, authSourceDefaults, auditReq)
-
 	// 重新获取设置返回
 	updatedSettings, err := h.settingService.GetAllSettings(c.Request.Context())
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
-	h.ensureDingTalkSyncAttributes(c.Request.Context(), updatedSettings)
 	updatedAuthSourceDefaults, err := h.settingService.GetAuthSourceDefaultSettings(c.Request.Context())
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
+	// Partial PUTs carry zero values for omitted request fields. Runtime side
+	// effects and audit diffs must use the persisted post-write projection,
+	// otherwise a QR-only update can disable unrelated monitoring in memory and
+	// report fields that never changed.
+	if h.opsService != nil {
+		h.opsService.SetMonitoringEnabled(updatedSettings.OpsMonitoringEnabled)
+	}
+	h.auditSettingsUpdate(c, previousSettings, updatedSettings, previousAuthSourceDefaults, updatedAuthSourceDefaults, auditReq)
+	h.ensureDingTalkSyncAttributes(c.Request.Context(), updatedSettings)
 	updatedDefaultSubscriptions := make([]dto.DefaultSubscriptionSetting, 0, len(updatedSettings.DefaultSubscriptions))
 	for _, sub := range updatedSettings.DefaultSubscriptions {
 		updatedDefaultSubscriptions = append(updatedDefaultSubscriptions, dto.DefaultSubscriptionSetting{
@@ -2261,6 +2306,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		GoogleOAuthFrontendRedirectURL:                         updatedSettings.GoogleOAuthFrontendRedirectURL,
 		SiteName:                                               updatedSettings.SiteName,
 		SiteLogo:                                               updatedSettings.SiteLogo,
+		CommunityQREnabled:                                     updatedSettings.CommunityQREnabled,
+		CommunityQRImage:                                       updatedSettings.CommunityQRImage,
+		CommunityQRTitle:                                       updatedSettings.CommunityQRTitle,
+		CommunityQRDescription:                                 updatedSettings.CommunityQRDescription,
 		SiteSubtitle:                                           updatedSettings.SiteSubtitle,
 		LandingNoticeEnabled:                                   updatedSettings.LandingNoticeEnabled,
 		LandingNoticeText:                                      updatedSettings.LandingNoticeText,

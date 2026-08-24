@@ -1,10 +1,9 @@
 <template>
-  <AppLayout>
     <div class="space-y-6">
       <UsageStatsCards :stats="usageStats" :show-account-cost="false" :strike-standard-cost="true" />
 
       <div class="space-y-4">
-        <div class="card p-4">
+        <div class="card console-card-motion-glow-only p-4">
           <div class="flex flex-wrap items-center gap-4">
             <div class="flex items-center gap-2">
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.dashboard.timeRange') }}:</span>
@@ -66,7 +65,7 @@
         </div>
       </div>
 
-      <div class="card p-6">
+      <div class="card console-card-motion-glow-only p-6">
         <div class="flex flex-wrap items-end justify-between gap-4">
           <div v-if="activeTab === 'errors'" class="flex flex-1 flex-wrap items-end gap-4">
             <div class="w-full sm:w-auto sm:min-w-[220px]">
@@ -208,8 +207,6 @@
         @ipGeoBatchFailed="handleIpGeoBatchFailed"
       />
     </div>
-  </AppLayout>
-
 </template>
 
 <script setup lang="ts">
@@ -217,7 +214,6 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { keysAPI, usageAPI, userGroupsAPI } from '@/api'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import Select, { type SelectOption } from '@/components/common/Select.vue'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'

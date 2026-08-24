@@ -174,7 +174,6 @@ export default function QuickStart({ docUrl }: QuickStartProps) {
               <Action
                 className="integration-primary-action"
                 href={consoleUrl('/keys')}
-                highlight={false}
               >
                 <KeyRound aria-hidden="true" />
                 创建 API Key
@@ -182,7 +181,6 @@ export default function QuickStart({ docUrl }: QuickStartProps) {
               <Action
                 className="integration-secondary-action"
                 href={docsHref}
-                highlight={false}
               >
                 <BookOpen aria-hidden="true" />
                 查看接入教学文档

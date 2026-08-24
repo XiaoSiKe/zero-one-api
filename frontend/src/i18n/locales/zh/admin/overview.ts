@@ -392,8 +392,56 @@ export default {
       invitesDescription: '查看全站邀请关系和被邀请用户累计返利',
       rebatesDescription: '查看每一笔产生返利的充值订单',
       transfersDescription: '查看返利额度转入账户余额的提取流水',
+      tabs: {
+        label: '邀请返利管理',
+        invites: '邀请记录',
+        customers: '客户关系',
+        relationships: '客户关系',
+        rebates: '返利记录',
+        transfers: '提取记录',
+        settings: '运营设置'
+      },
+      settings: {
+        description: '管理全局邀请返利规则和用户专属配置',
+        saved: '邀请返利设置已保存',
+        loadFailed: '加载邀请返利设置失败',
+        saveFailed: '保存邀请返利设置失败'
+      },
+      binding: {
+        button: '补绑遗漏客户',
+        title: '补绑遗漏客户',
+        description: '邀请人已锁定为当前客户，请搜索并选择漏填邀请码的用户。',
+        inviter: '邀请人',
+        invitee: '遗漏绑定的客户',
+        searchPlaceholder: '搜索邮箱、用户名或用户 ID',
+        sameUser: '邀请人和客户不能是同一个用户。',
+        confirmation: '确认后仅为尚未绑定的客户建立关系：不会覆盖已有绑定，禁止自绑和成环，不补发历史返利；返利有效期仍按客户原档案创建时间计算。',
+        confirm: '确认补绑',
+        binding: '补绑中...',
+        success: '客户关系补绑成功，仅后续付款参与返利，历史返利不会补发',
+        failed: '客户关系补绑失败'
+      },
+      customers: {
+        detailTitle: '客户详情',
+        description: '查看全部用户并进入其邀请关系详情',
+        detailDescription: '查看该客户邀请过的用户及逐客户累计返利',
+        searchPlaceholder: '搜索邮箱或用户名',
+        inviteeSearchPlaceholder: '搜索该客户邀请的用户',
+        userId: '用户 ID',
+        email: '邮箱',
+        username: '用户名',
+        role: '角色',
+        status: '状态',
+        registeredAt: '注册时间',
+        back: '返回客户关系',
+        loadFailed: '加载客户关系失败',
+        detailLoadFailed: '加载客户详情失败'
+      },
       errors: {
-        loadFailed: '加载邀请返利记录失败'
+        loadFailed: '加载邀请返利记录失败',
+        AFFILIATE_ALREADY_BOUND: '该客户已经绑定邀请人，不能覆盖现有关系',
+        AFFILIATE_SELF_BINDING: '不能将用户绑定到自己名下',
+        AFFILIATE_CYCLE: '该操作会形成循环邀请关系，已拒绝补绑'
       },
       records: {
         search: '搜索',

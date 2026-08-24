@@ -93,16 +93,19 @@ jobs:
           git checkout --detach "$SOURCE_SHA"
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
 
-      - name: Fetch declared upstream release tag
+      - name: Fetch declared upstream release tags
         run: |
-          release="$(jq -er '.release | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))' .github/upstream-baseline.json)"
-          git fetch --no-tags --force https://github.com/Wei-Shaw/sub2api.git "refs/tags/$release:refs/tags/$release"
-          git fetch --no-tags --force https://github.com/Wei-Shaw/sub2api.git "refs/tags/v0.1.178:refs/tags/v0.1.178"
+          jq -er '[.release, .upstream_sync.previous_release][] | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))' \
+            .github/upstream-baseline.json \
+            | while IFS= read -r release; do
+                git fetch --no-tags --force https://github.com/Wei-Shaw/sub2api.git \
+                  "refs/tags/$release:refs/tags/$release"
+              done
 
       - name: Verify upstream boundary
         run: node .github/scripts/verify-upstream-boundary.mjs
-      - name: Verify v179 upgrade readiness
-        run: node .github/scripts/verify-upgrade-readiness.mjs --old-ref v0.1.178 --new-ref v0.1.179
+      - name: Verify recorded upstream upgrade readiness
+        run: node .github/scripts/verify-upgrade-readiness.mjs --recorded-sync
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0

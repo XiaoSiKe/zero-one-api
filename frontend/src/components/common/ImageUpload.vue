@@ -84,6 +84,7 @@ const props = withDefaults(defineProps<{
   removeLabel?: string
   hint?: string
   maxSize?: number // bytes
+  acceptedMimeTypes?: string[]
 }>(), {
   mode: 'image',
   size: 'md',
@@ -91,6 +92,7 @@ const props = withDefaults(defineProps<{
   removeLabel: '',
   hint: '',
   maxSize: 300 * 1024,
+  acceptedMimeTypes: () => [],
 })
 
 const emit = defineEmits<{
@@ -102,7 +104,12 @@ const error = ref('')
 const resolvedUploadLabel = computed(() => props.uploadLabel || t('common.upload'))
 const resolvedRemoveLabel = computed(() => props.removeLabel || t('common.remove'))
 
-const acceptTypes = computed(() => props.mode === 'svg' ? '.svg' : 'image/*')
+const acceptTypes = computed(() => {
+  if (props.mode === 'svg') return '.svg'
+  return props.acceptedMimeTypes.length > 0
+    ? props.acceptedMimeTypes.join(',')
+    : 'image/*'
+})
 
 const sanitizedValue = computed(() =>
   props.mode === 'svg' ? sanitizeSvg(props.modelValue ?? '') : ''
@@ -118,6 +125,20 @@ function handleUpload(event: Event) {
   error.value = ''
 
   if (!file) return
+
+  if (
+    props.mode === 'image' &&
+    props.acceptedMimeTypes.length > 0 &&
+    !props.acceptedMimeTypes.includes(file.type.toLowerCase())
+  ) {
+    error.value = t('common.unsupportedImageType', {
+      types: props.acceptedMimeTypes
+        .map((type) => type.replace(/^image\//, '').toUpperCase())
+        .join(', ')
+    })
+    input.value = ''
+    return
+  }
 
   if (props.maxSize && file.size > props.maxSize) {
     error.value = t('common.fileTooLargeKb', {

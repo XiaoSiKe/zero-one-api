@@ -11,6 +11,8 @@ const REQUIRED_OVERLAY_OWNERS = [
   'Visual Regression',
   'Marketing Source Assets',
 ]
+const STABLE_RELEASE_PATTERN = /^v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/u
+const COMMIT_PATTERN = /^[0-9a-f]{40}$/u
 
 function matchesPath(path, rule) {
   return rule.endsWith('/') ? path.startsWith(rule) : path === rule
@@ -42,22 +44,51 @@ function legacyHotfixPaths(baseline) {
   return new Set(baseline.legacy_hotfixes.flatMap((hotfix) => hotfix.paths))
 }
 
+function preservedOverlayPaths(baseline) {
+  return new Set(baseline.preserve_on_upstream_sync)
+}
+
 export function validateBaseline(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('upstream baseline must be a JSON object')
   }
-  if (value.schema_version !== 3) throw new Error('unsupported upstream baseline schema_version')
+  if (value.schema_version !== 4) throw new Error('unsupported upstream baseline schema_version')
   if (typeof value.repository !== 'string' || !value.repository) {
     throw new Error('upstream baseline repository is required')
   }
   if (
     typeof value.release !== 'string' ||
-    !/^v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/.test(value.release)
+    !STABLE_RELEASE_PATTERN.test(value.release)
   ) {
     throw new Error('upstream baseline release must be a stable vMAJOR.MINOR.PATCH tag')
   }
-  if (typeof value.commit !== 'string' || !/^[0-9a-f]{40}$/.test(value.commit)) {
+  if (typeof value.commit !== 'string' || !COMMIT_PATTERN.test(value.commit)) {
     throw new Error('upstream baseline commit must be a lowercase 40-character SHA')
+  }
+  const sync = value.upstream_sync
+  if (!sync || typeof sync !== 'object' || Array.isArray(sync)) {
+    throw new Error('upstream baseline upstream_sync metadata is required')
+  }
+  if (
+    typeof sync.previous_release !== 'string' ||
+    !STABLE_RELEASE_PATTERN.test(sync.previous_release) ||
+    sync.previous_release === value.release
+  ) {
+    throw new Error('upstream_sync previous_release must be a different stable release tag')
+  }
+  for (const field of ['previous_commit', 'product_commit', 'merge_commit']) {
+    if (typeof sync[field] !== 'string' || !COMMIT_PATTERN.test(sync[field])) {
+      throw new Error(`upstream_sync ${field} must be a lowercase 40-character SHA`)
+    }
+  }
+  if (sync.previous_commit === value.commit) {
+    throw new Error('upstream_sync previous_commit must differ from the current upstream commit')
+  }
+  if (sync.product_commit === sync.merge_commit) {
+    throw new Error('upstream_sync product_commit must differ from merge_commit')
+  }
+  if (sync.product_commit === value.commit || sync.merge_commit === value.commit) {
+    throw new Error('upstream_sync product and merge commits must differ from the upstream commit')
   }
   if (
     !Array.isArray(value.immutable_paths) ||
@@ -98,6 +129,24 @@ export function validateBaseline(value) {
   const requiredOwners = [...REQUIRED_OVERLAY_OWNERS].sort()
   if (JSON.stringify(actualOwners) !== JSON.stringify(requiredOwners)) {
     throw new Error(`overlay owners must be exactly: ${REQUIRED_OVERLAY_OWNERS.join(', ')}`)
+  }
+
+  if (!Array.isArray(value.preserve_on_upstream_sync)) {
+    throw new Error('upstream baseline preserve_on_upstream_sync must be an array')
+  }
+  const preservedPaths = new Set()
+  for (const path of value.preserve_on_upstream_sync) {
+    validatePathRule(path, 'preserve_on_upstream_sync', { allowDirectory: false })
+    if (preservedPaths.has(path)) {
+      throw new Error(`duplicate preserve_on_upstream_sync path: ${path}`)
+    }
+    const matchingRules = rules.filter((rule) => matchesPath(path, rule.path))
+    if (matchingRules.length !== 1) {
+      throw new Error(
+        `preserve_on_upstream_sync path must belong to exactly one overlay: ${path}`,
+      )
+    }
+    preservedPaths.add(path)
   }
 
   if (!Array.isArray(value.immutable_exceptions)) {
@@ -283,6 +332,92 @@ export function evaluateChangedPaths(paths, baseline) {
   })
 }
 
+export function evaluatePreservedPaths(paths, baseline) {
+  const preserved = preservedOverlayPaths(baseline)
+  return [...new Set(paths)]
+    .filter((path) => preserved.has(path))
+    .sort()
+    .map(
+      (path) =>
+        `${path} differs from the pre-upgrade product ref; restore it and port upstream changes separately`,
+    )
+}
+
+export function evaluateProductReference(productCommit, headCommit) {
+  if (!productCommit) return []
+  if (productCommit !== headCommit) return []
+  return [
+    `product ref ${productCommit} resolves to current HEAD; provide the immutable pre-upgrade product commit`,
+  ]
+}
+
+export function evaluatePreserveRegistryContinuity(baseline, productBaseline) {
+  if (
+    productBaseline?.schema_version !== 3 &&
+    !Array.isArray(productBaseline?.preserve_on_upstream_sync)
+  ) {
+    return [
+      `product commit ${baseline.upstream_sync.product_commit} has an invalid preserve_on_upstream_sync registry`,
+    ]
+  }
+  const previous = Array.isArray(productBaseline?.preserve_on_upstream_sync)
+    ? productBaseline.preserve_on_upstream_sync
+    : []
+  const current = new Set(baseline.preserve_on_upstream_sync)
+  return [...new Set(previous)]
+    .filter((path) => !current.has(path))
+    .sort()
+    .map(
+      (path) =>
+        `${path} was protected at the pre-upgrade product ref and cannot be removed during upstream sync`,
+    )
+}
+
+export function evaluateRecordedUpstreamSync({
+  baseline,
+  headCommit,
+  mergeParents,
+  mergeIsAncestor,
+  productBaseline,
+  preservedChanges,
+}) {
+  const sync = baseline.upstream_sync
+  const violations = evaluateProductReference(sync.product_commit, headCommit)
+  if (!mergeIsAncestor) {
+    violations.push(
+      `recorded upstream merge ${sync.merge_commit} is not an ancestor of current HEAD ${headCommit}`,
+    )
+  }
+  if (
+    mergeParents.length !== 2 ||
+    mergeParents[0] !== sync.product_commit ||
+    mergeParents[1] !== baseline.commit
+  ) {
+    violations.push(
+      `recorded upstream merge ${sync.merge_commit} must have product ${sync.product_commit} as first parent and upstream ${baseline.commit} as second parent`,
+    )
+  }
+  if (
+    productBaseline?.repository !== baseline.repository ||
+    productBaseline?.release !== sync.previous_release ||
+    productBaseline?.commit !== sync.previous_commit
+  ) {
+    violations.push(
+      `product commit ${sync.product_commit} must record ${baseline.repository}@${sync.previous_release} (${sync.previous_commit})`,
+    )
+  }
+  const preserveRegistryAtSync = {
+    preserve_on_upstream_sync: Array.isArray(productBaseline?.preserve_on_upstream_sync)
+      ? productBaseline.preserve_on_upstream_sync
+      : [],
+  }
+  return [
+    ...violations,
+    ...evaluatePreserveRegistryContinuity(baseline, productBaseline),
+    ...evaluatePreservedPaths(preservedChanges, preserveRegistryAtSync),
+  ]
+}
+
 export function evaluateApprovedBackportContents(baseline, readPath) {
   const violations = []
   for (const [path, expected] of approvedBackportFiles(baseline)) {
@@ -338,20 +473,96 @@ function readWorktreePath(path) {
   }
 }
 
-function changedPaths(commit, includeWorktree) {
-  const range = includeWorktree ? commit : `${commit}..HEAD`
-  const tracked = git(['diff', '--no-renames', '--name-only', '--diff-filter=ACDMRTUXB', range, '--'])
+export function changedPathsBetween(oldCommit, newCommit, cwd) {
+  const options = cwd ? { cwd } : {}
+  return git(
+    [
+      'diff',
+      '--no-renames',
+      '--name-only',
+      '--diff-filter=ACDMRTUXB',
+      oldCommit,
+      newCommit,
+      '--',
+    ],
+    options,
+  )
     .split('\n')
     .filter(Boolean)
+}
+
+export function changedPaths(commit, includeWorktree, cwd) {
+  const options = cwd ? { cwd } : {}
+  const tracked = includeWorktree
+    ? git(
+        ['diff', '--no-renames', '--name-only', '--diff-filter=ACDMRTUXB', commit, '--'],
+        options,
+      )
+        .split('\n')
+        .filter(Boolean)
+    : changedPathsBetween(commit, 'HEAD', cwd)
   if (!includeWorktree) return tracked
-  const untracked = git(['ls-files', '--others', '--exclude-standard']).split('\n').filter(Boolean)
+  const untracked = git(['ls-files', '--others', '--exclude-standard'], options)
+    .split('\n')
+    .filter(Boolean)
   return [...tracked, ...untracked]
 }
 
+export function inspectRecordedUpstreamSync(baseline, headCommit, cwd) {
+  const options = cwd ? { cwd } : {}
+  const sync = baseline.upstream_sync
+  const mergeParents = git(['show', '-s', '--format=%P', sync.merge_commit], options)
+    .split(/\s+/u)
+    .filter(Boolean)
+  let mergeIsAncestor = true
+  try {
+    execFileSync('git', ['merge-base', '--is-ancestor', sync.merge_commit, headCommit], {
+      cwd,
+      stdio: 'ignore',
+    })
+  } catch {
+    mergeIsAncestor = false
+  }
+  let productBaseline = null
+  try {
+    productBaseline = JSON.parse(
+      git(['show', `${sync.product_commit}:${DEFAULT_BASELINE_PATH}`], options),
+    )
+  } catch {
+    productBaseline = null
+  }
+  return evaluateRecordedUpstreamSync({
+    baseline,
+    headCommit,
+    mergeParents,
+    mergeIsAncestor,
+    productBaseline,
+    preservedChanges: changedPathsBetween(sync.product_commit, sync.merge_commit, cwd),
+  })
+}
+
+export function parseArguments(argv) {
+  const options = { includeWorktree: false, productRef: null }
+  for (let index = 0; index < argv.length; index += 1) {
+    const argument = argv[index]
+    if (argument === '--worktree') {
+      options.includeWorktree = true
+      continue
+    }
+    if (argument === '--product-ref') {
+      const value = argv[index + 1]
+      if (!value || value.startsWith('--')) throw new Error('--product-ref requires a git ref')
+      options.productRef = value
+      index += 1
+      continue
+    }
+    throw new Error(`unknown argument: ${argument}`)
+  }
+  return options
+}
+
 export function main(argv = process.argv.slice(2)) {
-  const includeWorktree = argv.includes('--worktree')
-  const unknown = argv.filter((argument) => argument !== '--worktree')
-  if (unknown.length) throw new Error(`unknown argument: ${unknown[0]}`)
+  const { includeWorktree, productRef } = parseArguments(argv)
 
   const baseline = validateBaseline(JSON.parse(readFileSync(DEFAULT_BASELINE_PATH, 'utf8')))
   git(['cat-file', '-e', `${baseline.commit}^{commit}`])
@@ -368,17 +579,35 @@ export function main(argv = process.argv.slice(2)) {
     peeledCommit = null
   }
 
+  const headCommit = git(['rev-parse', '--verify', 'HEAD^{commit}'])
   const paths = changedPaths(baseline.commit, includeWorktree)
+  const recordedSyncViolations = inspectRecordedUpstreamSync(baseline, headCommit)
+  let productCommit = null
+  let productChanges = []
+  if (productRef) {
+    productCommit = git(['rev-parse', '--verify', `${productRef}^{commit}`])
+    try {
+      execFileSync('git', ['merge-base', '--is-ancestor', productCommit, 'HEAD'], {
+        stdio: 'ignore',
+      })
+    } catch {
+      throw new Error(`product ref ${productCommit} is not an ancestor of HEAD`)
+    }
+    productChanges = changedPaths(productCommit, includeWorktree)
+  }
   const readPath = includeWorktree ? readWorktreePath : readHeadPath
   const violations = [
     ...evaluateReleaseTag(baseline, peeledCommit),
     ...evaluateChangedPaths(paths, baseline),
+    ...recordedSyncViolations,
+    ...evaluateProductReference(productCommit, headCommit),
+    ...evaluatePreservedPaths(productChanges, baseline),
     ...evaluateApprovedBackportContents(baseline, readPath),
   ]
   if (violations.length) throw new Error(`upstream boundary violations:\n- ${violations.join('\n- ')}`)
 
   console.log(
-    `upstream boundary OK: ${baseline.repository}@${baseline.release} (${baseline.commit}), ${paths.length} changed paths checked across ${baseline.overlays.length} overlays, ${approvedBackportFiles(baseline).size} exact backports verified`,
+    `upstream boundary OK: ${baseline.repository}@${baseline.release} (${baseline.commit}), recorded merge ${baseline.upstream_sync.merge_commit} preserves ${baseline.preserve_on_upstream_sync.length} protected product files, ${paths.length} changed paths checked across ${baseline.overlays.length} overlays, ${approvedBackportFiles(baseline).size} exact backports verified${productCommit ? `, current tree also unchanged from ${productCommit}` : ''}`,
   )
 }
 

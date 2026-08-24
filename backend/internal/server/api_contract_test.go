@@ -5,6 +5,7 @@ package server_test
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"io"
 	"math"
@@ -817,6 +818,10 @@ func TestAPIContracts(t *testing.T) {
 						"ops_metrics_interval_seconds": 60,
 						"site_name": "Sub2API",
 						"site_logo": "",
+						"community_qr_enabled": false,
+						"community_qr_image": "",
+						"community_qr_title": "交流群",
+						"community_qr_description": "扫码加入交流群获取支持",
 						"site_subtitle": "Subtitle",
 						"landing_notice_enabled": false,
 						"landing_notice_text": "",
@@ -1165,6 +1170,10 @@ func TestAPIContracts(t *testing.T) {
 					"google_oauth_frontend_redirect_url": "/auth/oauth/callback",
 						"site_name": "Sub2API",
 						"site_logo": "",
+						"community_qr_enabled": false,
+						"community_qr_image": "",
+						"community_qr_title": "交流群",
+						"community_qr_description": "扫码加入交流群获取支持",
 						"site_subtitle": "Subscription to API Conversion Platform",
 						"landing_notice_enabled": false,
 						"landing_notice_text": "",
@@ -1413,6 +1422,49 @@ func TestAPIContracts(t *testing.T) {
 	}
 }
 
+func TestCommunityQRImageAPIContract(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	deps := newContractDeps(t)
+	encoded := "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP8zwACTGCSAQANHQEDgslx/wAAAABJRU5ErkJggg=="
+	content, err := base64.StdEncoding.DecodeString(encoded)
+	require.NoError(t, err)
+	rawImage := "data:image/png;base64," + encoded
+	deps.settingRepo.SetAll(map[string]string{
+		service.SettingKeyCommunityQREnabled: "true",
+		service.SettingKeyCommunityQRImage:   rawImage,
+	})
+
+	t.Run("legacy anonymous public scope cannot retrieve image", func(t *testing.T) {
+		request := httptest.NewRequest(http.MethodGet, "/api/v1/settings/public?scope=community-qr", nil)
+		recorder := httptest.NewRecorder()
+		deps.router.ServeHTTP(recorder, request)
+
+		require.Equal(t, http.StatusOK, recorder.Code)
+		require.Contains(t, recorder.Header().Get("Content-Type"), "application/json")
+		require.NotContains(t, recorder.Body.String(), rawImage)
+		require.NotEqual(t, content, recorder.Body.Bytes())
+	})
+
+	t.Run("authenticated route rejects anonymous request", func(t *testing.T) {
+		status, body := doRequest(t, deps.router, http.MethodGet, "/api/v1/settings/community-qr", "", nil)
+		require.Equal(t, http.StatusUnauthorized, status)
+		require.JSONEq(t, `{"code":"UNAUTHORIZED","message":"Authorization required"}`, body)
+	})
+
+	t.Run("authenticated route returns raw image", func(t *testing.T) {
+		request := httptest.NewRequest(http.MethodGet, "/api/v1/settings/community-qr", nil)
+		request.Header.Set("Authorization", "Bearer contract-user-token")
+		recorder := httptest.NewRecorder()
+		deps.router.ServeHTTP(recorder, request)
+
+		require.Equal(t, http.StatusOK, recorder.Code)
+		require.Equal(t, content, recorder.Body.Bytes())
+		require.Equal(t, "image/png", recorder.Header().Get("Content-Type"))
+		require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"))
+		require.Equal(t, "nosniff", recorder.Header().Get("X-Content-Type-Options"))
+	})
+}
+
 type contractDeps struct {
 	now         time.Time
 	router      http.Handler
@@ -1477,6 +1529,7 @@ func newContractDeps(t *testing.T) *contractDeps {
 
 	settingRepo := newStubSettingRepo()
 	settingService := service.NewSettingService(settingRepo, cfg)
+	settingHandler := handler.NewSettingHandler(settingService, "contract-version")
 
 	adminService := service.NewAdminService(userRepo, groupRepo, &accountRepo, proxyRepo, apiKeyRepo, redeemRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	authHandler := handler.NewAuthHandler(cfg, nil, userService, settingService, nil, redeemService, nil, nil)
@@ -1509,6 +1562,17 @@ func newContractDeps(t *testing.T) *contractDeps {
 	v1Auth := v1.Group("")
 	v1Auth.Use(jwtAuth)
 	v1Auth.GET("/auth/me", authHandler.GetCurrentUser)
+
+	v1.GET("/settings/public", settingHandler.GetPublicSettings)
+	v1CommunityQR := v1.Group("")
+	v1CommunityQR.Use(func(c *gin.Context) {
+		if c.GetHeader("Authorization") != "Bearer contract-user-token" {
+			middleware.AbortWithError(c, http.StatusUnauthorized, "UNAUTHORIZED", "Authorization required")
+			return
+		}
+		c.Next()
+	})
+	v1CommunityQR.GET("/settings/community-qr", settingHandler.GetCommunityQRImage)
 
 	v1Keys := v1.Group("")
 	v1Keys.Use(jwtAuth)

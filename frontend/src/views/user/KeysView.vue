@@ -1,5 +1,4 @@
 <template>
-  <AppLayout>
     <TablePageLayout>
       <template #filters>
         <div class="flex flex-col gap-3">
@@ -1113,7 +1112,6 @@
         </div>
       </div>
     </Teleport>
-  </AppLayout>
 </template>
 
 <script setup lang="ts">
@@ -1126,7 +1124,6 @@ import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 
 const { t } = useI18n()
 import { keysAPI, authAPI, usageAPI, userGroupsAPI } from '@/api'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import DataTable from '@/components/common/DataTable.vue'
 	import Pagination from '@/components/common/Pagination.vue'
@@ -1917,15 +1914,7 @@ const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType) => {
 
   try {
     window.open(deeplink, '_self')
-
-    // Check if the protocol handler worked by detecting if we're still focused
-    setTimeout(() => {
-      if (document.hasFocus()) {
-        // Still focused means the protocol handler likely failed
-        appStore.showError(t('keys.ccSwitchNotInstalled'))
-      }
-    }, 100)
-  } catch (error) {
+  } catch {
     appStore.showError(t('keys.ccSwitchNotInstalled'))
   }
 }

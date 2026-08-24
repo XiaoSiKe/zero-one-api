@@ -188,6 +188,49 @@ describe("StatusSection", () => {
     expect(screen.queryByText("渠道汇总")).toBeNull();
   });
 
+  it("shows operational channels before degraded channels", async () => {
+    mocks.fetchChannelStatus.mockResolvedValue(
+      success({
+        status: "success",
+        data: {
+          mode: "active_probe",
+          state: "degraded",
+          reason: null,
+          latencyMs: 218,
+          availability7d: 98.2,
+          observedAt: "2026-08-16T08:25:00Z",
+          items: [
+            {
+              name: "降级线路",
+              state: "degraded",
+              availability7d: 96.5,
+              observedAt: "2026-08-16T08:25:00Z",
+              timeline: [],
+            },
+            {
+              name: "正常线路",
+              state: "operational",
+              availability7d: 99.9,
+              observedAt: "2026-08-16T08:25:00Z",
+              timeline: [],
+            },
+          ],
+        },
+      }),
+    );
+
+    render(<StatusSection />);
+
+    await screen.findByText("正常线路");
+    const names = Array.from(
+      screen
+        .getByLabelText("渠道状态数据")
+        .querySelectorAll<HTMLElement>(".status-monitor-name strong"),
+      (element) => element.textContent,
+    );
+    expect(names).toEqual(["正常线路", "降级线路"]);
+  });
+
   it("refreshes visible status without clearing the last successful result", async () => {
     vi.useFakeTimers();
     let resolveRefresh: (value: ChannelStatusResult) => void = () => {};

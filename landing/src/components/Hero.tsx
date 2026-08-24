@@ -86,49 +86,31 @@ export default function Hero({
         <div className="hero-actions" data-hero-reveal="2">
           {consoleHomePath ? (
             <Action
-              className="button-primary"
               href={consoleUrl(consoleHomePath)}
-              size="lg"
-              radius={16}
-              intensity={1.3}
-              thickness={1.15}
             >
               登录控制台
             </Action>
           ) : registrationEnabled ? (
             <Action
-              className="button-primary"
               href={consoleUrl('/register')}
-              size="lg"
-              radius={16}
-              intensity={1.3}
-              thickness={1.15}
             >
               注册账号
             </Action>
           ) : (
             <Action
-              className="button-primary"
               href={consoleUrl('/login')}
-              size="lg"
-              radius={16}
-              intensity={1.3}
-              thickness={1.15}
             >
               登录控制台
             </Action>
           )}
           {docUrl ? (
             <Action
-              className="button-secondary"
               href={documentUrl(docUrl)}
-              size="lg"
-              radius={16}
             >
               查看文档
             </Action>
           ) : (
-            <Action className="button-secondary" href="#quick-start" size="lg" radius={16}>
+            <Action href="#quick-start">
               查看接入方式
             </Action>
           )}
@@ -146,10 +128,8 @@ export default function Hero({
             <code>{DISPLAY_API_ENDPOINT}</code>
           </div>
           <Action
-            className="button-secondary hero-endpoint-copy"
+            className="hero-endpoint-copy"
             type="button"
-            size="lg"
-            radius={16}
             aria-label={endpointCopied ? '首页 API 地址已复制' : '复制首页 API 地址'}
             onClick={copyEndpoint}
           >

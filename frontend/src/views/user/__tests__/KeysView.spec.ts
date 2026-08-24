@@ -44,6 +44,8 @@ const messages: Record<string, string> = {
   'keys.group': 'Group',
   'keys.id': 'ID',
   'keys.currentConcurrency': 'Current Concurrency',
+  'keys.importToCcSwitch': 'Import to CC-Switch',
+  'keys.ccSwitchNotInstalled': 'CC-Switch did not open',
   'keys.lastUsedAt': 'Last Used',
   'keys.lastUsedIP': 'Last Used IP',
   'keys.rateLimitColumn': 'Rate Limit',
@@ -173,6 +175,7 @@ const DataTableStub = {
         <div data-test="current-concurrency">
           <slot name="cell-current_concurrency" :value="row.current_concurrency" :row="row" />
         </div>
+        <slot name="cell-actions" :row="row" />
         <div
           v-if="columns.some((col) => col.key === 'last_used_ip')"
           data-test="last-used-ip"
@@ -437,5 +440,43 @@ describe('user KeysView column settings', () => {
       },
       expect.objectContaining({ signal: expect.any(AbortSignal) })
     )
+  })
+
+  it('does not infer CC-Switch failure from a focused page', async () => {
+    vi.useFakeTimers()
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const hasFocus = vi.spyOn(document, 'hasFocus').mockReturnValue(true)
+    let wrapper: VueWrapper | null = null
+
+    try {
+      wrapper = await mountView()
+      await getButtonByText(wrapper, 'Import to CC-Switch').trigger('click')
+      await vi.advanceTimersByTimeAsync(5000)
+
+      expect(open).toHaveBeenCalledWith(expect.stringMatching(/^ccswitch:\/\/v1\/import\?/), '_self')
+      expect(hasFocus).not.toHaveBeenCalled()
+      expect(showError).not.toHaveBeenCalled()
+    } finally {
+      wrapper?.unmount()
+      open.mockRestore()
+      hasFocus.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
+  it('retains the error fallback when opening the CC-Switch protocol throws', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => {
+      throw new Error('protocol launch blocked')
+    })
+    const wrapper = await mountView()
+
+    try {
+      await getButtonByText(wrapper, 'Import to CC-Switch').trigger('click')
+
+      expect(showError).toHaveBeenCalledWith('CC-Switch did not open')
+    } finally {
+      wrapper.unmount()
+      open.mockRestore()
+    }
   })
 })

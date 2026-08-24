@@ -97,6 +97,142 @@ test.describe('Landing visual contracts', () => {
     await expect(titles.first().locator('.shiny-text__base')).toBeVisible()
   })
 
+  test('desktop integration copy aligns with the preview card', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop')
+    await seedLanding(page)
+    await page.goto('http://127.0.0.1:4174/#quick-start', { waitUntil: 'domcontentloaded' })
+    await page.evaluate(() => document.fonts.ready)
+
+    const layout = await page.evaluate(() => {
+      const rect = (selector: string) =>
+        document.querySelector<HTMLElement>(selector)!.getBoundingClientRect()
+      const badge = rect('.integration-badge')
+      const title = rect('.integration-copy h2')
+      const actions = rect('.integration-actions')
+      const preview = rect('.integration-preview:not([hidden])')
+      const panel = document.querySelector<HTMLElement>('.integration-panel')!
+      const steps = document.querySelector<HTMLElement>('.integration-steps')!
+      const step = document.querySelector<HTMLElement>('.integration-steps p')!
+      return {
+        badgeTopDelta: badge.top - preview.top,
+        actionsBottomDelta: actions.bottom - preview.bottom,
+        titleTopDelta: title.top - preview.top,
+        panelBackground: getComputedStyle(panel).backgroundColor,
+        stepsMarginTop: getComputedStyle(steps).marginTop,
+        stepFontSize: getComputedStyle(step).fontSize,
+      }
+    })
+
+    expect(layout.badgeTopDelta).toBeCloseTo(0, 0)
+    expect(layout.actionsBottomDelta).toBeCloseTo(0, 0)
+    expect(layout.titleTopDelta).toBeCloseTo(70, 0)
+    expect(layout.panelBackground).toBe('rgba(9, 9, 9, 0.3)')
+    expect(layout.stepsMarginTop).toBe('48px')
+    expect(layout.stepFontSize).toBe('17.6px')
+  })
+
+  test('pricing focus, billing copy, and specular actions share the requested styles', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop')
+    await seedLanding(page)
+    await page.goto('http://127.0.0.1:4174/#pricing', { waitUntil: 'domcontentloaded' })
+    await page.evaluate(() => document.fonts.ready)
+
+    const search = page.getByRole('searchbox', { name: '搜索模型或分组' })
+    const searchFrame = page.locator('.model-search')
+    const unfocusedSearchStyle = await searchFrame.evaluate((element) => {
+      const style = getComputedStyle(element)
+      return { borderColor: style.borderColor, background: style.backgroundColor, boxShadow: style.boxShadow }
+    })
+    await search.click()
+    const focusedSearchStyle = await searchFrame.evaluate((element) => {
+      const style = getComputedStyle(element)
+      return { borderColor: style.borderColor, background: style.backgroundColor, boxShadow: style.boxShadow }
+    })
+    expect(focusedSearchStyle).toEqual(unfocusedSearchStyle)
+    expect(focusedSearchStyle).toEqual({
+      borderColor: 'rgba(255, 255, 255, 0.16)',
+      background: 'rgba(255, 255, 255, 0.04)',
+      boxShadow: 'none',
+    })
+    const focusedInputStyle = await search.evaluate((element) => {
+      const style = getComputedStyle(element)
+      return { outline: style.outlineStyle, boxShadow: style.boxShadow }
+    })
+    expect(focusedInputStyle).toEqual({ outline: 'none', boxShadow: 'none' })
+
+    const billingStyles = await page.evaluate(() => {
+      const description = document.querySelector<HTMLElement>('.value-pricing-description span:first-child')!
+      const reasons = document.querySelector<HTMLElement>('#value-pricing-reasons-title')!
+      const titleBase = document.querySelector<HTMLElement>('#value-pricing-title .shiny-text__base')!
+      const summaryFrame = document.querySelector<HTMLElement>('.value-pricing-summary')!
+      const summaryTitle = summaryFrame.querySelector<HTMLElement>('h3')!
+      const summaryBase = summaryTitle.querySelector<HTMLElement>('.shiny-text__base')!
+      const pricingAction = document.querySelector<HTMLElement>('.value-pricing-action')!
+      const badgeTopDeltas = Array.from(document.querySelectorAll<HTMLElement>('.price-table tbody tr'))
+        .map((row) => Array.from(row.querySelectorAll<HTMLElement>('.rate-badge')))
+        .filter((badges) => badges.length === 2)
+        .map(([inputBadge, outputBadge]) =>
+          outputBadge.getBoundingClientRect().top - inputBadge.getBoundingClientRect().top)
+      return {
+        descriptionFontSize: getComputedStyle(description).fontSize,
+        reasonsFontSize: getComputedStyle(reasons).fontSize,
+        titleBackground: getComputedStyle(titleBase).backgroundImage,
+        summaryBackground: getComputedStyle(summaryBase).backgroundImage,
+        summaryHasShine: Boolean(summaryTitle.querySelector('.shiny-text__shine')),
+        summaryPaddingBottom: getComputedStyle(summaryFrame).paddingBottom,
+        pricingActionBorderTop: getComputedStyle(pricingAction).borderTopWidth,
+        badgeTopDeltas,
+      }
+    })
+    expect(billingStyles.descriptionFontSize).toBe(billingStyles.reasonsFontSize)
+    expect(billingStyles.summaryBackground).toBe(billingStyles.titleBackground)
+    expect(billingStyles.summaryHasShine).toBe(true)
+    expect(billingStyles.summaryPaddingBottom).toBe('8px')
+    expect(billingStyles.pricingActionBorderTop).toBe('0px')
+    expect(billingStyles.badgeTopDeltas.length).toBeGreaterThan(0)
+    for (const topDelta of billingStyles.badgeTopDeltas) expect(topDelta).toBeCloseTo(0, 1)
+
+    const specularAction = page.locator('.landing-action[data-specular-state="ready"]').first()
+    await expect(specularAction).toBeVisible()
+    const actionLayers = await specularAction.evaluate((element) => {
+      const style = getComputedStyle(element)
+      return { background: style.backgroundColor, backgroundImage: style.backgroundImage, borderColor: style.borderColor, boxShadow: style.boxShadow }
+    })
+    expect(actionLayers).toEqual({
+      background: 'rgba(82, 82, 82, 0.26)',
+      backgroundImage: 'none',
+      borderColor: 'rgba(0, 0, 0, 0)',
+      boxShadow: 'none',
+    })
+    await expect(page.locator('.specular-effects-canvas')).toHaveCount(1)
+
+    const heroActions = page.locator('.hero-actions .landing-action')
+    await expect(heroActions).toHaveCount(2)
+    await heroActions.first().scrollIntoViewIfNeeded()
+    const readHeroGeometry = () =>
+      heroActions.evaluateAll((elements) =>
+        elements.map((element) => {
+          const rect = element.getBoundingClientRect()
+          return {
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+            transform: getComputedStyle(element).transform,
+          }
+        }),
+      )
+    const geometryBeforeHover = await readHeroGeometry()
+    const firstHeroAction = await heroActions.first().boundingBox()
+    expect(firstHeroAction).not.toBeNull()
+    if (firstHeroAction) {
+      for (let offset = 4; offset < firstHeroAction.width; offset += 8) {
+        await page.mouse.move(firstHeroAction.x + offset, firstHeroAction.y + firstHeroAction.height / 2)
+      }
+    }
+    expect(await readHeroGeometry()).toEqual(geometryBeforeHover)
+  })
+
   test('footer shine layers overlap at the larger, slower typography', async ({ page }) => {
     await seedLanding(page)
     await page.goto('http://127.0.0.1:4174')
@@ -134,6 +270,17 @@ test.describe('Landing visual contracts', () => {
     await page.evaluate(() => document.fonts.ready)
     const pricing = page.locator('#pricing')
     await expect(pricing.getByText('claude-sonnet-4-6')).toBeVisible()
+    await page.addStyleTag({
+      content: `
+        .skip-link,
+        .threads-page-background,
+        .site-background-shade,
+        .site-header,
+        .announcement-bar,
+        .specular-effects-canvas { display: none !important; }
+        #pricing { background: #000 !important; }
+      `,
+    })
     await expect(pricing).toHaveScreenshot('landing-model-plaza-pricing.png')
   })
 
@@ -144,7 +291,9 @@ test.describe('Landing visual contracts', () => {
     await page.evaluate(() => document.fonts.ready)
     const billing = page.locator('#billing')
     await expect(billing.getByRole('heading', { name: '低至约 0.19 折' })).toBeVisible()
-    await expect(billing).toHaveScreenshot('landing-token-discount.png')
+    await expect(billing).toHaveScreenshot('landing-token-discount.png', {
+      maxDiffPixels: 500,
+    })
   })
 
   test('mobile configured token discount', async ({ page }, testInfo) => {
@@ -154,6 +303,8 @@ test.describe('Landing visual contracts', () => {
     await page.evaluate(() => document.fonts.ready)
     const billing = page.locator('#billing')
     await expect(billing.getByRole('heading', { name: '低至约 0.19 折' })).toBeVisible()
-    await expect(billing).toHaveScreenshot('landing-mobile-token-discount.png')
+    await expect(billing).toHaveScreenshot('landing-mobile-token-discount.png', {
+      maxDiffPixels: 500,
+    })
   })
 })

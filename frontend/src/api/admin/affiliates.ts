@@ -27,6 +27,7 @@ export interface ListAffiliateRecordsParams {
   page?: number
   page_size?: number
   search?: string
+  inviter_id?: number
   start_at?: string
   end_at?: string
   sort_by?: string
@@ -109,6 +110,17 @@ export interface SimpleUser {
   username: string
 }
 
+export interface BindAffiliateRelationshipRequest {
+  inviter_id: number
+  invitee_id: number
+}
+
+export interface BindAffiliateRelationshipResponse {
+  inviter_id: number
+  invitee_id: number
+  inviter_bound_at: string
+}
+
 export async function listUsers(
   params: ListAffiliateUsersParams = {},
 ): Promise<PaginatedResponse<AffiliateAdminEntry>> {
@@ -168,6 +180,7 @@ function recordParams(params: ListAffiliateRecordsParams = {}) {
     page: params.page ?? 1,
     page_size: params.page_size ?? 20,
     search: params.search ?? '',
+    inviter_id: params.inviter_id || undefined,
     start_at: params.start_at || undefined,
     end_at: params.end_at || undefined,
     sort_by: params.sort_by || undefined,
@@ -182,6 +195,16 @@ export async function listInviteRecords(
   const { data } = await apiClient.get<PaginatedResponse<AffiliateInviteRecord>>(
     '/admin/affiliates/invites',
     { params: recordParams(params) },
+  )
+  return data
+}
+
+export async function bindRelationship(
+  payload: BindAffiliateRelationshipRequest,
+): Promise<BindAffiliateRelationshipResponse> {
+  const { data } = await apiClient.post<BindAffiliateRelationshipResponse>(
+    '/admin/affiliates/invites',
+    payload,
   )
   return data
 }
@@ -222,6 +245,7 @@ export const affiliatesAPI = {
   clearUserSettings,
   batchSetRate,
   listInviteRecords,
+  bindRelationship,
   listRebateRecords,
   listTransferRecords,
   getUserOverview,

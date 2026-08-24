@@ -266,11 +266,26 @@ is the `ui-approved-2026-08-20-r5` tag at commit
 An upstream version update must not modify `landing/src`, the protected console
 source paths, or `deploy/zero-one/recovered-frontend`. This explicitly covers
 the landing page, login/register pages, the console shell, model-plaza pricing,
-and the redeem, benefit-code, and mystery-box surfaces. The API and shared type
+the community entry, Affiliate Attribution, and the redeem, benefit-code, and
+mystery-box surfaces. The API and shared type
 paths under `frontend/src/api` and `frontend/src/types` remain available for
 compatibility work. CI runs `verify-ui-boundary.mjs` and fails before a build if
 the protected UI changes or if `Dockerfile.edge` switches away from the pinned
 recovered landing and console sources.
+
+Every CI and publish run validates the repository-owned `upstream_sync`
+attestation in `.github/upstream-baseline.json`. It binds the previous stable
+Tag/commit, the full product commit captured before the merge, and the resulting
+two-parent merge commit. The merge must use that product commit as its first
+parent and the pinned upstream commit as its second parent, and every
+`preserve_on_upstream_sync` file must be unchanged across that merge. Missing,
+stale, malformed, self-`HEAD`, or non-ancestor metadata fails closed. Ordinary
+feature releases replay the recorded historical boundary and need no optional
+workflow input, so omitting an input cannot bypass the publish gate.
+The v0.1.178 schema-v3 product manifest predates the preserve registry and is
+treated as an empty list for this one bootstrap only. Every schema-v4 successor
+must retain all paths protected by its pre-merge product manifest; additions
+are allowed, but removing a path during a sync fails the release gate.
 
 To approve an intentional UI release, review desktop and mobile visual
 regression output first, commit the reviewed UI, create a new dated
@@ -283,8 +298,10 @@ Rollback uses the previous image digests without rolling back the database unles
 ## Required Smoke Tests
 
 - For releases based on v0.1.179, confirm `schema_migrations` contains both `226_channel_monitor_quota_mode.sql` and `226_add_usage_log_effective_model_indexes_notx.sql`, followed by `227_composite_routes_add_cn_providers.sql` and `228_channel_pricing_multipliers.sql`, in addition to the existing 221–225 Zero One migrations. Verify the two effective-model indexes are valid and ready, channel multiplier columns are nullable with positive-value constraints, `groups.long_context_pricing_enabled` remains non-null with default `true`, the group auth-cache trigger function still compares both pricing columns, and the Zero One group-and-account long-context billing gate is covered by the release tests.
+- Confirm `schema_migrations` contains `229_affiliate_manual_binding.sql`. Verify `user_affiliates.inviter_bound_at`, the no-self-inviter check, and `inviter_bound_by_admin_id` as an immutable audit snapshot without a deleting user foreign key; deleting an administrator must not erase the recorded actor ID. Legacy bound rows must retain their original profile creation time as the backfilled binding time and have no administrator actor.
 - Exercise one dedicated probe API Key after deploy, then verify its hashed Redis `apikey:auth:` entry reports snapshot `version: 20` and carries `long_context_pricing_enabled` plus `model_pricing`. Never print or store the raw API Key or the complete cache document.
 - Confirm an omitted `long_context_pricing_enabled` field on a disposable admin group create defaults to `true`, while an explicit `false` remains false; delete the disposable group afterward.
+- With disposable users and no production orders, confirm manual Affiliate Attribution accepts only a human JWT administrator and rejects an Admin API Key. When the sensitive-operation step-up policy is enabled, confirm it rejects the operation until a recent TOTP step-up. Also confirm it rejects self/cyclic/second bindings, persists actor and binding time, and treats the retained binding time as a no-rebind tombstone after inviter deletion. Payments from before the binding must remain without rebate; only otherwise-eligible payments after the binding may earn one. Confirm the validity deadline still derives from the invitee affiliate profile creation time.
 - For any enabled group-level model card, compare the configured price with one low-cost usage record. Include a long-context boundary check and, when Batch Image or Model Plaza is enabled, verify group-card precedence and an explicit zero-price tier without using a production customer key.
 - `GET https://api.01yapi.com/` returns the React page; `POST /v1/messages` reaches API authentication rather than HTML.
 - `GET https://api.01yapi.com/dashboard`, `/keys` and `/monitor` return the Approved UI Snapshot, while `/v1/*` continues to reach Sub2API.

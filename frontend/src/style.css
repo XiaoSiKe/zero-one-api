@@ -8,7 +8,7 @@
   }
 
   html {
-    @apply scroll-smooth antialiased;
+    @apply antialiased;
     color-scheme: light;
     letter-spacing: 0;
   }

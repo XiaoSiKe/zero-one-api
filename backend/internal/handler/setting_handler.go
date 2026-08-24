@@ -27,18 +27,20 @@ type publicSiteLogo struct {
 	revision string
 }
 
-// SettingHandler 公开设置处理器（无需认证）
+// SettingHandler handles public settings and narrowly scoped authenticated
+// setting assets. Authentication remains an explicit route-level contract.
 type SettingHandler struct {
 	settingService           *service.SettingService
 	notificationEmailService *service.NotificationEmailService
-	version                  string
 }
 
-// NewSettingHandler 创建公开设置处理器
+// NewSettingHandler creates the shared settings handler.
 func NewSettingHandler(settingService *service.SettingService, version string) *SettingHandler {
+	if settingService != nil {
+		settingService.SetVersion(version)
+	}
 	return &SettingHandler{
 		settingService: settingService,
-		version:        version,
 	}
 }
 
@@ -51,17 +53,18 @@ func (h *SettingHandler) SetNotificationEmailService(notificationEmailService *s
 // GetPublicSettings 获取公开设置
 // GET /api/v1/settings/public
 func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
-	if c.Query("scope") == "logo" {
+	switch c.Query("scope") {
+	case "logo":
 		h.getPublicSiteLogo(c)
 		return
 	}
 
-	settings, err := h.settingService.GetPublicSettings(c.Request.Context())
-	if err != nil {
-		response.ErrorFrom(c, err)
-		return
-	}
 	if c.Query("scope") == "landing" {
+		settings, err := h.settingService.GetPublicSettings(c.Request.Context())
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
 		response.Success(c, dto.LandingPublicSettings{
 			SiteName:                   settings.SiteName,
 			SiteLogo:                   landingSiteLogoURL(settings.SiteLogo),
@@ -80,87 +83,36 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, dto.PublicSettings{
-		RegistrationEnabled:                 settings.RegistrationEnabled,
-		EmailVerifyEnabled:                  settings.EmailVerifyEnabled,
-		ForceEmailOnThirdPartySignup:        settings.ForceEmailOnThirdPartySignup,
-		RegistrationEmailSuffixWhitelist:    settings.RegistrationEmailSuffixWhitelist,
-		RegistrationEmailDomainQuotaEnabled: settings.RegistrationEmailDomainQuotaEnabled,
-		PromoCodeEnabled:                    settings.PromoCodeEnabled,
-		PasswordResetEnabled:                settings.PasswordResetEnabled,
-		InvitationCodeEnabled:               settings.InvitationCodeEnabled,
-		TotpEnabled:                         settings.TotpEnabled,
-		PasskeyEnabled:                      settings.PasskeyEnabled,
-		LoginAgreementEnabled:               settings.LoginAgreementEnabled,
-		LoginAgreementMode:                  settings.LoginAgreementMode,
-		LoginAgreementUpdatedAt:             settings.LoginAgreementUpdatedAt,
-		LoginAgreementRevision:              settings.LoginAgreementRevision,
-		LoginAgreementDocuments:             publicLoginAgreementDocumentsToDTO(settings.LoginAgreementDocuments),
-		TurnstileEnabled:                    settings.TurnstileEnabled,
-		TurnstileSiteKey:                    settings.TurnstileSiteKey,
-		TencentCaptchaEnabled:               settings.TencentCaptchaEnabled,
-		TencentCaptchaAppID:                 settings.TencentCaptchaAppID,
-		TencentCaptchaRegion:                settings.TencentCaptchaRegion,
-		AliyunCaptchaEnabled:                settings.AliyunCaptchaEnabled,
-		AliyunCaptchaSceneID:                settings.AliyunCaptchaSceneID,
-		AliyunCaptchaPrefix:                 settings.AliyunCaptchaPrefix,
-		AliyunCaptchaRegion:                 settings.AliyunCaptchaRegion,
-		SiteName:                            settings.SiteName,
-		SiteLogo:                            settings.SiteLogo,
-		SiteSubtitle:                        settings.SiteSubtitle,
-		LandingNoticeEnabled:                settings.LandingNoticeEnabled,
-		LandingNoticeText:                   settings.LandingNoticeText,
-		LandingNoticeURL:                    settings.LandingNoticeURL,
-		APIBaseURL:                          settings.APIBaseURL,
-		ContactInfo:                         settings.ContactInfo,
-		DocURL:                              settings.DocURL,
-		HomeContent:                         settings.HomeContent,
-		CompactHomeEnabled:                  settings.CompactHomeEnabled,
-		HideCcsImportButton:                 settings.HideCcsImportButton,
-		PurchaseSubscriptionEnabled:         settings.PurchaseSubscriptionEnabled,
-		PurchaseSubscriptionURL:             settings.PurchaseSubscriptionURL,
-		TableDefaultPageSize:                settings.TableDefaultPageSize,
-		TablePageSizeOptions:                settings.TablePageSizeOptions,
-		CustomMenuItems:                     dto.ParseUserVisibleMenuItems(settings.CustomMenuItems),
-		CustomEndpoints:                     dto.ParseCustomEndpoints(settings.CustomEndpoints),
-		DingTalkOAuthEnabled:                settings.DingTalkOAuthEnabled,
-		LinuxDoOAuthEnabled:                 settings.LinuxDoOAuthEnabled,
-		WeChatOAuthEnabled:                  settings.WeChatOAuthEnabled,
-		WeChatOAuthOpenEnabled:              settings.WeChatOAuthOpenEnabled,
-		WeChatOAuthMPEnabled:                settings.WeChatOAuthMPEnabled,
-		WeChatOAuthMobileEnabled:            settings.WeChatOAuthMobileEnabled,
-		OIDCOAuthEnabled:                    settings.OIDCOAuthEnabled,
-		OIDCOAuthProviderName:               settings.OIDCOAuthProviderName,
-		GitHubOAuthEnabled:                  settings.GitHubOAuthEnabled,
-		GoogleOAuthEnabled:                  settings.GoogleOAuthEnabled,
-		BackendModeEnabled:                  settings.BackendModeEnabled,
-		PaymentEnabled:                      settings.PaymentEnabled,
-		Version:                             h.version,
-		ServerTimezone:                      timezone.Name(),
-		ServerUTCOffset:                     timezone.UTCOffset(),
-		BalanceLowNotifyEnabled:             settings.BalanceLowNotifyEnabled,
-		AccountQuotaNotifyEnabled:           settings.AccountQuotaNotifyEnabled,
-		BalanceLowNotifyThreshold:           settings.BalanceLowNotifyThreshold,
-		BalanceLowNotifyRechargeURL:         settings.BalanceLowNotifyRechargeURL,
+	settings, err := h.settingService.GetPublicSettingsProjection(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, settings)
+}
 
-		ChannelMonitorEnabled:                settings.ChannelMonitorEnabled,
-		PublicChannelStatusEnabled:           settings.PublicChannelStatusEnabled,
-		ChannelMonitorMode:                   settings.ChannelMonitorMode,
-		ChannelMonitorDefaultIntervalSeconds: settings.ChannelMonitorDefaultIntervalSeconds,
-		ChannelMonitorHideThroughput:         settings.ChannelMonitorHideThroughput,
-		ChannelMonitorShowQuota:              settings.ChannelMonitorShowQuota,
+// GetCommunityQRImage serves only validated raster bytes. Route registration
+// must keep this handler behind JWT authentication; the image is deliberately
+// not part of the anonymous public JSON or SSR injection payload.
+func (h *SettingHandler) GetCommunityQRImage(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
+	c.Header("X-Content-Type-Options", "nosniff")
 
-		AvailableChannelsEnabled: settings.AvailableChannelsEnabled,
-
-		ModelPlazaEnabled:     settings.ModelPlazaEnabled,
-		ModelPlazaRequireAuth: settings.ModelPlazaRequireAuth,
-
-		AffiliateEnabled: settings.AffiliateEnabled,
-
-		RiskControlEnabled: settings.RiskControlEnabled,
-
-		AllowUserViewErrorRequests: settings.AllowUserViewErrorRequests,
-	})
+	rawImage, enabled, err := h.settingService.GetCommunityQRImage(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if !enabled {
+		response.NotFound(c, "community QR image not found")
+		return
+	}
+	image, ok := service.DecodeCommunityQRImage(rawImage)
+	if !ok {
+		response.NotFound(c, "community QR image not found")
+		return
+	}
+	c.Data(http.StatusOK, image.MIMEType, image.Content)
 }
 
 // getPublicSiteLogo serves a configured data-URI logo as a cacheable image.
@@ -205,7 +157,7 @@ func landingSiteLogoURL(rawLogo string) string {
 
 func decodePublicSiteLogo(rawLogo string) (publicSiteLogo, bool) {
 	metadata, encoded, ok := strings.Cut(strings.TrimSpace(rawLogo), ",")
-	if !ok || encoded == "" || strings.IndexAny(encoded, " \t\r\n") >= 0 {
+	if !ok || encoded == "" || strings.ContainsAny(encoded, " \t\r\n") {
 		return publicSiteLogo{}, false
 	}
 	metadataParts := strings.Split(metadata, ";")
@@ -259,16 +211,4 @@ func (h *SettingHandler) UnsubscribeNotificationEmail(c *gin.Context) {
 	}
 	body := "<!doctype html><html><head><meta charset=\"utf-8\"><title>Unsubscribed</title></head><body style=\"font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;padding:32px;\"><h1>Unsubscribed</h1><p>You have unsubscribed <strong>" + html.EscapeString(result.Email) + "</strong> from <strong>" + html.EscapeString(result.Event) + "</strong> emails.</p></body></html>"
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(body))
-}
-
-func publicLoginAgreementDocumentsToDTO(items []service.LoginAgreementDocument) []dto.LoginAgreementDocument {
-	result := make([]dto.LoginAgreementDocument, 0, len(items))
-	for _, item := range items {
-		result = append(result, dto.LoginAgreementDocument{
-			ID:        item.ID,
-			Title:     item.Title,
-			ContentMD: item.ContentMD,
-		})
-	}
-	return result
 }

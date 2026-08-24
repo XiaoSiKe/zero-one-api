@@ -69,6 +69,10 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		settingKeyForwardedClientIPModeV2:                   "true",
 		SettingKeySiteName:                                  "Sub2API",
 		SettingKeySiteLogo:                                  "",
+		SettingKeyCommunityQREnabled:                        "false",
+		SettingKeyCommunityQRImage:                          "",
+		SettingKeyCommunityQRTitle:                          DefaultCommunityQRTitle,
+		SettingKeyCommunityQRDescription:                    DefaultCommunityQRDescription,
 		SettingKeyLandingNoticeEnabled:                      "false",
 		SettingKeyLandingNoticeText:                         DefaultLandingNoticeText,
 		SettingKeyLandingNoticeURL:                          DefaultLandingNoticeURL,
@@ -355,6 +359,10 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		ForwardedClientIPHeaders:               forwardedClientIPHeaders,
 		SiteName:                               s.getStringOrDefault(settings, SettingKeySiteName, "Sub2API"),
 		SiteLogo:                               settings[SettingKeySiteLogo],
+		CommunityQREnabled:                     settings[SettingKeyCommunityQREnabled] == "true",
+		CommunityQRImage:                       settings[SettingKeyCommunityQRImage],
+		CommunityQRTitle:                       s.getStringOrDefault(settings, SettingKeyCommunityQRTitle, DefaultCommunityQRTitle),
+		CommunityQRDescription:                 s.getStringOrDefault(settings, SettingKeyCommunityQRDescription, DefaultCommunityQRDescription),
 		SiteSubtitle:                           s.getStringOrDefault(settings, SettingKeySiteSubtitle, "Subscription to API Conversion Platform"),
 		LandingNoticeEnabled:                   settings[SettingKeyLandingNoticeEnabled] == "true",
 		LandingNoticeText:                      landingNoticeSettingOrDefault(settings, SettingKeyLandingNoticeText, DefaultLandingNoticeText),
@@ -370,6 +378,13 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		CustomMenuItems:                        settings[SettingKeyCustomMenuItems],
 		CustomEndpoints:                        settings[SettingKeyCustomEndpoints],
 		BackendModeEnabled:                     settings[SettingKeyBackendModeEnabled] == "true",
+	}
+	if _, ok := DecodeCommunityQRImage(result.CommunityQRImage); !ok {
+		if result.CommunityQRImage != "" {
+			slog.Warn("invalid persisted community QR image; hiding admin preview and disabling entry")
+		}
+		result.CommunityQREnabled = false
+		result.CommunityQRImage = ""
 	}
 	storedLandingNoticeEnabled := result.LandingNoticeEnabled
 	landingNoticeEnabled := storedLandingNoticeEnabled

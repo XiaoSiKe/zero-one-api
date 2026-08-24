@@ -351,6 +351,10 @@ const (
 	// OEM设置
 	SettingKeySiteName                    = "site_name"                     // 网站名称
 	SettingKeySiteLogo                    = "site_logo"                     // 网站Logo (base64)
+	SettingKeyCommunityQREnabled          = "community_qr_enabled"          // 顶部交流群入口是否启用
+	SettingKeyCommunityQRImage            = "community_qr_image"            // 交流群二维码（base64 数据 URI）
+	SettingKeyCommunityQRTitle            = "community_qr_title"            // 顶部按钮及弹窗标题
+	SettingKeyCommunityQRDescription      = "community_qr_description"      // 交流群弹窗副标题
 	SettingKeySiteSubtitle                = "site_subtitle"                 // 网站副标题
 	SettingKeyLandingNoticeEnabled        = "landing_notice_enabled"        // 首页公告是否启用
 	SettingKeyLandingNoticeText           = "landing_notice_text"           // 首页公告纯文本

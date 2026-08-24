@@ -56,12 +56,45 @@ describe('Console Skin module boundary', () => {
     expect(read('src/style.css')).not.toContain("@import './styles/console-skin.css';")
   })
 
-  it('animates console content without hiding the entire route shell', () => {
+  it('keeps route and table content stationary during navigation', () => {
     const app = read('src/App.vue')
     const layout = read('src/components/layout/AppLayout.vue')
+    const tableLayout = read('src/components/layout/TablePageLayout.vue')
+    const globalStyles = read('src/style.css')
 
     expect(app).not.toContain('console-route-enter-from')
     expect(layout).toContain('console-route-content')
-    expect(layout).toContain('@media (prefers-reduced-motion: reduce)')
+    expect(layout).not.toContain('console-route-content-in')
+    expect(tableLayout).not.toContain('table-surface-stack-enter')
+    expect(globalStyles).not.toContain('scroll-smooth')
+  })
+
+  it('shares card motion across User and Administrator routes while complex hosts use glow only', () => {
+    const layout = read('src/components/layout/AppLayout.vue')
+    const skin = read('src/styles/console-skin.css')
+
+    expect(layout).toContain('console-card-motion-surface')
+    expect(layout).toContain('data-zero-one-card-motion="true"')
+    expect(layout).toContain('@pointermove.passive="trackConsoleCardMotion"')
+    expect(skin).toContain('--console-card-angle')
+    expect(skin).toContain('transform: translateY(-2px);')
+    expect(skin).toContain('.console-card-motion-static')
+    expect(skin).toContain('.console-card-motion-glow-only')
+    expect(skin).toContain('.console-skin-table')
+    expect(skin).toContain('.frosted-table-shell')
+    expect(skin).toContain('.sticky')
+    expect(skin).toContain(':has(.card, iframe, table, .fixed, .sticky)')
+    expect(read('src/views/user/UsageView.vue')).toContain(
+      'card console-card-motion-glow-only'
+    )
+    expect(read('src/views/admin/UsageView.vue')).toContain(
+      'card console-card-motion-glow-only'
+    )
+    expect(read('src/components/user/profile/ProfileTotpCard.vue')).toContain(
+      'card console-card-motion-static'
+    )
+    expect(read('src/components/user/profile/ProfilePasskeyCard.vue')).toContain(
+      'card console-card-motion-static'
+    )
   })
 })

@@ -1,6 +1,5 @@
 <template>
-  <component :is="isFullscreen ? 'div' : AppLayout" :class="isFullscreen ? 'flex min-h-screen flex-col justify-center bg-gray-50 dark:bg-dark-950' : ''">
-    <div :class="[isFullscreen ? 'p-4 md:p-6' : '', 'space-y-6 pb-12']">
+  <div :class="[isFullscreen ? 'flex min-h-screen flex-col justify-center bg-gray-50 p-4 dark:bg-dark-950 md:p-6' : '', 'space-y-6 pb-12']">
       <div
         v-if="errorMessage"
         class="rounded-2xl bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400"
@@ -135,7 +134,6 @@
         />
       </template>
     </div>
-  </component>
 </template>
 
 <script setup lang="ts">
@@ -143,7 +141,6 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useDebounceFn, useIntervalFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import {
   opsAPI,

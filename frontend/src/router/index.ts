@@ -198,6 +198,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      consoleShell: true,
       title: 'Dashboard',
       titleKey: 'dashboard.title',
       descriptionKey: 'dashboard.welcomeMessage'
@@ -210,6 +211,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      consoleShell: true,
       title: 'API Keys',
       titleKey: 'keys.title',
       descriptionKey: 'keys.description'
@@ -223,6 +225,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      consoleShell: true,
       title: 'Batch Image Guide',
       titleKey: 'batchImageGuide.title',
       descriptionKey: 'batchImageGuide.description'
@@ -235,6 +238,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      consoleShell: true,
       title: 'Usage Records',
       titleKey: 'usage.title',
       descriptionKey: 'usage.description'
@@ -247,6 +251,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      consoleShell: true,
       title: 'Redeem Code',
       titleKey: 'redeem.title',
       descriptionKey: 'redeem.description'
@@ -259,6 +264,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      consoleShell: true,
       title: 'Affiliate',
       titleKey: 'affiliate.title',
       descriptionKey: 'affiliate.description'
@@ -271,6 +277,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      consoleShell: true,
       title: 'Available Channels',
       titleKey: 'availableChannels.title',
       descriptionKey: 'availableChannels.description'
@@ -283,6 +290,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      consoleShell: true,
       title: 'Profile',
       titleKey: 'profile.title',
       descriptionKey: 'profile.description'
@@ -295,6 +303,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      consoleShell: true,
       title: 'My Subscriptions',
       titleKey: 'userSubscriptions.title',
       descriptionKey: 'userSubscriptions.description'
@@ -307,6 +316,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      consoleShell: true,
       title: 'Purchase Subscription',
       titleKey: 'nav.buySubscription',
       descriptionKey: 'purchase.description',
@@ -320,6 +330,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      consoleShell: true,
       title: 'My Orders',
       titleKey: 'nav.myOrders',
       requiresPayment: true
@@ -332,6 +343,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      consoleShell: true,
       title: 'Payment',
       titleKey: 'payment.qr.scanToPay',
       requiresPayment: true
@@ -391,6 +403,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      consoleShell: true,
       title: 'Custom Page',
       titleKey: 'customPage.title',
     }
@@ -408,6 +421,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Admin Dashboard',
       titleKey: 'admin.dashboard.title',
       descriptionKey: 'admin.dashboard.description'
@@ -420,6 +434,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Ops Monitoring',
       titleKey: 'admin.ops.title',
       descriptionKey: 'admin.ops.description'
@@ -432,6 +447,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Audit Logs',
       titleKey: 'admin.audit.title',
       descriptionKey: 'admin.audit.description'
@@ -444,6 +460,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'User Management',
       titleKey: 'admin.users.title',
       descriptionKey: 'admin.users.description'
@@ -456,6 +473,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Group Management',
       titleKey: 'admin.groups.title',
       descriptionKey: 'admin.groups.description'
@@ -472,6 +490,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Channel Management',
       titleKey: 'admin.channels.title',
       descriptionKey: 'admin.channels.description'
@@ -484,6 +503,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Channel Monitor',
       titleKey: 'admin.channelMonitor.title',
       descriptionKey: 'admin.channelMonitor.description'
@@ -496,6 +516,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      consoleShell: true,
       title: 'Channel Status',
       titleKey: 'nav.channelStatus'
     }
@@ -507,6 +528,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Subscription Management',
       titleKey: 'admin.subscriptions.title',
       descriptionKey: 'admin.subscriptions.description'
@@ -519,6 +541,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Account Management',
       titleKey: 'admin.accounts.title',
       descriptionKey: 'admin.accounts.description'
@@ -531,6 +554,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Announcements',
       titleKey: 'admin.announcements.title',
       descriptionKey: 'admin.announcements.description'
@@ -543,6 +567,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Proxy Management',
       titleKey: 'admin.proxies.title',
       descriptionKey: 'admin.proxies.description'
@@ -555,6 +580,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Redeem Code Management',
       titleKey: 'admin.redeem.title',
       descriptionKey: 'admin.redeem.description'
@@ -567,6 +593,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Promo Code Management',
       titleKey: 'admin.promo.title',
       descriptionKey: 'admin.promo.description'
@@ -579,6 +606,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'System Settings',
       titleKey: 'admin.settings.title',
       descriptionKey: 'admin.settings.description'
@@ -591,6 +619,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Risk Control',
       titleKey: 'admin.riskControl.title',
       descriptionKey: 'admin.riskControl.description',
@@ -604,6 +633,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Prompt Audit',
       titleKey: 'admin.promptAudit.title',
       descriptionKey: 'admin.promptAudit.description',
@@ -617,6 +647,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Usage Records',
       titleKey: 'admin.usage.title',
       descriptionKey: 'admin.usage.description'
@@ -633,6 +664,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Affiliate Invite Records',
       titleKey: 'nav.affiliateInviteRecords',
       descriptionKey: 'admin.affiliates.invitesDescription'
@@ -645,6 +677,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Affiliate Rebate Records',
       titleKey: 'nav.affiliateRebateRecords',
       descriptionKey: 'admin.affiliates.rebatesDescription'
@@ -657,6 +690,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Affiliate Transfer Records',
       titleKey: 'nav.affiliateTransferRecords',
       descriptionKey: 'admin.affiliates.transfersDescription'
@@ -672,6 +706,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Payment Dashboard',
       titleKey: 'nav.paymentDashboard',
       requiresPayment: true
@@ -684,6 +719,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Order Management',
       titleKey: 'nav.orderManagement',
       requiresPayment: true
@@ -696,6 +732,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      consoleShell: true,
       title: 'Subscription Plans',
       titleKey: 'nav.paymentPlans',
       requiresPayment: true

@@ -11,8 +11,9 @@ import (
 )
 
 type settingPublicRepoStub struct {
-	values map[string]string
-	err    error
+	values        map[string]string
+	err           error
+	requestedKeys []string
 }
 
 func (s *settingPublicRepoStub) Get(ctx context.Context, key string) (*Setting, error) {
@@ -28,6 +29,7 @@ func (s *settingPublicRepoStub) Set(ctx context.Context, key, value string) erro
 }
 
 func (s *settingPublicRepoStub) GetMultiple(ctx context.Context, keys []string) (map[string]string, error) {
+	s.requestedKeys = append([]string(nil), keys...)
 	if s.err != nil {
 		return nil, s.err
 	}
@@ -150,6 +152,20 @@ func TestSettingService_GetPublicSettings_ExposesForceEmailOnThirdPartySignup(t 
 	settings, err := svc.GetPublicSettings(context.Background())
 	require.NoError(t, err)
 	require.True(t, settings.ForceEmailOnThirdPartySignup)
+}
+
+func TestParsePublicCustomMenuItemsIncludesUserAndAll(t *testing.T) {
+	raw := `[
+		{"id":"user-help","visibility":"user"},
+		{"id":"shared-help","visibility":"all"},
+		{"id":"admin-help","visibility":"admin"},
+		{"id":"invalid-help","visibility":"guest"}
+	]`
+
+	items := parsePublicCustomMenuItems(raw)
+	require.Len(t, items, 2)
+	require.Equal(t, []string{"user-help", "shared-help"}, []string{items[0].ID, items[1].ID})
+	require.Equal(t, []string{"user", "all"}, []string{items[0].Visibility, items[1].Visibility})
 }
 
 func TestSettingService_GetPublicSettings_ExposesAllowUserViewErrorRequests(t *testing.T) {

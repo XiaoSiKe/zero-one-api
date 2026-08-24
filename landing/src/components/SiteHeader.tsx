@@ -60,9 +60,6 @@ function NavigationLinks({
         <Action
           className="nav-primary"
           href={consoleUrl(consoleHomePath)}
-          size="sm"
-          baseColor="#52525b"
-          radius={8}
           onClick={onNavigate}
         >
           登录控制台
@@ -73,9 +70,6 @@ function NavigationLinks({
         <Action
           className="nav-primary"
           href={consoleUrl('/login')}
-          size="sm"
-          baseColor="#52525b"
-          radius={8}
           onClick={onNavigate}
         >
           登录控制台
@@ -85,9 +79,6 @@ function NavigationLinks({
         <Action
           className="nav-primary"
           href={consoleUrl('/register')}
-          size="sm"
-          baseColor="#52525b"
-          radius={8}
           onClick={onNavigate}
         >
           注册账号

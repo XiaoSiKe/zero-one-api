@@ -32,6 +32,7 @@ describe('ValuePricingSection', () => {
     render(<ValuePricingSection modelPlazaData={data} />)
 
     expect(screen.getByRole('heading', { name: '低至约 0.19 折' })).toBeTruthy()
+    expect(document.querySelector('.value-pricing-summary h3 > .shiny-text')).not.toBeNull()
     expect(screen.queryByText('低至约 1.9 折')).toBeNull()
   })
 })

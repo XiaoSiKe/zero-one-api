@@ -620,7 +620,7 @@ button { color: inherit; }
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 20px;
-  background: rgba(9, 9, 9, 0.9);
+  background: rgba(9, 9, 9, 0.3);
   box-shadow: 0 20px 56px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(22px);
 }
@@ -708,7 +708,7 @@ button { color: inherit; }
 .integration-tool-name { overflow-wrap: anywhere; }
 
 .integration-steps {
-  margin: 32px 0 0;
+  margin: 48px 0 0;
   padding: 0;
   display: grid;
   gap: 14px;
@@ -737,7 +737,7 @@ button { color: inherit; }
 .integration-steps p {
   margin: 0;
   color: #e2e2e5;
-  font-size: 16px;
+  font-size: 17.6px;
   font-weight: 650;
   line-height: 1.5;
 }
@@ -747,6 +747,17 @@ button { color: inherit; }
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
+}
+
+@media (min-width: 1024px) {
+  .integration-copy {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .integration-copy h2 { margin-top: 34px; }
+  .integration-actions { margin-top: auto; padding-top: 32px; }
 }
 
 .integration-preview {
@@ -1147,17 +1158,17 @@ button { color: inherit; }
   align-items: center;
   gap: 10px;
   padding: 0 15px;
-  border: 1px solid rgba(172, 161, 255, 0.26);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 12px;
   color: #777780;
-  background: rgba(13, 13, 35, 0.72);
+  background: rgba(255, 255, 255, 0.04);
   transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
 }
 
 .model-search:focus-within {
-  border-color: rgba(191, 180, 255, 0.72);
-  background: rgba(21, 19, 54, 0.9);
-  box-shadow: 0 0 0 3px rgba(128, 109, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: none;
 }
 
 .model-search svg { width: 16px; height: 16px; flex: 0 0 16px; }
@@ -1171,6 +1182,7 @@ button { color: inherit; }
   outline: 0;
   color: #f2f2f3;
   background: transparent;
+  box-shadow: none;
   font-size: 14px;
 }
 
@@ -1248,7 +1260,10 @@ button { color: inherit; }
 
 .price-table tbody tr:last-child > * { border-bottom: 0; }
 
-.price-table tbody .paid-price-column { transition: background-color 150ms ease; }
+.price-table tbody .paid-price-column {
+  vertical-align: top;
+  transition: background-color 150ms ease;
+}
 
 .price-table tbody tr:hover .paid-price-column {
   background: rgba(255, 255, 255, 0.07);
@@ -1309,6 +1324,17 @@ button { color: inherit; }
 .price-values > span { display: block; }
 
 .platform-price-cell { position: relative; }
+
+.platform-price-cell--with-cache-line {
+  display: grid;
+  grid-template-rows: auto 20px auto auto;
+  align-content: start;
+}
+
+.platform-price-cell--with-cache-line > .price-values { grid-row: 1; }
+.platform-price-cell--with-cache-line > .cache-note { grid-row: 2; }
+.platform-price-cell--with-cache-line > .price-unit { grid-row: 3; }
+.platform-price-cell--with-cache-line > .rate-badge { grid-row: 4; justify-self: start; }
 
 .platform-price-cell .price-values strong {
   color: #fff;
@@ -1565,7 +1591,6 @@ button { color: inherit; }
 
 .value-pricing-action {
   padding: 24px;
-  border-top: 1px solid var(--line);
 }
 
 .value-pricing-action .specular-action { width: 100%; }
@@ -1799,10 +1824,10 @@ button { color: inherit; }
   .integration-body { padding: 24px 16px 20px; gap: 28px; }
   .integration-copy h2 { max-width: 16ch; margin-top: 26px; font-size: clamp(34px, 10.7vw, 42px); }
   .integration-api-phrase { white-space: nowrap; }
-  .integration-steps { margin-top: 32px; gap: 18px; }
+  .integration-steps { margin-top: 48px; gap: 18px; }
   .integration-steps li { grid-template-columns: 36px minmax(0, 1fr); gap: 14px; }
   .integration-steps li > span { width: 36px; height: 36px; font-size: 13px; }
-  .integration-steps p { font-size: 16px; }
+  .integration-steps p { font-size: 17.6px; }
   .integration-actions { margin-top: 34px; flex-direction: column; }
   .integration-primary-action, .integration-secondary-action { width: 100%; min-height: 48px; font-size: 15px; }
   .integration-preview { width: 100%; border-radius: 16px; }
@@ -1975,7 +2000,8 @@ button { color: inherit; }
 }
 
 @supports ((-webkit-background-clip: text) or (background-clip: text)) {
-  .value-pricing-title > .shiny-text .shiny-text__base {
+  .value-pricing-title > .shiny-text .shiny-text__base,
+  .value-pricing-summary h3 > .shiny-text .shiny-text__base {
     color: transparent;
     background: linear-gradient(100deg, #f9f8ff 0%, #d8d2ff 45%, #9b91ff 70%, #74aaff 100%);
     -webkit-background-clip: text;
@@ -1998,7 +2024,7 @@ button { color: inherit; }
 
 .value-pricing-copy { padding: 32px 0 32px 32px; }
 .value-pricing-description { margin: 0; display: flex; flex-direction: column; color: #b9b9be; font-size: 16px; line-height: 1.65; }
-.value-pricing-description span:first-child { color: #e6e6eb; font-weight: 650; }
+.value-pricing-description span:first-child { color: #e6e6eb; font-size: 20px; font-weight: 650; line-height: 1.35; }
 .value-pricing-description span + span { margin-top: 8px; }
 .value-pricing-benefits { margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.12); }
 .value-pricing-benefits h3 { margin: 0; color: #f1f1f3; font-size: 20px; font-weight: 760; line-height: 1.35; letter-spacing: 0; }
@@ -2013,8 +2039,8 @@ button { color: inherit; }
 .value-pricing-card { align-self: stretch; margin: 32px 32px 32px 0; border: 1px solid rgba(255, 255, 255, 0.11); border-radius: 20px; background: rgba(14, 14, 14, 0.88); box-shadow: none; }
 .value-pricing-badge { min-height: 36px; margin: 20px 20px 0; padding: 0 14px; gap: 8px; border-color: rgba(255, 255, 255, 0.12); color: #c8c8cc; font-size: 13px; font-weight: 650; }
 .value-pricing-badge svg { width: 17px; height: 17px; color: #f4f4f5; stroke-width: 1.8; }
-.value-pricing-summary { margin: 20px 20px 0; min-height: 0; padding: 20px; display: block; border-color: rgba(255, 255, 255, 0.12); border-radius: 18px; background: #1b1b1b; }
-.value-pricing-summary h3 { color: #f8f8f8; font-size: 34px; font-weight: 800; line-height: 1.1; letter-spacing: 0; }
+.value-pricing-summary { margin: 20px 20px 0; min-height: 0; padding: 20px 20px 8px; display: block; border-color: rgba(255, 255, 255, 0.12); border-radius: 18px; background: #1b1b1b; }
+.value-pricing-summary h3 { color: #dcd7ff; font-size: 34px; font-weight: 800; line-height: 1.1; letter-spacing: 0; }
 .value-pricing-summary p { max-width: 420px; margin: 12px 0 0; color: #b9b9be; font-size: 14px; line-height: 1.65; }
 .value-pricing-action { padding: 20px; }
 .value-pricing-action .value-pricing-purchase { width: 100%; min-height: 52px; border: 1px solid #f4f4f5; border-radius: 16px; color: #080808; background: #f4f4f5; box-shadow: inset 0 1px 0 #fff, 0 12px 30px rgba(0, 0, 0, 0.32); font-size: 15px; font-weight: 700; }
@@ -2076,7 +2102,7 @@ button { color: inherit; }
   .value-pricing-reason-card, .value-pricing-reason-card + .value-pricing-reason-card { padding: 0; border: 0; }
   .value-pricing-card { margin: 24px 20px 20px; border-radius: 16px; }
   .value-pricing-badge { margin: 18px 18px 0; font-size: 12px; }
-  .value-pricing-summary { margin: 18px 18px 0; padding: 18px; border-radius: 14px; }
+  .value-pricing-summary { margin: 18px 18px 0; padding: 18px 18px 6px; border-radius: 14px; }
   .value-pricing-summary h3 { font-size: 28px; }
   .value-pricing-action { padding: 18px; }
   .status-section { padding: 76px 14px 72px; }

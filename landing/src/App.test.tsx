@@ -304,10 +304,18 @@ describe("public site", () => {
     expect(document.querySelector("#advantages")).toBeNull();
   });
 
+  it("uses one specular layer for every homepage action", () => {
+    renderApp();
+
+    const actions = [...document.querySelectorAll<HTMLElement>(".landing-action")];
+    expect(actions.length).toBeGreaterThan(0);
+    expect(actions.every((action) => action.dataset.actionHighlight === "specular")).toBe(true);
+  });
+
   it("keeps value-pricing copy accurate when the public model plaza is disabled", () => {
     renderApp();
 
-    expect(screen.getByText("按实际配置结算")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "按实际配置结算" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "显示计费说明" })).toBeNull();
   });
 

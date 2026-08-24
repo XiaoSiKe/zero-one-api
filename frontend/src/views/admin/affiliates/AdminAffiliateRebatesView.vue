@@ -1,7 +1,7 @@
 <template>
-  <AdminAffiliateRecordsTable type="rebates" />
+  <AdminAffiliateWorkspace type="rebates" />
 </template>
 
 <script setup lang="ts">
-import AdminAffiliateRecordsTable from './AdminAffiliateRecordsTable.vue'
+import AdminAffiliateWorkspace from './AdminAffiliateWorkspace.vue'
 </script>

@@ -5,7 +5,6 @@
 const RECOVERY_PATH = '/forgot-password'
 const RECOVERY_SELECTOR = '[data-zero-one-login-recovery="true"]'
 const LOGIN_BUTTON_CLASS = 'btn btn-primary btn-specular w-full'
-let scanFrame = 0
 
 function recoveryLabel() {
   const locale = window.localStorage.getItem('sub2api_locale') || document.documentElement.lang
@@ -55,7 +54,6 @@ function styleForgotPasswordActions() {
 }
 
 function installAuthActions() {
-  scanFrame = 0
   if (window.location.pathname === '/login') {
     installRecoveryLink()
   } else if (window.location.pathname === '/forgot-password') {
@@ -64,14 +62,7 @@ function installAuthActions() {
 }
 
 function scheduleScan() {
-  if (scanFrame) return
-  scanFrame = window.requestAnimationFrame(installAuthActions)
+  window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.request()
 }
 
-new MutationObserver(scheduleScan).observe(document.documentElement, {
-  childList: true,
-  subtree: true,
-})
-
-window.addEventListener('popstate', scheduleScan)
-scheduleScan()
+window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.register('login-recovery', installAuthActions)

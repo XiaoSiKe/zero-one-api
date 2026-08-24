@@ -64,5 +64,12 @@ declare module 'vue-router' {
      * i18n key for the page description
      */
     descriptionKey?: string
+
+    /**
+     * Whether App.vue owns the authenticated Console shell while this route is active.
+     * Leaf routes must render only their page content so navigation does not recreate
+     * the sidebar or header.
+     */
+    consoleShell?: boolean
   }
 }

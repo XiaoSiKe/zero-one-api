@@ -312,6 +312,15 @@ describe('specularEffectsRuntime', () => {
     expect(frames.size).toBe(0)
   })
 
+  it('aligns the effect geometry with the center of the CSS border', () => {
+    const action = makeAction(100)
+
+    cleanups.push(registerSpecularEffect(action, () => ({ radius: 18 })))
+
+    expect(ogl.programs[0]?.uniforms.uHalfSize?.value).toEqual([119.25, 35.25])
+    expect(ogl.programs[0]?.uniforms.uRadius?.value).toBe(26.25)
+  })
+
   it('tracks ancestor geometry transitions and renders the final position on coarse pointers', () => {
     finePointer = false
     const position = { left: 100 }

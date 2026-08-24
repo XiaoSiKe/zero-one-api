@@ -151,6 +151,10 @@ type SystemSettings struct {
 
 	SiteName                    string
 	SiteLogo                    string
+	CommunityQREnabled          bool
+	CommunityQRImage            string
+	CommunityQRTitle            string
+	CommunityQRDescription      string
 	SiteSubtitle                string
 	LandingNoticeEnabled        bool
 	LandingNoticeText           string
@@ -344,6 +348,9 @@ type PublicSettings struct {
 	AliyunCaptchaRegion                 string
 	SiteName                            string
 	SiteLogo                            string
+	CommunityQREnabled                  bool
+	CommunityQRTitle                    string
+	CommunityQRDescription              string
 	SiteSubtitle                        string
 	LandingNoticeEnabled                bool
 	LandingNoticeText                   string

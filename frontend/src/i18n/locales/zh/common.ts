@@ -87,6 +87,7 @@ export default {
     selectedFile: '已选：{name}',
     fileReadFailed: '读取文件失败',
     selectImageFile: '请选择图片文件',
+    unsupportedImageType: '不支持该图片格式，请上传 {types}',
     fileTooLargeKb: '文件过大（{size} KB），上限 {max} KB',
     copy: '复制',
     notAvailable: '不可用',
@@ -174,6 +175,7 @@ export default {
     channels: '渠道管理',
     availableChannels: '可用渠道',
     modelPlaza: '模型广场',
+    communityQr: '交流群',
     subscriptions: '订阅管理',
     accounts: '账号管理',
     proxies: 'IP管理',
@@ -205,6 +207,16 @@ export default {
     contentModeration: '内容审核',
     promptAudit: '提示词审计',
     auditLogs: '操作日志',
+  },
+
+  communityQr: {
+    open: '打开交流群二维码',
+    title: '交流群',
+    description: '扫码加入交流群获取支持',
+    imageAlt: '交流群二维码',
+    loading: '正在安全加载二维码…',
+    loadFailed: '二维码暂时无法加载，请稍后重试',
+    retry: '重新加载',
   },
 
   // Auth

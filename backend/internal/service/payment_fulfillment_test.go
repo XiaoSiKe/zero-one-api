@@ -72,7 +72,7 @@ func (r *paymentFulfillmentAffiliateRepoStub) GetAffiliateByCode(context.Context
 	panic("unexpected GetAffiliateByCode call")
 }
 
-func (r *paymentFulfillmentAffiliateRepoStub) BindInviter(context.Context, int64, int64) (bool, error) {
+func (r *paymentFulfillmentAffiliateRepoStub) BindInviter(context.Context, int64, int64, *int64) (bool, error) {
 	panic("unexpected BindInviter call")
 }
 
@@ -110,6 +110,10 @@ func (r *paymentFulfillmentAffiliateRepoStub) ListInvitees(context.Context, int6
 
 func (r *paymentFulfillmentAffiliateRepoStub) UpdateUserAffCode(context.Context, int64, string) error {
 	panic("unexpected UpdateUserAffCode call")
+}
+
+func (r *paymentFulfillmentAffiliateRepoStub) UpdateUserSettings(context.Context, int64, AffiliateUserSettingsUpdate) error {
+	panic("unexpected UpdateUserSettings call")
 }
 
 func (r *paymentFulfillmentAffiliateRepoStub) ResetUserAffCode(context.Context, int64) (string, error) {
@@ -889,6 +893,8 @@ func TestExecuteSubscriptionFulfillmentAppliesAffiliateRebate(t *testing.T) {
 	ctx := context.Background()
 	client := newPaymentConfigServiceTestClient(t)
 	ensurePaymentAuditOrderActionUniqueIndex(t, ctx, client)
+	paidAt := time.Now().Add(-time.Minute)
+	boundAt := paidAt.Add(-time.Minute)
 
 	user, err := client.User.Create().
 		SetEmail("subscription-affiliate@example.com").
@@ -913,6 +919,7 @@ func TestExecuteSubscriptionFulfillmentAppliesAffiliateRebate(t *testing.T) {
 		SetSubscriptionGroupID(7).
 		SetSubscriptionDays(30).
 		SetStatus(OrderStatusPaid).
+		SetPaidAt(paidAt).
 		SetExpiresAt(time.Now().Add(time.Hour)).
 		SetClientIP("127.0.0.1").
 		SetSrcHost("api.example.com").
@@ -922,10 +929,11 @@ func TestExecuteSubscriptionFulfillmentAppliesAffiliateRebate(t *testing.T) {
 	inviterID := int64(9001)
 	affiliateRepo := &paymentFulfillmentAffiliateRepoStub{
 		inviteeSummary: &AffiliateSummary{
-			UserID:    user.ID,
-			AffCode:   "INVITEE",
-			InviterID: &inviterID,
-			CreatedAt: time.Now().Add(-24 * time.Hour),
+			UserID:         user.ID,
+			AffCode:        "INVITEE",
+			InviterID:      &inviterID,
+			InviterBoundAt: &boundAt,
+			CreatedAt:      time.Now().Add(-24 * time.Hour),
 		},
 		inviterSummary: &AffiliateSummary{
 			UserID:    inviterID,
@@ -969,6 +977,76 @@ func TestExecuteSubscriptionFulfillmentAppliesAffiliateRebate(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, applied.Detail, `"baseAmount":9.99`)
 	require.Contains(t, applied.Detail, `"rebateAmount":1.4985`)
+}
+
+func TestAccrueInviteRebateForOrderHonorsBindingTime(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	inviterID := int64(9001)
+	inviteeID := int64(9002)
+	boundAt := time.Now().UTC().Add(-time.Hour)
+	createdAt := boundAt.Add(-30 * 24 * time.Hour)
+	settings := map[string]string{
+		SettingKeyAffiliateEnabled:           "true",
+		SettingKeyAffiliateRebateRate:        "20",
+		SettingKeyAffiliateRebateFreezeHours: "0",
+	}
+
+	newService := func(extraSettings map[string]string) (*AffiliateService, *paymentFulfillmentAffiliateRepoStub) {
+		values := make(map[string]string, len(settings)+len(extraSettings))
+		for key, value := range settings {
+			values[key] = value
+		}
+		for key, value := range extraSettings {
+			values[key] = value
+		}
+		repo := &paymentFulfillmentAffiliateRepoStub{
+			inviteeSummary: &AffiliateSummary{
+				UserID:         inviteeID,
+				InviterID:      &inviterID,
+				InviterBoundAt: &boundAt,
+				CreatedAt:      createdAt,
+			},
+			inviterSummary: &AffiliateSummary{UserID: inviterID, CreatedAt: createdAt},
+		}
+		settingSvc := NewSettingService(&paymentFulfillmentSettingRepoStub{values: values}, nil)
+		return NewAffiliateService(repo, settingSvc, nil, nil), repo
+	}
+
+	t.Run("missing paid_at fails closed", func(t *testing.T) {
+		svc, repo := newService(nil)
+		rebate, err := svc.AccrueInviteRebateForOrder(ctx, inviteeID, 10, nil, nil)
+		require.NoError(t, err)
+		require.Zero(t, rebate)
+		require.Empty(t, repo.accrueCalls)
+	})
+
+	t.Run("payment before binding is not retroactively rebated", func(t *testing.T) {
+		svc, repo := newService(nil)
+		paidAt := boundAt.Add(-time.Nanosecond)
+		rebate, err := svc.AccrueInviteRebateForOrder(ctx, inviteeID, 10, nil, &paidAt)
+		require.NoError(t, err)
+		require.Zero(t, rebate)
+		require.Empty(t, repo.accrueCalls)
+	})
+
+	t.Run("payment at binding time is eligible", func(t *testing.T) {
+		svc, repo := newService(nil)
+		paidAt := boundAt
+		rebate, err := svc.AccrueInviteRebateForOrder(ctx, inviteeID, 10, nil, &paidAt)
+		require.NoError(t, err)
+		require.InDelta(t, 2, rebate, 1e-9)
+		require.Len(t, repo.accrueCalls, 1)
+	})
+
+	t.Run("late binding does not reset profile-based duration", func(t *testing.T) {
+		svc, repo := newService(map[string]string{SettingKeyAffiliateRebateDurationDays: "7"})
+		paidAt := boundAt.Add(time.Minute)
+		rebate, err := svc.AccrueInviteRebateForOrder(ctx, inviteeID, 10, nil, &paidAt)
+		require.NoError(t, err)
+		require.Zero(t, rebate)
+		require.Empty(t, repo.accrueCalls)
+	})
 }
 
 func TestExecuteSubscriptionFulfillmentDoesNotDuplicateWorkAfterLegacySuccessAudit(t *testing.T) {

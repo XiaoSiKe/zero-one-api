@@ -272,20 +272,210 @@ psql -U sub2api -h 127.0.0.1 -d sub2api -f migration.sql
 
 ### Git 操作
 
+零一 API 的二开开发与上游同步是两条不同流程。二开 UI 必须先冻结为新的
+Approved UI Snapshot；普通上游同步只能更新后端及明确列出的 API/type 兼容
+路径，不能顺带更新、重建或覆盖首页、Console、登录页及 recovered 静态资源。
+完整发布与回滚原则见
+[`docs/OPERATIONS.md`](docs/OPERATIONS.md#release-and-rollback) 和
+[`ADR 0004`](docs/adr/0004-approved-ui-snapshot-at-edge.md)。
+
+#### 当前二开开发（包括首页和 Console UI）
+
+1. 在独立功能分支开发；不得修改 `.github/upstream-baseline.json` 的
+   `release`/`commit`，也不得在功能分支合并新的 upstream Tag。
+2. 新增或变更的二开路径必须登记到 `.github/upstream-baseline.json` 中已有的
+   owner。所有不由 Approved UI Snapshot、带退出条件的 `legacy_hotfixes` 或精确
+   `approved_backports` 保留的产品差异，还必须逐文件登记到
+   `preserve_on_upstream_sync`；这里禁止目录、glob 和顺带扩权。仅有 Overlay 归属
+   只表示允许修改，不表示普通上游同步时会保留。邀请归属模块的
+   一次性补绑、安全与非追溯口径见
+   [`ADR 0006`](docs/adr/0006-admin-affiliate-attribution.md)。功能测试和 Registry
+   工作树检查必须通过：
+
+   ```bash
+   node --test .github/scripts/*.test.mjs
+   node .github/scripts/verify-upstream-boundary.mjs --worktree
+   node .github/scripts/verify-upgrade-readiness.mjs --recorded-sync --worktree
+   ```
+
+3. UI 变化必须完成桌面与移动端视觉回归、路由和 recovered asset closure
+   检查。人工确认截图后，先提交已审核 UI，再创建新的、不可移动的 annotated
+   Tag；随后把该 Tag 和解引用 commit 写入
+   `.github/scripts/ui-baseline.json`：
+
+   ```bash
+   ui_ref='ui-approved-YYYY-MM-DD-rN'
+   git tag -a "$ui_ref" -m "Approve Zero One UI snapshot YYYY-MM-DD"
+   ui_commit="$(git rev-parse "$ui_ref^{commit}")"
+
+   node -e '
+     const fs = require("fs");
+     const manifestPath = ".github/scripts/ui-baseline.json";
+     const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+     manifest.baseline_ref = process.argv[1];
+     manifest.baseline_commit = process.argv[2];
+     fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+   ' "$ui_ref" "$ui_commit"
+   git add .github/scripts/ui-baseline.json
+   git commit -m "chore: advance approved UI snapshot to $ui_ref"
+
+   node .github/scripts/verify-ui-boundary.mjs
+   node .github/scripts/verify-ui-boundary.mjs --worktree
+   sh deploy/zero-one/test-routing.sh
+   node deploy/zero-one/verify-console-asset-closure.mjs \
+     deploy/zero-one/recovered-frontend/console
+   ```
+
+   不得移动或复用旧的 `ui-approved-*` Tag；未经视觉审核时，UI boundary
+   失败是正确的阻断结果，不能通过放宽 protected paths 让它变绿。
+
+#### 未来同步上游稳定 Tag
+
+每次升级必须使用独立 PR 和独立 worktree。`upstream/main`、`latest`、预发布
+Tag 和未解引用的 Tag 都不能作为基线。建议一次性禁止误推 upstream：
+
 ```bash
-# Zero One：只获取正式 Tag，并确认 Tag 指向记录的 commit
-git fetch upstream --tags
-git rev-parse 'vX.Y.Z^{}'
-
-# 从产品基线创建短期稳定 Tag 同步分支
-git switch main
-git switch -c codex/sync-sub2api-vX.Y.Z
-git merge --no-ff vX.Y.Z
-
-# Registry 的提交态与完整工作树检查
-node .github/scripts/verify-upstream-boundary.mjs
-node .github/scripts/verify-upstream-boundary.mjs --worktree
+git remote set-url --push upstream DISABLED
 ```
+
+以下流程先保留产品 tip，然后使用 `--no-commit` 合并；在任何 merge commit
+产生之前，从产品 tip 恢复 manifest 中的全部 protected UI 路径，以及 Overlay
+Registry 的全部 `preserve_on_upstream_sync` 精确文件：
+
+```bash
+new_ref='vX.Y.Z'
+git fetch origin main
+sync_dir="../zero-one-sync-${new_ref#v}"
+git worktree add "$sync_dir" -b "codex/sync-sub2api-$new_ref" origin/main
+cd "$sync_dir"
+
+test -z "$(git status --porcelain=v1 --untracked-files=all)"
+test "$(git remote get-url upstream)" = \
+  'https://github.com/Wei-Shaw/sub2api.git'
+old_ref="$(node -p "JSON.parse(require('fs').readFileSync('.github/upstream-baseline.json')).release")"
+old_commit="$(node -p "JSON.parse(require('fs').readFileSync('.github/upstream-baseline.json')).commit")"
+git fetch --no-tags upstream "refs/tags/$new_ref:refs/tags/$new_ref"
+new_commit="$(git rev-parse "$new_ref^{commit}")"
+product_tip="$(git rev-parse HEAD)"
+
+node .github/scripts/verify-upstream-boundary.mjs
+node .github/scripts/verify-ui-boundary.mjs
+git merge --no-ff --no-commit "$new_ref"
+
+node -e '
+  const fs = require("fs");
+  const manifest = JSON.parse(fs.readFileSync(".github/scripts/ui-baseline.json"));
+  for (const path of manifest.protected_paths) console.log(path);
+' | while IFS= read -r protected_path; do
+  git restore --source="$product_tip" --staged --worktree -- "$protected_path"
+done
+
+node -e '
+  const fs = require("fs");
+  const manifest = JSON.parse(fs.readFileSync(".github/upstream-baseline.json"));
+  for (const path of manifest.preserve_on_upstream_sync) console.log(path);
+' | while IFS= read -r protected_path; do
+  git restore --source="$product_tip" --staged --worktree -- "$protected_path"
+done
+```
+
+恢复后必须逐 owner 审查剩余 overlay/hotfix 冲突，并逐文件移植真正需要的 API/type
+兼容变化。禁止使用 blanket `-X ours`、`-X theirs`、整目录 `checkout --theirs`
+或依赖本机 `merge=ours` driver，也禁止重新构建 recovered Console 来消除冲突。
+如果新 upstream Tag 修改了一个 `preserve_on_upstream_sync` 文件，先保持产品 tip
+版本；有价值的上游差异必须另开产品变更，逐行移植并重新测试，不得在同步 PR
+直接覆盖：
+
+```bash
+git diff --name-only --diff-filter=U
+git diff --name-status "$old_ref" "$new_ref" -- frontend/src/api frontend/src/types
+
+# product_tip 在合并前已通过同一门禁；这里再次检查合并中的 index/worktree。
+# verifier 会阻止所有受保护 UI 差异，同时只放行 manifest 明列的
+# frontend/src/api 与 frontend/src/types 兼容路径。
+node .github/scripts/verify-ui-boundary.mjs --worktree
+git diff --exit-code "$product_tip" -- .github/scripts/ui-baseline.json
+
+node -e '
+  const fs = require("fs");
+  const manifest = JSON.parse(fs.readFileSync(".github/upstream-baseline.json"));
+  for (const path of manifest.preserve_on_upstream_sync) console.log(path);
+' | while IFS= read -r protected_path; do
+  if ! git diff --quiet "$product_tip" -- "$protected_path"; then
+    echo "protected product file differs from product_tip: $protected_path" >&2
+    exit 1
+  fi
+done
+```
+
+合并内容审核完后，先提交真实的双亲 merge commit，再用一个后续提交更新
+`.github/upstream-baseline.json`。`upstream_sync` 必须持久记录旧 upstream
+Tag/commit、合并前的产品 commit，以及刚刚产生的 merge commit；后者必须
+以 `product_tip` 为第一父提交、以 `new_commit` 为第二父提交。这个记录会被
+以后每次 CI 和发布重放校验，不能通过省略 workflow 输入绕过：
+
+```bash
+test -z "$(git diff --name-only --diff-filter=U)"
+git commit -m "merge: sync upstream $new_ref and preserve product overlays"
+sync_merge="$(git rev-parse HEAD)"
+test "$(git show -s --format='%P' "$sync_merge")" = "$product_tip $new_commit"
+
+node -e '
+  const fs = require("fs");
+  const path = ".github/upstream-baseline.json";
+  const manifest = JSON.parse(fs.readFileSync(path, "utf8"));
+  manifest.release = process.argv[1];
+  manifest.commit = process.argv[2];
+  manifest.upstream_sync = {
+    previous_release: process.argv[3],
+    previous_commit: process.argv[4],
+    product_commit: process.argv[5],
+    merge_commit: process.argv[6],
+  };
+  fs.writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
+' "$new_ref" "$new_commit" "$old_ref" "$old_commit" "$product_tip" "$sync_merge"
+
+# 逐条审查 legacy_hotfixes 的 valid_for_release 和 exit_condition，
+# 同步版本文档，然后提交可审计的升级证明。
+git add .github/upstream-baseline.json
+git commit -m "chore: attest upstream sync $old_ref to $new_ref"
+
+node --test .github/scripts/*.test.mjs
+node .github/scripts/verify-upstream-boundary.mjs \
+  --product-ref "$product_tip"
+node .github/scripts/verify-upstream-boundary.mjs --worktree \
+  --product-ref "$product_tip"
+node .github/scripts/verify-ui-boundary.mjs
+node .github/scripts/verify-ui-boundary.mjs --worktree
+node .github/scripts/verify-upgrade-readiness.mjs --recorded-sync --worktree
+sh deploy/zero-one/test-routing.sh
+```
+
+`product_tip` 必须是合并前记录的完整 40 位 commit，并且是当前同步提交的祖先；
+`--product-ref HEAD`（或任何解引用后等于当前 `HEAD` 的名字）会被门禁直接拒绝。
+`upstream_sync` 缺失、SHA 格式错误、指向当前 `HEAD`、不是双亲 merge、
+旧 Tag 被重打，或 merge 改动了任一 `preserve_on_upstream_sync` 文件时，
+CI 和 publish 都会失败。普通功能提交不需要新的产品 ref：门禁重放已记录
+的历史合并边界，而不会把后续正常产品改动误判为 upstream 覆盖。
+本次 v0.1.178 的 product manifest 是旧 schema v3，尚无
+`preserve_on_upstream_sync`，因此只在这一次 bootstrap 中按空集合兼容。从
+schema v4 开始，下一个 manifest 的保护清单必须是合并前清单的超集；
+同步 PR 可以新增保护项，但不得删除旧项来隐藏同一次覆盖。
+
+再完成 Go、Vue、Landing、visual regression、镜像构建和 live routing 测试后才可
+合并 PR。普通上游升级严禁修改 `ui-baseline.json` 的已批准 Tag/commit，也严禁移动
+任何 `ui-approved-*` Tag。
+
+#### 冲突与回滚
+
+- merge 尚未提交：执行 `git merge --abort`。protected UI 冲突始终恢复
+  `product_tip`，API/type 兼容逐文件处理。
+- merge 已提交但门禁失败：不要合并 PR；修复，或删除独立 worktree/分支后重做。
+  禁止 reset/force-push `main`。
+- merge 已进入 `main`：通过 revert PR 回退；若回退 merge commit，使用
+  `git revert -m 1 <merge_commit>`。
+- 已部署：按 `docs/OPERATIONS.md` 回切上一对 Backend/Edge 镜像 digest。数据库
+  migration 不随代码自动回滚；只有验证过备份并安排维护窗口后才能单独回滚数据库。
 
 ### 前端操作
 

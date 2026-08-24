@@ -13,9 +13,11 @@
  *   2. **Async API** — `App.vue` awaits `appStore.fetchPublicSettings()` on
  *      mount as a fallback (used when injection is missing or stale).
  *
- * If the SSR injection struct forgets to include a feature flag field — the
- * exact bug that hid the "可用渠道" menu after every refresh — the frontend
- * reads `undefined` until the async call resolves. An opt-in flag written as
+ * Both channels now serialize the same backend `PublicSettingsProjection`.
+ * This prevents the exact bug that hid the "可用渠道" menu after every refresh,
+ * where the first-frame payload omitted a field that the async response had.
+ * If an older deployment omits a field, the frontend still reads `undefined`
+ * until the async call resolves. An opt-in flag written as
  * `settings?.xxx_enabled === true` then evaluates to `false` and the menu
  * disappears. An opt-out flag written as `settings?.xxx_enabled !== false`
  * evaluates to `true` (menu stays) but will flicker off if the backend sends
@@ -28,31 +30,26 @@
  *   - **`opt-out`** (default enabled) — menu visible when settings unloaded,
  *     hidden only when the backend explicitly sends `false`. Use for features
  *     that ship enabled by default (Channel Monitor, Payment).
- *   - **`opt-in`**  (default disabled) — menu hidden when settings unloaded,
+ *   - **`opt-in`**  (default disabled) — feature hidden when settings unloaded,
  *     visible only when the backend explicitly sends `true`. Use for features
- *     that ship disabled (Available Channels).
+ *     that ship disabled (Available Channels, Model Plaza, Community QR).
  *
  * For `opt-in` flags to render immediately on refresh, the backend **must**
- * inject the field through `PublicSettingsInjectionPayload`. A drift test in
- * `backend/internal/handler/dto/public_settings_injection_schema_test.go`
- * catches omissions.
+ * authorize the field in the backend `PublicSettingsProjection`.
  *
  * ## Adding a new flag
  *
  *   1. Backend `service/domain_constants.go`  → `SettingKey<Name>Enabled`
  *   2. Backend `service/settings_view.go`      → `PublicSettings` + `SystemSettings`
  *   3. Backend `service/setting_service.go`    → `GetPublicSettings` / `UpdateSettings` /
- *                                                 `GetAllSettings` / `InitDefaultSettings` /
- *                                                 **`PublicSettingsInjectionPayload`**
- *                                                 (the drift test enforces this)
- *   4. Backend `handler/dto/settings.go`       → `PublicSettings` + `SystemSettings`
- *   5. Backend `handler/setting_handler.go`    → handler response
- *   6. Backend `handler/admin/setting_handler.go` → update request + audit diff
- *   7. Frontend `types/index.ts`               → `PublicSettings` typings
- *   8. Frontend `api/admin/settings.ts`        → admin DTO typings
- *   9. **Frontend `utils/featureFlags.ts` (this file)** → register via `defineFlag`
- *  10. Frontend `views/admin/SettingsView.vue` → Toggle UI + form defaults + save payload
- *  11. Frontend `components/layout/AppSidebar.vue` → attach via `makeSidebarFlag`
+ *                                                 `GetAllSettings` / `InitDefaultSettings`
+ *   4. Backend `service/setting_public.go`     → explicit `PublicSettingsProjection`
+ *   5. Backend `handler/admin/setting_handler.go` → update request + audit diff
+ *   6. Frontend `types/index.ts`               → `PublicSettings` typings
+ *   7. Frontend `api/admin/settings.ts`        → admin DTO typings
+ *   8. **Frontend `utils/featureFlags.ts` (this file)** → register via `defineFlag`
+ *   9. Frontend `views/admin/SettingsView.vue` → Toggle UI + form defaults + save payload
+ *  10. Frontend consumer (Sidebar/Header/route/view) → attach the registered flag
  *
  * ## Usage
  *
@@ -108,6 +105,11 @@ export const FeatureFlags = {
     key: 'model_plaza_enabled',
     mode: 'opt-in',
     label: 'Model Plaza',
+  }),
+  communityQr: defineFlag({
+    key: 'community_qr_enabled',
+    mode: 'opt-in',
+    label: 'Community QR',
   }),
   payment: defineFlag({
     key: 'payment_enabled',

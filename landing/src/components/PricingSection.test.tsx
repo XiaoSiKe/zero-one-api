@@ -132,7 +132,9 @@ describe('PricingSection', () => {
       screen.queryByText('价格来自公开模型广场配置。官方参考价与零一实付价分列展示，缺失数据保持为空。'),
     ).toBeNull()
     expect(screen.getAllByText('缓存写 ¥1.875 · 读 ¥0.15').length).toBeGreaterThan(0)
-    expect(screen.getByText('0.5×')).toBeTruthy()
+    expect(screen.getAllByText('0.5×')).toHaveLength(2)
+    const firstPriceRow = screen.getByRole('row', { name: /claude-sonnet-4-6/ })
+    expect(firstPriceRow.querySelectorAll('.rate-badge')).toHaveLength(2)
     expect(document.querySelectorAll('.price-table .paid-price-column').length).toBeGreaterThan(2)
     expect(mocks.fetchModelPlaza).toHaveBeenCalledWith(
       expect.objectContaining({ enabled: true, timeoutMs: 3_000, signal: expect.any(AbortSignal) }),

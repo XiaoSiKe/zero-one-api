@@ -2,6 +2,9 @@ import type { Page, Route } from '@playwright/test'
 
 const observedAt = '2026-08-16T12:00:00+08:00'
 
+export const communityQrPngBase64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6OZsAAAAASUVORK5CYII='
+
 export const adminUser = {
   id: 1,
   username: 'zero-one-admin',
@@ -17,6 +20,15 @@ export const adminUser = {
   created_at: '2026-01-01T00:00:00+08:00',
   updated_at: observedAt,
   run_mode: 'standard',
+}
+
+export const regularUser = {
+  ...adminUser,
+  id: 2,
+  username: 'zero-one-user',
+  email: 'user@01yapi.test',
+  role: 'user',
+  balance: 96.25,
 }
 
 export function publicSettings(mode: 'v1' | 'v2' = 'v2') {
@@ -65,6 +77,9 @@ export function publicSettings(mode: 'v1' | 'v2' = 'v2') {
     available_channels_enabled: false,
     model_plaza_enabled: true,
     model_plaza_require_auth: false,
+    community_qr_enabled: false,
+    community_qr_title: '交流群',
+    community_qr_description: '扫码加入交流群获取支持',
     service_quota_enabled: false,
     affiliate_enabled: false,
     landing_notice_enabled: true,
@@ -346,10 +361,64 @@ async function fulfill(route: Route, data: unknown, status = 200) {
 export async function seedConsole(
   page: Page,
   mode: 'v1' | 'v2' = 'v2',
-  options: { authenticated?: boolean } = {},
+  options: {
+    authenticated?: boolean
+    user?: typeof adminUser
+    communityQrEnabled?: boolean
+    communityQrImage?: string
+    communityQrTitle?: string
+    communityQrDescription?: string
+    affiliateEnabled?: boolean
+    locale?: 'en' | 'zh'
+    customMenuItems?: Array<{
+      id: string
+      label: string
+      icon_svg: string
+      url: string
+      visibility: 'user' | 'admin' | 'all'
+      placement?: 'sidebar' | 'header' | 'both'
+      sort_order: number
+    }>
+  } = {},
 ) {
   const authenticated = options.authenticated ?? true
-  await page.addInitScript(({ user, authenticated }) => {
+  const user = options.user ?? adminUser
+  const locale = options.locale ?? 'zh'
+  const settings = {
+    ...publicSettings(mode),
+    community_qr_enabled: options.communityQrEnabled ?? false,
+    community_qr_title: options.communityQrTitle ?? '交流群',
+    community_qr_description:
+      options.communityQrDescription ?? '扫码加入交流群获取支持',
+    affiliate_enabled: options.affiliateEnabled ?? false,
+    affiliate_rebate_rate: 20,
+    affiliate_rebate_freeze_hours: 24,
+    affiliate_rebate_duration_days: 365,
+    affiliate_rebate_per_invitee_cap: 0,
+    affiliate_admin_recharge_enabled: false,
+    custom_menu_items: options.customMenuItems ?? [],
+  }
+  let communityQrImage = options.communityQrImage ?? ''
+  const affiliateUsers = [
+    { id: 10, email: 'inviter@01yapi.test', username: '邀请人甲', role: 'user', status: 'active', created_at: '2026-02-01T00:00:00+08:00' },
+    { id: 20, email: 'missed@01yapi.test', username: '遗漏客户乙', role: 'user', status: 'active', created_at: '2026-03-01T00:00:00+08:00' },
+    { id: 21, email: 'bound@01yapi.test', username: '已绑定客户丙', role: 'user', status: 'disabled', created_at: '2026-04-01T00:00:00+08:00' },
+  ]
+  const allCustomers = [user, ...affiliateUsers]
+  const affiliateInvites = [
+    {
+      inviter_id: 10,
+      inviter_email: 'inviter@01yapi.test',
+      inviter_username: '邀请人甲',
+      invitee_id: 21,
+      invitee_email: 'bound@01yapi.test',
+      invitee_username: '已绑定客户丙',
+      aff_code: 'INVITER10',
+      total_rebate: 12.5,
+      created_at: '2026-08-15T10:00:00+08:00',
+    },
+  ]
+  await page.addInitScript(({ user, authenticated, locale }) => {
     if (authenticated) {
       localStorage.setItem('auth_token', 'visual-fixture-token')
       localStorage.setItem('auth_user', JSON.stringify(user))
@@ -357,21 +426,260 @@ export async function seedConsole(
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_user')
     }
-    localStorage.setItem('sub2api_locale', 'zh')
+    localStorage.setItem('sub2api_locale', locale)
     localStorage.setItem('theme', 'light')
     localStorage.setItem('admin_guide_1_admin_v4_interactive', 'true')
-  }, { user: adminUser, authenticated })
+  }, { user, authenticated, locale })
 
   await page.route('**/setup/status', (route) =>
     fulfill(route, { needs_setup: false, step: 'completed' }),
   )
 
   await page.route('**/api/v1/**', async (route) => {
-    const path = new URL(route.request().url()).pathname.replace(/^\/api\/v1/, '')
-    if (path === '/auth/me') return fulfill(route, adminUser)
-    if (path === '/settings/public') return fulfill(route, publicSettings(mode))
-    if (path === '/admin/settings') return fulfill(route, publicSettings(mode))
+    const requestUrl = new URL(route.request().url())
+    const path = requestUrl.pathname.replace(/^\/api\/v1/, '')
+    if (path === '/auth/login') {
+      return fulfill(route, {
+        access_token: 'visual-fixture-token',
+        refresh_token: 'visual-fixture-refresh-token',
+        expires_in: 3600,
+        user,
+      })
+    }
+    if (path === '/auth/me') return fulfill(route, user)
+    if (path === '/settings/community-qr') {
+      if (route.request().headers().authorization !== 'Bearer visual-fixture-token') {
+        return route.fulfill({ status: 401, body: 'unauthorized' })
+      }
+      if (!settings.community_qr_enabled || !communityQrImage) {
+        return route.fulfill({ status: 404, body: 'not found' })
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: 'image/png',
+        headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
+        body: Buffer.from(communityQrPngBase64, 'base64'),
+      })
+    }
+    if (path === '/settings/public') {
+      return fulfill(route, {
+        ...settings,
+        custom_menu_items: settings.custom_menu_items.filter(
+          (item) => item.visibility !== 'admin',
+        ),
+      })
+    }
+    if (path === '/admin/settings' && route.request().method() === 'PUT') {
+      const submitted = route.request().postDataJSON() as {
+        community_qr_enabled?: boolean
+        community_qr_image?: string
+        community_qr_title?: string
+        community_qr_description?: string
+        custom_menu_items?: typeof settings.custom_menu_items
+        affiliate_enabled?: boolean
+        affiliate_rebate_rate?: number
+        affiliate_rebate_freeze_hours?: number
+        affiliate_rebate_duration_days?: number
+        affiliate_rebate_per_invitee_cap?: number
+        affiliate_admin_recharge_enabled?: boolean
+      }
+      if (typeof submitted.community_qr_enabled === 'boolean') {
+        settings.community_qr_enabled = submitted.community_qr_enabled
+      }
+      if (typeof submitted.community_qr_image === 'string') {
+        communityQrImage = submitted.community_qr_image
+      }
+      if (typeof submitted.community_qr_title === 'string') {
+        settings.community_qr_title = submitted.community_qr_title
+      }
+      if (typeof submitted.community_qr_description === 'string') {
+        settings.community_qr_description = submitted.community_qr_description
+      }
+      if (Array.isArray(submitted.custom_menu_items)) {
+        settings.custom_menu_items = submitted.custom_menu_items
+      }
+      if (typeof submitted.affiliate_enabled === 'boolean') {
+        settings.affiliate_enabled = submitted.affiliate_enabled
+      }
+      if (typeof submitted.affiliate_rebate_rate === 'number') {
+        settings.affiliate_rebate_rate = submitted.affiliate_rebate_rate
+      }
+      if (typeof submitted.affiliate_rebate_freeze_hours === 'number') {
+        settings.affiliate_rebate_freeze_hours = submitted.affiliate_rebate_freeze_hours
+      }
+      if (typeof submitted.affiliate_rebate_duration_days === 'number') {
+        settings.affiliate_rebate_duration_days = submitted.affiliate_rebate_duration_days
+      }
+      if (typeof submitted.affiliate_rebate_per_invitee_cap === 'number') {
+        settings.affiliate_rebate_per_invitee_cap = submitted.affiliate_rebate_per_invitee_cap
+      }
+      if (typeof submitted.affiliate_admin_recharge_enabled === 'boolean') {
+        settings.affiliate_admin_recharge_enabled = submitted.affiliate_admin_recharge_enabled
+      }
+      return fulfill(route, { ...settings, community_qr_image: communityQrImage })
+    }
+    if (path === '/admin/settings') {
+      return fulfill(route, { ...settings, community_qr_image: communityQrImage })
+    }
     if (path === '/admin/groups/all') return fulfill(route, [])
+    if (path === '/usage/dashboard/stats') return fulfill(route, dashboardStats)
+    if (path === '/usage/dashboard/trend') {
+      return fulfill(route, {
+        trend: dashboardTrend,
+        start_date: '2026-08-10',
+        end_date: '2026-08-16',
+        granularity: 'day',
+      })
+    }
+    if (path === '/usage/dashboard/models') {
+      return fulfill(route, {
+        models: dashboardModels,
+        start_date: '2026-08-10',
+        end_date: '2026-08-16',
+      })
+    }
+    if (path === '/usage') {
+      return fulfill(route, { items: [], total: 0, page: 1, page_size: 100, pages: 0 })
+    }
+    if (path === '/user/aff') {
+      return fulfill(route, {
+        user_id: user.id,
+        aff_code: 'ZEROONE2026',
+        inviter_id: null,
+        aff_count: 2,
+        aff_quota: 12.5,
+        aff_frozen_quota: 1.25,
+        aff_history_quota: 48.75,
+        effective_rebate_rate_percent: 20,
+        invitees: [
+          {
+            user_id: 3,
+            email: 'invitee@01yapi.test',
+            username: '受邀用户',
+            created_at: '2026-08-15T10:00:00+08:00',
+            total_rebate: 8.5,
+          },
+        ],
+      })
+    }
+    if (path === '/user/platform-quotas') return fulfill(route, { platform_quotas: [] })
+    if (path === '/admin/usage') {
+      return fulfill(route, { items: [], total: 0, page: 1, page_size: 20, pages: 0 })
+    }
+    if (path === '/admin/usage/stats') {
+      return fulfill(route, {
+        total_requests: 0,
+        total_tokens: 0,
+        total_cost: 0,
+        total_actual_cost: 0,
+        avg_duration_ms: 0,
+      })
+    }
+    if (path === '/admin/users') {
+      const query = requestUrl.searchParams.get('search')?.toLocaleLowerCase() || ''
+      const pageNumber = Math.max(1, Number(requestUrl.searchParams.get('page') || 1))
+      const pageSize = Math.max(1, Number(requestUrl.searchParams.get('page_size') || 20))
+      const matches = allCustomers.filter((candidate) =>
+        `${candidate.id} ${candidate.email} ${candidate.username}`.toLocaleLowerCase().includes(query),
+      )
+      const start = (pageNumber - 1) * pageSize
+      return fulfill(route, {
+        items: matches.slice(start, start + pageSize),
+        total: matches.length,
+        page: pageNumber,
+        page_size: pageSize,
+        pages: Math.ceil(matches.length / pageSize),
+      })
+    }
+    if (path === '/admin/affiliates/users/lookup') {
+      const query = requestUrl.searchParams.get('q')?.toLocaleLowerCase() || ''
+      return fulfill(
+        route,
+        affiliateUsers.filter((candidate) =>
+          `${candidate.id} ${candidate.email} ${candidate.username}`.toLocaleLowerCase().includes(query),
+        ),
+      )
+    }
+    if (path === '/admin/affiliates/users/batch-rate') {
+      return fulfill(route, { affected: 1 })
+    }
+    if (/^\/admin\/affiliates\/users\/\d+\/overview$/.test(path)) {
+      const userId = Number(path.split('/').at(-2))
+      const customer = allCustomers.find((candidate) => candidate.id === userId)
+      return fulfill(route, {
+        user_id: userId,
+        email: customer?.email || '',
+        username: customer?.username || '',
+        aff_code: userId === 10 ? 'INVITER10' : '',
+        rebate_rate_percent: userId === 10 ? 25 : settings.affiliate_rebate_rate,
+        invited_count: affiliateInvites.filter((entry) => entry.inviter_id === userId).length,
+        rebated_invitee_count: affiliateInvites.filter(
+          (entry) => entry.inviter_id === userId && entry.total_rebate > 0,
+        ).length,
+        available_quota: userId === 10 ? 8.25 : 0,
+        history_quota: userId === 10 ? 12.5 : 0,
+      })
+    }
+    if (/^\/admin\/affiliates\/users\/\d+$/.test(path)) {
+      const userId = Number(path.split('/').at(-1))
+      return fulfill(route, { user_id: userId })
+    }
+    if (path === '/admin/affiliates/users') {
+      return fulfill(route, {
+        items: [
+          {
+            user_id: 10,
+            email: 'inviter@01yapi.test',
+            username: '邀请人甲',
+            aff_code: 'INVITER10',
+            aff_code_custom: true,
+            aff_rebate_rate_percent: 25,
+            aff_count: affiliateInvites.filter((entry) => entry.inviter_id === 10).length,
+          },
+        ],
+        total: 1,
+        page: 1,
+        page_size: 20,
+        pages: 1,
+      })
+    }
+    if (path === '/admin/affiliates/invites' && route.request().method() === 'POST') {
+      const submitted = route.request().postDataJSON() as {
+        inviter_id: number
+        invitee_id: number
+      }
+      const inviter = affiliateUsers.find((candidate) => candidate.id === submitted.inviter_id)
+      const invitee = affiliateUsers.find((candidate) => candidate.id === submitted.invitee_id)
+      affiliateInvites.push({
+        inviter_id: submitted.inviter_id,
+        inviter_email: inviter?.email || '',
+        inviter_username: inviter?.username || '',
+        invitee_id: submitted.invitee_id,
+        invitee_email: invitee?.email || '',
+        invitee_username: invitee?.username || '',
+        aff_code: 'INVITER10',
+        total_rebate: 0,
+        created_at: observedAt,
+      })
+      return fulfill(route, submitted)
+    }
+    if (path === '/admin/affiliates/invites') {
+      const inviterId = Number(requestUrl.searchParams.get('inviter_id') || 0)
+      const items = inviterId
+        ? affiliateInvites.filter((entry) => entry.inviter_id === inviterId)
+        : affiliateInvites
+      return fulfill(route, {
+        items,
+        total: items.length,
+        page: 1,
+        page_size: 20,
+        pages: items.length ? 1 : 0,
+      })
+    }
+    if (path === '/admin/affiliates/rebates' || path === '/admin/affiliates/transfers') {
+      return fulfill(route, { items: [], total: 0, page: 1, page_size: 20, pages: 0 })
+    }
+    if (path === '/user/totp/step-up') return fulfill(route, { verified: true })
     if (path === '/admin/redeem-codes') return fulfill(route, redeemCodes)
     if (path === '/admin/dashboard/snapshot-v2') {
       return fulfill(route, {
@@ -408,6 +716,7 @@ export async function seedConsole(
     }
     if (path === '/model-plaza') return fulfill(route, modelPlaza)
     if (path === '/redeem/history') return fulfill(route, [])
+    if (path === '/announcements') return fulfill(route, [])
     if (path === '/admin/announcements') {
       return fulfill(route, { items: [announcement], total: 1, page: 1, page_size: 20, pages: 1 })
     }
@@ -508,7 +817,7 @@ export interface LandingFixtureOptions {
 
 export async function seedLanding(page: Page, options: LandingFixtureOptions = {}) {
   const status = options.status ?? 'active_probe'
-  await page.route('**/api/v1/settings/public', (route) => fulfill(route, publicSettings('v1')))
+  await page.route('**/api/v1/settings/public*', (route) => fulfill(route, publicSettings('v1')))
   await page.route('**/api/v1/announcements/public', (route) =>
     fulfill(route, [
       { id: 42, title: announcement.title, content: announcement.content },

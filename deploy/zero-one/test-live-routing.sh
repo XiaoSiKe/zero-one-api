@@ -102,20 +102,41 @@ assert_text "$asset_headers" 'Cache-Control: public, max-age=31536000, immutable
 console=$(curl -fsS -H "Host: $request_host" "$edge_url/login")
 assert_text "$console" '<title>零一 API - AI API Gateway</title>' 'primary login did not return the recovered console'
 assert_text "$console" 'fetch("/api/v1/settings/public"' 'recovered console did not bootstrap live public settings'
-assert_text "$console" 'await import("/assets/zero-one-local-preview-guard-v1.js")' 'recovered console local preview guard is missing'
-assert_text "$console" 'await import("/assets/zero-one-floating-panels-v1.js")' 'recovered console floating overlay is missing'
+assert_text "$console" 'await import("/assets/zero-one-local-preview-guard-v2.js")' 'recovered console local preview guard is missing'
+assert_text "$console" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=2")' 'recovered Console navigation reconciliation is missing'
+assert_text "$console" 'await import("/assets/zero-one-console-parity-v1.js?v=4")' 'recovered console parity overlay is missing'
+assert_text "$console" 'await import("/assets/zero-one-community-qr-v1.js?v=5")' 'recovered console community QR adapter is missing'
+assert_text "$console" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=6")' 'recovered console header custom-menu adapter is missing'
+assert_text "$console" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=4")' 'recovered console affiliate administration adapter is missing'
+assert_text "$console" 'await import("/assets/zero-one-floating-panels-v1.js?v=2")' 'recovered console floating overlay is missing'
 console_asset_path=$(printf '%s' "$console" | grep -o '/assets/[^" ]*\.js' | head -n 1)
 [ -n "$console_asset_path" ] || fail 'console JavaScript asset was not discoverable'
 console_asset_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url$console_asset_path")
 assert_text "$console_asset_headers" 'Cache-Control: public, max-age=31536000, immutable' 'hashed console asset is not immutable'
 floating_overlay_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-floating-panels-v1.js")
 assert_text "$floating_overlay_headers" 'Cache-Control: public, max-age=31536000, immutable' 'floating overlay asset is not immutable'
-local_guard_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-local-preview-guard-v1.js")
+local_guard_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-local-preview-guard-v2.js")
 assert_text "$local_guard_headers" 'Cache-Control: public, max-age=31536000, immutable' 'local preview guard asset is not immutable'
+console_parity_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-console-parity-v1.js")
+assert_text "$console_parity_headers" 'Cache-Control: public, max-age=31536000, immutable' 'console parity overlay is not immutable'
+console_parity_css_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-console-parity-v1.css")
+assert_text "$console_parity_css_headers" 'Cache-Control: public, max-age=31536000, immutable' 'console parity stylesheet is not immutable'
+community_qr_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-community-qr-v1.js")
+assert_text "$community_qr_headers" 'Cache-Control: public, max-age=31536000, immutable' 'community QR adapter is not immutable'
+community_qr_css_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-community-qr-v1.css")
+assert_text "$community_qr_css_headers" 'Cache-Control: public, max-age=31536000, immutable' 'community QR stylesheet is not immutable'
+header_custom_menu_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-header-custom-menu-v1.js")
+assert_text "$header_custom_menu_headers" 'Cache-Control: public, max-age=31536000, immutable' 'header custom-menu adapter is not immutable'
+header_custom_menu_css_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-header-custom-menu-v1.css")
+assert_text "$header_custom_menu_css_headers" 'Cache-Control: public, max-age=31536000, immutable' 'header custom-menu stylesheet is not immutable'
+affiliate_admin_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-affiliate-admin-v1.js")
+assert_text "$affiliate_admin_headers" 'Cache-Control: public, max-age=31536000, immutable' 'affiliate administration adapter is not immutable'
+affiliate_admin_css_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-affiliate-admin-v1.css")
+assert_text "$affiliate_admin_css_headers" 'Cache-Control: public, max-age=31536000, immutable' 'affiliate administration stylesheet is not immutable'
 
 if [ "$routing_mode" = preview ]; then
 	console_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/login")
-	assert_text "$console_headers" "connect-src 'self'; frame-src 'none'" 'preview Console CSP is not local-only'
+	assert_text "$console_headers" "connect-src 'self'; frame-src http: https:" 'preview Console CSP does not allow configured iframe pages'
 	case "$console_headers" in
 		*airwallex.com* | *stripe.com*) fail 'preview Console CSP permits external payment scripts' ;;
 	esac

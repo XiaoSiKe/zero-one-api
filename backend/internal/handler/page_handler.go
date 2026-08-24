@@ -240,11 +240,15 @@ func (h *PageHandler) checkSlugVisibility(c *gin.Context, slug string) bool {
 	if !found {
 		return false
 	}
-	if visibility == "admin" {
+	switch visibility {
+	case "admin":
 		role, _ := middleware2.GetUserRoleFromContext(c)
 		return role == "admin"
+	case "user", "all":
+		return true
+	default:
+		return false
 	}
-	return true
 }
 
 // checkImageSlugVisibility checks visibility for image requests (no JWT available).
@@ -254,7 +258,7 @@ func (h *PageHandler) checkImageSlugVisibility(c *gin.Context, slug string) bool
 	if !found {
 		return false
 	}
-	return visibility != "admin"
+	return visibility == "user" || visibility == "all"
 }
 
 // RegisterPageRoutes registers page routes on a router group.

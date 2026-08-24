@@ -478,6 +478,10 @@ export interface SystemSettings {
   landing_notice_enabled: boolean;
   landing_notice_text: string;
   landing_notice_url: string;
+  community_qr_enabled?: boolean;
+  community_qr_image?: string;
+  community_qr_title?: string;
+  community_qr_description?: string;
   api_base_url: string;
   contact_info: string;
   doc_url: string;
@@ -820,6 +824,10 @@ export interface UpdateSettingsRequest {
   landing_notice_enabled?: boolean;
   landing_notice_text?: string;
   landing_notice_url?: string;
+  community_qr_enabled?: boolean;
+  community_qr_image?: string;
+  community_qr_title?: string;
+  community_qr_description?: string;
   api_base_url?: string;
   contact_info?: string;
   doc_url?: string;

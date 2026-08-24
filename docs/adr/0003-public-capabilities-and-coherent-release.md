@@ -33,6 +33,12 @@ an internal entity or Console DTO does not make that field public. Edge response
 remain `Cache-Control: no-store`; bounded in-process aggregation caches do not
 change that external contract.
 
+The anonymous Console settings response and the HTML first-frame injection use
+one Service-owned Public Settings Projection. The Landing request remains a
+narrower projection. This shared implementation does not weaken the allowlist:
+adding a field to the projection is still an explicit public authorization
+decision, and authenticated assets such as the Community QR image remain out.
+
 The Sub2API and edge images for one release must be built from the same source
 commit and published with source-revision identity. Deployment applies and
 checks the database migration, rolls out the Sub2API image, verifies its public

@@ -1,5 +1,4 @@
 <template>
-  <AppLayout>
     <div class="space-y-6">
       <!-- Loading State -->
       <div v-if="loading" class="flex justify-center py-12">
@@ -244,7 +243,6 @@
         </div>
       </div>
     </div>
-  </AppLayout>
 </template>
 
 <script setup lang="ts">
@@ -254,7 +252,6 @@ import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import subscriptionsAPI from '@/api/subscriptions'
 import type { UserSubscription } from '@/types'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { formatDateTimeToMinute } from '@/utils/format'
 import { hasPeakRate, formatPeakRateWindow, serverTimezoneLabel } from '@/utils/peak-rate'

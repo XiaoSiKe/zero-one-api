@@ -1,6 +1,7 @@
 import { Color, Mesh, Program, Renderer, Triangle } from 'ogl'
 
 const EFFECT_PADDING = 20
+const BORDER_CENTER_INSET = 0.5
 const INITIAL_ANGLE = 2.4
 const MAX_DPR = 1.5
 const GEOMETRY_TRANSITION_PROPERTIES = new Set([
@@ -495,11 +496,17 @@ class SpecularEffectsRuntime {
         (viewportHeight - centerY) * dpr,
       ]
       this.program.uniforms.uHalfSize.value = [
-        (rect.width / 2) * dpr,
-        (rect.height / 2) * dpr,
+        (rect.width / 2 - BORDER_CENTER_INSET) * dpr,
+        (rect.height / 2 - BORDER_CENTER_INSET) * dpr,
       ]
       this.program.uniforms.uRadius.value =
-        Math.min(options.radius, Math.min(rect.width, rect.height) / 2) * dpr
+        Math.max(
+          0,
+          Math.min(
+            options.radius - BORDER_CENTER_INSET,
+            Math.min(rect.width, rect.height) / 2 - BORDER_CENTER_INSET,
+          ),
+        ) * dpr
       this.program.uniforms.uAngle.value = registration.angle
       this.program.uniforms.uLineColor.value = [
         this.lineColor.r,

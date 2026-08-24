@@ -87,6 +87,7 @@ export default {
     selectedFile: 'Selected: {name}',
     fileReadFailed: 'Failed to read file',
     selectImageFile: 'Please select an image file',
+    unsupportedImageType: 'Unsupported image type. Upload {types}',
     fileTooLargeKb: 'File too large ({size} KB), max {max} KB',
     copy: 'Copy',
     notAvailable: 'N/A',
@@ -174,6 +175,7 @@ export default {
     channels: 'Channels',
     availableChannels: 'Available Channels',
     modelPlaza: 'Model Plaza',
+    communityQr: 'Community',
     subscriptions: 'Subscriptions',
     accounts: 'Accounts',
     proxies: 'Proxies',
@@ -205,6 +207,16 @@ export default {
     contentModeration: 'Content Moderation',
     promptAudit: 'Prompt Audit',
     auditLogs: 'Audit Logs',
+  },
+
+  communityQr: {
+    open: 'Open community QR code',
+    title: 'Community',
+    description: 'Scan the QR code to join the community and get support',
+    imageAlt: 'Community QR code',
+    loading: 'Securely loading the QR code…',
+    loadFailed: 'The QR code could not be loaded. Please try again later.',
+    retry: 'Try again',
   },
 
   // Auth

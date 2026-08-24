@@ -18,36 +18,41 @@ import (
 const (
 	affiliateCodeLength      = 12
 	affiliateCodeMaxAttempts = 12
+	// ASCII "AFFILIAT". Every inviter graph mutation takes this transaction-
+	// scoped advisory lock so disjoint endpoint pairs cannot concurrently close
+	// a longer cycle after both observed stale graph state.
+	affiliateBindingAdvisoryLockID int64 = 0x414646494C494154
 )
 
 var affiliateCodeCharset = []byte("ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
 
 const affiliateUserOverviewSQL = `
-SELECT ua.user_id,
+SELECT u.id,
        COALESCE(u.email, ''),
        COALESCE(u.username, ''),
-       ua.aff_code,
+       COALESCE(ua.aff_code, ''),
        COALESCE(ua.aff_rebate_rate_percent, 0)::double precision,
        (ua.aff_rebate_rate_percent IS NOT NULL) AS has_custom_rate,
-       ua.aff_count,
+       COALESCE(ua.aff_count, 0),
        COALESCE(rebated.rebated_invitee_count, 0),
-       (ua.aff_quota + COALESCE(matured.matured_frozen_quota, 0))::double precision,
-       ua.aff_history_quota::double precision
-FROM user_affiliates ua
-JOIN users u ON u.id = ua.user_id
+       (COALESCE(ua.aff_quota, 0) + COALESCE(matured.matured_frozen_quota, 0))::double precision,
+       COALESCE(ua.aff_history_quota, 0)::double precision
+FROM users u
+LEFT JOIN user_affiliates ua ON ua.user_id = u.id
 LEFT JOIN (
     SELECT user_id, COUNT(DISTINCT source_user_id)::integer AS rebated_invitee_count
     FROM user_affiliate_ledger
     WHERE action = 'accrue' AND source_user_id IS NOT NULL
     GROUP BY user_id
-) rebated ON rebated.user_id = ua.user_id
+) rebated ON rebated.user_id = u.id
 LEFT JOIN (
     SELECT user_id, COALESCE(SUM(amount), 0)::double precision AS matured_frozen_quota
     FROM user_affiliate_ledger
     WHERE action = 'accrue' AND frozen_until IS NOT NULL AND frozen_until <= NOW()
     GROUP BY user_id
-) matured ON matured.user_id = ua.user_id
-WHERE ua.user_id = $1
+) matured ON matured.user_id = u.id
+WHERE u.id = $1
+  AND u.deleted_at IS NULL
 LIMIT 1`
 
 type affiliateQueryExecer interface {
@@ -76,20 +81,66 @@ func (r *affiliateRepository) GetAffiliateByCode(ctx context.Context, code strin
 	return queryAffiliateByCode(ctx, client, code)
 }
 
-func (r *affiliateRepository) BindInviter(ctx context.Context, userID, inviterID int64) (bool, error) {
+func (r *affiliateRepository) BindInviter(ctx context.Context, userID, inviterID int64, boundByAdminID *int64) (bool, error) {
+	if userID <= 0 || inviterID <= 0 {
+		return false, service.ErrAffiliateCodeInvalid
+	}
+	if userID == inviterID {
+		return false, service.ErrAffiliateSelfBind
+	}
+	if boundByAdminID != nil && *boundByAdminID <= 0 {
+		return false, service.ErrAffiliateCodeInvalid
+	}
+
 	var bound bool
 	err := r.withTx(ctx, func(txCtx context.Context, txClient *dbent.Client) error {
+		if err := lockAffiliateBindingGraph(txCtx, txClient); err != nil {
+			return err
+		}
+		if err := lockActiveAffiliateBindingUsers(txCtx, txClient, userID, inviterID); err != nil {
+			return err
+		}
 		if _, err := ensureUserAffiliateWithClient(txCtx, txClient, userID); err != nil {
 			return err
 		}
 		if _, err := ensureUserAffiliateWithClient(txCtx, txClient, inviterID); err != nil {
 			return err
 		}
+		// Endpoint locks retain row-level CAS/count integrity after the graph-wide
+		// advisory lock has serialized cycle validation and graph mutation.
+		if err := lockAffiliateBindingEndpoints(txCtx, txClient, userID, inviterID); err != nil {
+			return err
+		}
 
-		res, err := txClient.ExecContext(txCtx,
-			"UPDATE user_affiliates SET inviter_id = $1, updated_at = NOW() WHERE user_id = $2 AND inviter_id IS NULL",
-			inviterID, userID,
-		)
+		invitee, err := queryAffiliateByUserID(txCtx, txClient, userID)
+		if err != nil {
+			return err
+		}
+		// inviter_id may be cleared by its historical ON DELETE SET NULL FK.
+		// A retained binding timestamp is therefore also an immutable tombstone:
+		// it must never be overwritten by a later manual repair.
+		if invitee.InviterID != nil || invitee.InviterBoundAt != nil {
+			bound = false
+			return nil
+		}
+
+		cyclic, err := affiliateBindingWouldCycle(txCtx, txClient, userID, inviterID)
+		if err != nil {
+			return err
+		}
+		if cyclic {
+			return service.ErrAffiliateCycle
+		}
+
+		res, err := txClient.ExecContext(txCtx, `
+UPDATE user_affiliates
+SET inviter_id = $1,
+    inviter_bound_at = NOW(),
+    inviter_bound_by_admin_id = $2,
+    updated_at = NOW()
+WHERE user_id = $3
+  AND inviter_id IS NULL
+  AND inviter_bound_at IS NULL`, inviterID, nullableInt64Arg(boundByAdminID), userID)
 		if err != nil {
 			return fmt.Errorf("bind inviter: %w", err)
 		}
@@ -112,6 +163,112 @@ func (r *affiliateRepository) BindInviter(ctx context.Context, userID, inviterID
 		return false, err
 	}
 	return bound, nil
+}
+
+func lockAffiliateBindingGraph(ctx context.Context, client affiliateQueryExecer) error {
+	rows, err := client.QueryContext(ctx, "SELECT pg_advisory_xact_lock($1)", affiliateBindingAdvisoryLockID)
+	if err != nil {
+		return fmt.Errorf("lock affiliate binding graph: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return fmt.Errorf("lock affiliate binding graph: %w", err)
+		}
+		return errors.New("lock affiliate binding graph: no result")
+	}
+	return rows.Err()
+}
+
+func lockActiveAffiliateBindingUsers(ctx context.Context, client affiliateQueryExecer, userID, inviterID int64) error {
+	rows, err := client.QueryContext(ctx, `
+SELECT id
+FROM users
+WHERE id IN ($1, $2)
+  AND deleted_at IS NULL
+ORDER BY id
+FOR UPDATE`, userID, inviterID)
+	if err != nil {
+		return fmt.Errorf("lock affiliate binding users: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	count := 0
+	for rows.Next() {
+		var lockedID int64
+		if err := rows.Scan(&lockedID); err != nil {
+			return err
+		}
+		count++
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if count != 2 {
+		return service.ErrUserNotFound
+	}
+	return nil
+}
+
+func lockAffiliateBindingEndpoints(ctx context.Context, client affiliateQueryExecer, userID, inviterID int64) error {
+	rows, err := client.QueryContext(ctx, `
+SELECT user_id
+FROM user_affiliates
+WHERE user_id IN ($1, $2)
+ORDER BY user_id
+FOR UPDATE`, userID, inviterID)
+	if err != nil {
+		return fmt.Errorf("lock affiliate binding endpoints: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	count := 0
+	for rows.Next() {
+		var lockedID int64
+		if err := rows.Scan(&lockedID); err != nil {
+			return err
+		}
+		count++
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if count != 2 {
+		return service.ErrAffiliateProfileNotFound
+	}
+	return nil
+}
+
+func affiliateBindingWouldCycle(ctx context.Context, client affiliateQueryExecer, userID, inviterID int64) (bool, error) {
+	rows, err := client.QueryContext(ctx, `
+WITH RECURSIVE ancestors(user_id) AS (
+    SELECT $1::BIGINT
+    UNION
+    SELECT ua.inviter_id
+    FROM user_affiliates ua
+    JOIN ancestors a ON ua.user_id = a.user_id
+    WHERE ua.inviter_id IS NOT NULL
+)
+SELECT EXISTS (
+    SELECT 1
+    FROM ancestors
+    WHERE user_id = $2
+)`, inviterID, userID)
+	if err != nil {
+		return false, fmt.Errorf("check affiliate binding cycle: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return false, err
+		}
+		return false, nil
+	}
+	var cyclic bool
+	if err := rows.Scan(&cyclic); err != nil {
+		return false, err
+	}
+	return cyclic, rows.Err()
 }
 
 func (r *affiliateRepository) AccrueQuota(ctx context.Context, inviterID, inviteeUserID int64, amount float64, freezeHours int, sourceOrderID *int64) (bool, error) {
@@ -385,10 +542,19 @@ LIMIT $2`, inviterID, limit)
 
 func (r *affiliateRepository) ListAffiliateInviteRecords(ctx context.Context, filter service.AffiliateRecordFilter) ([]service.AffiliateInviteRecord, int64, error) {
 	client := clientFromContext(ctx, r.client)
-	where, args := buildAffiliateRecordWhere(filter, "ua.created_at", []string{
+	where, args := buildAffiliateRecordWhere(filter, "COALESCE(ua.inviter_bound_at, ua.created_at)", []string{
 		"inviter.email", "inviter.username", "invitee.email", "invitee.username",
 		"ua.inviter_id::text", "ua.user_id::text", "inviter_aff.aff_code",
 	})
+	if filter.InviterID > 0 {
+		args = append(args, filter.InviterID)
+		clause := fmt.Sprintf("ua.inviter_id = $%d", len(args))
+		if where == "" {
+			where = "WHERE " + clause
+		} else {
+			where += " AND " + clause
+		}
+	}
 
 	total, err := queryAffiliateRecordCount(ctx, client, `
 SELECT COUNT(*)
@@ -406,8 +572,8 @@ JOIN user_affiliates inviter_aff ON inviter_aff.user_id = ua.inviter_id
 		"invitee":      "invitee.email",
 		"aff_code":     "inviter_aff.aff_code",
 		"total_rebate": "total_rebate",
-		"created_at":   "ua.created_at",
-	}, "ua.created_at")
+		"created_at":   "COALESCE(ua.inviter_bound_at, ua.created_at)",
+	}, "COALESCE(ua.inviter_bound_at, ua.created_at)")
 	args = append(args, filter.PageSize, (filter.Page-1)*filter.PageSize)
 	rows, err := client.QueryContext(ctx, `
 SELECT ua.inviter_id,
@@ -418,7 +584,7 @@ SELECT ua.inviter_id,
        COALESCE(invitee.username, ''),
        COALESCE(inviter_aff.aff_code, ''),
        COALESCE(SUM(ual.amount), 0)::double precision AS total_rebate,
-       ua.created_at
+	       COALESCE(ua.inviter_bound_at, ua.created_at) AS bound_at
 FROM user_affiliates ua
 JOIN users invitee ON invitee.id = ua.user_id
 JOIN users inviter ON inviter.id = ua.inviter_id
@@ -428,7 +594,7 @@ LEFT JOIN user_affiliate_ledger ual
       AND ual.source_user_id = ua.user_id
       AND ual.action = 'accrue'
 `+where+`
-GROUP BY ua.inviter_id, inviter.email, inviter.username, ua.user_id, invitee.email, invitee.username, inviter_aff.aff_code, ua.created_at
+	GROUP BY ua.inviter_id, inviter.email, inviter.username, ua.user_id, invitee.email, invitee.username, inviter_aff.aff_code, ua.inviter_bound_at, ua.created_at
 `+orderBy+`
 LIMIT $`+fmt.Sprint(len(args)-1)+` OFFSET $`+fmt.Sprint(len(args)), args...)
 	if err != nil {
@@ -769,6 +935,9 @@ ON CONFLICT (user_id) DO NOTHING`, userID, code)
 		if insertErr == nil {
 			break
 		}
+		if isAffiliateForeignKeyViolation(insertErr) {
+			return nil, service.ErrUserNotFound
+		}
 		if isAffiliateUniqueViolation(insertErr) {
 			continue
 		}
@@ -783,9 +952,10 @@ func queryAffiliateByUserID(ctx context.Context, client affiliateQueryExecer, us
 SELECT user_id,
        aff_code,
        aff_code_custom,
-       aff_rebate_rate_percent,
-       inviter_id,
-       aff_count,
+	       aff_rebate_rate_percent,
+	       inviter_id,
+	       inviter_bound_at,
+	       aff_count,
        aff_quota::double precision,
        aff_frozen_quota::double precision,
        aff_history_quota::double precision,
@@ -806,6 +976,7 @@ WHERE user_id = $1`, userID)
 
 	var out service.AffiliateSummary
 	var inviterID sql.NullInt64
+	var inviterBoundAt sql.NullTime
 	var rebateRate sql.NullFloat64
 	if err := rows.Scan(
 		&out.UserID,
@@ -813,6 +984,7 @@ WHERE user_id = $1`, userID)
 		&out.AffCodeCustom,
 		&rebateRate,
 		&inviterID,
+		&inviterBoundAt,
 		&out.AffCount,
 		&out.AffQuota,
 		&out.AffFrozenQuota,
@@ -824,6 +996,10 @@ WHERE user_id = $1`, userID)
 	}
 	if inviterID.Valid {
 		out.InviterID = &inviterID.Int64
+	}
+	if inviterBoundAt.Valid {
+		v := inviterBoundAt.Time
+		out.InviterBoundAt = &v
 	}
 	if rebateRate.Valid {
 		v := rebateRate.Float64
@@ -837,9 +1013,10 @@ func queryAffiliateByCode(ctx context.Context, client affiliateQueryExecer, code
 SELECT user_id,
        aff_code,
        aff_code_custom,
-       aff_rebate_rate_percent,
-       inviter_id,
-       aff_count,
+	       aff_rebate_rate_percent,
+	       inviter_id,
+	       inviter_bound_at,
+	       aff_count,
        aff_quota::double precision,
        aff_frozen_quota::double precision,
        aff_history_quota::double precision,
@@ -862,6 +1039,7 @@ LIMIT 1`, strings.ToUpper(strings.TrimSpace(code)))
 
 	var out service.AffiliateSummary
 	var inviterID sql.NullInt64
+	var inviterBoundAt sql.NullTime
 	var rebateRate sql.NullFloat64
 	if err := rows.Scan(
 		&out.UserID,
@@ -869,6 +1047,7 @@ LIMIT 1`, strings.ToUpper(strings.TrimSpace(code)))
 		&out.AffCodeCustom,
 		&rebateRate,
 		&inviterID,
+		&inviterBoundAt,
 		&out.AffCount,
 		&out.AffQuota,
 		&out.AffFrozenQuota,
@@ -880,6 +1059,10 @@ LIMIT 1`, strings.ToUpper(strings.TrimSpace(code)))
 	}
 	if inviterID.Valid {
 		out.InviterID = &inviterID.Int64
+	}
+	if inviterBoundAt.Valid {
+		v := inviterBoundAt.Time
+		out.InviterBoundAt = &v
 	}
 	if rebateRate.Valid {
 		v := rebateRate.Float64
@@ -971,10 +1154,49 @@ func generateAffiliateCode() (string, error) {
 
 func isAffiliateUniqueViolation(err error) bool {
 	var pqErr *pq.Error
-	if errors.As(err, &pqErr) {
+	if errors.As(err, &pqErr) && pqErr != nil {
 		return string(pqErr.Code) == "23505"
 	}
 	return false
+}
+
+func isAffiliateForeignKeyViolation(err error) bool {
+	var pqErr *pq.Error
+	return errors.As(err, &pqErr) && pqErr != nil && string(pqErr.Code) == "23503"
+}
+
+// UpdateUserSettings applies all requested administrator changes in one
+// transaction. Rate changes run first so a later invite-code conflict proves
+// that the whole mutation rolls back instead of leaving partial state.
+func (r *affiliateRepository) UpdateUserSettings(ctx context.Context, userID int64, update service.AffiliateUserSettingsUpdate) error {
+	if userID <= 0 {
+		return service.ErrUserNotFound
+	}
+	if update.AffCode != nil && update.ResetAffCode {
+		return service.ErrAffiliateCodeInvalid
+	}
+	if !update.UpdateRebateRate && update.AffRebateRatePercent != nil {
+		return service.ErrAffiliateCodeInvalid
+	}
+	if update.AffCode == nil && !update.ResetAffCode && !update.UpdateRebateRate {
+		return nil
+	}
+
+	return r.withTx(ctx, func(txCtx context.Context, _ *dbent.Client) error {
+		if update.UpdateRebateRate {
+			if err := r.SetUserRebateRate(txCtx, userID, update.AffRebateRatePercent); err != nil {
+				return err
+			}
+		}
+		if update.ResetAffCode {
+			_, err := r.ResetUserAffCode(txCtx, userID)
+			return err
+		}
+		if update.AffCode != nil {
+			return r.UpdateUserAffCode(txCtx, userID, *update.AffCode)
+		}
+		return nil
+	})
 }
 
 // UpdateUserAffCode 改写用户的邀请码（自定义专属邀请码）。

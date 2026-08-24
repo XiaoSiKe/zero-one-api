@@ -8,7 +8,7 @@ const moduleDirectory = dirname(fileURLToPath(import.meta.url))
 const consoleRoot = resolve(moduleDirectory, '../deploy/zero-one/recovered-frontend/console')
 const portArgument = process.argv.indexOf('--port')
 const port = Number(portArgument >= 0 ? process.argv[portArgument + 1] : 4173)
-const localOnlyContentSecurityPolicy = "default-src 'self'; worker-src 'self' blob:; script-src 'self' 'nonce-hJm3vqvOCSJtMiorHL9OJA=='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+const localOnlyContentSecurityPolicy = "default-src 'self'; worker-src 'self' blob:; script-src 'self' 'nonce-hJm3vqvOCSJtMiorHL9OJA=='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src http: https:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
 const contentTypes = new Map([
   ['.css', 'text/css; charset=utf-8'],
   ['.html', 'text/html; charset=utf-8'],

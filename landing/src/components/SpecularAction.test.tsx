@@ -84,6 +84,26 @@ describe('SpecularAction', () => {
     expect(runtime.unregister).toHaveBeenCalledTimes(1)
   })
 
+  it('uses the requested homepage specular defaults', () => {
+    runtime.register.mockReturnValue(runtime.unregister)
+    render(<SpecularAction>Start</SpecularAction>)
+    const readOptions = runtime.register.mock.calls[0]?.[1] as () => Record<string, unknown>
+
+    expect(readOptions()).toMatchObject({
+      radius: 18,
+      lineColor: '#ffffff',
+      baseColor: '#525252',
+      intensity: 1,
+      shineSize: 10,
+      shineFade: 40,
+      thickness: 1,
+      speed: 0.35,
+      followMouse: true,
+      proximity: 250,
+      autoAnimate: false,
+    })
+  })
+
   it('renders non-highlight actions without changing their child structure or registering canvas work', () => {
     render(
       <Action className="integration-primary-action" href="/keys" highlight={false}>
