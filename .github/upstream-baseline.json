@@ -387,6 +387,15 @@
       "paths": [
         "backend/internal/service/openai_model_mapping_test.go"
       ]
+    },
+    {
+      "name": "approved-v0.1.181-x-image-security-update",
+      "valid_for_release": "v0.1.181",
+      "exit_condition": "Remove this hotfix when the first stable upstream release uses golang.org/x/image v0.45.0 or later and includes the compatible Go x-module dependency set.",
+      "paths": [
+        "backend/go.mod",
+        "backend/go.sum"
+      ]
     }
   ],
   "overlays": [

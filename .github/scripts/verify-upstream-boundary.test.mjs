@@ -137,6 +137,8 @@ function baselineWithApprovedBackport() {
 
 const approvedLegacyHotfixPaths = [
   'backend/cmd/server/VERSION',
+  'backend/go.mod',
+  'backend/go.sum',
   'backend/internal/handler/auth_current_user_test.go',
   'backend/internal/handler/gateway_handler.go',
   'backend/internal/handler/admin/admin_basic_handlers_test.go',
