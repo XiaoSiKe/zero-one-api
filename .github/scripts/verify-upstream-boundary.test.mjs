@@ -160,6 +160,7 @@ const approvedLegacyHotfixPaths = [
   'backend/internal/service/billing_service_unified_test.go',
   'backend/internal/service/billing_cache_service_user_platform_quota_test.go',
   'backend/internal/service/model_pricing_resolver.go',
+  'backend/internal/service/openai_model_mapping_test.go',
   'backend/internal/service/openai_gateway_record_usage_test.go',
   'backend/internal/service/channel_pricing_multipliers_test.go',
   'backend/internal/service/content_moderation.go',

@@ -387,6 +387,14 @@
         "backend/internal/handler/gateway_handler.go",
         "backend/internal/service/gateway_scheduling.go"
       ]
+    },
+    {
+      "name": "approved-v0.1.181-grok-mapping-test-isolation",
+      "valid_for_release": "v0.1.181",
+      "exit_condition": "Remove this hotfix when the first stable upstream release contains equivalent runtime model-mapping isolation in the canonical scheduling test.",
+      "paths": [
+        "backend/internal/service/openai_model_mapping_test.go"
+      ]
     }
   ],
   "overlays": [

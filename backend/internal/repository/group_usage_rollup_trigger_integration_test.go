@@ -133,7 +133,7 @@ func TestGroupUsageRollupTriggerSerializesInsertTransactionAcrossMidnight(t *tes
 		INSERT INTO groups (id) VALUES (10);
 		INSERT INTO users (id) VALUES (1);
 		UPDATE usage_group_rollup_state
-		SET closed_before = CURRENT_DATE
+		SET closed_before = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date
 		WHERE id = 1;
 	`)
 	require.NoError(t, err)
@@ -174,7 +174,7 @@ func TestGroupUsageRollupTriggerSerializesInsertTransactionAcrossMidnight(t *tes
 
 	_, err = syncTx.ExecContext(ctx, `
 		UPDATE usage_group_rollup_state
-		SET closed_before = CURRENT_DATE + 1
+		SET closed_before = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date + 1
 		WHERE id = 1
 	`)
 	require.NoError(t, err)
@@ -190,7 +190,7 @@ func TestGroupUsageRollupTriggerSerializesInsertTransactionAcrossMidnight(t *tes
 
 	var currentDate string
 	require.NoError(t, integrationDB.QueryRowContext(ctx, `
-		SELECT CURRENT_DATE::text
+		SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date::text
 	`).Scan(&currentDate))
 	var closedBefore string
 	err = integrationDB.QueryRowContext(ctx, fmt.Sprintf(
@@ -212,7 +212,7 @@ func TestGroupUsageRollupTriggerKeepsWatermarkForTodayInsert(t *testing.T) {
 		INSERT INTO groups (id) VALUES (10);
 		INSERT INTO users (id) VALUES (1);
 		UPDATE usage_group_rollup_state
-		SET closed_before = CURRENT_DATE
+		SET closed_before = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date
 		WHERE id = 1;
 		INSERT INTO usage_logs (id, user_id, group_id, actual_cost, created_at)
 		VALUES (1, 1, 10, 1.25, CURRENT_TIMESTAMP);
@@ -221,7 +221,7 @@ func TestGroupUsageRollupTriggerKeepsWatermarkForTodayInsert(t *testing.T) {
 
 	var unchanged bool
 	err = tx.QueryRowContext(ctx, `
-		SELECT closed_before = CURRENT_DATE
+		SELECT closed_before = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date
 		FROM usage_group_rollup_state
 		WHERE id = 1
 	`).Scan(&unchanged)

@@ -1,6 +1,10 @@
 package service
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/Wei-Shaw/sub2api/internal/pkg/xai"
+)
 
 func TestResolveOpenAIForwardModel(t *testing.T) {
 	tests := []struct {
@@ -296,6 +300,10 @@ func TestResolveOpenAIForwardMappedModels_CompactMappingPrecedence(t *testing.T)
 }
 
 func TestCanonicalOpenAIAccountSchedulingModelMatchesForwardSemantics(t *testing.T) {
+	original := xai.RuntimeModelMappingOptions()
+	xai.SetRuntimeModelMappingOptions(xai.ModelMappingOptions{})
+	t.Cleanup(func() { xai.SetRuntimeModelMappingOptions(original) })
+
 	tests := []struct {
 		name    string
 		account *Account
