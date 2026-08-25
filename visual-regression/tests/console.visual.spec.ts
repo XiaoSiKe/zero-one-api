@@ -1253,6 +1253,16 @@ test.describe('Console header navigation settings contracts', () => {
     await expect(page.getByTestId('model-plaza-placement')).toHaveValue('header')
     await expect(page.getByTestId('user-sidebar-order-list').locator('[data-sidebar-path]').first()).toHaveAttribute('data-sidebar-path', '/keys')
     await expect(page.getByTestId('admin-sidebar-order-list').locator('[data-sidebar-path]').first()).toHaveAttribute('data-sidebar-path', '/admin/settings')
+    await expect.poll(() => page.locator('aside nav a[href="/admin/settings"], aside nav a[href="/admin/dashboard"]').evaluateAll((links) =>
+      Object.fromEntries(links.map((link) => [link.getAttribute('href'), link.getBoundingClientRect().top])),
+    )).toMatchObject({
+      '/admin/settings': expect.any(Number),
+      '/admin/dashboard': expect.any(Number),
+    })
+    expect(await page.locator('aside nav a[href="/admin/settings"], aside nav a[href="/admin/dashboard"]').evaluateAll((links) => {
+      const tops = Object.fromEntries(links.map((link) => [link.getAttribute('href'), link.getBoundingClientRect().top]))
+      return tops['/admin/settings'] < tops['/admin/dashboard']
+    })).toBe(true)
     await expect(page.getByTestId('custom-menu-visibility-0')).toBeHidden()
     await expect(page.getByTestId('custom-menu-visibility-1')).toBeVisible()
 
@@ -1763,7 +1773,7 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=4')
     expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=9')
     expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=5')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=10')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=11')
     expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=5')
     expect(html).toContain('/assets/zero-one-ccswitch-launch-v1.js?v=1')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.js?v=4')

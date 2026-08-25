@@ -434,6 +434,9 @@ function navigationPath(link) {
 function reorderSidebarSection(section, order) {
   if (!(section instanceof HTMLElement) || !order.length) return
   const links = [...section.children].filter((node) => node instanceof HTMLAnchorElement && node.classList.contains('sidebar-link'))
+  section.style.removeProperty('display')
+  section.style.removeProperty('flex-direction')
+  for (const link of links) link.style.removeProperty('order')
   const positions = new Map(order.map((path, index) => [path, index]))
   const sorted = links
     .map((link, index) => ({ link, index }))
@@ -447,15 +450,29 @@ function reorderSidebarSection(section, order) {
   for (const link of sorted) section.append(link)
 }
 
+function previewSidebarSectionOrder(section, order) {
+  if (!(section instanceof HTMLElement) || !order.length) return
+  const links = [...section.children].filter((node) => node instanceof HTMLAnchorElement && node.classList.contains('sidebar-link'))
+  const positions = new Map(order.map((path, index) => [path, index]))
+  section.style.setProperty('display', 'flex')
+  section.style.setProperty('flex-direction', 'column')
+  links.forEach((link, index) => {
+    link.style.setProperty('order', String((positions.get(navigationPath(link)) ?? order.length + index) + 1))
+  })
+}
+
 function reconcileSidebarOrder(user) {
-  if (!user || window.location.pathname === ADMIN_SETTINGS_PATH) return
+  if (!user) return
   const settings = runtimeNavigationSettings(user) || {}
   const sections = [...document.querySelectorAll('aside nav .sidebar-section')]
+  const reconcileSection = window.location.pathname === ADMIN_SETTINGS_PATH
+    ? previewSidebarSectionOrder
+    : reorderSidebarSection
   if (user.role === 'admin') {
-    reorderSidebarSection(sections[0], normalizeSidebarOrder(settings.admin_sidebar_order))
-    reorderSidebarSection(sections[1], normalizeSidebarOrder(settings.user_sidebar_order))
+    reconcileSection(sections[0], normalizeSidebarOrder(settings.admin_sidebar_order))
+    reconcileSection(sections[1], normalizeSidebarOrder(settings.user_sidebar_order))
   } else {
-    reorderSidebarSection(sections[0], normalizeSidebarOrder(settings.user_sidebar_order))
+    reconcileSection(sections[0], normalizeSidebarOrder(settings.user_sidebar_order))
   }
 }
 
