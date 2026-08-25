@@ -61,35 +61,47 @@ docker compose \
 
 ## 当前生产基线
 
-2026-08-25 已原地部署 v0.1.181，运行源码和不可变镜像为：
+2026-08-25 已按 Backend-first 原地部署 v0.1.182，运行源码和不可变镜像为：
 
 ```text
-源码    ff9bc448e6467e4e7b66ad3bd51ec98860587d93
+源码    7ce8b6b37c76f71f56b9ae4d79199a19cac32fb7
+Sub2API ghcr.io/01-yang/zero-one-sub2api@sha256:a0e46559a3d946ae93fc5041a4cc1eeb302f85b5430950de33f1f79cf52169ff
+Edge    ghcr.io/01-yang/zero-one-edge@sha256:9c31136889b83c10d5a73cb50801ea1ca9f82fadff9f2c3efe9b4354882e0c86
+```
+
+v0.1.182 没有新增迁移，生产迁移账本仍为 `274` 条。稳定性复核时共有
+`121` 个用户、`132` 个 API Key、`1,170` 个兑换码、`117` 条邀请关系、
+`71,664` 条 usage log 和 `0` 条支付订单；这些在线计数会继续增长，只能用于
+确认升级过程没有异常下降。
+
+本次升级前的已验证热备份位于：
+
+```text
+服务器 /srv/zero-one/.release-backups/20260825T073613Z-hot-pre-v182-7ce8b6b37
+维护机 /Users/yangzi/Documents/个人项目/零一中转站-production-backups/20260825T073613Z-hot-pre-v182-7ce8b6b37
+```
+
+该备份已通过 SHA-256、`pg_restore --list`、状态包展开和一次性
+PostgreSQL 18 `--network none` 隔离恢复；恢复后有 `100` 张业务表、`274`
+条迁移，备份时点的 `115/126/1,170/111/71,663/0` 六项核心计数逐项一致。
+目录中的 `RESTORE_VERIFICATION`、`DEPLOYMENT_RESULT` 和
+`STABILITY_CHECK` 分别记录隔离恢复、实际镜像切换与稳定性复核结果，不包含
+密码、API Key 或私钥。
+
+## v0.1.181 回滚基线
+
+升级 v0.1.182 前的生产源码为
+`ff9bc448e6467e4e7b66ad3bd51ec98860587d93`，镜像为：
+
+```text
 Sub2API ghcr.io/01-yang/zero-one-sub2api@sha256:a7f51cd0403112db8438356bf1d2fef5df10410a28b690d3cdc58ada1417fee7
 Edge    ghcr.io/01-yang/zero-one-edge@sha256:4c7031422feb2dfa87e6402225740885556bbe3398763ac14dcacce17c0d94d6
 ```
 
-生产迁移账本共 `274` 条，v0.1.181 的三项新迁移均已登记。部署完成时共有 `114` 个用户、`124` 个 API Key、`1,170` 个兑换码、`110` 条邀请关系和 `71,509` 条 usage log；业务计数会继续增长。
-
-本次已验证的静态备份位于：
-
-```text
-服务器 /srv/zero-one/.release-backups/20260824T181247Z-cold-pre-v181-ff9bc448e
-维护机 /Users/yangzi/Documents/个人项目/零一中转站-production-backups/20260824T181247Z-cold-pre-v181-ff9bc448e
-```
-
-该备份已通过 SHA-256、`pg_restore --list`、状态包展开和一次性 PostgreSQL 18 隔离恢复；恢复后 `98` 张业务表、`271` 条升级前迁移及六张核心表计数与冻结清单逐项一致。目录中的 `DEPLOYMENT_RESULT` 记录实际部署提交、镜像摘要和部署后计数，不包含密码或私钥。
-
-## v0.1.179 回滚基线
-
-升级 v0.1.181 前的生产源码为 `b82c5cab50ded5db5e40bff6127a23e3b08210a7`，镜像为：
-
-```text
-Sub2API ghcr.io/01-yang/zero-one-sub2api@sha256:7205c4879cc1e57c5939f3763f14d5e11fc0955f4fc9e5385f0b0e76a3221c77
-Edge    ghcr.io/01-yang/zero-one-edge@sha256:e13d994b8196db1c599cc33e5e33508571734cce425e70aa392e99f2b141fd99
-```
-
-2026-08-25 静态备份盘点：数据库约 `610 MB`，共有 `114` 个用户、`124` 个 API Key、`1,170` 个兑换码、`110` 条邀请关系和 `71,471` 条 usage log。数量会随业务变化，只用于升级前后异常检测，不能当作长期固定值。
+切换瞬间数据库约 `621 MB`，共有 `115` 个用户、`126` 个 API Key、
+`1,170` 个兑换码、`111` 条邀请关系、`71,663` 条 usage log 和 `0` 条支付
+订单。v0.1.182 没有新增迁移，因此应用回滚只需恢复这两个旧镜像摘要，不回滚
+PostgreSQL。
 
 ## 每次发布前
 
@@ -138,7 +150,10 @@ curl -sS -o /dev/null -D - https://app.01yapi.com/dashboard
 
 ## 回滚
 
-应用回滚只切换回上一组 Sub2API/Edge 镜像摘要并重建对应容器，默认不回滚数据库。v0.1.181 的三项迁移是加法迁移，旧 v0.1.179 应能忽略新增列和插件表；只有在隔离验证证明数据库不兼容、且已进入维护窗口时，才允许从已验证备份恢复数据库。
+应用回滚只切换回上一组 Sub2API/Edge 镜像摘要并重建对应容器，默认不回滚
+数据库。v0.1.182 没有新增迁移，回滚到 v0.1.181 时必须保持当前 `274` 条迁移
+账本不变。只有在隔离验证证明数据库本身损坏、且已进入维护窗口时，才允许从
+已验证备份恢复数据库。
 
 回滚后重新执行全部路由、登录、API 鉴权和核心数据计数检查。任何数据库恢复都是独立的高风险操作，不能和普通容器回滚混在一起执行。
 
