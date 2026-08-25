@@ -692,7 +692,7 @@ const (
 
 const (
 	SettingKeyProfileNavEnabled      = "profile_navigation_enabled"      // 是否显示个人资料导航入口
-	SettingKeySubscriptionNavEnabled = "subscription_navigation_enabled" // 是否显示订阅管理导航入口
+	SettingKeySubscriptionNavEnabled = "subscription_navigation_enabled" // 是否显示“我的订阅”导航入口
 	SettingKeyModelPlazaNavPlacement = "model_plaza_placement"           // 模型广场入口位置：header/sidebar
 	SettingKeyUserSidebarOrder       = "user_sidebar_order"              // 普通用户侧边导航顺序（JSON 数组）
 	SettingKeyAdminSidebarOrder      = "admin_sidebar_order"             // 管理员侧边导航顺序（JSON 数组）

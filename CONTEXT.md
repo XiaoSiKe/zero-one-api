@@ -21,7 +21,7 @@ _Avoid_: 最新前端、自动构建产物、临时截图
 _Avoid_: Overlay 允许清单、人工记忆、测试通过即代表不会被覆盖
 
 **Public Settings Projection（公开设置投影）**:
-匿名 Console 设置接口与 HTML 首帧注入共同使用的显式安全字段集合；新增字段属于公开授权决定，Landing 只读取它所需的更窄投影，Community QR 原图等鉴权资源不进入其中。
+匿名 Console 设置接口与 HTML 首帧注入共同使用的显式安全字段集合；新增字段属于公开授权决定，Landing 只读取它所需的更窄投影，Header Navigation QR 原图等鉴权资源不进入其中。
 _Avoid_: System Settings 原样输出、两份手工同步的公开 DTO、原始设置表转储
 
 **Coherent Release（一致发布）**:
@@ -72,9 +72,9 @@ _Avoid_: Console 内部公告、默认公开公告、富文本营销内容
 由 Administrator 单独配置的官网顶部短文本与可选跳转链接；它不读取 Announcement 记录，也不替代 `public_visible` 的逐条公开授权。
 _Avoid_: Public Announcement feed、历史公告、Console 弹窗公告
 
-**Community QR Entry（交流群入口）**:
-由 Administrator 显式启用并上传安全栅格二维码后，显示在 Console 顶部导航中的按需入口；公开设置只投影显示授权，原始图片仅在已登录用户点击后通过 JWT 鉴权图片端点加载，缺图、未登录或校验失败时端点必须拒绝输出并让界面显示安全错误态。
-_Avoid_: 公开 Base64 配置、默认开启、SVG 二维码、官网公告
+**Header Navigation QR Entry（顶部二维码入口）**:
+由 Administrator 明确添加、可配置角色可见范围并上传安全栅格二维码的 Console 顶部导航入口；公开设置只投影导航元数据，原始图片仅在已登录用户点击后通过逐入口 JWT 鉴权端点加载，缺图、越权、未登录或校验失败时必须拒绝输出并显示安全错误态。多个入口共享同一导航排序与协调机制；历史 `community_qr_*` 设置只保留兼容数据，不再是入口权威来源。
+_Avoid_: 公开 Base64 配置、默认开启、SVG 二维码、单一交流群开关、官网公告
 
 **Public Channel Status（公开渠道状态）**:
 由独立公开开关授权，将全部已启用监控聚合为匿名窄摘要的官网状态；不表示任何渠道、供应商、模型或流量明细被公开。
