@@ -11,6 +11,7 @@
   },
   "approved_backports": [],
   "preserve_on_upstream_sync": [
+    ".github/audit-exceptions.yml",
     ".github/scripts/ui-baseline.json",
     ".github/scripts/verify-publish-source.mjs",
     ".github/scripts/verify-publish-source.test.mjs",
@@ -21,6 +22,9 @@
     ".github/scripts/verify-upstream-boundary.mjs",
     ".github/scripts/verify-upstream-boundary.test.mjs",
     ".github/upstream-baseline.json",
+    ".github/workflows/backend-ci.yml",
+    ".github/workflows/release.yml",
+    ".github/workflows/security-scan.yml",
     ".github/workflows/zero-one-ci.yml",
     ".github/workflows/zero-one-publish.yml",
     "DEV_GUIDE.md",
@@ -60,6 +64,9 @@
     "docs/adr/0004-approved-ui-snapshot-at-edge.md",
     "docs/adr/0006-admin-affiliate-attribution.md",
     "frontend/src/App.vue",
+    "frontend/package.json",
+    "frontend/pnpm-lock.yaml",
+    "frontend/pnpm-workspace.yaml",
     "frontend/src/__tests__/consoleShellOwnership.spec.ts",
     "frontend/src/api/__tests__/admin.affiliates.spec.ts",
     "frontend/src/api/admin/affiliates.ts",
@@ -91,6 +98,7 @@
     "frontend/src/views/admin/RiskControlView.vue",
     "frontend/src/views/admin/SubscriptionsView.vue",
     "frontend/src/views/admin/UsageView.vue",
+    "frontend/src/views/admin/__tests__/UsageExportLibrary.spec.ts",
     "frontend/src/views/admin/UsersView.vue",
     "frontend/src/views/admin/orders/AdminOrdersView.vue",
     "frontend/src/views/admin/orders/AdminPaymentDashboardView.vue",
@@ -390,9 +398,9 @@
       ]
     },
     {
-      "name": "approved-v0.1.181-x-image-security-update",
+      "name": "approved-v0.1.182-go-dependency-security-updates",
       "valid_for_release": "v0.1.182",
-      "exit_condition": "Remove this hotfix when the first stable upstream release uses golang.org/x/image v0.45.0 or later and includes the compatible Go x-module dependency set.",
+      "exit_condition": "Remove this hotfix when the first stable upstream release uses golang.org/x/image v0.45.0 or later, Testcontainers v0.44.0 or later, github.com/moby/go-archive v0.3.0 or later, and no longer depends on github.com/docker/docker.",
       "paths": [
         "backend/go.mod",
         "backend/go.sum"
@@ -469,6 +477,7 @@
         "frontend/src/views/admin/RiskControlView.vue",
         "frontend/src/views/admin/SubscriptionsView.vue",
         "frontend/src/views/admin/UsageView.vue",
+        "frontend/src/views/admin/__tests__/UsageExportLibrary.spec.ts",
         "frontend/src/views/admin/UsersView.vue",
         "frontend/src/views/admin/__tests__/AccountsView.priorityColumn.spec.ts",
         "frontend/src/views/admin/__tests__/ChannelMonitorView.checkModeBadge.spec.ts",
@@ -683,8 +692,12 @@
       "owner": "Supported Preview",
       "paths": [
         ".github/.gitignore",
+        ".github/audit-exceptions.yml",
         ".github/scripts/",
         ".github/upstream-baseline.json",
+        ".github/workflows/backend-ci.yml",
+        ".github/workflows/release.yml",
+        ".github/workflows/security-scan.yml",
         ".github/workflows/zero-one-ci.yml",
         ".github/workflows/zero-one-publish.yml",
         ".dockerignore",
@@ -706,6 +719,9 @@
         "docs/adr/0004-approved-ui-snapshot-at-edge.md",
         "docs/adr/0005-canonical-product-domain.md",
         "docs/adr/0006-admin-affiliate-attribution.md",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
         "frontend/src/api/admin/channels.ts",
         "frontend/.eslintignore",
         "tools/check_pnpm_audit_exceptions.py"
@@ -745,6 +761,18 @@
     "frontend/src/types/"
   ],
   "immutable_exceptions": [
+    {
+      "name": "supported-preview-frontend-security-manifest",
+      "owner": "Supported Preview",
+      "path": "frontend/package.json",
+      "immutable_path": "frontend/package.json"
+    },
+    {
+      "name": "supported-preview-frontend-security-lockfile",
+      "owner": "Supported Preview",
+      "path": "frontend/pnpm-lock.yaml",
+      "immutable_path": "frontend/pnpm-lock.yaml"
+    },
     {
       "name": "console-skin-stable-console-shell-router",
       "owner": "Console Skin",

@@ -7,7 +7,7 @@ import sys
 from datetime import date
 
 
-HIGH_SEVERITIES = {"high", "critical"}
+AUDITED_SEVERITIES = {"low", "moderate", "high", "critical"}
 REQUIRED_FIELDS = {"package", "advisory", "severity", "mitigation", "expires_on"}
 
 
@@ -194,12 +194,12 @@ def main() -> int:
     seen = set()
     for name, severity, advisory_id, title in iter_vulns(audit):
         sev = normalize_severity(severity)
-        if sev not in HIGH_SEVERITIES or not name:
+        if sev not in AUDITED_SEVERITIES or not name:
             continue
         advisory_key = normalize_advisory(advisory_id)
         if not advisory_key:
             errors.append(
-                f"High/Critical vulnerability missing advisory id: {name} ({sev})"
+                f"Audited vulnerability missing advisory id: {name} ({sev})"
             )
             continue
         key = (normalize_package(name), advisory_key)
@@ -221,7 +221,7 @@ def main() -> int:
             )
 
     if missing_exceptions:
-        errors.append("High/Critical vulnerabilities missing exceptions:")
+        errors.append("Audited vulnerabilities missing exceptions:")
         for name, sev, advisory_id, title in missing_exceptions:
             label = f"{name} ({sev})"
             if advisory_id:
