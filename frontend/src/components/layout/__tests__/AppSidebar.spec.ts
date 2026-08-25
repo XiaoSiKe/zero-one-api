@@ -74,6 +74,12 @@ describe('AppSidebar configurable built-in navigation', () => {
     expect(componentSource).toContain('subscriptionNavigationEnabled')
     expect(componentSource).toContain("path: '/profile'")
     expect(componentSource).toContain("path: '/subscriptions'")
+    expect(componentSource).toContain(
+      "{ path: '/admin/subscriptions', label: t('nav.subscriptions'), icon: CreditCardIcon, hideInSimpleMode: true },"
+    )
+    expect(componentSource).not.toContain(
+      "{ path: '/admin/subscriptions', label: t('nav.subscriptions'), icon: CreditCardIcon, hideInSimpleMode: true, featureFlag: flagSubscriptionNavigation },"
+    )
   })
 
   it('moves Model Plaza into the sidebar only when configured there', () => {

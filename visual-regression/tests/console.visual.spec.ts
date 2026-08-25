@@ -1334,6 +1334,68 @@ test.describe('Console header floating layer contracts', () => {
   })
 })
 
+test.describe('Console built-in sidebar navigation contracts', () => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop')
+  })
+
+  test('regular users get one Model Plaza row inside nav and hidden personal entries', async ({ page }) => {
+    await seedConsole(page, 'v2', {
+      user: regularUser,
+      profileNavigationEnabled: false,
+      subscriptionNavigationEnabled: false,
+      modelPlazaPlacement: 'sidebar',
+    })
+    await page.goto('http://127.0.0.1:4173/dashboard')
+    await page.evaluate(() => {
+      delete (window as Window & { __APP_CONFIG__?: unknown }).__APP_CONFIG__
+      ;(window as Window & {
+        __ZERO_ONE_NAVIGATION_RECONCILIATION__?: { request: () => void }
+      }).__ZERO_ONE_NAVIGATION_RECONCILIATION__?.request()
+    })
+
+    await expect(page.locator('header a[href^="/model-plaza"]')).toBeHidden()
+    await expect(page.locator('aside nav a[href="/profile"]')).toBeHidden()
+    await expect(page.locator('aside nav a[href="/subscriptions"]')).toBeHidden()
+    await expect.poll(() => page.locator('header a[href^="/model-plaza"]').evaluate((element) =>
+      getComputedStyle(element).display,
+    )).toBe('none')
+    await expect.poll(() => page.locator('aside nav a[href="/profile"]').evaluate((element) =>
+      getComputedStyle(element).display,
+    )).toBe('none')
+    await expect.poll(() => page.locator('aside nav a[href="/subscriptions"]').evaluate((element) =>
+      getComputedStyle(element).display,
+    )).toBe('none')
+
+    const modelPlaza = page.locator('aside nav a[data-zero-one-model-plaza-sidebar]')
+    await expect(modelPlaza).toHaveCount(1)
+    await expect(modelPlaza).toBeVisible()
+    expect(await page.locator('aside .sidebar-header [data-zero-one-model-plaza-sidebar]').count())
+      .toBe(0)
+    expect(await page.locator('aside nav a[href="/dashboard"]').evaluate((dashboard) =>
+      dashboard.nextElementSibling?.hasAttribute('data-zero-one-model-plaza-sidebar'),
+    )).toBe(true)
+  })
+
+  test('administrator business Subscriptions stays visible while My Subscriptions hides', async ({ page }) => {
+    await seedConsole(page, 'v2', {
+      profileNavigationEnabled: false,
+      subscriptionNavigationEnabled: false,
+      modelPlazaPlacement: 'sidebar',
+    })
+    await page.goto('http://127.0.0.1:4173/admin/dashboard')
+
+    await expect(page.locator('header a[href^="/model-plaza"]')).toBeHidden()
+    await expect(page.locator('aside nav a[href="/profile"]')).toBeHidden()
+    await expect(page.locator('aside nav a[href="/subscriptions"]')).toBeHidden()
+    await expect(page.locator('aside nav a[href="/admin/subscriptions"]')).toBeVisible()
+    await expect.poll(() => page.locator('header a[href^="/model-plaza"]').evaluate((element) =>
+      getComputedStyle(element).display,
+    )).toBe('none')
+    await expect(page.locator('aside nav a[data-zero-one-model-plaza-sidebar]')).toHaveCount(1)
+  })
+})
+
 test.describe('Console header custom iframe menu contracts', () => {
   const customMenuItems = [
     { id: 'user-header', label: '用户帮助', icon_svg: '', url: '', visibility: 'user' as const, placement: 'header' as const, navigation_type: 'qr' as const, qr_description: '扫码查看用户帮助', qr_image: `data:image/png;base64,${communityQrPngBase64}`, sort_order: 1 },
@@ -1665,9 +1727,9 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/zero-one-navigation-reconciliation-v1.js?v=2')
     expect(html).toContain('/assets/zero-one-console-parity-v1.js?v=4')
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=4')
-    expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=7')
+    expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=8')
     expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=4')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=7')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=9')
     expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=4')
     expect(html).toContain('/assets/zero-one-ccswitch-launch-v1.js?v=1')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.js?v=4')

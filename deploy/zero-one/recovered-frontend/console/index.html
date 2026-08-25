@@ -20,13 +20,16 @@
         const response = await fetch("/api/v1/settings/public", { cache: "no-store" })
         if (response.ok) {
           const payload = await response.json()
-          if (payload?.data) window.__APP_CONFIG__ = payload.data
+          if (payload?.data) {
+            window.__APP_CONFIG__ = payload.data
+            window.__ZERO_ONE_PUBLIC_SETTINGS__ = payload.data
+          }
         }
       } catch {}
       await import("/assets/zero-one-navigation-reconciliation-v1.js?v=2")
       await import("/assets/zero-one-console-parity-v1.js?v=4")
-      await import("/assets/zero-one-community-qr-v1.js?v=7")
-      await import("/assets/zero-one-header-custom-menu-v1.js?v=7")
+      await import("/assets/zero-one-community-qr-v1.js?v=8")
+      await import("/assets/zero-one-header-custom-menu-v1.js?v=9")
       await import("/assets/zero-one-ccswitch-launch-v1.js?v=1")
       await import("/assets/zero-one-affiliate-admin-v1.js?v=4")
       await import("/assets/redeem-cachebust-20260820-fix6/index-9xJBhx8B.js")

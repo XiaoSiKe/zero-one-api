@@ -373,6 +373,9 @@ export async function seedConsole(
     communityQrDescription?: string
     affiliateEnabled?: boolean
     locale?: 'en' | 'zh'
+    profileNavigationEnabled?: boolean
+    subscriptionNavigationEnabled?: boolean
+    modelPlazaPlacement?: 'header' | 'sidebar'
     customMenuItems?: Array<{
       id: string
       label: string
@@ -403,9 +406,9 @@ export async function seedConsole(
     affiliate_rebate_per_invitee_cap: 0,
     affiliate_admin_recharge_enabled: false,
     custom_menu_items: options.customMenuItems ?? [],
-    profile_navigation_enabled: true,
-    subscription_navigation_enabled: true,
-    model_plaza_placement: 'header' as 'header' | 'sidebar',
+    profile_navigation_enabled: options.profileNavigationEnabled ?? true,
+    subscription_navigation_enabled: options.subscriptionNavigationEnabled ?? true,
+    model_plaza_placement: options.modelPlazaPlacement ?? 'header',
   }
   let communityQrImage = options.communityQrImage ?? ''
   const affiliateUsers = [

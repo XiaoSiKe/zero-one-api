@@ -2,6 +2,7 @@
 // The source Console owns this behavior; this layer only bridges the immutable
 // preview snapshot and yields when native header placement controls are present.
 const ADMIN_SETTINGS_API = '/api/v1/admin/settings'
+const PUBLIC_SETTINGS_API = '/api/v1/settings/public'
 const ADMIN_SETTINGS_PATH = '/admin/settings'
 const MENU_GROUP_MARKER = 'zero-one-header-custom-menu-group'
 const CUSTOM_MENU_DESCRIPTION = '添加自定义 iframe 页面到侧边栏、顶部导航或同时显示在两处。每个页面可以选择普通用户、管理员或全部登录用户可见。'
@@ -9,6 +10,8 @@ const CUSTOM_MENU_DESCRIPTION = '添加自定义 iframe 页面到侧边栏、顶
 let adminMenuItems = []
 let adminNavigationSettings = null
 let adminSettingsRequested = false
+let publicNavigationSettings = window.__ZERO_ONE_PUBLIC_SETTINGS__ || window.__APP_CONFIG__ || null
+let publicSettingsRequested = false
 const customIconOverrides = new Map()
 
 function localText(zh, en) {
@@ -109,7 +112,7 @@ function normalizeMenuItems(value) {
 
 function currentMenuItems(user) {
   if (user?.role === 'admin') return adminMenuItems
-  return normalizeMenuItems(window.__APP_CONFIG__?.custom_menu_items)
+  return normalizeMenuItems(publicNavigationSettings?.custom_menu_items)
 }
 
 function isVisibleToUser(item, user) {
@@ -414,15 +417,20 @@ function reconcileSidebar(user) {
 }
 
 function runtimeNavigationSettings(user) {
-  return user?.role === 'admin' ? adminNavigationSettings : window.__APP_CONFIG__
+  return user?.role === 'admin' ? adminNavigationSettings : publicNavigationSettings
 }
 
 function setNavigationLinkHidden(selector, hidden, marker) {
   for (const link of document.querySelectorAll(selector)) {
     if (!(link instanceof HTMLElement)) continue
     link.hidden = hidden
-    if (hidden) link.setAttribute(marker, 'true')
-    else link.removeAttribute(marker)
+    if (hidden) {
+      link.setAttribute(marker, 'true')
+      link.style.setProperty('display', 'none', 'important')
+    } else {
+      link.removeAttribute(marker)
+      link.style.removeProperty('display')
+    }
   }
 }
 
@@ -435,7 +443,7 @@ function reconcileBuiltInNavigation(user) {
 
   setNavigationLinkHidden('aside a[href="/profile"]', !profileEnabled, 'data-zero-one-profile-hidden')
   setNavigationLinkHidden(
-    'aside a[href="/subscriptions"], aside a[href="/admin/subscriptions"]',
+    'aside nav a[href="/subscriptions"]',
     !subscriptionEnabled,
     'data-zero-one-subscription-hidden',
   )
@@ -447,8 +455,11 @@ function reconcileBuiltInNavigation(user) {
     if (container instanceof HTMLElement) container.hidden = !subscriptionEnabled
   }
 
-  const headerModelPlaza = document.querySelector('header a[href^="/model-plaza"]')
-  if (headerModelPlaza instanceof HTMLElement) headerModelPlaza.hidden = placement !== 'header'
+  setNavigationLinkHidden(
+    'header a[href^="/model-plaza"]',
+    placement !== 'header',
+    'data-zero-one-model-plaza-hidden',
+  )
 
   const aside = document.querySelector('aside')
   const existing = aside?.querySelector('[data-zero-one-model-plaza-sidebar]')
@@ -458,7 +469,7 @@ function reconcileBuiltInNavigation(user) {
   }
   if (existing) return
   const dashboardPath = user.role === 'admin' ? '/admin/dashboard' : '/dashboard'
-  const dashboard = aside.querySelector('a[href="' + dashboardPath + '"]')
+  const dashboard = aside.querySelector('nav a.sidebar-link[href="' + dashboardPath + '"]')
   if (!(dashboard instanceof HTMLAnchorElement)) return
   const link = document.createElement('a')
   link.href = '/model-plaza?embedded=1'
@@ -638,9 +649,25 @@ function requestAdminSettings(user) {
     .catch(() => {})
 }
 
+function requestPublicSettings(user) {
+  if (!user || user.role === 'admin' || publicSettingsRequested) return
+  publicSettingsRequested = true
+  fetch(PUBLIC_SETTINGS_API, {
+    credentials: 'same-origin',
+    headers: apiHeaders(),
+  })
+    .then(readApiResponse)
+    .then((settings) => {
+      publicNavigationSettings = settings
+      scheduleScan()
+    })
+    .catch(() => {})
+}
+
 function scan() {
   const user = authenticatedUser()
   requestAdminSettings(user)
+  requestPublicSettings(user)
   renderHeaderMenu(user)
   reconcileSidebar(user)
   reconcileBuiltInNavigation(user)

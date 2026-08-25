@@ -673,6 +673,15 @@ describe("admin SettingsView landing notice copy", () => {
   });
 });
 
+describe("admin SettingsView navigation copy", () => {
+  it("names the personal subscription toggle without changing admin subscription management", () => {
+    expect(zhSettings.settings.site.navigation.subscriptions).toBe("我的订阅");
+    expect(zhSettings.settings.site.navigation.subscriptionsHint).toContain("我的订阅");
+    expect(zhSettings.settings.site.navigation.subscriptionsHint).not.toContain("管理员");
+    expect(enSettings.settings.site.navigation.subscriptions).toBe("My Subscriptions");
+  });
+});
+
 describe("admin SettingsView payment visible method controls", () => {
   beforeEach(() => {
     getSettings.mockReset();

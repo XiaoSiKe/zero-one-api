@@ -313,7 +313,7 @@ function buildAdminPanel(cardBody, settings) {
     createElement('h3', {}, localText('导航栏显示设置', 'Navigation Visibility')),
     createElement('p', {}, localText('控制内置入口，以及模型广场在控制台中的位置。', 'Control built-in entries and Model Plaza placement.')),
     createToggleRow(localText('个人资料', 'Profile'), localText('控制侧边导航入口。', 'Controls the sidebar entry.'), profileNavigationEnabled, 'profile-navigation-toggle', (value) => { profileNavigationEnabled = value }),
-    createToggleRow(localText('订阅管理', 'Subscriptions'), localText('控制用户和管理员订阅入口。', 'Controls user and administrator subscription entries.'), subscriptionNavigationEnabled, 'subscription-navigation-toggle', (value) => { subscriptionNavigationEnabled = value }),
+    createToggleRow(localText('我的订阅', 'My Subscriptions'), localText('控制“我的订阅”和顶部订阅进度入口。', 'Controls My Subscriptions and the header progress entry.'), subscriptionNavigationEnabled, 'subscription-navigation-toggle', (value) => { subscriptionNavigationEnabled = value }),
   )
   const placementRow = createElement('label', { class: 'zero-one-navigation-placement-row' })
   const placementCopy = createElement('span')
