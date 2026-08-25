@@ -9867,6 +9867,12 @@ interface SidebarOrderItem {
   label: string;
 }
 
+const persistedMenuItemIDPattern = /^[A-Za-z0-9_-]+$/;
+
+function hasPersistedMenuItemID(item: { id: string }): boolean {
+  return persistedMenuItemIDPattern.test(item.id);
+}
+
 const userSidebarOrderCandidates = computed<SidebarOrderItem[]>(() => [
   { path: "/dashboard", label: t("nav.dashboard") },
   { path: "/model-plaza", label: t("nav.modelPlaza") },
@@ -9883,6 +9889,7 @@ const userSidebarOrderCandidates = computed<SidebarOrderItem[]>(() => [
   { path: "/profile", label: t("nav.profile") },
   ...form.custom_menu_items
     .filter((item) =>
+      hasPersistedMenuItemID(item) &&
       (item.visibility === "user" || item.visibility === "all") &&
       item.placement !== "header",
     )
@@ -9910,6 +9917,7 @@ const adminSidebarOrderCandidates = computed<SidebarOrderItem[]>(() => [
   { path: "/admin/settings", label: t("nav.settings") },
   ...form.custom_menu_items
     .filter((item) =>
+      hasPersistedMenuItemID(item) &&
       (item.visibility === "admin" || item.visibility === "all") &&
       item.placement !== "header",
     )

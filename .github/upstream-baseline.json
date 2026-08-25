@@ -500,6 +500,7 @@
         "frontend/src/views/user/KeysView.vue",
         "frontend/src/views/user/__tests__/KeysView.spec.ts",
         "frontend/src/views/user/PaymentResultView.vue",
+        "frontend/src/views/user/__tests__/PaymentResultView.spec.ts",
         "frontend/src/views/user/PaymentQRCodeView.vue",
         "frontend/src/views/user/PaymentView.vue",
         "frontend/src/views/user/ProfileView.vue",

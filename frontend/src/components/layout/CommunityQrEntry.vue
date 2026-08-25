@@ -3,7 +3,7 @@
     type="button"
     class="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/20 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white dark:focus-visible:ring-white/20 sm:flex"
     :data-testid="testId"
-    :aria-label="t('communityQr.open')"
+    :aria-label="triggerAriaLabel"
     @click="openDialog"
   >
     <span
@@ -34,7 +34,7 @@
         <img
           v-if="imageObjectUrl"
           :src="imageObjectUrl"
-          :alt="t('communityQr.imageAlt')"
+          :alt="imageAlt"
           class="h-auto max-h-[min(62vh,34rem)] w-full rounded-xl object-contain"
           data-testid="community-qr-image"
           @error="handleImageError"
@@ -98,6 +98,8 @@ const dialogTitle = computed(() => props.title.trim() || t('communityQr.title'))
 const dialogDescription = computed(() =>
   props.description.trim() || t('communityQr.description')
 )
+const triggerAriaLabel = computed(() => `${t('communityQr.open')}: ${dialogTitle.value}`)
+const imageAlt = computed(() => `${dialogTitle.value}: ${t('communityQr.imageAlt')}`)
 const sanitizedIconSvg = computed(() => sanitizeSvg(props.iconSvg))
 
 const supportedImageTypes = new Set(['image/png', 'image/jpeg', 'image/webp'])

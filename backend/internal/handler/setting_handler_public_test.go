@@ -597,6 +597,51 @@ func TestSettingHandler_GetHeaderNavigationQRImageHonorsRoleVisibility(t *testin
 	require.Equal(t, http.StatusOK, requestAs("admin").Code)
 }
 
+func TestSettingHandler_GetHeaderNavigationQRImageFailsClosed(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	validImage := "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP8zwACTGCSAQANHQEDgslx/wAAAABJRU5ErkJggg=="
+	menuJSON, err := json.Marshal([]map[string]any{
+		{"id": "sidebar", "placement": "sidebar", "navigation_type": "qr", "visibility": "all"},
+		{"id": "link", "placement": "header", "visibility": "all"},
+		{"id": "broken", "placement": "header", "navigation_type": "qr", "visibility": "all"},
+	})
+	require.NoError(t, err)
+	imageJSON, err := json.Marshal(map[string]string{
+		"sidebar": validImage,
+		"link":    validImage,
+		"broken":  "data:image/png;base64,%%%",
+	})
+	require.NoError(t, err)
+	repo := &settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeyCustomMenuItems:   string(menuJSON),
+		service.SettingKeyHeaderNavQRImages: string(imageJSON),
+	}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+
+	request := func(id string, authenticated bool) *httptest.ResponseRecorder {
+		recorder := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(recorder)
+		c.Params = gin.Params{{Key: "id", Value: id}}
+		if authenticated {
+			c.Set(string(middleware2.ContextKeyUserRole), "user")
+		}
+		c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/header-navigation/"+id+"/qr", nil)
+		h.GetHeaderNavigationQRImage(c)
+		return recorder
+	}
+
+	unauthorized := request("sidebar", false)
+	require.Equal(t, http.StatusUnauthorized, unauthorized.Code)
+	require.Equal(t, "no-store", unauthorized.Header().Get("Cache-Control"))
+	require.Equal(t, "nosniff", unauthorized.Header().Get("X-Content-Type-Options"))
+	for _, id := range []string{"missing", "sidebar", "link", "broken"} {
+		recorder := request(id, true)
+		require.Equal(t, http.StatusNotFound, recorder.Code, id)
+		require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"), id)
+		require.Equal(t, "nosniff", recorder.Header().Get("X-Content-Type-Options"), id)
+	}
+}
+
 func TestSettingHandler_GetCommunityQRImageRejectsInvalidValues(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	tooLarge := append([]byte("\x89PNG\r\n\x1a\n"), make([]byte, service.MaxCommunityQRImageBytes-7)...)

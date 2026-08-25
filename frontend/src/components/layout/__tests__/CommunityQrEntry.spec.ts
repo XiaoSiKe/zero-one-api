@@ -88,7 +88,7 @@ describe('CommunityQrEntry', () => {
     const wrapper = mountEntry()
 
     const trigger = wrapper.get('[data-testid="community-qr-button"]')
-    expect(trigger.attributes('aria-label')).toBe('打开交流群二维码')
+    expect(trigger.attributes('aria-label')).toBe('打开交流群二维码: 交流群')
     expect(wrapper.find('[data-testid="community-qr-dialog"]').exists()).toBe(false)
     expect(wrapper.find('img').exists()).toBe(false)
 
@@ -109,6 +109,9 @@ describe('CommunityQrEntry', () => {
     expect(wrapper.get('[data-testid="community-qr-image"]').attributes('src')).toBe(
       'blob:community-qr',
     )
+    expect(wrapper.get('[data-testid="community-qr-image"]').attributes('alt')).toBe(
+      '交流群: 交流群二维码',
+    )
 
     await wrapper.get('[data-testid="dialog-close"]').trigger('click')
     expect(wrapper.find('[data-testid="community-qr-dialog"]').exists()).toBe(false)
@@ -123,6 +126,9 @@ describe('CommunityQrEntry', () => {
     })
 
     expect(wrapper.get('[data-testid="community-qr-button"]').text()).toContain('售后二群')
+    expect(wrapper.get('[data-testid="community-qr-button"]').attributes('aria-label')).toBe(
+      '打开交流群二维码: 售后二群',
+    )
     await wrapper.get('[data-testid="community-qr-button"]').trigger('click')
     await flushPromises()
 

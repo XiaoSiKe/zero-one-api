@@ -235,6 +235,31 @@ func TestUpdateSettingsCustomMenuPlacementDefaultsAndValidates(t *testing.T) {
 		require.Contains(t, recorder.Body.String(), `"qr_image":"`)
 	})
 
+	t.Run("removing an entry also removes its orphaned QR image", func(t *testing.T) {
+		oldImage := validCommunityQRImageForAdminTest("old")
+		newImage := validCommunityQRImageForAdminTest("new")
+		h, repo := newStepUpSwitchTestHandler(t, map[string]string{
+			service.SettingKeyCustomMenuItems: `[{
+				"id":"old-support","label":"旧售后","visibility":"all",
+				"placement":"header","navigation_type":"qr","sort_order":0
+			}]`,
+			service.SettingKeyHeaderNavQRImages: `{"old-support":"` + oldImage + `"}`,
+		})
+		recorder := doUpdateSettings(t, h, map[string]any{
+			"custom_menu_items": []map[string]any{{
+				"id": "new-support", "label": "新售后", "url": "",
+				"visibility": "all", "placement": "header", "navigation_type": "qr",
+				"qr_description": "扫码联系新售后", "qr_image": newImage, "sort_order": 0,
+			}},
+		}, nil)
+
+		require.Equal(t, http.StatusOK, recorder.Code)
+		require.NotContains(t, repo.values[service.SettingKeyHeaderNavQRImages], "old-support")
+		require.NotContains(t, repo.values[service.SettingKeyHeaderNavQRImages], oldImage)
+		require.Contains(t, repo.values[service.SettingKeyHeaderNavQRImages], "new-support")
+		require.Contains(t, repo.values[service.SettingKeyHeaderNavQRImages], newImage)
+	})
+
 	t.Run("invalid visibility is rejected", func(t *testing.T) {
 		h, _ := newStepUpSwitchTestHandler(t, map[string]string{})
 		recorder := doUpdateSettings(t, h, map[string]any{

@@ -716,7 +716,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
     page.on('console', (message) => {
       if (message.type() === 'error') consoleErrors.push(message.text())
     })
-    page.on('pageerror', (error) => pageErrors.push(error.message))
+    page.on('pageerror', (error) => pageErrors.push(error.stack || error.message))
     await page.addInitScript(() => {
       ;(window as Window & { __zeroOneDocumentSentinel?: number }).__zeroOneDocumentSentinel = Math.random()
       window.addEventListener('beforeunload', () => {
@@ -1329,6 +1329,69 @@ test.describe('Console header navigation settings contracts', () => {
   })
 })
 
+test.describe('Console payment result balance refresh contract', () => {
+  test.beforeEach(async ({}, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop')
+  })
+
+  test('refreshes the authenticated user once after a balance order completes', async ({ page }) => {
+    let authMeRequests = 0
+    let documentRequests = 0
+    const consoleErrors: string[] = []
+    const pageErrors: string[] = []
+
+    await seedConsole(page, 'v2', {
+      user: regularUser,
+      authMeUsers: [regularUser, { ...regularUser, balance: 184.25 }],
+    })
+
+    page.on('console', (message) => {
+      if (message.type() === 'error') consoleErrors.push(message.text())
+    })
+    page.on('pageerror', (error) => pageErrors.push(error.message))
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname === '/api/v1/auth/me') {
+        authMeRequests += 1
+      }
+      if (request.resourceType() === 'document' && request.frame() === page.mainFrame()) {
+        documentRequests += 1
+      }
+    })
+    await page.route('**/api/v1/payment/public/orders/resolve', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json; charset=utf-8',
+        body: JSON.stringify({
+          code: 0,
+          message: 'ok',
+          data: {
+            out_trade_no: 'balance-v182',
+            status: 'COMPLETED',
+            paid: true,
+            created_at: '2026-08-25T12:00:00+08:00',
+            expires_at: '2026-08-25T12:30:00+08:00',
+          },
+        }),
+      })
+    })
+
+    await page.goto('http://127.0.0.1:4173/payment/result?resume_token=v182-balance')
+    await page.waitForTimeout(250)
+    expect(pageErrors).toEqual([])
+    await expect(page.getByRole('heading', { name: '支付成功' })).toBeVisible()
+    await expect.poll(() => authMeRequests).toBe(2)
+    await expect.poll(() => page.evaluate(() => {
+      const raw = localStorage.getItem('auth_user')
+      return raw ? JSON.parse(raw).balance : null
+    })).toBe(184.25)
+
+    await page.waitForTimeout(250)
+    expect(authMeRequests).toBe(2)
+    expect(documentRequests).toBe(1)
+    expect(consoleErrors).toEqual([])
+  })
+})
+
 test.describe('Console header floating layer contracts', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
@@ -1773,7 +1836,7 @@ test.describe('Console visual contracts', () => {
     const response = await page.goto('http://127.0.0.1:4173/login')
     expect(response?.status()).toBe(200)
     const html = await response!.text()
-    expect(html).toContain('/assets/redeem-cachebust-20260820-fix6/index-9xJBhx8B.js')
+    expect(html).toContain('/assets/v182-payment-refresh-20260825/index-9xJBhx8B.js')
     expect(html).toContain('/assets/zero-one-local-preview-guard-v2.js')
     expect(html).toContain('/assets/zero-one-navigation-reconciliation-v1.js?v=2')
     expect(html).toContain('/assets/zero-one-console-parity-v1.js?v=4')

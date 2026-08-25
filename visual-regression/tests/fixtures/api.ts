@@ -367,6 +367,7 @@ export async function seedConsole(
   options: {
     authenticated?: boolean
     user?: typeof adminUser
+    authMeUsers?: Array<typeof adminUser>
     communityQrEnabled?: boolean
     communityQrImage?: string
     communityQrTitle?: string
@@ -415,6 +416,7 @@ export async function seedConsole(
     admin_sidebar_order: options.adminSidebarOrder ?? [],
   }
   let communityQrImage = options.communityQrImage ?? ''
+  let authMeRequestIndex = 0
   const affiliateUsers = [
     { id: 10, email: 'inviter@01yapi.test', username: '邀请人甲', role: 'user', status: 'active', created_at: '2026-02-01T00:00:00+08:00' },
     { id: 20, email: 'missed@01yapi.test', username: '遗漏客户乙', role: 'user', status: 'active', created_at: '2026-03-01T00:00:00+08:00' },
@@ -462,7 +464,12 @@ export async function seedConsole(
         user,
       })
     }
-    if (path === '/auth/me') return fulfill(route, user)
+    if (path === '/auth/me') {
+      const sequence = options.authMeUsers ?? []
+      const responseUser = sequence[Math.min(authMeRequestIndex, Math.max(0, sequence.length - 1))] ?? user
+      authMeRequestIndex += 1
+      return fulfill(route, responseUser)
+    }
     if (path === '/settings/community-qr') {
       if (route.request().headers().authorization !== 'Bearer visual-fixture-token') {
         return route.fulfill({ status: 401, body: 'unauthorized' })
