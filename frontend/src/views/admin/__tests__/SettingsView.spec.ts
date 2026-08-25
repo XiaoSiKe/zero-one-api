@@ -859,83 +859,107 @@ describe("admin SettingsView payment visible method controls", () => {
     ).toBe("");
   });
 
-  it("loads, validates, and submits the community QR entry through the shared save flow", async () => {
-    const image = "data:image/png;base64,iVBORw0KGgo=";
+  it("adds multiple header navigation entries while preserving non-header menus", async () => {
     getSettings.mockResolvedValueOnce({
       ...baseSettingsResponse,
       community_qr_enabled: true,
-      community_qr_image: image,
-      community_qr_title: "售后二群",
-      community_qr_description: "扫码加入售后群获取支持",
+      custom_menu_items: [
+        {
+          id: "docs",
+          label: "接入教程",
+          icon_svg: "",
+          url: "https://example.com/docs",
+          visibility: "user",
+          placement: "sidebar",
+          sort_order: 0,
+        },
+      ],
     });
 
     const wrapper = mountView();
     await flushPromises();
 
-    const toggle = wrapper.get('[data-testid="community-qr-toggle"]');
-    const upload = wrapper
-      .findAllComponents(ImageUploadStub)
-      .find((node) => node.attributes("data-testid") === "community-qr-upload");
+    expect(wrapper.get('[data-testid="header-navigation-settings"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="community-qr-toggle"]').exists()).toBe(false);
+    expect(wrapper.findAll('[data-testid^="header-navigation-name-"]')).toHaveLength(0);
 
-    expect((toggle.element as HTMLInputElement).checked).toBe(true);
-    expect(toggle.attributes("disabled")).toBeUndefined();
-    expect(upload).toBeDefined();
-    expect(upload?.attributes("data-model-value")).toBe(image);
-    expect(upload?.attributes("data-accepted-mime-types")).toBe(
-      JSON.stringify(["image/png", "image/jpeg", "image/webp"]),
-    );
-    expect(upload?.attributes("data-max-size")).toBe(String(300 * 1024));
-    expect(
-      (wrapper.get('[data-testid="community-qr-title-input"]').element as HTMLInputElement).value,
-    ).toBe("售后二群");
-    expect(
-      (wrapper.get('[data-testid="community-qr-description-input"]').element as HTMLInputElement).value,
-    ).toBe("扫码加入售后群获取支持");
+    const addButton = wrapper.get('[data-testid="header-navigation-add"]');
+    await addButton.trigger("click");
+    await addButton.trigger("click");
+
+    const names = wrapper.findAll('[data-testid^="header-navigation-name-"]');
+    const urls = wrapper.findAll('[data-testid^="header-navigation-url-"]');
+    expect(names).toHaveLength(2);
+    expect(urls).toHaveLength(2);
+
+    await names[0].setValue("在线充值");
+    await urls[0].setValue("https://example.com/pay");
+    await names[1].setValue("售后支持");
+    await urls[1].setValue("https://example.com/support");
 
     await wrapper.find("form").trigger("submit.prevent");
     await flushPromises();
 
     expect(updateSettings).toHaveBeenCalledWith(
       expect.objectContaining({
-        community_qr_enabled: true,
-        community_qr_image: image,
-        community_qr_title: "售后二群",
-        community_qr_description: "扫码加入售后群获取支持",
+        community_qr_enabled: false,
+        custom_menu_items: [
+          expect.objectContaining({
+            id: "docs",
+            label: "接入教程",
+            placement: "sidebar",
+          }),
+          expect.objectContaining({
+            label: "在线充值",
+            url: "https://example.com/pay",
+            visibility: "all",
+            placement: "header",
+          }),
+          expect.objectContaining({
+            label: "售后支持",
+            url: "https://example.com/support",
+            visibility: "all",
+            placement: "header",
+          }),
+        ],
       }),
     );
-
-    upload?.vm.$emit("update:modelValue", "");
-    await flushPromises();
-
-    expect((toggle.element as HTMLInputElement).checked).toBe(false);
-    expect(toggle.attributes("disabled")).toBeDefined();
   });
 
-  it("fails closed when an older admin-settings response omits community QR fields", async () => {
-    const response: Record<string, unknown> = { ...baseSettingsResponse };
-    delete response.community_qr_enabled;
-    delete response.community_qr_image;
-    delete response.community_qr_title;
-    delete response.community_qr_description;
-    getSettings.mockResolvedValueOnce(response);
+  it("loads header-only entries in the header editor without duplicating them below", async () => {
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      custom_menu_items: [
+        {
+          id: "support",
+          label: "售后支持",
+          icon_svg: "",
+          url: "https://example.com/support",
+          visibility: "all",
+          placement: "header",
+          sort_order: 0,
+        },
+        {
+          id: "shared-tools",
+          label: "工具中心",
+          icon_svg: "",
+          url: "https://example.com/tools",
+          visibility: "all",
+          placement: "both",
+          sort_order: 1,
+        },
+      ],
+    });
 
     const wrapper = mountView();
     await flushPromises();
 
-    const toggle = wrapper.get('[data-testid="community-qr-toggle"]');
-    const upload = wrapper
-      .findAllComponents(ImageUploadStub)
-      .find((node) => node.attributes("data-testid") === "community-qr-upload");
-
-    expect((toggle.element as HTMLInputElement).checked).toBe(false);
-    expect(toggle.attributes("disabled")).toBeDefined();
-    expect(upload?.attributes("data-model-value")).toBe("");
     expect(
-      (wrapper.get('[data-testid="community-qr-title-input"]').element as HTMLInputElement).value,
-    ).toBe("交流群");
-    expect(
-      (wrapper.get('[data-testid="community-qr-description-input"]').element as HTMLInputElement).value,
-    ).toBe("扫码加入交流群获取支持");
+      (wrapper.get('[data-testid="header-navigation-name-0"]').element as HTMLInputElement)
+        .value,
+    ).toBe("售后支持");
+    expect(wrapper.find('[data-testid="custom-menu-visibility-0"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="custom-menu-visibility-1"]').exists()).toBe(true);
   });
 
   it("loads and saves all-role dual-placement custom menus without downgrading them", async () => {

@@ -345,6 +345,7 @@ function ensurePlacementControls(user) {
     return node instanceof HTMLElement && node.querySelector('select') && node.querySelector('input')
   })
   itemCards.forEach((itemCard, index) => {
+    itemCard.hidden = normalizePlacement(adminMenuItems[index]?.placement) === 'header'
     const grid = itemCard.querySelector('.grid')
     if (!(grid instanceof HTMLElement)) return
     const visibilitySelect = itemCard.querySelector(

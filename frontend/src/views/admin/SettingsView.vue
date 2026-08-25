@@ -6377,81 +6377,140 @@
                 </div>
               </div>
 
-              <!-- Community QR Entry -->
+              <!-- Header Navigation Entries -->
               <div
                 class="border-t border-gray-100 pt-4 dark:border-dark-700"
-                data-testid="community-qr-settings"
+                data-testid="header-navigation-settings"
               >
                 <div class="flex items-center justify-between gap-4">
                   <div>
                     <h3 class="text-sm font-medium text-gray-900 dark:text-white">
-                      {{ t("admin.settings.site.communityQr.title") }}
+                      {{ t("admin.settings.site.headerNavigation.title") }}
                     </h3>
                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {{ t("admin.settings.site.communityQr.description") }}
+                      {{ t("admin.settings.site.headerNavigation.description") }}
                     </p>
                   </div>
-                  <Toggle
-                    v-model="form.community_qr_enabled"
-                    data-testid="community-qr-toggle"
-                    :disabled="!communityQrCanEnable"
-                    :aria-label="t('admin.settings.site.communityQr.enabled')"
-                  />
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm shrink-0"
+                    data-testid="header-navigation-add"
+                    @click="addHeaderNavigationItem"
+                  >
+                    <Icon name="plus" size="sm" class="mr-1.5" />
+                    {{ t("admin.settings.site.headerNavigation.add") }}
+                  </button>
                 </div>
 
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  {{
-                    t(
-                      communityQrCanEnable
-                        ? "admin.settings.site.communityQr.enabledHint"
-                        : "admin.settings.site.communityQr.uploadBeforeEnable",
-                    )
-                  }}
-                </p>
+                <div
+                  v-if="headerNavigationEntries.length === 0"
+                  class="mt-4 rounded-lg border border-dashed border-gray-300 px-4 py-5 text-center text-sm text-gray-500 dark:border-dark-600 dark:text-gray-400"
+                  data-testid="header-navigation-empty"
+                >
+                  {{ t("admin.settings.site.headerNavigation.empty") }}
+                </div>
 
-                <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {{ t("admin.settings.site.communityQr.dialogTitle") }}
-                    </label>
-                    <input
-                      v-model="form.community_qr_title"
-                      type="text"
-                      maxlength="80"
-                      class="input text-sm"
-                      data-testid="community-qr-title-input"
-                      :placeholder="t('admin.settings.site.communityQr.dialogTitlePlaceholder')"
-                    />
-                  </div>
-                  <div>
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {{ t("admin.settings.site.communityQr.dialogDescription") }}
-                    </label>
-                    <input
-                      v-model="form.community_qr_description"
-                      type="text"
-                      maxlength="240"
-                      class="input text-sm"
-                      data-testid="community-qr-description-input"
-                      :placeholder="t('admin.settings.site.communityQr.dialogDescriptionPlaceholder')"
-                    />
+                <div v-else class="mt-4 space-y-3">
+                  <div
+                    v-for="(entry, visibleIndex) in headerNavigationEntries"
+                    :key="entry.item.id || entry.index"
+                    class="rounded-lg border border-gray-200 p-4 dark:border-dark-600"
+                  >
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{
+                          t("admin.settings.site.headerNavigation.itemLabel", {
+                            n: visibleIndex + 1,
+                          })
+                        }}
+                      </span>
+                      <div class="flex items-center gap-1">
+                        <button
+                          v-if="visibleIndex > 0"
+                          type="button"
+                          class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700"
+                          :title="t('admin.settings.customMenu.moveUp')"
+                          @click="moveHeaderNavigationItem(visibleIndex, -1)"
+                        >
+                          <Icon name="chevronUp" size="sm" />
+                        </button>
+                        <button
+                          v-if="visibleIndex < headerNavigationEntries.length - 1"
+                          type="button"
+                          class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700"
+                          :title="t('admin.settings.customMenu.moveDown')"
+                          @click="moveHeaderNavigationItem(visibleIndex, 1)"
+                        >
+                          <Icon name="chevronDown" size="sm" />
+                        </button>
+                        <button
+                          type="button"
+                          class="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                          :title="t('admin.settings.site.headerNavigation.remove')"
+                          @click="removeMenuItem(entry.index)"
+                        >
+                          <Icon name="trash" size="sm" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ t("admin.settings.site.headerNavigation.name") }}
+                        </label>
+                        <input
+                          v-model="entry.item.label"
+                          type="text"
+                          maxlength="50"
+                          class="input text-sm"
+                          :data-testid="`header-navigation-name-${visibleIndex}`"
+                          :placeholder="t('admin.settings.site.headerNavigation.namePlaceholder')"
+                        />
+                      </div>
+                      <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ t("admin.settings.site.headerNavigation.visibility") }}
+                        </label>
+                        <select
+                          v-model="entry.item.visibility"
+                          class="input text-sm"
+                          :data-testid="`header-navigation-visibility-${visibleIndex}`"
+                        >
+                          <option value="all">
+                            {{ t("admin.settings.customMenu.visibilityAll") }}
+                          </option>
+                          <option value="user">
+                            {{ t("admin.settings.customMenu.visibilityUser") }}
+                          </option>
+                          <option value="admin">
+                            {{ t("admin.settings.customMenu.visibilityAdmin") }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="sm:col-span-2">
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ t("admin.settings.site.headerNavigation.url") }}
+                        </label>
+                        <input
+                          v-model="entry.item.url"
+                          type="url"
+                          class="input font-mono text-sm"
+                          :data-testid="`header-navigation-url-${visibleIndex}`"
+                          :placeholder="t('admin.settings.site.headerNavigation.urlPlaceholder')"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div class="mt-4">
-                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {{ t("admin.settings.site.communityQr.image") }}
-                  </label>
-                  <ImageUpload
-                    v-model="form.community_qr_image"
-                    mode="image"
-                    data-testid="community-qr-upload"
-                    :accepted-mime-types="['image/png', 'image/jpeg', 'image/webp']"
-                    :upload-label="t('admin.settings.site.communityQr.upload')"
-                    :remove-label="t('admin.settings.site.communityQr.remove')"
-                    :hint="t('admin.settings.site.communityQr.imageHint')"
-                    :max-size="300 * 1024"
-                  />
+                <div class="mt-4 flex items-center justify-between gap-4">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.site.headerNavigation.hint") }}
+                  </p>
+                  <button type="submit" class="btn btn-primary btn-sm shrink-0">
+                    {{ t("admin.settings.site.headerNavigation.save") }}
+                  </button>
                 </div>
               </div>
 
@@ -6772,8 +6831,8 @@
             <div class="space-y-4 p-6">
               <!-- Existing menu items -->
               <div
-                v-for="(item, index) in form.custom_menu_items"
-                :key="item.id || index"
+                v-for="(entry, visibleIndex) in customMenuPageEntries"
+                :key="entry.item.id || entry.index"
                 class="rounded-lg border border-gray-200 p-4 dark:border-dark-600"
               >
                 <div class="mb-3 flex items-center justify-between">
@@ -6781,17 +6840,17 @@
                     class="text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {{
-                      t("admin.settings.customMenu.itemLabel", { n: index + 1 })
+                      t("admin.settings.customMenu.itemLabel", { n: visibleIndex + 1 })
                     }}
                   </span>
                   <div class="flex items-center gap-2">
                     <!-- Move up -->
                     <button
-                      v-if="index > 0"
+                      v-if="visibleIndex > 0"
                       type="button"
                       class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700"
                       :title="t('admin.settings.customMenu.moveUp')"
-                      @click="moveMenuItem(index, -1)"
+                      @click="moveCustomMenuPageItem(visibleIndex, -1)"
                     >
                       <svg
                         class="h-4 w-4"
@@ -6809,11 +6868,11 @@
                     </button>
                     <!-- Move down -->
                     <button
-                      v-if="index < form.custom_menu_items.length - 1"
+                      v-if="visibleIndex < customMenuPageEntries.length - 1"
                       type="button"
                       class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700"
                       :title="t('admin.settings.customMenu.moveDown')"
-                      @click="moveMenuItem(index, 1)"
+                      @click="moveCustomMenuPageItem(visibleIndex, 1)"
                     >
                       <svg
                         class="h-4 w-4"
@@ -6834,7 +6893,7 @@
                       type="button"
                       class="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
                       :title="t('admin.settings.customMenu.remove')"
-                      @click="removeMenuItem(index)"
+                      @click="removeMenuItem(entry.index)"
                     >
                       <svg
                         class="h-4 w-4"
@@ -6862,7 +6921,7 @@
                       {{ t("admin.settings.customMenu.name") }}
                     </label>
                     <input
-                      v-model="item.label"
+                      v-model="entry.item.label"
                       type="text"
                       class="input text-sm"
                       :placeholder="
@@ -6879,9 +6938,9 @@
                       {{ t("admin.settings.customMenu.visibility") }}
                     </label>
                     <select
-                      v-model="item.visibility"
+                      v-model="entry.item.visibility"
                       class="input text-sm"
-                      :data-testid="`custom-menu-visibility-${index}`"
+                      :data-testid="`custom-menu-visibility-${entry.index}`"
                     >
                       <option value="user">
                         {{ t("admin.settings.customMenu.visibilityUser") }}
@@ -6903,9 +6962,9 @@
                       {{ t("admin.settings.customMenu.placement") }}
                     </label>
                     <select
-                      v-model="item.placement"
+                      v-model="entry.item.placement"
                       class="input text-sm"
-                      :data-testid="`custom-menu-placement-${index}`"
+                      :data-testid="`custom-menu-placement-${entry.index}`"
                     >
                       <option value="sidebar">
                         {{ t("admin.settings.customMenu.placementSidebar") }}
@@ -6927,7 +6986,7 @@
                       {{ t("admin.settings.customMenu.url") }}
                     </label>
                     <input
-                      v-model="item.url"
+                      v-model="entry.item.url"
                       type="url"
                       class="input font-mono text-sm"
                       :placeholder="
@@ -6944,12 +7003,12 @@
                       {{ t("admin.settings.customMenu.iconSvg") }}
                     </label>
                     <ImageUpload
-                      :model-value="item.icon_svg"
+                      :model-value="entry.item.icon_svg"
                       mode="svg"
                       size="sm"
                       :upload-label="t('admin.settings.customMenu.uploadSvg')"
                       :remove-label="t('admin.settings.customMenu.removeSvg')"
-                      @update:model-value="(v: string) => (item.icon_svg = v)"
+                      @update:model-value="(v: string) => (entry.item.icon_svg = v)"
                     />
                   </div>
                 </div>
@@ -9604,15 +9663,14 @@ const form = reactive<SettingsForm>({
 const landingNoticeUrlInvalid = computed(
   () => !isValidLandingNoticeUrl(form.landing_notice_url),
 );
-const communityQrCanEnable = computed(
-  () => form.community_qr_image.trim().length > 0,
+const indexedCustomMenuItems = computed(() =>
+  form.custom_menu_items.map((item, index) => ({ item, index })),
 );
-
-watch(
-  () => form.community_qr_image,
-  (image) => {
-    if (!image.trim()) form.community_qr_enabled = false;
-  },
+const headerNavigationEntries = computed(() =>
+  indexedCustomMenuItems.value.filter(({ item }) => item.placement === "header"),
+);
+const customMenuPageEntries = computed(() =>
+  indexedCustomMenuItems.value.filter(({ item }) => item.placement !== "header"),
 );
 
 // 人机验证 UI 状态：单卡片「总开关 + 服务商单选」，落库仍是三个独立
@@ -10372,6 +10430,18 @@ async function setAndCopyOIDCRedirectUrl() {
 }
 
 // Custom menu item management
+function addHeaderNavigationItem() {
+  form.custom_menu_items.push({
+    id: "",
+    label: "",
+    icon_svg: "",
+    url: "",
+    visibility: "all",
+    placement: "header",
+    sort_order: form.custom_menu_items.length,
+  });
+}
+
 function addMenuItem() {
   form.custom_menu_items.push({
     id: "",
@@ -10392,9 +10462,15 @@ function removeMenuItem(index: number) {
   });
 }
 
-function moveMenuItem(index: number, direction: -1 | 1) {
-  const targetIndex = index + direction;
-  if (targetIndex < 0 || targetIndex >= form.custom_menu_items.length) return;
+function moveVisibleMenuItem(
+  entries: Array<{ index: number }>,
+  visibleIndex: number,
+  direction: -1 | 1,
+) {
+  const targetVisibleIndex = visibleIndex + direction;
+  if (targetVisibleIndex < 0 || targetVisibleIndex >= entries.length) return;
+  const index = entries[visibleIndex].index;
+  const targetIndex = entries[targetVisibleIndex].index;
   const items = form.custom_menu_items;
   const temp = items[index];
   items[index] = items[targetIndex];
@@ -10403,6 +10479,14 @@ function moveMenuItem(index: number, direction: -1 | 1) {
   items.forEach((item, i) => {
     item.sort_order = i;
   });
+}
+
+function moveHeaderNavigationItem(visibleIndex: number, direction: -1 | 1) {
+  moveVisibleMenuItem(headerNavigationEntries.value, visibleIndex, direction);
+}
+
+function moveCustomMenuPageItem(visibleIndex: number, direction: -1 | 1) {
+  moveVisibleMenuItem(customMenuPageEntries.value, visibleIndex, direction);
 }
 
 // Custom endpoint management
@@ -11025,8 +11109,7 @@ async function saveSettings() {
       landing_notice_enabled: form.landing_notice_enabled,
       landing_notice_text: form.landing_notice_text,
       landing_notice_url: form.landing_notice_url,
-      community_qr_enabled:
-        form.community_qr_enabled && communityQrCanEnable.value,
+      community_qr_enabled: false,
       community_qr_image: form.community_qr_image.trim(),
       community_qr_title: form.community_qr_title.trim() || "交流群",
       community_qr_description: form.community_qr_description.trim(),

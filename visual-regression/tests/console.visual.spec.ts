@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { communityQrPngBase64, regularUser, seedConsole } from './fixtures/api'
+import { regularUser, seedConsole } from './fixtures/api'
 
 const affiliateConsoleOrigin =
   process.env.AFFILIATE_CONSOLE_ORIGIN || 'http://127.0.0.1:4173'
@@ -1207,22 +1207,23 @@ test.describe('Console standalone affiliate administration contracts', () => {
   })
 })
 
-test.describe('Console community QR contracts', () => {
+test.describe('Console header navigation settings contracts', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
     await page.clock.setFixedTime(new Date('2026-08-16T12:00:00+08:00'))
     await seedConsole(page, 'v2', {
-      communityQrEnabled: false,
-      communityQrImage: '',
-      communityQrTitle: '交流群',
-      communityQrDescription: '扫码加入交流群获取支持',
+      communityQrEnabled: true,
+      customMenuItems: [
+        { id: 'recharge', label: '在线充值', icon_svg: '', url: 'https://example.com/pay', visibility: 'user', placement: 'header', sort_order: 0 },
+        { id: 'docs', label: '接入教程', icon_svg: '', url: 'https://example.com/docs', visibility: 'all', placement: 'sidebar', sort_order: 1 },
+        { id: 'support', label: '售后支持', icon_svg: '', url: 'https://example.com/support', visibility: 'all', placement: 'header', sort_order: 2 },
+      ],
     })
   })
 
-  test('administrator import enables one header button and an accessible QR dialog', async ({ page }) => {
+  test('administrator can add multiple header-only entries without duplicating them below', async ({ page }) => {
     let savedBody: Record<string, unknown> | null = null
     let savedHeaders: Record<string, string> = {}
-    let imageHeaders: Record<string, string> = {}
     page.on('request', (request) => {
       if (
         request.method() === 'PUT' &&
@@ -1231,98 +1232,51 @@ test.describe('Console community QR contracts', () => {
         savedBody = request.postDataJSON() as Record<string, unknown>
         savedHeaders = request.headers()
       }
-      if (
-        request.method() === 'GET' &&
-        new URL(request.url()).pathname === '/api/v1/settings/community-qr'
-      ) {
-        imageHeaders = request.headers()
-      }
     })
 
     await page.goto('http://127.0.0.1:4173/admin/settings')
-    const panel = page.getByTestId('community-qr-settings')
-    const toggle = page.getByTestId('community-qr-toggle')
-    const fileInput = page.getByTestId('community-qr-file-input')
-    const save = page.getByTestId('community-qr-save')
-    const status = page.getByTestId('community-qr-status')
-    const titleInput = page.getByTestId('community-qr-title-input')
-    const descriptionInput = page.getByTestId('community-qr-description-input')
+    const panel = page.getByTestId('header-navigation-settings')
+    const names = panel.locator('[data-testid^="header-navigation-name-"]')
+    const urls = panel.locator('[data-testid^="header-navigation-url-"]')
 
     await expect(panel).toBeVisible()
-    await expect(save).toBeEnabled()
-    await expect(panel.getByText('顶部按钮及弹窗标题', { exact: true })).toBeVisible()
-    await expect(titleInput).toHaveValue('交流群')
-    await expect(descriptionInput).toHaveValue('扫码加入交流群获取支持')
-    await toggle.check()
-    await save.click()
-    await expect(status).toHaveText('启用顶部入口前，请先导入二维码。')
+    await expect(page.getByTestId('community-qr-settings')).toHaveCount(0)
+    await expect(page.getByTestId('community-qr-button')).toHaveCount(0)
+    await expect(names).toHaveCount(2)
+    await expect(names.nth(0)).toHaveValue('在线充值')
+    await expect(names.nth(1)).toHaveValue('售后支持')
+    await expect(page.getByTestId('custom-menu-visibility-0')).toBeHidden()
+    await expect(page.getByTestId('custom-menu-visibility-1')).toBeVisible()
 
-    await fileInput.setInputFiles({
-      name: 'community-qr.png',
-      mimeType: 'image/png',
-      buffer: Buffer.from(communityQrPngBase64, 'base64'),
+    await page.getByTestId('header-navigation-add').click()
+    await expect(names).toHaveCount(3)
+    await names.nth(2).fill('运营公告')
+    await urls.nth(2).fill('https://example.com/ops')
+    await page.getByTestId('header-navigation-visibility-2').selectOption('admin')
+
+    await page.waitForTimeout(5_500)
+    await page.locator('.settings-tabs-shell').evaluate((element: HTMLElement) => {
+      element.style.position = 'static'
     })
-    await expect(panel.getByRole('img', { name: '交流群二维码预览' })).toBeVisible()
-    await titleInput.fill('售后二群')
-    await descriptionInput.fill('扫码加入售后群获取支持')
-    await save.click()
-    await expect(status).toHaveText('交流群入口已保存。')
+    await panel.evaluate((element) => {
+      window.scrollTo(0, window.scrollY + element.getBoundingClientRect().top - 160)
+    })
+    await expect(panel).toHaveScreenshot('console-header-navigation-settings.png', {
+      maxDiffPixelRatio: 0.02,
+    })
+    await page.getByTestId('header-navigation-save').click()
     await expect.poll(() => savedBody).not.toBeNull()
-    expect(savedBody).toEqual({
-      community_qr_enabled: true,
-      community_qr_image: `data:image/png;base64,${communityQrPngBase64}`,
-      community_qr_title: '售后二群',
-      community_qr_description: '扫码加入售后群获取支持',
-    })
+    const submittedBody = savedBody as unknown as Record<string, unknown>
+    expect(submittedBody).toMatchObject({ community_qr_enabled: false })
+    expect(submittedBody.custom_menu_items).toEqual([
+      expect.objectContaining({ id: 'recharge', placement: 'header' }),
+      expect.objectContaining({ id: 'docs', placement: 'sidebar' }),
+      expect.objectContaining({ id: 'support', placement: 'header' }),
+      expect.objectContaining({ label: '运营公告', visibility: 'admin', placement: 'header' }),
+    ])
     expect(savedHeaders.authorization).toBe('Bearer visual-fixture-token')
     expect(savedHeaders['accept-language']).toBe('zh')
     expect(savedHeaders['x-admin-ui-request']).toBe('1')
-
-    await page.goto('http://127.0.0.1:4173/admin/dashboard')
-    const trigger = page.getByTestId('community-qr-button')
-    await expect(trigger).toHaveCount(1)
-    await expect(trigger).toBeVisible()
-    await expect(trigger).toContainText('售后二群')
-    await expect(trigger).toHaveAccessibleName('打开售后二群二维码')
-    expect(
-      await trigger.evaluate((element) => element.previousElementSibling?.getAttribute('href')),
-    ).toBe('/model-plaza?embedded=1')
-
-    await trigger.click()
-    const dialog = page.getByRole('dialog', { name: '售后二群' })
-    const close = page.getByTestId('community-qr-dialog-close')
-    const image = page.getByTestId('community-qr-image')
-    await expect(dialog).toBeVisible()
-    await expect(dialog).toContainText('扫码加入售后群获取支持')
-    await expect(dialog).toHaveCSS('background-color', 'rgb(5, 5, 5)')
-    const imageShell = dialog.locator('.zero-one-community-qr-image-shell')
-    await expect(imageShell).toHaveCSS('background-color', 'rgb(228, 228, 231)')
-    await expect(imageShell).toHaveCSS('border-color', 'rgb(244, 244, 245)')
-    await expect(image).toHaveAttribute('src', /^blob:/)
-    await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.complete && node.naturalWidth > 0)).toBe(true)
-    expect(imageHeaders.authorization).toBe('Bearer visual-fixture-token')
-    expect(imageHeaders['x-admin-ui-request']).toBeUndefined()
-    await expect(close).toBeFocused()
-    const firstImageObjectUrl = await image.getAttribute('src')
-
-    await page.keyboard.press('Escape')
-    await expect(dialog).toHaveCount(0)
-    await expect(trigger).toBeFocused()
-    expect(
-      await page.evaluate(async (objectUrl) => {
-        try {
-          await fetch(objectUrl!)
-          return false
-        } catch {
-          return true
-        }
-      }, firstImageObjectUrl),
-    ).toBe(true)
-
-    await trigger.click()
-    await page.getByTestId('community-qr-dialog-close').click()
-    await expect(page.getByTestId('community-qr-dialog')).toHaveCount(0)
-    await expect(trigger).toBeFocused()
   })
 })
 
@@ -1394,24 +1348,22 @@ test.describe('Console header custom iframe menu contracts', () => {
     ])
 
     await page.goto('http://127.0.0.1:4173/admin/settings')
-    const placement = page.getByTestId('custom-menu-placement-2')
-    await expect(placement).toHaveValue('header')
-    await expect(placement.locator('option[value="both"]')).toHaveText('侧边栏和顶部栏都显示')
+    await expect(page.getByTestId('custom-menu-placement-2')).toBeHidden()
     await expect(page.getByTestId('custom-menu-placement-4')).toHaveValue('both')
-    const sharedVisibility = page.getByTestId('custom-menu-visibility-5')
+    const sharedVisibility = page.getByTestId('custom-menu-visibility-7')
     await expect(sharedVisibility.locator('option[value="all"]')).toHaveText('普通用户和管理员都可见')
     await expect(sharedVisibility).toHaveValue('all')
-    await page.getByTestId('custom-menu-visibility-2').selectOption('all')
-    await placement.selectOption('both')
+    await expect(page.getByTestId('header-navigation-name-1')).toHaveValue('管理工具')
+    await page.getByTestId('header-navigation-visibility-1').selectOption('all')
     const settingsRequest = page.waitForRequest((request) =>
       request.method() === 'PUT' && new URL(request.url()).pathname === '/api/v1/admin/settings',
     )
-    await page.locator('form').dispatchEvent('submit')
+    await page.getByTestId('header-navigation-save').click()
     const submitted = (await settingsRequest).postDataJSON() as {
       custom_menu_items: Array<{ id: string; placement?: string; visibility?: string }>
     }
     expect(submitted.custom_menu_items.find((item) => item.id === 'admin-header')?.placement)
-      .toBe('both')
+      .toBe('header')
     expect(submitted.custom_menu_items.find((item) => item.id === 'admin-header')?.visibility)
       .toBe('all')
     expect(submitted.custom_menu_items.find((item) => item.id === 'admin-both')?.placement)
@@ -1520,7 +1472,8 @@ test.describe('Console header custom iframe menu contracts', () => {
       }
     })
     await page.goto('http://127.0.0.1:4173/admin/settings')
-    await expect(page.getByTestId('custom-menu-placement-0')).toBeVisible()
+    await expect(page.getByTestId('header-navigation-settings')).toBeVisible()
+    await expect(page.getByTestId('custom-menu-placement-0')).toBeHidden()
     const description = page.getByRole('heading', { name: '自定义菜单页面' })
       .locator('xpath=following-sibling::p[1]')
     await expect(description).toHaveText(
@@ -1658,7 +1611,7 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/zero-one-navigation-reconciliation-v1.js?v=2')
     expect(html).toContain('/assets/zero-one-console-parity-v1.js?v=4')
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=4')
-    expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=5')
+    expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=6')
     expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=6')
     expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=3')
     expect(html).toContain('/assets/zero-one-ccswitch-launch-v1.js?v=1')

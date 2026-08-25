@@ -105,7 +105,7 @@ assert_text "$console" 'fetch("/api/v1/settings/public"' 'recovered console did 
 assert_text "$console" 'await import("/assets/zero-one-local-preview-guard-v2.js")' 'recovered console local preview guard is missing'
 assert_text "$console" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=2")' 'recovered Console navigation reconciliation is missing'
 assert_text "$console" 'await import("/assets/zero-one-console-parity-v1.js?v=4")' 'recovered console parity overlay is missing'
-assert_text "$console" 'await import("/assets/zero-one-community-qr-v1.js?v=5")' 'recovered console community QR adapter is missing'
+assert_text "$console" 'await import("/assets/zero-one-community-qr-v1.js?v=6")' 'recovered console header-navigation settings adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=6")' 'recovered console header custom-menu adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=4")' 'recovered console affiliate administration adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-floating-panels-v1.js?v=2")' 'recovered console floating overlay is missing'
@@ -121,10 +121,10 @@ console_parity_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/z
 assert_text "$console_parity_headers" 'Cache-Control: public, max-age=31536000, immutable' 'console parity overlay is not immutable'
 console_parity_css_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-console-parity-v1.css")
 assert_text "$console_parity_css_headers" 'Cache-Control: public, max-age=31536000, immutable' 'console parity stylesheet is not immutable'
-community_qr_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-community-qr-v1.js")
-assert_text "$community_qr_headers" 'Cache-Control: public, max-age=31536000, immutable' 'community QR adapter is not immutable'
-community_qr_css_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-community-qr-v1.css")
-assert_text "$community_qr_css_headers" 'Cache-Control: public, max-age=31536000, immutable' 'community QR stylesheet is not immutable'
+header_navigation_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-community-qr-v1.js")
+assert_text "$header_navigation_headers" 'Cache-Control: public, max-age=31536000, immutable' 'header-navigation settings adapter is not immutable'
+header_navigation_css_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-community-qr-v1.css")
+assert_text "$header_navigation_css_headers" 'Cache-Control: public, max-age=31536000, immutable' 'header-navigation settings stylesheet is not immutable'
 header_custom_menu_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-header-custom-menu-v1.js")
 assert_text "$header_custom_menu_headers" 'Cache-Control: public, max-age=31536000, immutable' 'header custom-menu adapter is not immutable'
 header_custom_menu_css_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-header-custom-menu-v1.css")

@@ -21,7 +21,7 @@ test('validates the approved UI baseline manifest', () => {
       'landing-home',
       'auth',
       'console-shell',
-      'community-qr-entry',
+      'header-navigation-entries',
       'affiliate-attribution',
       'model-plaza-pricing',
       'redeem-benefits-mystery-box',

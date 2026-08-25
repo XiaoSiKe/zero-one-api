@@ -60,13 +60,6 @@
           <span class="truncate">{{ item.label }}</span>
         </router-link>
 
-        <!-- Community QR Entry -->
-        <CommunityQrEntry
-          v-if="user && communityQrEnabled"
-          :title="communityQrTitle"
-          :description="communityQrDescription"
-        />
-
         <!-- Language Switcher -->
         <LocaleSwitcher />
 
@@ -277,7 +270,6 @@ import { useAdminSettingsStore } from '@/stores/adminSettings'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMini.vue'
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
-import CommunityQrEntry from '@/components/layout/CommunityQrEntry.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, isFeatureFlagEnabled } from '@/utils/featureFlags'
@@ -297,11 +289,6 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const contactInfo = computed(() => appStore.contactInfo)
 const docUrl = computed(() => sanitizeUrl(appStore.docUrl))
 const modelPlazaEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.modelPlaza))
-const communityQrEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.communityQr))
-const communityQrTitle = computed(() => appStore.cachedPublicSettings?.community_qr_title || '')
-const communityQrDescription = computed(
-  () => appStore.cachedPublicSettings?.community_qr_description || ''
-)
 const headerCustomMenuItems = computed(() => {
   const visibility = authStore.isAdmin ? 'admin' : 'user'
   const items = authStore.isAdmin

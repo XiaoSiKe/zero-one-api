@@ -16,6 +16,7 @@
     "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v1.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v2.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-date-picker.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-header-navigation-settings.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-model-plaza-pricing.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-redeem-benefit.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-redeem-mystery-box.png",
@@ -73,12 +74,24 @@
       ]
     },
     {
-      "name": "community-qr-entry",
+      "name": "header-navigation-entries",
       "routes": ["/dashboard", "/admin/settings"],
       "paths": [
-        "frontend/src/components/layout/",
+        "frontend/src/components/layout/AppHeader.vue",
+        "frontend/src/components/layout/__tests__/AppHeader.communityQr.spec.ts",
+        "frontend/src/i18n/locales/en/admin/settings.ts",
+        "frontend/src/i18n/locales/zh/admin/settings.ts",
         "frontend/src/views/admin/SettingsView.vue",
-        "deploy/zero-one/recovered-frontend/console/"
+        "frontend/src/views/admin/__tests__/SettingsView.spec.ts",
+        "deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.css",
+        "deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.js",
+        "deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.js",
+        "deploy/zero-one/recovered-frontend/console/index.html",
+        "deploy/zero-one/test-live-routing.sh",
+        "deploy/zero-one/test-routing.sh",
+        "visual-regression/tests/__screenshots__/chromium-desktop/console-header-navigation-settings.png",
+        "visual-regression/tests/console.visual.spec.ts",
+        "visual-regression/tests/fixtures/api.ts"
       ]
     },
     {

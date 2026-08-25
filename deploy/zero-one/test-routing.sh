@@ -18,8 +18,8 @@ recovered_navigation_reconciliation="$repo_root/deploy/zero-one/recovered-fronte
 recovered_local_guard="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-local-preview-guard-v2.js"
 recovered_console_parity="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-console-parity-v1.js"
 recovered_console_parity_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-console-parity-v1.css"
-recovered_community_qr="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.js"
-recovered_community_qr_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.css"
+recovered_header_navigation="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.js"
+recovered_header_navigation_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.css"
 recovered_header_custom_menu="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.js"
 recovered_header_custom_menu_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.css"
 recovered_ccswitch_launch="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-ccswitch-launch-v1.js"
@@ -82,8 +82,8 @@ require "$recovered_console_index" 'await import("/assets/zero-one-local-preview
 require "$recovered_console_index" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=2")'
 require "$recovered_console_index" 'await import("/assets/zero-one-console-parity-v1.js?v=4")'
 require "$recovered_console_index" 'href="/assets/zero-one-console-parity-v1.css?v=4"'
-require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=5")'
-require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=2"'
+require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=6")'
+require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=3"'
 require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=6")'
 require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=3"'
 require "$recovered_console_index" 'await import("/assets/zero-one-ccswitch-launch-v1.js?v=1")'
@@ -119,19 +119,20 @@ require "$recovered_console_parity_css" '.console-card-motion-surface'
 require "$recovered_console_parity_css" '.console-skin-table'
 require "$recovered_console_parity_css" ':has(.card, iframe, table, .fixed, .sticky)'
 forbid "$recovered_console_parity_css" '.console-dashboard-surface .card:hover'
-require "$recovered_community_qr" "const COMMUNITY_QR_IMAGE_URL = '/api/v1/settings/community-qr'"
-require "$recovered_community_qr" 'loadAuthenticatedCommunityQrImage'
-require "$recovered_community_qr" 'URL.createObjectURL(imageBlob)'
-forbid "$recovered_community_qr" '/api/v1/settings/public?scope=community-qr'
-require "$recovered_community_qr" "'data-testid': 'community-qr-button'"
-require "$recovered_community_qr" "'data-testid': 'community-qr-settings'"
-require "$recovered_community_qr" "method: 'PUT'"
-require "$recovered_community_qr" "'X-Admin-UI-Request': '1'"
-require "$recovered_community_qr" "'data-testid': 'community-qr-title-input'"
-require "$recovered_community_qr" "'data-testid': 'community-qr-description-input'"
-require "$recovered_community_qr_css" '.zero-one-community-qr-dialog'
-require "$recovered_community_qr_css" '.zero-one-community-qr-settings'
+require "$recovered_header_navigation" "'data-testid': 'header-navigation-settings'"
+require "$recovered_header_navigation" "'data-testid': 'header-navigation-add'"
+require "$recovered_header_navigation" "'data-testid': 'header-navigation-save'"
+require "$recovered_header_navigation" 'custom_menu_items: adminMenuItems'
+require "$recovered_header_navigation" 'community_qr_enabled: false'
+require "$recovered_header_navigation" "placement: 'header'"
+require "$recovered_header_navigation" 'window.location.reload()'
+forbid "$recovered_header_navigation" '/api/v1/settings/community-qr'
+forbid "$recovered_header_navigation" "'data-testid': 'community-qr-button'"
+require "$recovered_header_navigation_css" '.zero-one-header-navigation-settings'
+require "$recovered_header_navigation_css" '.zero-one-header-navigation-entry'
+require "$recovered_header_navigation_css" '.zero-one-header-navigation-fields'
 require "$recovered_header_custom_menu" "item.placement === 'header'"
+require "$recovered_header_custom_menu" "itemCard.hidden = normalizePlacement(adminMenuItems[index]?.placement) === 'header'"
 require "$recovered_header_custom_menu" 'data-zero-one-header-menu-placement'
 require "$recovered_header_custom_menu" 'window.__ZERO_ONE_BIND_INTERNAL_LINK__ = bind'
 require "$recovered_header_custom_menu" 'description.textContent !== CUSTOM_MENU_DESCRIPTION'
