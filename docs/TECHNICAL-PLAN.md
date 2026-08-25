@@ -127,13 +127,25 @@ edge image. Image rollback does not reverse a database migration; see
 合回 `main`。每次同步同时更新本节的 tag 与完整提交 SHA。
 主题改动保持集中，使新增上游页面继承设计系统，避免逐页分叉。
 
-`v0.1.182` 通过真实双父合并引入 Responses Lite、OAuth 图片提示词、OpenCode Go 重置时长、Composite Kimi Code K3、渠道监控 V2 和支付结果同步修复。受保护的 Sonnet 映射、Anthropic 缓存计费和 Payment Result 行为在合并后独立移植；本版本没有新增数据库迁移。前端依赖清单、锁文件和安全扫描属于具名 immutable exception，防止后续同步重新引入已清理的安全债务。
+当前 Upstream Baseline 是 `v0.1.182`，解引用源码提交为
+`5a7d469622911a6b1291a692376df5fa03f9ac2e`。本次通过真实双父合并引入
+Responses Lite、OAuth 图片提示词、OpenCode Go 重置时长、Composite Kimi
+Code K3、渠道监控 V2 和支付结果同步修复。受保护的 Sonnet 映射、Anthropic
+缓存计费和 Payment Result 行为在合并后独立移植；本版本没有新增数据库迁移。
+前端依赖清单、锁文件和安全扫描属于具名 immutable exception，防止后续同步
+重新引入已清理的安全债务。
 
-`v0.1.179` 保留 Zero One 已验证的深拷贝隔离、分组定价快照 v20、创建默认值、复制/校验、durable cache invalidation、Batch Image 和 Model Plaza 传播修复。上游本版本将长上下文计费门控改为分组或账号任一启用即生效；Zero One 为避免存量账号静默改变账单，继续采用分组与账号同时启用的口径，同时兼容 v179 的渠道区间倍率。本版本还移除每个模型请求都会输出完整会话关联信息的四段 `[DEBUG-STICKY]` 日志。后端权限仅限 `.github/upstream-baseline.json` 的 `legacy_hotfixes` 区块所列精确文件。下一个稳定 tag 一旦包含等价修复，同步 PR 必须删除重复 backport 和对应 legacy path，不得将临时权限永久化。
+`v0.1.182` 继续保留 Zero One 自 `v0.1.179` 起验证的深拷贝隔离、分组定价
+快照 v20、创建默认值、复制/校验、durable cache invalidation、Batch Image 和
+Model Plaza 传播修复。Zero One 为避免存量账号静默改变账单，继续采用分组与
+账号同时启用长上下文计费的口径，并兼容渠道区间倍率；每个模型请求也不得恢复
+输出完整会话关联信息的 `[DEBUG-STICKY]` 日志。后端临时权限仅限
+`.github/upstream-baseline.json` 的 `legacy_hotfixes` 区块所列精确文件。
 
-`v0.1.179` 延续 Go `1.26.6` 基线，`.github/upstream-baseline.json` 的 `approved_backports` 保持为空列表。退出判定依据是稳定 Tag 中的等价内容，而不是将精确 commit 误记为已合并。
-
-`v0.1.179` 仍未包含分组用量汇总触发器测试的 session-timezone 等价修复。Zero One 只将这两项测试的“今日”改为 DB session 的 `CURRENT_DATE`，不修改 migration 或运行时语义。该精确测试路径位于独立的 CI timezone legacy hotfix 区块，下一个包含等价修复的稳定 Tag 必须将其移除。
+`v0.1.182` 使用 Go `1.27.0`，`.github/upstream-baseline.json` 的
+`approved_backports` 保持为空列表。每个 legacy hotfix 都必须以稳定 Tag 中的
+等价内容执行退出判定；不得因为一次同步或相近提交就删除保护，也不得将已经进入
+上游的重复补丁永久保留。
 
 The repository's dedicated Zero One CI job validates React, Vue, Go unit and
 integration suites, Compose,

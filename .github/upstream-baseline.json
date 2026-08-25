@@ -404,7 +404,10 @@
       "exit_condition": "Remove this hotfix when the first stable upstream release uses golang.org/x/image v0.45.0 or later, Testcontainers v0.44.0 or later, github.com/moby/go-archive v0.3.0 or later, and no longer depends on github.com/docker/docker.",
       "paths": [
         "backend/go.mod",
-        "backend/go.sum"
+        "backend/go.sum",
+        "backend/internal/middleware/rate_limiter_integration_test.go",
+        "backend/internal/repository/integration_harness_test.go",
+        "backend/internal/server/routes/auth_rate_limit_integration_test.go"
       ]
     }
   ],

@@ -144,9 +144,12 @@ const approvedLegacyHotfixPaths = [
   'backend/internal/handler/admin/admin_basic_handlers_test.go',
   'backend/internal/handler/admin/admin_service_stub_test.go',
   'backend/internal/handler/admin/group_handler.go',
+  'backend/internal/middleware/rate_limiter_integration_test.go',
   'backend/internal/repository/api_key_repo_profit_projection_integration_test.go',
   'backend/internal/repository/auth_cache_invalidation_profit_integration_test.go',
+  'backend/internal/repository/integration_harness_test.go',
   'backend/internal/repository/migrations_schema_integration_test.go',
+  'backend/internal/server/routes/auth_rate_limit_integration_test.go',
   'backend/internal/service/admin_group.go',
   'backend/internal/service/admin_group_duplicate.go',
   'backend/internal/service/admin_group_duplicate_test.go',
@@ -598,6 +601,18 @@ test('allows named immutable exceptions while adjacent seam files still fail', (
     baseline.immutable_exceptions,
     [
       {
+        name: 'supported-preview-frontend-security-manifest',
+        owner: 'Supported Preview',
+        path: 'frontend/package.json',
+        immutable_path: 'frontend/package.json',
+      },
+      {
+        name: 'supported-preview-frontend-security-lockfile',
+        owner: 'Supported Preview',
+        path: 'frontend/pnpm-lock.yaml',
+        immutable_path: 'frontend/pnpm-lock.yaml',
+      },
+      {
         name: 'console-skin-stable-console-shell-router',
         owner: 'Console Skin',
         path: 'frontend/src/router/index.ts',
@@ -655,13 +670,17 @@ test('allows named immutable exceptions while adjacent seam files still fail', (
   )
 })
 
-test('allows only exact-content upstream security backports', () => {
+test('keeps security manifests protected without pretending they are upstream backports', () => {
   const approvedPaths = baseline.approved_backports.flatMap((backport) => Object.keys(backport.files))
+  const supportedPreview = baseline.overlays.find(({ owner }) => owner === 'Supported Preview')
 
   assert.deepEqual(evaluateChangedPaths(approvedPaths, baseline), [])
   assert.deepEqual(evaluateApprovedBackportContents(baseline, readRepositoryPath), [])
   assert.ok(baseline.immutable_paths.includes('frontend/pnpm-lock.yaml'))
-  assert.ok(!baseline.overlays.some(({ paths }) => paths.includes('frontend/pnpm-lock.yaml')))
+  assert.ok(supportedPreview.paths.includes('frontend/package.json'))
+  assert.ok(supportedPreview.paths.includes('frontend/pnpm-lock.yaml'))
+  assert.ok(supportedPreview.paths.includes('frontend/pnpm-workspace.yaml'))
+  assert.deepEqual(baseline.approved_backports, [])
 })
 
 test('requires the stable tag to peel to the pinned baseline commit', () => {
