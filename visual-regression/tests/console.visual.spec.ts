@@ -1368,9 +1368,14 @@ test.describe('Console built-in sidebar navigation contracts', () => {
       profileNavigationEnabled: false,
       subscriptionNavigationEnabled: false,
       modelPlazaPlacement: 'sidebar',
-      userSidebarOrder: ['/keys', '/dashboard', '/model-plaza'],
+      userSidebarOrder: [
+        '/dashboard', '/keys', '/batch-image', '/usage', '/available-channels', '/monitor',
+        '/subscriptions', '/purchase', '/orders', '/redeem', '/affiliate', '/profile',
+        '/model-plaza', '/custom/user-tool', '/custom/all-tool',
+      ],
       customMenuItems: [
         { id: 'user-tool', label: '用户工具', icon_svg: '<svg viewBox="0 0 24 24"><path d="M4 12h16"/></svg>', url: 'https://example.com/tool', visibility: 'user', placement: 'sidebar', sort_order: 0 },
+        { id: 'all-tool', label: '共享工具', icon_svg: '<svg viewBox="0 0 24 24"><path d="M12 4v16"/></svg>', url: 'https://example.com/all-tool', visibility: 'all', placement: 'both', sort_order: 1 },
       ],
     })
     await page.goto('http://127.0.0.1:4173/dashboard')
@@ -1399,9 +1404,11 @@ test.describe('Console built-in sidebar navigation contracts', () => {
     await expect(modelPlaza).toBeVisible()
     expect(await page.locator('aside .sidebar-header [data-zero-one-model-plaza-sidebar]').count())
       .toBe(0)
-    await expect(page.locator('aside nav a.sidebar-link').nth(0)).toHaveAttribute('href', '/keys')
-    await expect(page.locator('aside nav a.sidebar-link').nth(1)).toHaveAttribute('href', '/dashboard')
-    await expect(page.locator('aside nav a.sidebar-link').nth(2)).toHaveAttribute('data-zero-one-model-plaza-sidebar', 'true')
+    const orderedHrefs = await page.locator('aside nav .sidebar-section').first().locator(':scope > a.sidebar-link').evaluateAll((links) =>
+      links.map((link) => new URL((link as HTMLAnchorElement).href).pathname),
+    )
+    expect(orderedHrefs.slice(0, 2)).toEqual(['/dashboard', '/keys'])
+    expect(orderedHrefs.slice(-3)).toEqual(['/model-plaza', '/custom/user-tool', '/custom/all-tool'])
     await expect.poll(() => modelPlaza.locator('svg').evaluate((svg) => {
       const rect = svg.getBoundingClientRect()
       return [rect.width, rect.height]
@@ -1773,7 +1780,7 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=4')
     expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=9')
     expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=5')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=11')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=12')
     expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=5')
     expect(html).toContain('/assets/zero-one-ccswitch-launch-v1.js?v=1')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.js?v=4')

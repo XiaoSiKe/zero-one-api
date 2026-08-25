@@ -84,7 +84,7 @@ require "$recovered_console_index" 'await import("/assets/zero-one-console-parit
 require "$recovered_console_index" 'href="/assets/zero-one-console-parity-v1.css?v=4"'
 require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=9")'
 require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=5"'
-require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=11")'
+require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=12")'
 require "$recovered_header_custom_menu" "style.setProperty('display', 'none', 'important')"
 require "$recovered_console_index" 'window.__ZERO_ONE_PUBLIC_SETTINGS__ = payload.data'
 require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=5"'
@@ -145,6 +145,7 @@ require "$recovered_header_custom_menu" "nav a.sidebar-link[href=\"' + dashboard
 require "$recovered_header_custom_menu" 'publicNavigationSettings'
 require "$recovered_header_custom_menu" 'reconcileSidebarOrder'
 require "$recovered_header_custom_menu" 'previewSidebarSectionOrder'
+require "$recovered_header_custom_menu" 'if (normalizeSidebarOrder(savedOrder).length) return'
 require "$recovered_header_custom_menu" "link.classList.remove('router-link-active', 'router-link-exact-active', 'sidebar-link-active')"
 require "$recovered_header_custom_menu" 'zero-one-sidebar-navigation-icon'
 require "$recovered_header_custom_menu" 'window.__ZERO_ONE_BIND_INTERNAL_LINK__ = bind'

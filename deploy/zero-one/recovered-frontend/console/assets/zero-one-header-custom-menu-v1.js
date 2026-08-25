@@ -406,6 +406,12 @@ function reconcileSidebar(user) {
     container.append(createSidebarLink(item, collapsed))
   }
 
+  const settings = runtimeNavigationSettings(user) || {}
+  const savedOrder = user.role === 'admin'
+    ? settings.admin_sidebar_order
+    : settings.user_sidebar_order
+  if (normalizeSidebarOrder(savedOrder).length) return
+
   let previousLink = insertionAnchor
   for (const item of sidebarItems) {
     const link = [...aside.querySelectorAll(`a[href="/custom/${CSS.escape(item.id)}"]`)]
