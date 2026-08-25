@@ -1,13 +1,13 @@
 {
   "schema_version": 4,
   "repository": "Wei-Shaw/sub2api",
-  "release": "v0.1.181",
-  "commit": "3af5443b224823ae507a50c7b113aa50604409c8",
+  "release": "v0.1.182",
+  "commit": "5a7d469622911a6b1291a692376df5fa03f9ac2e",
   "upstream_sync": {
-    "previous_release": "v0.1.179",
-    "previous_commit": "75f88be5f75c27771836b586f7de1503afa0e3bc",
-    "product_commit": "3f6d59d6fbe977b913c086a74d7144575288fe6b",
-    "merge_commit": "f7e72a6dc6fa96a2b3207e52df815876edfb77f9"
+    "previous_release": "v0.1.181",
+    "previous_commit": "3af5443b224823ae507a50c7b113aa50604409c8",
+    "product_commit": "a3a6923db9dd21d0b454bfdccc53e54caae1116f",
+    "merge_commit": "6b997ae56e59464fa75e0724e54bb66ee7ed1bd2"
   },
   "approved_backports": [],
   "preserve_on_upstream_sync": [
@@ -314,7 +314,7 @@
   "legacy_hotfixes": [
     {
       "name": "approved-v0.1.179-production-correctness-and-billing-compatibility",
-      "valid_for_release": "v0.1.181",
+      "valid_for_release": "v0.1.182",
       "exit_condition": "Remove each path when the first stable upstream release containing its equivalent production-correctness fix becomes the baseline; remove the entire block when no listed path remains.",
       "paths": [
         "backend/internal/handler/admin/admin_basic_handlers_test.go",
@@ -344,7 +344,7 @@
     },
     {
       "name": "approved-v0.1.179-version-metadata-alignment",
-      "valid_for_release": "v0.1.181",
+      "valid_for_release": "v0.1.182",
       "exit_condition": "Remove this metadata alignment when the first stable upstream release makes backend/cmd/server/VERSION match the baseline release.",
       "paths": [
         "backend/cmd/server/VERSION"
@@ -352,7 +352,7 @@
     },
     {
       "name": "approved-v0.1.179-race-safety",
-      "valid_for_release": "v0.1.181",
+      "valid_for_release": "v0.1.182",
       "exit_condition": "Remove each path when the first stable upstream release contains the equivalent race-safe runtime cache and asynchronous test fixture handling.",
       "paths": [
         "backend/internal/service/content_moderation.go",
@@ -363,7 +363,7 @@
     },
     {
       "name": "approved-v0.1.179-go-format-normalization",
-      "valid_for_release": "v0.1.181",
+      "valid_for_release": "v0.1.182",
       "exit_condition": "Remove each path when the first stable upstream release contains the same Go 1.26 formatting normalization.",
       "paths": [
         "backend/internal/handler/auth_current_user_test.go",
@@ -374,7 +374,7 @@
     },
     {
       "name": "approved-v0.1.179-remove-unconditional-sticky-debug-logs",
-      "valid_for_release": "v0.1.181",
+      "valid_for_release": "v0.1.182",
       "exit_condition": "Remove this hotfix when the first stable upstream release removes or explicitly gates the equivalent per-request sticky-session debug logs.",
       "paths": [
         "backend/internal/handler/gateway_handler.go",
@@ -383,7 +383,7 @@
     },
     {
       "name": "approved-v0.1.181-grok-mapping-test-isolation",
-      "valid_for_release": "v0.1.181",
+      "valid_for_release": "v0.1.182",
       "exit_condition": "Remove this hotfix when the first stable upstream release contains equivalent runtime model-mapping isolation in the canonical scheduling test.",
       "paths": [
         "backend/internal/service/openai_model_mapping_test.go"
@@ -391,7 +391,7 @@
     },
     {
       "name": "approved-v0.1.181-x-image-security-update",
-      "valid_for_release": "v0.1.181",
+      "valid_for_release": "v0.1.182",
       "exit_condition": "Remove this hotfix when the first stable upstream release uses golang.org/x/image v0.45.0 or later and includes the compatible Go x-module dependency set.",
       "paths": [
         "backend/go.mod",
