@@ -82,12 +82,12 @@ require "$recovered_console_index" 'await import("/assets/zero-one-local-preview
 require "$recovered_console_index" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=2")'
 require "$recovered_console_index" 'await import("/assets/zero-one-console-parity-v1.js?v=4")'
 require "$recovered_console_index" 'href="/assets/zero-one-console-parity-v1.css?v=4"'
-require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=8")'
-require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=4"'
-require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=9")'
+require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=9")'
+require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=5"'
+require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=10")'
 require "$recovered_header_custom_menu" "style.setProperty('display', 'none', 'important')"
 require "$recovered_console_index" 'window.__ZERO_ONE_PUBLIC_SETTINGS__ = payload.data'
-require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=4"'
+require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=5"'
 require "$recovered_console_index" 'await import("/assets/zero-one-ccswitch-launch-v1.js?v=1")'
 require "$recovered_console_index" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=4")'
 require "$recovered_console_index" 'href="/assets/zero-one-affiliate-admin-v1.css?v=3"'
@@ -143,6 +143,9 @@ require "$recovered_header_custom_menu" "itemCard.hidden = normalizePlacement(ad
 require "$recovered_header_custom_menu" 'data-zero-one-header-menu-placement'
 require "$recovered_header_custom_menu" "nav a.sidebar-link[href=\"' + dashboardPath + '\"]"
 require "$recovered_header_custom_menu" 'publicNavigationSettings'
+require "$recovered_header_custom_menu" 'reconcileSidebarOrder'
+require "$recovered_header_custom_menu" "link.classList.remove('router-link-active', 'router-link-exact-active', 'sidebar-link-active')"
+require "$recovered_header_custom_menu" 'zero-one-sidebar-navigation-icon'
 require "$recovered_header_custom_menu" 'window.__ZERO_ONE_BIND_INTERNAL_LINK__ = bind'
 require "$recovered_header_custom_menu" 'description.textContent !== CUSTOM_MENU_DESCRIPTION'
 require "$recovered_header_custom_menu" 'XMLHttpRequest.prototype.send'

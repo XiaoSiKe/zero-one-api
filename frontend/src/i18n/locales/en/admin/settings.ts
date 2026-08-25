@@ -622,6 +622,12 @@ export default {
           modelPlazaHint: 'When enabled, Model Plaza appears in exactly one selected navigation area.',
           header: 'Header',
           sidebar: 'Sidebar',
+          userOrder: 'Regular User Sidebar Order',
+          userOrderHint: 'Also applies to the administrator My Account section; hidden items keep their position.',
+          adminOrder: 'Administrator Sidebar Order',
+          adminOrderHint: 'Order administration features and administrator-visible custom pages.',
+          moveUp: 'Move up',
+          moveDown: 'Move down',
         },
         headerNavigation: {
           title: 'Header Navigation Entries',

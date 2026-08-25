@@ -249,6 +249,20 @@ func TestUpdateSettingsCustomMenuPlacementDefaultsAndValidates(t *testing.T) {
 	})
 }
 
+func TestUpdateSettingsSidebarOrdersRoundTrip(t *testing.T) {
+	h, repo := newStepUpSwitchTestHandler(t, map[string]string{})
+	recorder := doUpdateSettings(t, h, map[string]any{
+		"user_sidebar_order":  []string{"/keys", "/dashboard", "/model-plaza"},
+		"admin_sidebar_order": []string{"/admin/settings", "/admin/dashboard"},
+	}, nil)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.JSONEq(t, `["/keys","/dashboard","/model-plaza"]`, repo.values[service.SettingKeyUserSidebarOrder])
+	require.JSONEq(t, `["/admin/settings","/admin/dashboard"]`, repo.values[service.SettingKeyAdminSidebarOrder])
+	require.Contains(t, recorder.Body.String(), `"user_sidebar_order":["/keys","/dashboard","/model-plaza"]`)
+	require.Contains(t, recorder.Body.String(), `"admin_sidebar_order":["/admin/settings","/admin/dashboard"]`)
+}
+
 func TestUpdateSettingsCommunityQRPartialPayloadKeepsOpsRuntimeEnabled(t *testing.T) {
 	rawImage := validCommunityQRImageForAdminTest("ops-safe")
 	h, _ := newStepUpSwitchTestHandler(t, map[string]string{

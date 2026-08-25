@@ -1213,6 +1213,8 @@ test.describe('Console header navigation settings contracts', () => {
     await page.clock.setFixedTime(new Date('2026-08-16T12:00:00+08:00'))
     await seedConsole(page, 'v2', {
       communityQrEnabled: true,
+      userSidebarOrder: ['/keys', '/dashboard', '/model-plaza'],
+      adminSidebarOrder: ['/admin/settings', '/admin/dashboard', '/model-plaza'],
       customMenuItems: [
         { id: 'recharge', label: '在线充值', icon_svg: '', url: '', visibility: 'user', placement: 'header', navigation_type: 'qr', qr_description: '扫码联系充值客服', qr_image: `data:image/png;base64,${communityQrPngBase64}`, sort_order: 0 },
         { id: 'docs', label: '接入教程', icon_svg: '', url: 'https://example.com/docs', visibility: 'all', placement: 'sidebar', sort_order: 1 },
@@ -1249,6 +1251,8 @@ test.describe('Console header navigation settings contracts', () => {
     await expect(page.getByTestId('profile-navigation-toggle')).toBeChecked()
     await expect(page.getByTestId('subscription-navigation-toggle')).toBeChecked()
     await expect(page.getByTestId('model-plaza-placement')).toHaveValue('header')
+    await expect(page.getByTestId('user-sidebar-order-list').locator('[data-sidebar-path]').first()).toHaveAttribute('data-sidebar-path', '/keys')
+    await expect(page.getByTestId('admin-sidebar-order-list').locator('[data-sidebar-path]').first()).toHaveAttribute('data-sidebar-path', '/admin/settings')
     await expect(page.getByTestId('custom-menu-visibility-0')).toBeHidden()
     await expect(page.getByTestId('custom-menu-visibility-1')).toBeVisible()
 
@@ -1265,6 +1269,9 @@ test.describe('Console header navigation settings contracts', () => {
     await page.getByTestId('header-navigation-icon-2').getByTestId('navigation-icon-preset-star').click()
     await page.getByTestId('subscription-navigation-toggle').uncheck()
     await page.getByTestId('model-plaza-placement').selectOption('sidebar')
+    await page.getByTestId('user-sidebar-order-section').locator('summary').click()
+    await page.getByTestId('user-sidebar-order-list').locator('[data-sidebar-path="/keys"]').getByRole('button', { name: '下移' }).click()
+    await page.getByTestId('user-sidebar-order-section').locator('summary').click()
 
     await page.waitForTimeout(5_500)
     await page.locator('.settings-tabs-shell').evaluate((element: HTMLElement) => {
@@ -1288,6 +1295,12 @@ test.describe('Console header navigation settings contracts', () => {
       subscription_navigation_enabled: false,
       model_plaza_placement: 'sidebar',
     })
+    expect((submittedBody.user_sidebar_order as string[]).slice(0, 3)).toEqual([
+      '/dashboard', '/keys', '/model-plaza',
+    ])
+    expect((submittedBody.admin_sidebar_order as string[]).slice(0, 3)).toEqual([
+      '/admin/settings', '/admin/dashboard', '/model-plaza',
+    ])
     expect(submittedBody.custom_menu_items).toEqual([
       expect.objectContaining({ id: 'recharge', placement: 'header' }),
       expect.objectContaining({ id: 'docs', placement: 'sidebar' }),
@@ -1345,6 +1358,10 @@ test.describe('Console built-in sidebar navigation contracts', () => {
       profileNavigationEnabled: false,
       subscriptionNavigationEnabled: false,
       modelPlazaPlacement: 'sidebar',
+      userSidebarOrder: ['/keys', '/dashboard', '/model-plaza'],
+      customMenuItems: [
+        { id: 'user-tool', label: '用户工具', icon_svg: '<svg viewBox="0 0 24 24"><path d="M4 12h16"/></svg>', url: 'https://example.com/tool', visibility: 'user', placement: 'sidebar', sort_order: 0 },
+      ],
     })
     await page.goto('http://127.0.0.1:4173/dashboard')
     await page.evaluate(() => {
@@ -1372,9 +1389,17 @@ test.describe('Console built-in sidebar navigation contracts', () => {
     await expect(modelPlaza).toBeVisible()
     expect(await page.locator('aside .sidebar-header [data-zero-one-model-plaza-sidebar]').count())
       .toBe(0)
-    expect(await page.locator('aside nav a[href="/dashboard"]').evaluate((dashboard) =>
-      dashboard.nextElementSibling?.hasAttribute('data-zero-one-model-plaza-sidebar'),
-    )).toBe(true)
+    await expect(page.locator('aside nav a.sidebar-link').nth(0)).toHaveAttribute('href', '/keys')
+    await expect(page.locator('aside nav a.sidebar-link').nth(1)).toHaveAttribute('href', '/dashboard')
+    await expect(page.locator('aside nav a.sidebar-link').nth(2)).toHaveAttribute('data-zero-one-model-plaza-sidebar', 'true')
+    await expect.poll(() => modelPlaza.locator('svg').evaluate((svg) => {
+      const rect = svg.getBoundingClientRect()
+      return [rect.width, rect.height]
+    })).toEqual([20, 20])
+    await expect.poll(() => page.locator('aside nav a[href="/custom/user-tool"]').locator('svg').evaluate((svg) => {
+      const rect = svg.getBoundingClientRect()
+      return [rect.width, rect.height]
+    })).toEqual([20, 20])
   })
 
   test('administrator business Subscriptions stays visible while My Subscriptions hides', async ({ page }) => {
@@ -1382,6 +1407,7 @@ test.describe('Console built-in sidebar navigation contracts', () => {
       profileNavigationEnabled: false,
       subscriptionNavigationEnabled: false,
       modelPlazaPlacement: 'sidebar',
+      adminSidebarOrder: ['/admin/settings', '/admin/dashboard', '/model-plaza'],
     })
     await page.goto('http://127.0.0.1:4173/admin/dashboard')
 
@@ -1393,6 +1419,14 @@ test.describe('Console built-in sidebar navigation contracts', () => {
       getComputedStyle(element).display,
     )).toBe('none')
     await expect(page.locator('aside nav a[data-zero-one-model-plaza-sidebar]')).toHaveCount(1)
+    await expect(page.locator('aside nav .sidebar-section').first().locator('a.sidebar-link').nth(0)).toHaveAttribute('href', '/admin/settings')
+    const dashboard = page.locator('aside nav a[href="/admin/dashboard"]')
+    const modelPlaza = page.locator('aside nav a[data-zero-one-model-plaza-sidebar]')
+    await dashboard.click()
+    await expect(dashboard).toHaveClass(/sidebar-link-active/)
+    await expect(dashboard).toHaveAttribute('aria-current', 'page')
+    await expect(modelPlaza).not.toHaveClass(/(?:router-link-(?:exact-)?active|sidebar-link-active)/)
+    await expect(modelPlaza).not.toHaveAttribute('aria-current', 'page')
   })
 })
 
@@ -1727,10 +1761,10 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/zero-one-navigation-reconciliation-v1.js?v=2')
     expect(html).toContain('/assets/zero-one-console-parity-v1.js?v=4')
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=4')
-    expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=8')
-    expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=4')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=9')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=4')
+    expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=9')
+    expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=5')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=10')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=5')
     expect(html).toContain('/assets/zero-one-ccswitch-launch-v1.js?v=1')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.js?v=4')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.css?v=3')

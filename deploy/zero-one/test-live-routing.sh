@@ -105,8 +105,8 @@ assert_text "$console" 'fetch("/api/v1/settings/public"' 'recovered console did 
 assert_text "$console" 'await import("/assets/zero-one-local-preview-guard-v2.js")' 'recovered console local preview guard is missing'
 assert_text "$console" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=2")' 'recovered Console navigation reconciliation is missing'
 assert_text "$console" 'await import("/assets/zero-one-console-parity-v1.js?v=4")' 'recovered console parity overlay is missing'
-assert_text "$console" 'await import("/assets/zero-one-community-qr-v1.js?v=8")' 'recovered console header-navigation settings adapter is missing'
-assert_text "$console" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=9")' 'recovered console header custom-menu adapter is missing'
+assert_text "$console" 'await import("/assets/zero-one-community-qr-v1.js?v=9")' 'recovered console header-navigation settings adapter is missing'
+assert_text "$console" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=10")' 'recovered console header custom-menu adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=4")' 'recovered console affiliate administration adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-floating-panels-v1.js?v=2")' 'recovered console floating overlay is missing'
 console_asset_path=$(printf '%s' "$console" | grep -o '/assets/[^" ]*\.js' | head -n 1)

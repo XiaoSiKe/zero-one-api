@@ -7,6 +7,43 @@ const MAX_QR_BYTES = 300 * 1024
 const MAX_SVG_BYTES = 10 * 1024
 const SUPPORTED_QR_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp'])
 
+const USER_SIDEBAR_ITEMS = [
+  ['/dashboard', '仪表盘', 'Dashboard'],
+  ['/model-plaza', '模型广场', 'Model Plaza'],
+  ['/keys', 'API 密钥', 'API Keys'],
+  ['/batch-image', '批量图片', 'Batch Images'],
+  ['/usage', '使用记录', 'Usage'],
+  ['/available-channels', '可用渠道', 'Available Channels'],
+  ['/monitor', '渠道状态', 'Channel Status'],
+  ['/subscriptions', '我的订阅', 'My Subscriptions'],
+  ['/purchase', '购买订阅', 'Buy Subscription'],
+  ['/orders', '我的订单', 'My Orders'],
+  ['/redeem', '兑换', 'Redeem'],
+  ['/affiliate', '邀请返利', 'Affiliate'],
+  ['/profile', '个人资料', 'Profile'],
+]
+
+const ADMIN_SIDEBAR_ITEMS = [
+  ['/admin/dashboard', '仪表盘', 'Dashboard'],
+  ['/model-plaza', '模型广场', 'Model Plaza'],
+  ['/admin/ops', '运维监控', 'Operations'],
+  ['/admin/users', '用户管理', 'Users'],
+  ['/admin/groups', '分组管理', 'Groups'],
+  ['/admin/channels', '渠道管理', 'Channels'],
+  ['/admin/subscriptions', '订阅管理', 'Subscriptions'],
+  ['/admin/accounts', '账号管理', 'Accounts'],
+  ['/admin/announcements', '公告', 'Announcements'],
+  ['/admin/proxies', 'IP 管理', 'IP Management'],
+  ['/admin/security-audit', '安全审计', 'Security Audit'],
+  ['/admin/redeem', '兑换码', 'Redeem Codes'],
+  ['/admin/promo-codes', '优惠码', 'Promo Codes'],
+  ['/admin/affiliates', '邀请返利', 'Affiliate'],
+  ['/admin/orders', '订单管理', 'Orders'],
+  ['/admin/usage', '使用记录', 'Usage'],
+  ['/admin/audit-logs', '操作日志', 'Audit Logs'],
+  ['/admin/settings', '系统设置', 'Settings'],
+]
+
 const ICON_PRESETS = [
   ['link', '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H15a4.5 4.5 0 010 9h-1.5m-3 0H9a4.5 4.5 0 010-9h1.5m-3 6h9"/></svg>'],
   ['users', '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.1 9.1 0 00.98.06 8.96 8.96 0 003.02-.52 4.5 4.5 0 00-6.9-3.96M15 6.75a3 3 0 11-6 0 3 3 0 016 0zM4.5 20.12a7.5 7.5 0 0115 0A17.9 17.9 0 0112 21.75a17.9 17.9 0 01-7.5-1.63z"/></svg>'],
@@ -21,6 +58,8 @@ let adminSettingsLoading = false
 let profileNavigationEnabled = true
 let subscriptionNavigationEnabled = true
 let modelPlazaPlacement = 'header'
+let userSidebarOrder = []
+let adminSidebarOrder = []
 
 function localText(zh, en) {
   const locale = localStorage.getItem('sub2api_locale') || document.documentElement.lang || 'zh-CN'
@@ -87,6 +126,11 @@ function normalizeMenuItems(value) {
   }))
 }
 
+function normalizeSidebarOrder(value) {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.filter((path) => typeof path === 'string' && path.startsWith('/')))]
+}
+
 function headerEntries() {
   return adminMenuItems.map((item, index) => ({ item, index }))
     .filter(({ item }) => item.placement === 'header')
@@ -131,6 +175,90 @@ function applySettings(settings) {
   profileNavigationEnabled = settings?.profile_navigation_enabled !== false
   subscriptionNavigationEnabled = settings?.subscription_navigation_enabled !== false
   modelPlazaPlacement = settings?.model_plaza_placement === 'sidebar' ? 'sidebar' : 'header'
+  userSidebarOrder = normalizeSidebarOrder(settings?.user_sidebar_order)
+  adminSidebarOrder = normalizeSidebarOrder(settings?.admin_sidebar_order)
+}
+
+function sidebarOrderCandidates(role) {
+  const base = (role === 'user' ? USER_SIDEBAR_ITEMS : ADMIN_SIDEBAR_ITEMS)
+    .map(([path, zh, en]) => ({ path, label: localText(zh, en) }))
+  const custom = adminMenuItems
+    .filter((item) => {
+      const visible = item.visibility === role || item.visibility === 'all'
+      return visible && item.placement !== 'header'
+    })
+    .map((item) => ({ path: '/custom/' + item.id, label: item.label }))
+  return [...base, ...custom]
+}
+
+function orderedSidebarItems(role) {
+  const candidates = sidebarOrderCandidates(role)
+  const byPath = new Map(candidates.map((item) => [item.path, item]))
+  const order = role === 'user' ? userSidebarOrder : adminSidebarOrder
+  const ordered = order.flatMap((path) => {
+    const item = byPath.get(path)
+    if (!item) return []
+    byPath.delete(path)
+    return [item]
+  })
+  return [...ordered, ...byPath.values()]
+}
+
+function renderSidebarOrderList(container, role) {
+  container.replaceChildren()
+  const items = orderedSidebarItems(role)
+  const order = items.map((item) => item.path)
+  if (role === 'user') userSidebarOrder = order
+  else adminSidebarOrder = order
+  items.forEach((item, index) => {
+    const row = createElement('div', {
+      class: 'zero-one-sidebar-order-item',
+      'data-sidebar-path': item.path,
+    })
+    row.append(createElement('span', { class: 'zero-one-sidebar-order-index' }, String(index + 1)))
+    row.append(createElement('span', { class: 'zero-one-sidebar-order-label' }, item.label))
+    const actions = createElement('span', { class: 'zero-one-sidebar-order-actions' })
+    ;[[-1, '↑', localText('上移', 'Move up'), 'up'], [1, '↓', localText('下移', 'Move down'), 'down']]
+      .forEach(([direction, glyph, label, key]) => {
+        const button = createElement('button', {
+          type: 'button',
+          'aria-label': label,
+          'data-direction': key,
+        }, glyph)
+        button.disabled = index + direction < 0 || index + direction >= items.length
+        button.addEventListener('click', () => {
+          const next = [...order]
+          const target = index + direction
+          ;[next[index], next[target]] = [next[target], next[index]]
+          if (role === 'user') userSidebarOrder = next
+          else adminSidebarOrder = next
+          renderSidebarOrderList(container, role)
+        })
+        actions.append(button)
+      })
+    row.append(actions)
+    container.append(row)
+  })
+}
+
+function createSidebarOrderEditor(role) {
+  const details = createElement('details', {
+    class: 'zero-one-sidebar-order-section',
+    'data-testid': role + '-sidebar-order-section',
+  })
+  details.append(createElement('summary', {}, role === 'user'
+    ? localText('普通用户侧栏顺序', 'Regular User Sidebar Order')
+    : localText('管理员侧栏顺序', 'Administrator Sidebar Order')))
+  details.append(createElement('p', {}, role === 'user'
+    ? localText('同时用于管理员“我的账户”分区；隐藏项目保留其排序位置。', 'Also applies to the administrator My Account section; hidden items keep their position.')
+    : localText('调整管理功能和管理员可见自定义页面的先后顺序。', 'Order administration features and administrator-visible custom pages.')))
+  const list = createElement('div', {
+    class: 'zero-one-sidebar-order-list',
+    'data-testid': role + '-sidebar-order-list',
+  })
+  renderSidebarOrderList(list, role)
+  details.append(list)
+  return details
 }
 
 function createToggleRow(title, hint, checked, testId, onChange) {
@@ -324,6 +452,9 @@ function buildAdminPanel(cardBody, settings) {
   placement.addEventListener('change', () => { modelPlazaPlacement = placement.value })
   placementRow.append(placementCopy, placement)
   builtIn.append(placementRow)
+  const orderEditors = createElement('div', { class: 'zero-one-sidebar-order-grid' })
+  orderEditors.append(createSidebarOrderEditor('user'), createSidebarOrderEditor('admin'))
+  builtIn.append(orderEditors)
 
   const header = createElement('div', { class: 'zero-one-header-navigation-header' })
   const heading = createElement('div')
@@ -381,6 +512,8 @@ function buildAdminPanel(cardBody, settings) {
           profile_navigation_enabled: profileNavigationEnabled,
           subscription_navigation_enabled: subscriptionNavigationEnabled,
           model_plaza_placement: modelPlazaPlacement,
+          user_sidebar_order: userSidebarOrder,
+          admin_sidebar_order: adminSidebarOrder,
           community_qr_enabled: false,
         }),
       }).then(readApiResponse)

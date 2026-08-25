@@ -132,6 +132,8 @@ func TestSettingHandler_GetPublicSettings_ProjectsUserAndAllCustomMenus(t *testi
 			{"id":"admin-help","visibility":"admin"},
 			{"id":"invalid-help","visibility":"guest"}
 		]`,
+		service.SettingKeyUserSidebarOrder:  `["/keys","/dashboard"]`,
+		service.SettingKeyAdminSidebarOrder: `["/admin/settings","/admin/dashboard"]`,
 	}}
 	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
 
@@ -143,7 +145,9 @@ func TestSettingHandler_GetPublicSettings_ProjectsUserAndAllCustomMenus(t *testi
 	require.Equal(t, http.StatusOK, recorder.Code)
 	var resp struct {
 		Data struct {
-			CustomMenuItems []struct {
+			UserSidebarOrder  []string `json:"user_sidebar_order"`
+			AdminSidebarOrder []string `json:"admin_sidebar_order"`
+			CustomMenuItems   []struct {
 				ID         string `json:"id"`
 				Visibility string `json:"visibility"`
 			} `json:"custom_menu_items"`
@@ -151,6 +155,8 @@ func TestSettingHandler_GetPublicSettings_ProjectsUserAndAllCustomMenus(t *testi
 	}
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
 	require.Len(t, resp.Data.CustomMenuItems, 2)
+	require.Equal(t, []string{"/keys", "/dashboard"}, resp.Data.UserSidebarOrder)
+	require.Equal(t, []string{"/admin/settings", "/admin/dashboard"}, resp.Data.AdminSidebarOrder)
 	require.Equal(t, []string{"user-help", "shared-help"}, []string{
 		resp.Data.CustomMenuItems[0].ID,
 		resp.Data.CustomMenuItems[1].ID,

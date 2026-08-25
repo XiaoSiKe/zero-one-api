@@ -198,6 +198,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyProfileNavEnabled,
 		SettingKeySubscriptionNavEnabled,
 		SettingKeyModelPlazaNavPlacement,
+		SettingKeyUserSidebarOrder,
+		SettingKeyAdminSidebarOrder,
 		SettingKeyPurchaseSubscriptionEnabled,
 		SettingKeyPurchaseSubscriptionURL,
 		SettingKeyTableDefaultPageSize,
@@ -364,6 +366,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		ProfileNavEnabled:                   !isFalseSettingValue(settings[SettingKeyProfileNavEnabled]),
 		SubscriptionNavEnabled:              !isFalseSettingValue(settings[SettingKeySubscriptionNavEnabled]),
 		ModelPlazaNavPlacement:              normalizeModelPlazaNavPlacement(settings[SettingKeyModelPlazaNavPlacement]),
+		UserSidebarOrder:                    normalizeSidebarOrderJSON(settings[SettingKeyUserSidebarOrder]),
+		AdminSidebarOrder:                   normalizeSidebarOrderJSON(settings[SettingKeyAdminSidebarOrder]),
 		PurchaseSubscriptionEnabled:         settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:             strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
 		TableDefaultPageSize:                tableDefaultPageSize,
@@ -711,6 +715,8 @@ type PublicSettingsProjection struct {
 	ProfileNavEnabled                   bool                     `json:"profile_navigation_enabled"`
 	SubscriptionNavEnabled              bool                     `json:"subscription_navigation_enabled"`
 	ModelPlazaNavPlacement              string                   `json:"model_plaza_placement"`
+	UserSidebarOrder                    []string                 `json:"user_sidebar_order"`
+	AdminSidebarOrder                   []string                 `json:"admin_sidebar_order"`
 	PurchaseSubscriptionEnabled         bool                     `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL             string                   `json:"purchase_subscription_url"`
 	TableDefaultPageSize                int                      `json:"table_default_page_size"`
@@ -812,6 +818,8 @@ func (s *SettingService) GetPublicSettingsProjection(ctx context.Context) (*Publ
 		ProfileNavEnabled:                   settings.ProfileNavEnabled,
 		SubscriptionNavEnabled:              settings.SubscriptionNavEnabled,
 		ModelPlazaNavPlacement:              settings.ModelPlazaNavPlacement,
+		UserSidebarOrder:                    ParseSidebarOrder(settings.UserSidebarOrder),
+		AdminSidebarOrder:                   ParseSidebarOrder(settings.AdminSidebarOrder),
 		PurchaseSubscriptionEnabled:         settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:             settings.PurchaseSubscriptionURL,
 		TableDefaultPageSize:                settings.TableDefaultPageSize,

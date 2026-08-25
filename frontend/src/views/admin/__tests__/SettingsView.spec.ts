@@ -417,6 +417,8 @@ const baseSettingsResponse = {
   profile_navigation_enabled: true,
   subscription_navigation_enabled: true,
   model_plaza_placement: "header",
+  user_sidebar_order: [],
+  admin_sidebar_order: [],
   table_default_page_size: 20,
   table_page_size_options: [10, 20, 50, 100],
   backend_mode_enabled: false,
@@ -960,6 +962,8 @@ describe("admin SettingsView payment visible method controls", () => {
       profile_navigation_enabled: false,
       subscription_navigation_enabled: true,
       model_plaza_placement: "sidebar",
+      user_sidebar_order: ["/keys", "/dashboard", "/model-plaza"],
+      admin_sidebar_order: ["/admin/settings", "/admin/dashboard", "/model-plaza"],
     });
 
     const wrapper = mountView();
@@ -976,10 +980,17 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(
       (wrapper.get('[data-testid="model-plaza-placement"]').element as HTMLSelectElement).value,
     ).toBe("sidebar");
+    expect(
+      wrapper.get('[data-testid="user-sidebar-order-list"] [data-sidebar-path]').attributes('data-sidebar-path'),
+    ).toBe('/keys');
+    expect(
+      wrapper.get('[data-testid="admin-sidebar-order-list"] [data-sidebar-path]').attributes('data-sidebar-path'),
+    ).toBe('/admin/settings');
 
     await wrapper.get('[data-testid="profile-navigation-toggle"]').setValue(true);
     await wrapper.get('[data-testid="subscription-navigation-toggle"]').setValue(false);
     await wrapper.get('[data-testid="model-plaza-placement"]').setValue("header");
+    await wrapper.get('[data-testid="user-sidebar-order-list"] [data-sidebar-path="/keys"] [data-direction="down"]').trigger('click');
     await wrapper.find("form").trigger("submit.prevent");
     await flushPromises();
 
@@ -988,6 +999,8 @@ describe("admin SettingsView payment visible method controls", () => {
         profile_navigation_enabled: true,
         subscription_navigation_enabled: false,
         model_plaza_placement: "header",
+        user_sidebar_order: expect.arrayContaining(["/dashboard", "/keys", "/model-plaza"]),
+        admin_sidebar_order: expect.arrayContaining(["/admin/settings", "/admin/dashboard", "/model-plaza"]),
       }),
     );
   });

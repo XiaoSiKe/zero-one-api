@@ -269,6 +269,8 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		ProfileNavEnabled:                                      settings.ProfileNavEnabled,
 		SubscriptionNavEnabled:                                 settings.SubscriptionNavEnabled,
 		ModelPlazaNavPlacement:                                 settings.ModelPlazaNavPlacement,
+		UserSidebarOrder:                                       service.ParseSidebarOrder(settings.UserSidebarOrder),
+		AdminSidebarOrder:                                      service.ParseSidebarOrder(settings.AdminSidebarOrder),
 		PurchaseSubscriptionEnabled:                            settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:                                settings.PurchaseSubscriptionURL,
 		TableDefaultPageSize:                                   settings.TableDefaultPageSize,

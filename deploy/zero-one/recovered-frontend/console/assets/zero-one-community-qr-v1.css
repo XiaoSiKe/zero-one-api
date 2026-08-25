@@ -72,6 +72,114 @@
   color: rgb(243 244 246);
 }
 
+.zero-one-sidebar-order-grid {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 1rem;
+}
+
+.zero-one-sidebar-order-section {
+  border: 1px solid rgb(229 231 235);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.dark .zero-one-sidebar-order-section {
+  border-color: rgb(75 85 99);
+}
+
+.zero-one-sidebar-order-section summary {
+  cursor: pointer;
+  color: rgb(55 65 81);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.dark .zero-one-sidebar-order-section summary {
+  color: rgb(229 231 235);
+}
+
+.zero-one-sidebar-order-section > p {
+  margin-top: 0.375rem;
+}
+
+.zero-one-sidebar-order-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.zero-one-sidebar-order-item {
+  display: flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgb(249 250 251);
+}
+
+.dark .zero-one-sidebar-order-item {
+  background: rgb(31 41 55);
+}
+
+.zero-one-sidebar-order-index {
+  width: 1.25rem;
+  flex: none;
+  color: rgb(156 163 175);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.zero-one-sidebar-order-label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: rgb(55 65 81);
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dark .zero-one-sidebar-order-label {
+  color: rgb(209 213 219);
+}
+
+.zero-one-sidebar-order-actions {
+  display: flex;
+  flex: none;
+  gap: 0.25rem;
+}
+
+.zero-one-sidebar-order-actions button {
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.zero-one-sidebar-order-actions button:hover:not(:disabled) {
+  background: rgb(229 231 235);
+}
+
+.dark .zero-one-sidebar-order-actions button:hover:not(:disabled) {
+  background: rgb(55 65 81);
+}
+
+.zero-one-sidebar-order-actions button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+@media (min-width: 1024px) {
+  .zero-one-sidebar-order-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .dark .zero-one-header-navigation-settings {
   border-color: rgb(55 65 81);
 }

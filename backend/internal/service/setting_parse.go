@@ -76,6 +76,8 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyProfileNavEnabled:                         "true",
 		SettingKeySubscriptionNavEnabled:                    "true",
 		SettingKeyModelPlazaNavPlacement:                    "header",
+		SettingKeyUserSidebarOrder:                          "[]",
+		SettingKeyAdminSidebarOrder:                         "[]",
 		SettingKeyLandingNoticeEnabled:                      "false",
 		SettingKeyLandingNoticeText:                         DefaultLandingNoticeText,
 		SettingKeyLandingNoticeURL:                          DefaultLandingNoticeURL,
@@ -380,6 +382,8 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		ProfileNavEnabled:                      !isFalseSettingValue(settings[SettingKeyProfileNavEnabled]),
 		SubscriptionNavEnabled:                 !isFalseSettingValue(settings[SettingKeySubscriptionNavEnabled]),
 		ModelPlazaNavPlacement:                 normalizeModelPlazaNavPlacement(settings[SettingKeyModelPlazaNavPlacement]),
+		UserSidebarOrder:                       normalizeSidebarOrderJSON(settings[SettingKeyUserSidebarOrder]),
+		AdminSidebarOrder:                      normalizeSidebarOrderJSON(settings[SettingKeyAdminSidebarOrder]),
 		PurchaseSubscriptionEnabled:            settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:                strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
 		CustomMenuItems:                        settings[SettingKeyCustomMenuItems],
@@ -1050,6 +1054,50 @@ func normalizeModelPlazaNavPlacement(value string) string {
 		return "sidebar"
 	}
 	return "header"
+}
+
+func normalizeSidebarOrderJSON(value string) string {
+	var paths []string
+	if err := json.Unmarshal([]byte(strings.TrimSpace(value)), &paths); err != nil {
+		return "[]"
+	}
+	normalized := make([]string, 0, len(paths))
+	seen := make(map[string]struct{}, len(paths))
+	for _, path := range paths {
+		path = strings.TrimSpace(path)
+		if path == "" || !strings.HasPrefix(path, "/") || len(path) > 200 {
+			continue
+		}
+		if _, exists := seen[path]; exists {
+			continue
+		}
+		seen[path] = struct{}{}
+		normalized = append(normalized, path)
+		if len(normalized) == 128 {
+			break
+		}
+	}
+	encoded, err := json.Marshal(normalized)
+	if err != nil {
+		return "[]"
+	}
+	return string(encoded)
+}
+
+func ParseSidebarOrder(value string) []string {
+	var paths []string
+	if err := json.Unmarshal([]byte(normalizeSidebarOrderJSON(value)), &paths); err != nil {
+		return []string{}
+	}
+	return paths
+}
+
+func EncodeSidebarOrder(paths []string) string {
+	encoded, err := json.Marshal(paths)
+	if err != nil {
+		return "[]"
+	}
+	return normalizeSidebarOrderJSON(string(encoded))
 }
 
 func normalizeVisibleMethodSettingSource(method, source string, enabled bool) (string, error) {

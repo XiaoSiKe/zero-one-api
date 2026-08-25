@@ -420,6 +420,54 @@ function runtimeNavigationSettings(user) {
   return user?.role === 'admin' ? adminNavigationSettings : publicNavigationSettings
 }
 
+function normalizeSidebarOrder(value) {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.filter((path) => typeof path === 'string' && path.startsWith('/')))]
+}
+
+function navigationPath(link) {
+  if (!(link instanceof HTMLAnchorElement)) return ''
+  const path = new URL(link.href, window.location.origin).pathname
+  return path === '/model-plaza' ? '/model-plaza' : path
+}
+
+function reorderSidebarSection(section, order) {
+  if (!(section instanceof HTMLElement) || !order.length) return
+  const links = [...section.children].filter((node) => node instanceof HTMLAnchorElement && node.classList.contains('sidebar-link'))
+  const positions = new Map(order.map((path, index) => [path, index]))
+  const sorted = links
+    .map((link, index) => ({ link, index }))
+    .sort((left, right) => {
+      const leftPosition = positions.get(navigationPath(left.link)) ?? Number.MAX_SAFE_INTEGER
+      const rightPosition = positions.get(navigationPath(right.link)) ?? Number.MAX_SAFE_INTEGER
+      return leftPosition - rightPosition || left.index - right.index
+    })
+    .map(({ link }) => link)
+  if (sorted.every((link, index) => link === links[index])) return
+  for (const link of sorted) section.append(link)
+}
+
+function reconcileSidebarOrder(user) {
+  if (!user || window.location.pathname === ADMIN_SETTINGS_PATH) return
+  const settings = runtimeNavigationSettings(user) || {}
+  const sections = [...document.querySelectorAll('aside nav .sidebar-section')]
+  if (user.role === 'admin') {
+    reorderSidebarSection(sections[0], normalizeSidebarOrder(settings.admin_sidebar_order))
+    reorderSidebarSection(sections[1], normalizeSidebarOrder(settings.user_sidebar_order))
+  } else {
+    reorderSidebarSection(sections[0], normalizeSidebarOrder(settings.user_sidebar_order))
+  }
+}
+
+function syncModelPlazaActiveState(link) {
+  if (!(link instanceof HTMLAnchorElement)) return
+  link.classList.remove('router-link-active', 'router-link-exact-active')
+  const active = window.location.pathname === '/model-plaza'
+  link.classList.toggle('sidebar-link-active', active)
+  if (active) link.setAttribute('aria-current', 'page')
+  else link.removeAttribute('aria-current')
+}
+
 function setNavigationLinkHidden(selector, hidden, marker) {
   for (const link of document.querySelectorAll(selector)) {
     if (!(link instanceof HTMLElement)) continue
@@ -467,22 +515,30 @@ function reconcileBuiltInNavigation(user) {
     existing?.remove()
     return
   }
-  if (existing) return
+  if (existing instanceof HTMLAnchorElement) {
+    syncModelPlazaActiveState(existing)
+    return
+  }
   const dashboardPath = user.role === 'admin' ? '/admin/dashboard' : '/dashboard'
   const dashboard = aside.querySelector('nav a.sidebar-link[href="' + dashboardPath + '"]')
   if (!(dashboard instanceof HTMLAnchorElement)) return
   const link = document.createElement('a')
   link.href = '/model-plaza?embedded=1'
   link.className = dashboard.className
+  link.classList.remove('router-link-active', 'router-link-exact-active', 'sidebar-link-active')
+  link.removeAttribute('aria-current')
   link.setAttribute('aria-label', localText('模型广场', 'Model Plaza'))
   link.setAttribute('data-zero-one-model-plaza-sidebar', 'true')
-  link.append(createFallbackIcon())
+  const icon = createFallbackIcon()
+  icon.setAttribute('class', 'h-5 w-5 flex-shrink-0 zero-one-sidebar-navigation-icon')
+  link.append(icon)
   const label = document.createElement('span')
   label.className = 'sidebar-label'
   label.textContent = localText('模型广场', 'Model Plaza')
   link.append(label)
   bindInternalLink(link)
   dashboard.after(link)
+  syncModelPlazaActiveState(link)
 }
 
 function findCustomMenuCard() {
@@ -671,6 +727,7 @@ function scan() {
   renderHeaderMenu(user)
   reconcileSidebar(user)
   reconcileBuiltInNavigation(user)
+  reconcileSidebarOrder(user)
   ensurePlacementControls(user)
 }
 

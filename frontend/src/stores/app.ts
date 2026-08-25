@@ -352,6 +352,8 @@ export const useAppStore = defineStore('app', () => {
         profile_navigation_enabled: true,
         subscription_navigation_enabled: true,
         model_plaza_placement: 'header',
+        user_sidebar_order: [],
+        admin_sidebar_order: [],
         payment_enabled: false,
         table_default_page_size: 20,
         table_page_size_options: [10, 20, 50, 100],

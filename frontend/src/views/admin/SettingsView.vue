@@ -6441,6 +6441,96 @@
                       </option>
                     </select>
                   </div>
+
+                  <div class="grid gap-4 py-4 lg:grid-cols-2">
+                    <details
+                      class="rounded-lg border border-gray-200 p-3 dark:border-dark-600"
+                      data-testid="user-sidebar-order-section"
+                    >
+                      <summary class="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ t("admin.settings.site.navigation.userOrder") }}
+                      </summary>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {{ t("admin.settings.site.navigation.userOrderHint") }}
+                      </p>
+                      <div
+                        class="mt-3 space-y-2"
+                        data-testid="user-sidebar-order-list"
+                      >
+                        <div
+                          v-for="(item, index) in userSidebarOrderItems"
+                          :key="item.path"
+                          :data-sidebar-path="item.path"
+                          class="flex min-h-10 items-center gap-3 rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-800"
+                        >
+                          <span class="w-5 shrink-0 text-center text-xs tabular-nums text-gray-400">{{ index + 1 }}</span>
+                          <span class="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{{ item.label }}</span>
+                          <div class="flex shrink-0 gap-1">
+                            <button
+                              type="button"
+                              class="btn-ghost btn-icon h-8 w-8"
+                              data-direction="up"
+                              :aria-label="t('admin.settings.site.navigation.moveUp')"
+                              :disabled="index === 0"
+                              @click="moveSidebarOrder('user', index, -1)"
+                            >↑</button>
+                            <button
+                              type="button"
+                              class="btn-ghost btn-icon h-8 w-8"
+                              data-direction="down"
+                              :aria-label="t('admin.settings.site.navigation.moveDown')"
+                              :disabled="index === userSidebarOrderItems.length - 1"
+                              @click="moveSidebarOrder('user', index, 1)"
+                            >↓</button>
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+
+                    <details
+                      class="rounded-lg border border-gray-200 p-3 dark:border-dark-600"
+                      data-testid="admin-sidebar-order-section"
+                    >
+                      <summary class="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ t("admin.settings.site.navigation.adminOrder") }}
+                      </summary>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {{ t("admin.settings.site.navigation.adminOrderHint") }}
+                      </p>
+                      <div
+                        class="mt-3 space-y-2"
+                        data-testid="admin-sidebar-order-list"
+                      >
+                        <div
+                          v-for="(item, index) in adminSidebarOrderItems"
+                          :key="item.path"
+                          :data-sidebar-path="item.path"
+                          class="flex min-h-10 items-center gap-3 rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-800"
+                        >
+                          <span class="w-5 shrink-0 text-center text-xs tabular-nums text-gray-400">{{ index + 1 }}</span>
+                          <span class="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{{ item.label }}</span>
+                          <div class="flex shrink-0 gap-1">
+                            <button
+                              type="button"
+                              class="btn-ghost btn-icon h-8 w-8"
+                              data-direction="up"
+                              :aria-label="t('admin.settings.site.navigation.moveUp')"
+                              :disabled="index === 0"
+                              @click="moveSidebarOrder('admin', index, -1)"
+                            >↑</button>
+                            <button
+                              type="button"
+                              class="btn-ghost btn-icon h-8 w-8"
+                              data-direction="down"
+                              :aria-label="t('admin.settings.site.navigation.moveDown')"
+                              :disabled="index === adminSidebarOrderItems.length - 1"
+                              @click="moveSidebarOrder('admin', index, 1)"
+                            >↓</button>
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
                 </div>
               </div>
 
@@ -9514,6 +9604,8 @@ const form = reactive<SettingsForm>({
   profile_navigation_enabled: true,
   subscription_navigation_enabled: true,
   model_plaza_placement: "header" as "header" | "sidebar",
+  user_sidebar_order: [] as string[],
+  admin_sidebar_order: [] as string[],
   payment_enabled: false,
   risk_control_enabled: false,
   cyber_session_block_enabled: false,
@@ -9769,6 +9861,88 @@ const headerNavigationEntries = computed(() =>
 const customMenuPageEntries = computed(() =>
   indexedCustomMenuItems.value.filter(({ item }) => item.placement !== "header"),
 );
+
+interface SidebarOrderItem {
+  path: string;
+  label: string;
+}
+
+const userSidebarOrderCandidates = computed<SidebarOrderItem[]>(() => [
+  { path: "/dashboard", label: t("nav.dashboard") },
+  { path: "/model-plaza", label: t("nav.modelPlaza") },
+  { path: "/keys", label: t("nav.apiKeys") },
+  { path: "/batch-image", label: t("nav.batchImage") },
+  { path: "/usage", label: t("nav.usage") },
+  { path: "/available-channels", label: t("nav.availableChannels") },
+  { path: "/monitor", label: t("nav.channelStatus") },
+  { path: "/subscriptions", label: t("nav.mySubscriptions") },
+  { path: "/purchase", label: t("nav.buySubscription") },
+  { path: "/orders", label: t("nav.myOrders") },
+  { path: "/redeem", label: t("nav.redeem") },
+  { path: "/affiliate", label: t("nav.affiliate") },
+  { path: "/profile", label: t("nav.profile") },
+  ...form.custom_menu_items
+    .filter((item) =>
+      (item.visibility === "user" || item.visibility === "all") &&
+      item.placement !== "header",
+    )
+    .map((item) => ({ path: `/custom/${item.id}`, label: item.label })),
+]);
+
+const adminSidebarOrderCandidates = computed<SidebarOrderItem[]>(() => [
+  { path: "/admin/dashboard", label: t("nav.dashboard") },
+  { path: "/model-plaza", label: t("nav.modelPlaza") },
+  { path: "/admin/ops", label: t("nav.ops") },
+  { path: "/admin/users", label: t("nav.users") },
+  { path: "/admin/groups", label: t("nav.groups") },
+  { path: "/admin/channels", label: t("nav.channelManagement") },
+  { path: "/admin/subscriptions", label: t("nav.subscriptions") },
+  { path: "/admin/accounts", label: t("nav.accounts") },
+  { path: "/admin/announcements", label: t("nav.announcements") },
+  { path: "/admin/proxies", label: t("nav.proxies") },
+  { path: "/admin/security-audit", label: t("nav.securityAudit") },
+  { path: "/admin/redeem", label: t("nav.redeemCodes") },
+  { path: "/admin/promo-codes", label: t("nav.promoCodes") },
+  { path: "/admin/affiliates", label: t("nav.affiliateManagement") },
+  { path: "/admin/orders", label: t("nav.orderManagement") },
+  { path: "/admin/usage", label: t("nav.usage") },
+  { path: "/admin/audit-logs", label: t("nav.auditLogs") },
+  { path: "/admin/settings", label: t("nav.settings") },
+  ...form.custom_menu_items
+    .filter((item) =>
+      (item.visibility === "admin" || item.visibility === "all") &&
+      item.placement !== "header",
+    )
+    .map((item) => ({ path: `/custom/${item.id}`, label: item.label })),
+]);
+
+function orderSidebarItems(items: SidebarOrderItem[], order: string[]): SidebarOrderItem[] {
+  const byPath = new Map(items.map((item) => [item.path, item]));
+  const ordered = order.flatMap((path) => {
+    const item = byPath.get(path);
+    if (!item) return [];
+    byPath.delete(path);
+    return [item];
+  });
+  return [...ordered, ...byPath.values()];
+}
+
+const userSidebarOrderItems = computed(() =>
+  orderSidebarItems(userSidebarOrderCandidates.value, form.user_sidebar_order),
+);
+const adminSidebarOrderItems = computed(() =>
+  orderSidebarItems(adminSidebarOrderCandidates.value, form.admin_sidebar_order),
+);
+
+function moveSidebarOrder(role: "user" | "admin", index: number, direction: -1 | 1): void {
+  const items = role === "user" ? userSidebarOrderItems.value : adminSidebarOrderItems.value;
+  const target = index + direction;
+  if (target < 0 || target >= items.length) return;
+  const order = items.map((item) => item.path);
+  [order[index], order[target]] = [order[target], order[index]];
+  if (role === "user") form.user_sidebar_order = order;
+  else form.admin_sidebar_order = order;
+}
 
 // 人机验证 UI 状态：单卡片「总开关 + 服务商单选」，落库仍是三个独立
 // enabled 键（与上游一致），由下面的映射保证同一时间至多一家启用。
@@ -10816,6 +10990,14 @@ async function loadSettings() {
       settings.subscription_navigation_enabled !== false;
     form.model_plaza_placement =
       settings.model_plaza_placement === "sidebar" ? "sidebar" : "header";
+    form.user_sidebar_order = orderSidebarItems(
+      userSidebarOrderCandidates.value,
+      Array.isArray(settings.user_sidebar_order) ? settings.user_sidebar_order : [],
+    ).map((item) => item.path);
+    form.admin_sidebar_order = orderSidebarItems(
+      adminSidebarOrderCandidates.value,
+      Array.isArray(settings.admin_sidebar_order) ? settings.admin_sidebar_order : [],
+    ).map((item) => item.path);
     syncCaptchaProviderSelection();
     if (!form.claude_oauth_system_prompt_blocks?.trim()) {
       form.claude_oauth_system_prompt_blocks =
@@ -11248,6 +11430,8 @@ async function saveSettings() {
       profile_navigation_enabled: form.profile_navigation_enabled,
       subscription_navigation_enabled: form.subscription_navigation_enabled,
       model_plaza_placement: form.model_plaza_placement,
+      user_sidebar_order: userSidebarOrderItems.value.map((item) => item.path),
+      admin_sidebar_order: adminSidebarOrderItems.value.map((item) => item.path),
       table_default_page_size: form.table_default_page_size,
       table_page_size_options: form.table_page_size_options,
       custom_menu_items: form.custom_menu_items,

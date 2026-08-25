@@ -171,6 +171,8 @@ type SystemSettings struct {
 	ProfileNavEnabled           bool             `json:"profile_navigation_enabled"`
 	SubscriptionNavEnabled      bool             `json:"subscription_navigation_enabled"`
 	ModelPlazaNavPlacement      string           `json:"model_plaza_placement"`
+	UserSidebarOrder            []string         `json:"user_sidebar_order"`
+	AdminSidebarOrder           []string         `json:"admin_sidebar_order"`
 	PurchaseSubscriptionEnabled bool             `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL     string           `json:"purchase_subscription_url"`
 	TableDefaultPageSize        int              `json:"table_default_page_size"`

@@ -615,6 +615,12 @@ export default {
           modelPlazaHint: '模型广场启用后，只在选定的一个导航位置显示。',
           header: '顶部导航',
           sidebar: '侧边导航',
+          userOrder: '普通用户侧栏顺序',
+          userOrderHint: '同时用于管理员“我的账户”分区；隐藏项目保留其排序位置。',
+          adminOrder: '管理员侧栏顺序',
+          adminOrderHint: '调整管理功能和管理员可见自定义页面的先后顺序。',
+          moveUp: '上移',
+          moveDown: '下移',
         },
         headerNavigation: {
           title: '顶部导航入口',

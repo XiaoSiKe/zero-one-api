@@ -376,6 +376,8 @@ export async function seedConsole(
     profileNavigationEnabled?: boolean
     subscriptionNavigationEnabled?: boolean
     modelPlazaPlacement?: 'header' | 'sidebar'
+    userSidebarOrder?: string[]
+    adminSidebarOrder?: string[]
     customMenuItems?: Array<{
       id: string
       label: string
@@ -409,6 +411,8 @@ export async function seedConsole(
     profile_navigation_enabled: options.profileNavigationEnabled ?? true,
     subscription_navigation_enabled: options.subscriptionNavigationEnabled ?? true,
     model_plaza_placement: options.modelPlazaPlacement ?? 'header',
+    user_sidebar_order: options.userSidebarOrder ?? [],
+    admin_sidebar_order: options.adminSidebarOrder ?? [],
   }
   let communityQrImage = options.communityQrImage ?? ''
   const affiliateUsers = [
@@ -507,6 +511,8 @@ export async function seedConsole(
         profile_navigation_enabled?: boolean
         subscription_navigation_enabled?: boolean
         model_plaza_placement?: 'header' | 'sidebar'
+        user_sidebar_order?: string[]
+        admin_sidebar_order?: string[]
         affiliate_enabled?: boolean
         affiliate_rebate_rate?: number
         affiliate_rebate_freeze_hours?: number
@@ -537,6 +543,12 @@ export async function seedConsole(
       }
       if (submitted.model_plaza_placement === 'header' || submitted.model_plaza_placement === 'sidebar') {
         settings.model_plaza_placement = submitted.model_plaza_placement
+      }
+      if (Array.isArray(submitted.user_sidebar_order)) {
+        settings.user_sidebar_order = submitted.user_sidebar_order
+      }
+      if (Array.isArray(submitted.admin_sidebar_order)) {
+        settings.admin_sidebar_order = submitted.admin_sidebar_order
       }
       if (typeof submitted.affiliate_enabled === 'boolean') {
         settings.affiliate_enabled = submitted.affiliate_enabled

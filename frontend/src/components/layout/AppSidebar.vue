@@ -285,6 +285,8 @@ const subscriptionNavigationEnabled = computed(
 const modelPlazaPlacement = computed(() =>
   appStore.cachedPublicSettings?.model_plaza_placement === 'sidebar' ? 'sidebar' : 'header'
 )
+const userSidebarOrder = computed(() => appStore.cachedPublicSettings?.user_sidebar_order ?? [])
+const adminSidebarOrder = computed(() => appStore.cachedPublicSettings?.admin_sidebar_order ?? [])
 
 // SVG Icon Components
 const DashboardIcon = {
@@ -757,15 +759,33 @@ function finalizeNav(items: NavItem[]): NavItem[] {
   return authStore.isSimpleMode ? visible.filter(item => !item.hideInSimpleMode) : visible
 }
 
+function sortNavItems(items: NavItem[], order: string[]): NavItem[] {
+  if (!order.length) return items
+  const positions = new Map(order.map((path, index) => [path, index]))
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((left, right) => {
+      const leftPosition = positions.get(left.item.path) ?? Number.MAX_SAFE_INTEGER
+      const rightPosition = positions.get(right.item.path) ?? Number.MAX_SAFE_INTEGER
+      return leftPosition - rightPosition || left.index - right.index
+    })
+    .map(({ item }) => item)
+}
+
 // User navigation items (for regular users)
-const userNavItems = computed((): NavItem[] => finalizeNav(buildSelfNavItems(true)))
+const userNavItems = computed((): NavItem[] =>
+  sortNavItems(finalizeNav(buildSelfNavItems(true)), userSidebarOrder.value)
+)
 
 // Personal navigation items (for admin's "My Account" section, without Dashboard).
 // Admins access 可用渠道 from this section just like regular users — there is no
 // separate admin entry, since the page is purely a user-facing view. Affiliate is
 // excluded because administrators use the single top-level affiliate workspace.
 const personalNavItems = computed((): NavItem[] =>
-  finalizeNav(buildSelfNavItems(false).filter((item) => item.path !== '/affiliate'))
+  sortNavItems(
+    finalizeNav(buildSelfNavItems(false).filter((item) => item.path !== '/affiliate')),
+    userSidebarOrder.value
+  )
 )
 
 // Custom menu items filtered by visibility
@@ -858,14 +878,14 @@ const adminNavItems = computed((): NavItem[] => {
     for (const cm of customMenuItemsForAdmin.value) {
       filtered.push({ path: `/custom/${cm.id}`, label: cm.label, icon: null, iconSvg: cm.icon_svg })
     }
-    return filtered
+    return sortNavItems(filtered, adminSidebarOrder.value)
   }
 
   visible.push({ path: '/admin/settings', label: t('nav.settings'), icon: CogIcon })
   for (const cm of customMenuItemsForAdmin.value) {
     visible.push({ path: `/custom/${cm.id}`, label: cm.label, icon: null, iconSvg: cm.icon_svg })
   }
-  return visible
+  return sortNavItems(visible, adminSidebarOrder.value)
 })
 
 function toggleSidebar() {
@@ -1119,6 +1139,12 @@ onBeforeUnmount(() => {
 
 /* Custom SVG icon in sidebar: constrain size without overriding uploaded SVG colors */
 .sidebar-svg-icon {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 1.25rem;
+  align-items: center;
+  justify-content: center;
   color: currentColor;
 }
 
@@ -1126,6 +1152,8 @@ onBeforeUnmount(() => {
   display: block;
   width: 1.25rem;
   height: 1.25rem;
+  max-width: 1.25rem;
+  max-height: 1.25rem;
 }
 
 .sidebar-subnav-enter-active {

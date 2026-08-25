@@ -467,6 +467,12 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.ModelPlazaNavPlacement != after.ModelPlazaNavPlacement {
 		changed = append(changed, "model_plaza_placement")
 	}
+	if before.UserSidebarOrder != after.UserSidebarOrder {
+		changed = append(changed, "user_sidebar_order")
+	}
+	if before.AdminSidebarOrder != after.AdminSidebarOrder {
+		changed = append(changed, "admin_sidebar_order")
+	}
 	if before.TableDefaultPageSize != after.TableDefaultPageSize {
 		changed = append(changed, "table_default_page_size")
 	}

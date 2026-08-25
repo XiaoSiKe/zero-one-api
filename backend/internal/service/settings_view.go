@@ -168,6 +168,8 @@ type SystemSettings struct {
 	ProfileNavEnabled           bool
 	SubscriptionNavEnabled      bool
 	ModelPlazaNavPlacement      string
+	UserSidebarOrder            string // JSON array of route paths
+	AdminSidebarOrder           string // JSON array of route paths
 	PurchaseSubscriptionEnabled bool
 	PurchaseSubscriptionURL     string
 	TableDefaultPageSize        int
@@ -368,6 +370,8 @@ type PublicSettings struct {
 	ProfileNavEnabled                   bool
 	SubscriptionNavEnabled              bool
 	ModelPlazaNavPlacement              string
+	UserSidebarOrder                    string // JSON array of route paths
+	AdminSidebarOrder                   string // JSON array of route paths
 
 	PurchaseSubscriptionEnabled bool
 	PurchaseSubscriptionURL     string

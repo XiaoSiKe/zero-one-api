@@ -173,6 +173,8 @@ type UpdateSettingsRequest struct {
 	ProfileNavEnabled           *bool                 `json:"profile_navigation_enabled"`
 	SubscriptionNavEnabled      *bool                 `json:"subscription_navigation_enabled"`
 	ModelPlazaNavPlacement      *string               `json:"model_plaza_placement"`
+	UserSidebarOrder            *[]string             `json:"user_sidebar_order"`
+	AdminSidebarOrder           *[]string             `json:"admin_sidebar_order"`
 	PurchaseSubscriptionEnabled *bool                 `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL     *string               `json:"purchase_subscription_url"`
 	TableDefaultPageSize        int                   `json:"table_default_page_size"`
@@ -584,6 +586,14 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	if modelPlazaPlacement != "header" && modelPlazaPlacement != "sidebar" {
 		response.BadRequest(c, "Model Plaza placement must be 'header' or 'sidebar'")
 		return
+	}
+	userSidebarOrder := previousSettings.UserSidebarOrder
+	if req.UserSidebarOrder != nil {
+		userSidebarOrder = service.EncodeSidebarOrder(*req.UserSidebarOrder)
+	}
+	adminSidebarOrder := previousSettings.AdminSidebarOrder
+	if req.AdminSidebarOrder != nil {
+		adminSidebarOrder = service.EncodeSidebarOrder(*req.AdminSidebarOrder)
 	}
 	landingNoticeEnabled, landingNoticeText, landingNoticeURL, err = service.NormalizeLandingNoticeSettings(
 		landingNoticeEnabled,
@@ -1744,6 +1754,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ProfileNavEnabled:                      profileNavigationEnabled,
 		SubscriptionNavEnabled:                 subscriptionNavigationEnabled,
 		ModelPlazaNavPlacement:                 modelPlazaPlacement,
+		UserSidebarOrder:                       userSidebarOrder,
+		AdminSidebarOrder:                      adminSidebarOrder,
 		PurchaseSubscriptionEnabled:            purchaseEnabled,
 		PurchaseSubscriptionURL:                purchaseURL,
 		TableDefaultPageSize:                   req.TableDefaultPageSize,
@@ -2384,6 +2396,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ProfileNavEnabled:                                      updatedSettings.ProfileNavEnabled,
 		SubscriptionNavEnabled:                                 updatedSettings.SubscriptionNavEnabled,
 		ModelPlazaNavPlacement:                                 updatedSettings.ModelPlazaNavPlacement,
+		UserSidebarOrder:                                       service.ParseSidebarOrder(updatedSettings.UserSidebarOrder),
+		AdminSidebarOrder:                                      service.ParseSidebarOrder(updatedSettings.AdminSidebarOrder),
 		PurchaseSubscriptionEnabled:                            updatedSettings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:                                updatedSettings.PurchaseSubscriptionURL,
 		TableDefaultPageSize:                                   updatedSettings.TableDefaultPageSize,

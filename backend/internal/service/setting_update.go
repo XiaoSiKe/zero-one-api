@@ -377,6 +377,8 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyProfileNavEnabled] = strconv.FormatBool(settings.ProfileNavEnabled)
 	updates[SettingKeySubscriptionNavEnabled] = strconv.FormatBool(settings.SubscriptionNavEnabled)
 	updates[SettingKeyModelPlazaNavPlacement] = normalizeModelPlazaNavPlacement(settings.ModelPlazaNavPlacement)
+	updates[SettingKeyUserSidebarOrder] = normalizeSidebarOrderJSON(settings.UserSidebarOrder)
+	updates[SettingKeyAdminSidebarOrder] = normalizeSidebarOrderJSON(settings.AdminSidebarOrder)
 	updates[SettingKeyPurchaseSubscriptionEnabled] = strconv.FormatBool(settings.PurchaseSubscriptionEnabled)
 	updates[SettingKeyPurchaseSubscriptionURL] = strings.TrimSpace(settings.PurchaseSubscriptionURL)
 	tableDefaultPageSize, tablePageSizeOptions := normalizeTablePreferences(

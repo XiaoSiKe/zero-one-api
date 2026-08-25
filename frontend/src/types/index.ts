@@ -246,6 +246,8 @@ export interface PublicSettings {
   profile_navigation_enabled?: boolean
   subscription_navigation_enabled?: boolean
   model_plaza_placement?: 'header' | 'sidebar'
+  user_sidebar_order?: string[]
+  admin_sidebar_order?: string[]
   payment_enabled: boolean
   risk_control_enabled: boolean
   table_default_page_size: number

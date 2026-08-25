@@ -87,6 +87,14 @@ describe('AppSidebar configurable built-in navigation', () => {
     expect(componentSource).toContain("path: '/model-plaza'")
     expect(componentSource).toContain('flagModelPlazaInSidebar')
   })
+
+  it('applies persisted role-specific sidebar order after visibility filtering', () => {
+    expect(componentSource).toContain('user_sidebar_order')
+    expect(componentSource).toContain('admin_sidebar_order')
+    expect(componentSource).toContain('sortNavItems')
+    expect(componentSource).toContain('userSidebarOrder.value')
+    expect(componentSource).toContain('adminSidebarOrder.value')
+  })
 })
 
 describe('AppSidebar affiliate navigation', () => {
