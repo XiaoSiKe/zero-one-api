@@ -195,6 +195,9 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyHomeContent,
 		SettingKeyCompactHomeEnabled,
 		SettingKeyHideCcsImportButton,
+		SettingKeyProfileNavEnabled,
+		SettingKeySubscriptionNavEnabled,
+		SettingKeyModelPlazaNavPlacement,
 		SettingKeyPurchaseSubscriptionEnabled,
 		SettingKeyPurchaseSubscriptionURL,
 		SettingKeyTableDefaultPageSize,
@@ -358,6 +361,9 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		HomeContent:                         settings[SettingKeyHomeContent],
 		CompactHomeEnabled:                  settings[SettingKeyCompactHomeEnabled] == "true",
 		HideCcsImportButton:                 settings[SettingKeyHideCcsImportButton] == "true",
+		ProfileNavEnabled:                   !isFalseSettingValue(settings[SettingKeyProfileNavEnabled]),
+		SubscriptionNavEnabled:              !isFalseSettingValue(settings[SettingKeySubscriptionNavEnabled]),
+		ModelPlazaNavPlacement:              normalizeModelPlazaNavPlacement(settings[SettingKeyModelPlazaNavPlacement]),
 		PurchaseSubscriptionEnabled:         settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:             strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
 		TableDefaultPageSize:                tableDefaultPageSize,
@@ -420,6 +426,42 @@ func (s *SettingService) GetCommunityQRImage(ctx context.Context) (string, bool,
 		return "", false, fmt.Errorf("get community QR image: %w", err)
 	}
 	return settings[SettingKeyCommunityQRImage], settings[SettingKeyCommunityQREnabled] == "true", nil
+}
+
+// GetHeaderNavigationQRImage returns one configured header QR image without
+// exposing image data through the public settings projection.
+func (s *SettingService) GetHeaderNavigationQRImage(ctx context.Context, id, role string) (string, bool, error) {
+	settings, err := s.settingRepo.GetMultiple(ctx, []string{
+		SettingKeyCustomMenuItems,
+		SettingKeyHeaderNavQRImages,
+	})
+	if err != nil {
+		return "", false, err
+	}
+	var items []struct {
+		ID         string `json:"id"`
+		Placement  string `json:"placement"`
+		NavType    string `json:"navigation_type"`
+		Visibility string `json:"visibility"`
+	}
+	if err := json.Unmarshal([]byte(settings[SettingKeyCustomMenuItems]), &items); err != nil {
+		return "", false, nil
+	}
+	images := make(map[string]string)
+	if err := json.Unmarshal([]byte(settings[SettingKeyHeaderNavQRImages]), &images); err != nil {
+		return "", false, nil
+	}
+	for _, item := range items {
+		visible := item.Visibility == "all" || item.Visibility == role
+		if item.ID == id && item.Placement == "header" && item.NavType == "qr" && visible {
+			rawImage := images[item.ID]
+			if _, ok := DecodeCommunityQRImage(rawImage); ok {
+				return rawImage, true, nil
+			}
+			return "", false, nil
+		}
+	}
+	return "", false, nil
 }
 
 // channelMonitorIntervalMin / channelMonitorIntervalMax bound the default interval
@@ -612,6 +654,8 @@ type PublicCustomMenuItem struct {
 	PageSlug   string `json:"page_slug,omitempty"`
 	Visibility string `json:"visibility"`
 	Placement  string `json:"placement,omitempty"`
+	NavType    string `json:"navigation_type,omitempty"`
+	QRDesc     string `json:"qr_description,omitempty"`
 	SortOrder  int    `json:"sort_order"`
 }
 
@@ -664,6 +708,9 @@ type PublicSettingsProjection struct {
 	HomeContent                         string                   `json:"home_content"`
 	CompactHomeEnabled                  bool                     `json:"compact_home_enabled"`
 	HideCcsImportButton                 bool                     `json:"hide_ccs_import_button"`
+	ProfileNavEnabled                   bool                     `json:"profile_navigation_enabled"`
+	SubscriptionNavEnabled              bool                     `json:"subscription_navigation_enabled"`
+	ModelPlazaNavPlacement              string                   `json:"model_plaza_placement"`
 	PurchaseSubscriptionEnabled         bool                     `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL             string                   `json:"purchase_subscription_url"`
 	TableDefaultPageSize                int                      `json:"table_default_page_size"`
@@ -762,6 +809,9 @@ func (s *SettingService) GetPublicSettingsProjection(ctx context.Context) (*Publ
 		HomeContent:                         settings.HomeContent,
 		CompactHomeEnabled:                  settings.CompactHomeEnabled,
 		HideCcsImportButton:                 settings.HideCcsImportButton,
+		ProfileNavEnabled:                   settings.ProfileNavEnabled,
+		SubscriptionNavEnabled:              settings.SubscriptionNavEnabled,
+		ModelPlazaNavPlacement:              settings.ModelPlazaNavPlacement,
 		PurchaseSubscriptionEnabled:         settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:             settings.PurchaseSubscriptionURL,
 		TableDefaultPageSize:                settings.TableDefaultPageSize,
@@ -814,15 +864,37 @@ func parsePublicCustomMenuItems(raw string) []PublicCustomMenuItem {
 	if raw == "" || raw == "[]" {
 		return []PublicCustomMenuItem{}
 	}
-	var items []PublicCustomMenuItem
+	var items []struct {
+		ID         string `json:"id"`
+		Label      string `json:"label"`
+		IconSVG    string `json:"icon_svg"`
+		URL        string `json:"url"`
+		PageSlug   string `json:"page_slug,omitempty"`
+		Visibility string `json:"visibility"`
+		Placement  string `json:"placement,omitempty"`
+		NavType    string `json:"navigation_type,omitempty"`
+		QRDesc     string `json:"qr_description,omitempty"`
+		SortOrder  int    `json:"sort_order"`
+	}
 	if err := json.Unmarshal([]byte(raw), &items); err != nil {
 		return []PublicCustomMenuItem{}
 	}
 	filtered := make([]PublicCustomMenuItem, 0, len(items))
 	for _, item := range items {
-		if item.Visibility == "user" || item.Visibility == "all" {
-			filtered = append(filtered, item)
+		if item.Visibility != "user" && item.Visibility != "all" {
+			continue
 		}
+		if item.NavType == "qr" {
+			if item.Placement != "header" {
+				continue
+			}
+		}
+		filtered = append(filtered, PublicCustomMenuItem{
+			ID: item.ID, Label: item.Label, IconSVG: item.IconSVG, URL: item.URL,
+			PageSlug: item.PageSlug, Visibility: item.Visibility, Placement: item.Placement,
+			NavType: item.NavType, QRDesc: item.QRDesc,
+			SortOrder: item.SortOrder,
+		})
 	}
 	return filtered
 }

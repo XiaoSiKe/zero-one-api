@@ -2,11 +2,16 @@
   <button
     type="button"
     class="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/20 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white dark:focus-visible:ring-white/20 sm:flex"
-    data-testid="community-qr-button"
+    :data-testid="testId"
     :aria-label="t('communityQr.open')"
     @click="openDialog"
   >
-    <Icon name="users" size="sm" />
+    <span
+      v-if="iconSvg"
+      class="h-4 w-4 [&>svg]:h-full [&>svg]:w-full"
+      v-html="sanitizedIconSvg"
+    />
+    <Icon v-else name="users" size="sm" />
     <span>{{ dialogTitle }}</span>
   </button>
 
@@ -71,23 +76,30 @@ import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 import apiClient from '@/api/client'
+import { sanitizeSvg } from '@/utils/sanitize'
 
 const { t } = useI18n()
 
 const props = withDefaults(defineProps<{
   title?: string
   description?: string
+  imageEndpoint?: string
+  testId?: string
+  iconSvg?: string
 }>(), {
   title: '',
   description: '',
+  imageEndpoint: '/settings/community-qr',
+  testId: 'community-qr-button',
+  iconSvg: '',
 })
 
 const dialogTitle = computed(() => props.title.trim() || t('communityQr.title'))
 const dialogDescription = computed(() =>
   props.description.trim() || t('communityQr.description')
 )
+const sanitizedIconSvg = computed(() => sanitizeSvg(props.iconSvg))
 
-const communityQrImageEndpoint = '/settings/community-qr'
 const supportedImageTypes = new Set(['image/png', 'image/jpeg', 'image/webp'])
 const dialogOpen = ref(false)
 const imageLoading = ref(false)
@@ -112,7 +124,7 @@ async function loadImage() {
   activeRequest = controller
 
   try {
-    const response = await apiClient.get<Blob>(communityQrImageEndpoint, {
+    const response = await apiClient.get<Blob>(props.imageEndpoint, {
       responseType: 'blob',
       signal: controller.signal,
     })

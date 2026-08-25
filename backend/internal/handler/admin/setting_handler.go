@@ -132,6 +132,10 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 	}
 	passkeyConfigured, passkeyRPID, passkeyRPOrigins := h.settingService.PasskeyConfiguration()
 
+	customMenuItems := dto.AttachHeaderNavQRImages(
+		dto.ParseCustomMenuItems(settings.CustomMenuItems),
+		settings.HeaderNavQRImages,
+	)
 	payload := dto.SystemSettings{
 		RegistrationEnabled:                                    settings.RegistrationEnabled,
 		EmailVerifyEnabled:                                     settings.EmailVerifyEnabled,
@@ -262,11 +266,14 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		HomeContent:                                            settings.HomeContent,
 		CompactHomeEnabled:                                     settings.CompactHomeEnabled,
 		HideCcsImportButton:                                    settings.HideCcsImportButton,
+		ProfileNavEnabled:                                      settings.ProfileNavEnabled,
+		SubscriptionNavEnabled:                                 settings.SubscriptionNavEnabled,
+		ModelPlazaNavPlacement:                                 settings.ModelPlazaNavPlacement,
 		PurchaseSubscriptionEnabled:                            settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:                                settings.PurchaseSubscriptionURL,
 		TableDefaultPageSize:                                   settings.TableDefaultPageSize,
 		TablePageSizeOptions:                                   settings.TablePageSizeOptions,
-		CustomMenuItems:                                        dto.ParseCustomMenuItems(settings.CustomMenuItems),
+		CustomMenuItems:                                        customMenuItems,
 		CustomEndpoints:                                        dto.ParseCustomEndpoints(settings.CustomEndpoints),
 		DefaultConcurrency:                                     settings.DefaultConcurrency,
 		DefaultBalance:                                         settings.DefaultBalance,

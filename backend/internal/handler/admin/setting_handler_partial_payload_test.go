@@ -217,6 +217,24 @@ func TestUpdateSettingsCustomMenuPlacementDefaultsAndValidates(t *testing.T) {
 		require.Contains(t, recorder.Body.String(), `"visibility":"all"`)
 	})
 
+	t.Run("QR image is stored outside public menu metadata", func(t *testing.T) {
+		h, repo := newStepUpSwitchTestHandler(t, map[string]string{})
+		rawImage := validCommunityQRImageForAdminTest("header")
+		recorder := doUpdateSettings(t, h, map[string]any{
+			"custom_menu_items": []map[string]any{{
+				"id": "support", "label": "售后支持", "url": "",
+				"visibility": "all", "placement": "header", "navigation_type": "qr",
+				"qr_description": "扫码联系售后", "qr_image": rawImage, "sort_order": 0,
+			}},
+		}, nil)
+
+		require.Equal(t, http.StatusOK, recorder.Code)
+		require.NotContains(t, repo.values[service.SettingKeyCustomMenuItems], rawImage)
+		require.NotContains(t, repo.values[service.SettingKeyCustomMenuItems], "qr_image")
+		require.Contains(t, repo.values[service.SettingKeyHeaderNavQRImages], rawImage)
+		require.Contains(t, recorder.Body.String(), `"qr_image":"`)
+	})
+
 	t.Run("invalid visibility is rejected", func(t *testing.T) {
 		h, _ := newStepUpSwitchTestHandler(t, map[string]string{})
 		recorder := doUpdateSettings(t, h, map[string]any{

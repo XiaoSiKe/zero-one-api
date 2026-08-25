@@ -73,6 +73,9 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyCommunityQRImage:                          "",
 		SettingKeyCommunityQRTitle:                          DefaultCommunityQRTitle,
 		SettingKeyCommunityQRDescription:                    DefaultCommunityQRDescription,
+		SettingKeyProfileNavEnabled:                         "true",
+		SettingKeySubscriptionNavEnabled:                    "true",
+		SettingKeyModelPlazaNavPlacement:                    "header",
 		SettingKeyLandingNoticeEnabled:                      "false",
 		SettingKeyLandingNoticeText:                         DefaultLandingNoticeText,
 		SettingKeyLandingNoticeURL:                          DefaultLandingNoticeURL,
@@ -81,6 +84,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyTableDefaultPageSize:                      "20",
 		SettingKeyTablePageSizeOptions:                      "[10,20,50,100]",
 		SettingKeyCustomMenuItems:                           "[]",
+		SettingKeyHeaderNavQRImages:                         "{}",
 		SettingKeyCustomEndpoints:                           "[]",
 		SettingKeyWeChatConnectEnabled:                      "false",
 		SettingKeyWeChatConnectAppID:                        "",
@@ -373,9 +377,13 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		HomeContent:                            settings[SettingKeyHomeContent],
 		CompactHomeEnabled:                     settings[SettingKeyCompactHomeEnabled] == "true",
 		HideCcsImportButton:                    settings[SettingKeyHideCcsImportButton] == "true",
+		ProfileNavEnabled:                      !isFalseSettingValue(settings[SettingKeyProfileNavEnabled]),
+		SubscriptionNavEnabled:                 !isFalseSettingValue(settings[SettingKeySubscriptionNavEnabled]),
+		ModelPlazaNavPlacement:                 normalizeModelPlazaNavPlacement(settings[SettingKeyModelPlazaNavPlacement]),
 		PurchaseSubscriptionEnabled:            settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:                strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
 		CustomMenuItems:                        settings[SettingKeyCustomMenuItems],
+		HeaderNavQRImages:                      settings[SettingKeyHeaderNavQRImages],
 		CustomEndpoints:                        settings[SettingKeyCustomEndpoints],
 		BackendModeEnabled:                     settings[SettingKeyBackendModeEnabled] == "true",
 	}
@@ -1035,6 +1043,13 @@ func isFalseSettingValue(value string) bool {
 	default:
 		return false
 	}
+}
+
+func normalizeModelPlazaNavPlacement(value string) string {
+	if strings.EqualFold(strings.TrimSpace(value), "sidebar") {
+		return "sidebar"
+	}
+	return "header"
 }
 
 func normalizeVisibleMethodSettingSource(method, source string, enabled bool) (string, error) {

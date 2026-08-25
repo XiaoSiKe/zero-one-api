@@ -690,6 +690,13 @@ const (
 	SettingKeyWebSearchEmulationConfig = "web_search_emulation_config" // JSON 配置
 )
 
+const (
+	SettingKeyProfileNavEnabled      = "profile_navigation_enabled"      // 是否显示个人资料导航入口
+	SettingKeySubscriptionNavEnabled = "subscription_navigation_enabled" // 是否显示订阅管理导航入口
+	SettingKeyModelPlazaNavPlacement = "model_plaza_placement"           // 模型广场入口位置：header/sidebar
+	SettingKeyHeaderNavQRImages      = "header_navigation_qr_images"     // 顶部二维码图片映射（不进入公开设置）
+)
+
 // SettingKeyDefaultPlatformQuotas —— 系统全局：每用户 × 平台日/周/月 USD 上限（JSON）。
 // 值为 map[platform]{daily,weekly,monthly}，null/缺省 = 不限制；0 = 禁用；>0 = USD 上限。
 const SettingKeyDefaultPlatformQuotas = "default_platform_quotas"

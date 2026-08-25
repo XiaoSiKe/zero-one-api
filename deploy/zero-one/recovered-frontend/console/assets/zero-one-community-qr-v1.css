@@ -3,6 +3,75 @@
   border-top: 1px solid rgb(229 231 235);
 }
 
+.zero-one-navigation-built-in {
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgb(229 231 235);
+}
+
+.dark .zero-one-navigation-built-in {
+  border-color: rgb(55 65 81);
+}
+
+.zero-one-navigation-toggle-row,
+.zero-one-navigation-placement-row {
+  display: flex;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid rgb(243 244 246);
+}
+
+.dark .zero-one-navigation-toggle-row,
+.dark .zero-one-navigation-placement-row {
+  border-color: rgb(55 65 81);
+}
+
+.zero-one-navigation-toggle-row > span,
+.zero-one-navigation-placement-row > span {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.zero-one-navigation-toggle-row strong,
+.zero-one-navigation-placement-row strong {
+  color: rgb(55 65 81);
+  font-size: 0.875rem;
+}
+
+.dark .zero-one-navigation-toggle-row strong,
+.dark .zero-one-navigation-placement-row strong {
+  color: rgb(229 231 235);
+}
+
+.zero-one-navigation-toggle-row small,
+.zero-one-navigation-placement-row small {
+  color: rgb(107 114 128);
+  font-size: 0.75rem;
+}
+
+.zero-one-navigation-toggle-row input {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.zero-one-navigation-placement-row select {
+  min-width: 11rem;
+  min-height: 2.5rem;
+  border: 1px solid rgb(209 213 219);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: white;
+  color: rgb(17 24 39);
+}
+
+.dark .zero-one-navigation-placement-row select {
+  border-color: rgb(75 85 99);
+  background: rgb(17 24 39);
+  color: rgb(243 244 246);
+}
+
 .dark .zero-one-header-navigation-settings {
   border-color: rgb(55 65 81);
 }
@@ -234,12 +303,101 @@
   line-height: 1.25rem;
 }
 
-.zero-one-header-navigation-url-field {
+.zero-one-header-navigation-wide-field,
+.zero-one-navigation-icon-editor {
   grid-column: 1 / -1;
 }
 
-.zero-one-header-navigation-url-field input {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+.zero-one-navigation-qr-field,
+.zero-one-navigation-icon-editor {
+  display: grid;
+  gap: 0.5rem;
+  color: rgb(75 85 99);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.zero-one-navigation-qr-preview {
+  display: flex;
+  width: 5rem;
+  height: 5rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px dashed rgb(156 163 175);
+  border-radius: 0.5rem;
+  background: rgb(249 250 251);
+  color: rgb(107 114 128);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.zero-one-navigation-qr-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.zero-one-navigation-icon-choices {
+  display: grid;
+  max-width: 18rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.zero-one-navigation-icon-choice {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(209 213 219);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: rgb(75 85 99);
+  cursor: pointer;
+}
+
+.zero-one-navigation-icon-choice.is-selected {
+  border-color: rgb(17 24 39);
+  background: rgb(243 244 246);
+  color: rgb(17 24 39);
+}
+
+.zero-one-navigation-icon-choice svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.dark .zero-one-navigation-icon-choice {
+  border-color: rgb(75 85 99);
+  color: rgb(209 213 219);
+}
+
+.dark .zero-one-navigation-icon-choice.is-selected {
+  border-color: white;
+  background: rgb(55 65 81);
+  color: white;
+}
+
+.zero-one-navigation-upload-button {
+  display: inline-flex;
+  width: max-content;
+  min-height: 2.5rem;
+  align-items: center;
+  border: 1px solid rgb(209 213 219);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: white;
+  color: rgb(55 65 81);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dark .zero-one-navigation-upload-button {
+  border-color: rgb(75 85 99);
+  background: rgb(31 41 55);
+  color: rgb(229 231 235);
 }
 
 .dark .zero-one-header-navigation-fields input,
@@ -292,7 +450,8 @@
     grid-template-columns: 1fr;
   }
 
-  .zero-one-header-navigation-url-field {
+  .zero-one-header-navigation-wide-field,
+  .zero-one-navigation-icon-editor {
     grid-column: auto;
   }
 

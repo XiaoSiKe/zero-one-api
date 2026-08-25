@@ -4,6 +4,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
@@ -166,6 +167,20 @@ func TestParsePublicCustomMenuItemsIncludesUserAndAll(t *testing.T) {
 	require.Len(t, items, 2)
 	require.Equal(t, []string{"user-help", "shared-help"}, []string{items[0].ID, items[1].ID})
 	require.Equal(t, []string{"user", "all"}, []string{items[0].Visibility, items[1].Visibility})
+}
+
+func TestParsePublicCustomMenuItemsKeepsQRMetadataButNeverImageBytes(t *testing.T) {
+	image := validCommunityQRPNG()
+	raw := `[{"id":"support","label":"售后支持","visibility":"all","placement":"header","navigation_type":"qr","qr_description":"扫码联系售后","qr_image":"` + image + `"}]`
+
+	items := parsePublicCustomMenuItems(raw)
+	require.Len(t, items, 1)
+	require.Equal(t, "qr", items[0].NavType)
+	require.Equal(t, "扫码联系售后", items[0].QRDesc)
+	encoded, err := json.Marshal(items)
+	require.NoError(t, err)
+	require.NotContains(t, string(encoded), "qr_image")
+	require.NotContains(t, string(encoded), image)
 }
 
 func TestSettingService_GetPublicSettings_ExposesAllowUserViewErrorRequests(t *testing.T) {

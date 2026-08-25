@@ -6377,6 +6377,73 @@
                 </div>
               </div>
 
+              <!-- Built-in Navigation Visibility -->
+              <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
+                <div>
+                  <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                    {{ t("admin.settings.site.navigation.title") }}
+                  </h3>
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.site.navigation.description") }}
+                  </p>
+                </div>
+
+                <div class="mt-4 divide-y divide-gray-100 dark:divide-dark-700">
+                  <div class="flex items-center justify-between gap-4 py-3">
+                    <div>
+                      <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ t("admin.settings.site.navigation.profile") }}
+                      </p>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {{ t("admin.settings.site.navigation.profileHint") }}
+                      </p>
+                    </div>
+                    <Toggle
+                      v-model="form.profile_navigation_enabled"
+                      data-testid="profile-navigation-toggle"
+                    />
+                  </div>
+
+                  <div class="flex items-center justify-between gap-4 py-3">
+                    <div>
+                      <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ t("admin.settings.site.navigation.subscriptions") }}
+                      </p>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {{ t("admin.settings.site.navigation.subscriptionsHint") }}
+                      </p>
+                    </div>
+                    <Toggle
+                      v-model="form.subscription_navigation_enabled"
+                      data-testid="subscription-navigation-toggle"
+                    />
+                  </div>
+
+                  <div class="grid grid-cols-1 gap-3 py-3 sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-center">
+                    <div>
+                      <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ t("admin.settings.site.navigation.modelPlaza") }}
+                      </p>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {{ t("admin.settings.site.navigation.modelPlazaHint") }}
+                      </p>
+                    </div>
+                    <select
+                      v-model="form.model_plaza_placement"
+                      class="input text-sm"
+                      data-testid="model-plaza-placement"
+                    >
+                      <option value="header">
+                        {{ t("admin.settings.site.navigation.header") }}
+                      </option>
+                      <option value="sidebar">
+                        {{ t("admin.settings.site.navigation.sidebar") }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               <!-- Header Navigation Entries -->
               <div
                 class="border-t border-gray-100 pt-4 dark:border-dark-700"
@@ -6490,14 +6557,40 @@
                       </div>
                       <div class="sm:col-span-2">
                         <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
-                          {{ t("admin.settings.site.headerNavigation.url") }}
+                          {{ t("admin.settings.site.headerNavigation.dialogDescription") }}
                         </label>
                         <input
-                          v-model="entry.item.url"
-                          type="url"
-                          class="input font-mono text-sm"
-                          :data-testid="`header-navigation-url-${visibleIndex}`"
-                          :placeholder="t('admin.settings.site.headerNavigation.urlPlaceholder')"
+                          v-model="entry.item.qr_description"
+                          type="text"
+                          maxlength="240"
+                          class="input text-sm"
+                          :data-testid="`header-navigation-description-${visibleIndex}`"
+                          :placeholder="t('admin.settings.site.headerNavigation.dialogDescriptionPlaceholder')"
+                        />
+                      </div>
+                      <div class="sm:col-span-2">
+                        <label class="mb-2 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ t("admin.settings.site.headerNavigation.qrImage") }}
+                        </label>
+                        <ImageUpload
+                          :model-value="entry.item.qr_image || ''"
+                          mode="image"
+                          :data-testid="`header-navigation-qr-upload-${visibleIndex}`"
+                          :accepted-mime-types="['image/png', 'image/jpeg', 'image/webp']"
+                          :upload-label="t('admin.settings.site.headerNavigation.selectQr')"
+                          :remove-label="t('admin.settings.site.headerNavigation.removeQr')"
+                          :hint="t('admin.settings.site.headerNavigation.qrHint')"
+                          :max-size="300 * 1024"
+                          @update:model-value="setHeaderNavigationQrImage(entry.index, $event)"
+                        />
+                      </div>
+                      <div class="sm:col-span-2">
+                        <label class="mb-2 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ t("admin.settings.customMenu.iconSvg") }}
+                        </label>
+                        <NavigationIconPicker
+                          v-model="entry.item.icon_svg"
+                          :data-testid="`header-navigation-icon-${visibleIndex}`"
                         />
                       </div>
                     </div>
@@ -7002,14 +7095,7 @@
                     >
                       {{ t("admin.settings.customMenu.iconSvg") }}
                     </label>
-                    <ImageUpload
-                      :model-value="entry.item.icon_svg"
-                      mode="svg"
-                      size="sm"
-                      :upload-label="t('admin.settings.customMenu.uploadSvg')"
-                      :remove-label="t('admin.settings.customMenu.removeSvg')"
-                      @update:model-value="(v: string) => (entry.item.icon_svg = v)"
-                    />
+                    <NavigationIconPicker v-model="entry.item.icon_svg" />
                   </div>
                 </div>
               </div>
@@ -8610,6 +8696,11 @@ import GroupOptionItem from "@/components/common/GroupOptionItem.vue";
 import Toggle from "@/components/common/Toggle.vue";
 import ProxySelector from "@/components/common/ProxySelector.vue";
 import ImageUpload from "@/components/common/ImageUpload.vue";
+import NavigationIconPicker from "@/components/common/NavigationIconPicker.vue";
+import {
+  DEFAULT_CUSTOM_MENU_ICON,
+  DEFAULT_HEADER_QR_ICON,
+} from "@/constants/navigationIcons";
 import BackupSettings from "@/views/admin/BackupView.vue";
 import EmailTemplateEditor from "@/views/admin/settings/EmailTemplateEditor.vue";
 import OpenAIFastPolicyUserSelector from "@/views/admin/settings/OpenAIFastPolicyUserSelector.vue";
@@ -9420,6 +9511,9 @@ const form = reactive<SettingsForm>({
   compact_home_enabled: false,
   backend_mode_enabled: false,
   hide_ccs_import_button: false,
+  profile_navigation_enabled: true,
+  subscription_navigation_enabled: true,
+  model_plaza_placement: "header" as "header" | "sidebar",
   payment_enabled: false,
   risk_control_enabled: false,
   cyber_session_block_enabled: false,
@@ -9455,6 +9549,9 @@ const form = reactive<SettingsForm>({
     url: string;
     visibility: "user" | "admin" | "all";
     placement: "sidebar" | "header" | "both";
+    navigation_type?: "qr";
+    qr_description?: string;
+    qr_image?: string;
     sort_order: number;
   }>,
   custom_endpoints: [] as Array<{
@@ -10434,19 +10531,32 @@ function addHeaderNavigationItem() {
   form.custom_menu_items.push({
     id: "",
     label: "",
-    icon_svg: "",
+    icon_svg: DEFAULT_HEADER_QR_ICON,
     url: "",
     visibility: "all",
     placement: "header",
+    navigation_type: "qr",
+    qr_description: "",
+    qr_image: "",
     sort_order: form.custom_menu_items.length,
   });
+}
+
+function setHeaderNavigationQrImage(index: number, image: string) {
+  const item = form.custom_menu_items[index];
+  if (!item) return;
+  item.qr_image = image;
+  if (image.trim()) {
+    item.navigation_type = "qr";
+    item.url = "";
+  }
 }
 
 function addMenuItem() {
   form.custom_menu_items.push({
     id: "",
     label: "",
-    icon_svg: "",
+    icon_svg: DEFAULT_CUSTOM_MENU_ICON,
     url: "",
     visibility: "user",
     placement: "sidebar",
@@ -10701,6 +10811,11 @@ async function loadSettings() {
           ? item.placement
           : "sidebar",
     }));
+    form.profile_navigation_enabled = settings.profile_navigation_enabled !== false;
+    form.subscription_navigation_enabled =
+      settings.subscription_navigation_enabled !== false;
+    form.model_plaza_placement =
+      settings.model_plaza_placement === "sidebar" ? "sidebar" : "header";
     syncCaptchaProviderSelection();
     if (!form.claude_oauth_system_prompt_blocks?.trim()) {
       form.claude_oauth_system_prompt_blocks =
@@ -11054,6 +11169,16 @@ async function saveSettings() {
       );
       return;
     }
+    const incompleteHeaderQR = form.custom_menu_items.find(
+      (item) =>
+        item.placement === "header" &&
+        item.navigation_type === "qr" &&
+        !item.qr_image?.trim(),
+    );
+    if (incompleteHeaderQR) {
+      appStore.showError(t("admin.settings.site.headerNavigation.qrRequired"));
+      return;
+    }
     // Validate URL fields — novalidate disables browser-native checks, so we validate here
     // Optional URL fields: auto-clear invalid values so they don't cause backend 400 errors
     if (!isValidHttpUrl(form.frontend_url)) form.frontend_url = "";
@@ -11120,6 +11245,9 @@ async function saveSettings() {
       compact_home_enabled: form.compact_home_enabled,
       backend_mode_enabled: form.backend_mode_enabled,
       hide_ccs_import_button: form.hide_ccs_import_button,
+      profile_navigation_enabled: form.profile_navigation_enabled,
+      subscription_navigation_enabled: form.subscription_navigation_enabled,
+      model_plaza_placement: form.model_plaza_placement,
       table_default_page_size: form.table_default_page_size,
       table_page_size_options: form.table_page_size_options,
       custom_menu_items: form.custom_menu_items,

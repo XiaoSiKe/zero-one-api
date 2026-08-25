@@ -82,10 +82,10 @@ require "$recovered_console_index" 'await import("/assets/zero-one-local-preview
 require "$recovered_console_index" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=2")'
 require "$recovered_console_index" 'await import("/assets/zero-one-console-parity-v1.js?v=4")'
 require "$recovered_console_index" 'href="/assets/zero-one-console-parity-v1.css?v=4"'
-require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=6")'
-require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=3"'
-require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=6")'
-require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=3"'
+require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=7")'
+require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=4"'
+require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=7")'
+require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=4"'
 require "$recovered_console_index" 'await import("/assets/zero-one-ccswitch-launch-v1.js?v=1")'
 require "$recovered_console_index" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=4")'
 require "$recovered_console_index" 'href="/assets/zero-one-affiliate-admin-v1.css?v=3"'
@@ -131,6 +131,11 @@ forbid "$recovered_header_navigation" "'data-testid': 'community-qr-button'"
 require "$recovered_header_navigation_css" '.zero-one-header-navigation-settings'
 require "$recovered_header_navigation_css" '.zero-one-header-navigation-entry'
 require "$recovered_header_navigation_css" '.zero-one-header-navigation-fields'
+require "$recovered_header_navigation" 'profile_navigation_enabled'
+require "$recovered_header_navigation" 'subscription_navigation_enabled'
+require "$recovered_header_navigation" 'model_plaza_placement'
+require "$recovered_header_navigation" 'header-navigation-qr-upload-'
+require "$recovered_header_navigation" 'window.__ZERO_ONE_NAVIGATION_ICON_PRESETS__'
 require "$recovered_header_custom_menu" "item.placement === 'header'"
 require "$recovered_header_custom_menu" "itemCard.hidden = normalizePlacement(adminMenuItems[index]?.placement) === 'header'"
 require "$recovered_header_custom_menu" 'data-zero-one-header-menu-placement'
@@ -138,6 +143,7 @@ require "$recovered_header_custom_menu" 'window.__ZERO_ONE_BIND_INTERNAL_LINK__ 
 require "$recovered_header_custom_menu" 'description.textContent !== CUSTOM_MENU_DESCRIPTION'
 require "$recovered_header_custom_menu" 'XMLHttpRequest.prototype.send'
 require "$recovered_header_custom_menu_css" '.zero-one-header-custom-menu-link'
+require "$recovered_header_custom_menu_css" '.zero-one-header-qr-overlay'
 require "$recovered_ccswitch_launch" "href.startsWith('ccswitch://')"
 require "$recovered_ccswitch_launch" 'delay === LEGACY_PROBE_DELAY_MS'
 require "$recovered_ccswitch_launch" "includes('keys.ccSwitchNotInstalled')"

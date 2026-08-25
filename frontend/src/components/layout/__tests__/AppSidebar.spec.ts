@@ -68,6 +68,21 @@ describe('AppSidebar custom menu placement', () => {
   })
 })
 
+describe('AppSidebar configurable built-in navigation', () => {
+  it('gates profile and subscription entries with public settings', () => {
+    expect(componentSource).toContain('profileNavigationEnabled')
+    expect(componentSource).toContain('subscriptionNavigationEnabled')
+    expect(componentSource).toContain("path: '/profile'")
+    expect(componentSource).toContain("path: '/subscriptions'")
+  })
+
+  it('moves Model Plaza into the sidebar only when configured there', () => {
+    expect(componentSource).toContain('modelPlazaPlacement')
+    expect(componentSource).toContain("path: '/model-plaza'")
+    expect(componentSource).toContain('flagModelPlazaInSidebar')
+  })
+})
+
 describe('AppSidebar affiliate navigation', () => {
   it('keeps the admin entry top-level and always reachable while gating the user entry', () => {
     const adminStart = componentSource.indexOf("      path: '/admin/affiliates',")

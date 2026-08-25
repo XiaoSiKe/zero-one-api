@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -28,7 +29,8 @@ func (s *settingHandlerPublicRepoStub) Get(ctx context.Context, key string) (*se
 }
 
 func (s *settingHandlerPublicRepoStub) GetValue(ctx context.Context, key string) (string, error) {
-	panic("unexpected GetValue call")
+	s.requestedKeys = []string{key}
+	return s.values[key], nil
 }
 
 func (s *settingHandlerPublicRepoStub) Set(ctx context.Context, key, value string) error {
@@ -523,6 +525,70 @@ func TestSettingHandler_GetCommunityQRImageServesValidatedBytesFromNarrowSetting
 	require.Equal(t, "nosniff", recorder.Header().Get("X-Content-Type-Options"))
 	require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"))
 	require.Equal(t, []string{service.SettingKeyCommunityQREnabled, service.SettingKeyCommunityQRImage}, repo.requestedKeys)
+}
+
+func TestSettingHandler_GetHeaderNavigationQRImageServesOnlyTheRequestedEntry(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	encoded := "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP8zwACTGCSAQANHQEDgslx/wAAAABJRU5ErkJggg=="
+	content, err := base64.StdEncoding.DecodeString(encoded)
+	require.NoError(t, err)
+	rawImage := "data:image/png;base64," + encoded
+	menuJSON, err := json.Marshal([]map[string]any{
+		{"id": "support", "placement": "header", "navigation_type": "qr", "visibility": "all"},
+		{"id": "docs", "placement": "both", "url": "https://example.com"},
+	})
+	require.NoError(t, err)
+	imageJSON, err := json.Marshal(map[string]string{"support": rawImage})
+	require.NoError(t, err)
+	repo := &settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeyCustomMenuItems:   string(menuJSON),
+		service.SettingKeyHeaderNavQRImages: string(imageJSON),
+	}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Params = gin.Params{{Key: "id", Value: "support"}}
+	c.Set(string(middleware2.ContextKeyUserRole), "user")
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/header-navigation/support/qr", nil)
+	h.GetHeaderNavigationQRImage(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, content, recorder.Body.Bytes())
+	require.Equal(t, "image/png", recorder.Header().Get("Content-Type"))
+	require.Equal(t, []string{
+		service.SettingKeyCustomMenuItems,
+		service.SettingKeyHeaderNavQRImages,
+	}, repo.requestedKeys)
+}
+
+func TestSettingHandler_GetHeaderNavigationQRImageHonorsRoleVisibility(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rawImage := "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP8zwACTGCSAQANHQEDgslx/wAAAABJRU5ErkJggg=="
+	menuJSON, err := json.Marshal([]map[string]any{{
+		"id": "admin-support", "placement": "header", "navigation_type": "qr", "visibility": "admin",
+	}})
+	require.NoError(t, err)
+	imageJSON, err := json.Marshal(map[string]string{"admin-support": rawImage})
+	require.NoError(t, err)
+	repo := &settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeyCustomMenuItems:   string(menuJSON),
+		service.SettingKeyHeaderNavQRImages: string(imageJSON),
+	}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+
+	requestAs := func(role string) *httptest.ResponseRecorder {
+		recorder := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(recorder)
+		c.Params = gin.Params{{Key: "id", Value: "admin-support"}}
+		c.Set(string(middleware2.ContextKeyUserRole), role)
+		c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/header-navigation/admin-support/qr", nil)
+		h.GetHeaderNavigationQRImage(c)
+		return recorder
+	}
+
+	require.Equal(t, http.StatusNotFound, requestAs("user").Code)
+	require.Equal(t, http.StatusOK, requestAs("admin").Code)
 }
 
 func TestSettingHandler_GetCommunityQRImageRejectsInvalidValues(t *testing.T) {

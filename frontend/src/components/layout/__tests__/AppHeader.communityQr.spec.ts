@@ -76,24 +76,51 @@ describe('AppHeader custom header navigation', () => {
     wrapper = undefined
   })
 
-  it('does not render the retired community QR entry', () => {
+  it('renders configured header QR entries instead of legacy header links', () => {
     const appStore = useAppStore()
     const authStore = useAuthStore()
     authStore.user = signedInUser
     appStore.cachedPublicSettings = {
       model_plaza_enabled: false,
-      community_qr_enabled: true,
-      community_qr_title: '旧交流群',
-      community_qr_description: '旧二维码入口',
+      custom_menu_items: [
+        {
+          id: 'support',
+          label: '售后支持',
+          icon_svg: '<svg viewBox="0 0 24 24"><path d="M4 12h16" /></svg>',
+          url: '',
+          visibility: 'all',
+          placement: 'header',
+          navigation_type: 'qr',
+          qr_description: '扫码联系售后',
+          sort_order: 0,
+        },
+      ],
     } as PublicSettings
 
     const mounted = mountHeader()
 
-    expect(mounted.find('[data-testid="community-qr-button"]').exists()).toBe(false)
-    expect(mounted.findComponent({ name: 'CommunityQrEntry' }).exists()).toBe(false)
+    expect(mounted.find('[data-testid="header-qr-support"]').exists()).toBe(true)
+    expect(mounted.find('[data-testid="header-custom-menu-support"]').exists()).toBe(false)
   })
 
-  it('shows only regular-user header iframe pages to regular users', () => {
+  it('hides header Model Plaza and subscription progress when configured for the sidebar or disabled', () => {
+    const appStore = useAppStore()
+    const authStore = useAuthStore()
+    authStore.user = signedInUser
+    appStore.cachedPublicSettings = {
+      model_plaza_enabled: true,
+      model_plaza_placement: 'sidebar',
+      subscription_navigation_enabled: false,
+      custom_menu_items: [],
+    } as PublicSettings
+
+    const mounted = mountHeader()
+
+    expect(mounted.find('[data-testid="header-model-plaza"]').exists()).toBe(false)
+    expect(mounted.findComponent({ name: 'SubscriptionProgressMini' }).exists()).toBe(false)
+  })
+
+  it('shows only dual-placement iframe pages in the header for regular users', () => {
     const appStore = useAppStore()
     const authStore = useAuthStore()
     authStore.user = signedInUser
@@ -110,17 +137,17 @@ describe('AppHeader custom header navigation', () => {
     } as PublicSettings
 
     const mounted = mountHeader()
-    expect(mounted.find('[data-testid="header-custom-menu-user-header"]').exists()).toBe(true)
+    expect(mounted.find('[data-testid="header-custom-menu-user-header"]').exists()).toBe(false)
     expect(mounted.find('[data-testid="header-custom-menu-user-both"]').exists()).toBe(true)
-    expect(mounted.find('[data-testid="header-custom-menu-all-header"]').exists()).toBe(true)
+    expect(mounted.find('[data-testid="header-custom-menu-all-header"]').exists()).toBe(false)
     expect(mounted.find('[data-testid="header-custom-menu-all-both"]').exists()).toBe(true)
     expect(mounted.find('[data-testid="header-custom-menu-admin-header"]').exists()).toBe(false)
-    expect(mounted.text()).toContain('用户帮助')
+    expect(mounted.text()).not.toContain('用户帮助')
     expect(mounted.text()).toContain('双栏帮助')
     expect(mounted.text()).not.toContain('侧边帮助')
   })
 
-  it('shows only administrator header iframe pages to administrators', () => {
+  it('shows only dual-placement iframe pages in the header for administrators', () => {
     const authStore = useAuthStore()
     const adminSettingsStore = useAdminSettingsStore()
     authStore.user = adminUser
@@ -133,9 +160,9 @@ describe('AppHeader custom header navigation', () => {
     ]
 
     const mounted = mountHeader()
-    expect(mounted.find('[data-testid="header-custom-menu-admin-header"]').exists()).toBe(true)
+    expect(mounted.find('[data-testid="header-custom-menu-admin-header"]').exists()).toBe(false)
     expect(mounted.find('[data-testid="header-custom-menu-admin-both"]').exists()).toBe(true)
-    expect(mounted.find('[data-testid="header-custom-menu-all-header"]').exists()).toBe(true)
+    expect(mounted.find('[data-testid="header-custom-menu-all-header"]').exists()).toBe(false)
     expect(mounted.find('[data-testid="header-custom-menu-all-both"]').exists()).toBe(true)
     expect(mounted.find('[data-testid="header-custom-menu-user-header"]').exists()).toBe(false)
   })

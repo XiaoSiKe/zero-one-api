@@ -16,6 +16,9 @@ type CustomMenuItem struct {
 	PageSlug   string `json:"page_slug,omitempty"`
 	Visibility string `json:"visibility"`          // "user", "admin", or "all"
 	Placement  string `json:"placement,omitempty"` // "sidebar", "header", or "both"; empty keeps legacy sidebar behavior
+	NavType    string `json:"navigation_type,omitempty"`
+	QRDesc     string `json:"qr_description,omitempty"`
+	QRImage    string `json:"qr_image,omitempty"`
 	SortOrder  int    `json:"sort_order"`
 }
 
@@ -165,6 +168,9 @@ type SystemSettings struct {
 	HomeContent                 string           `json:"home_content"`
 	CompactHomeEnabled          bool             `json:"compact_home_enabled"`
 	HideCcsImportButton         bool             `json:"hide_ccs_import_button"`
+	ProfileNavEnabled           bool             `json:"profile_navigation_enabled"`
+	SubscriptionNavEnabled      bool             `json:"subscription_navigation_enabled"`
+	ModelPlazaNavPlacement      string           `json:"model_plaza_placement"`
 	PurchaseSubscriptionEnabled bool             `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL     string           `json:"purchase_subscription_url"`
 	TableDefaultPageSize        int              `json:"table_default_page_size"`
@@ -526,6 +532,22 @@ func ParseCustomMenuItems(raw string) []CustomMenuItem {
 	var items []CustomMenuItem
 	if err := json.Unmarshal([]byte(raw), &items); err != nil {
 		return []CustomMenuItem{}
+	}
+	return items
+}
+
+// AttachHeaderNavQRImages joins the admin-only QR image map onto menu
+// metadata. Public settings never call this helper and therefore never load or
+// serialize QR bytes.
+func AttachHeaderNavQRImages(items []CustomMenuItem, raw string) []CustomMenuItem {
+	images := make(map[string]string)
+	if err := json.Unmarshal([]byte(strings.TrimSpace(raw)), &images); err != nil {
+		return items
+	}
+	for i := range items {
+		if items[i].NavType == "qr" {
+			items[i].QRImage = images[items[i].ID]
+		}
 	}
 	return items
 }

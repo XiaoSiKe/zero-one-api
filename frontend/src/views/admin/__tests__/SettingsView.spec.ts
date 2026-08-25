@@ -80,6 +80,8 @@ const {
 }));
 
 const localeRef = vi.hoisted(() => ({ value: "zh-CN" }));
+const validQrDataUrl =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP8zwACTGCSAQANHQEDgslx/wAAAABJRU5ErkJggg==";
 
 vi.mock("@/api", () => ({
   adminAPI: {
@@ -412,6 +414,9 @@ const baseSettingsResponse = {
   home_content: "",
   compact_home_enabled: false,
   hide_ccs_import_button: false,
+  profile_navigation_enabled: true,
+  subscription_navigation_enabled: true,
+  model_plaza_placement: "header",
   table_default_page_size: 20,
   table_page_size_options: [10, 20, 50, 100],
   backend_mode_enabled: false,
@@ -859,7 +864,7 @@ describe("admin SettingsView payment visible method controls", () => {
     ).toBe("");
   });
 
-  it("adds multiple header navigation entries while preserving non-header menus", async () => {
+  it("adds multiple QR header navigation entries while preserving non-header menus", async () => {
     getSettings.mockResolvedValueOnce({
       ...baseSettingsResponse,
       community_qr_enabled: true,
@@ -888,14 +893,22 @@ describe("admin SettingsView payment visible method controls", () => {
     await addButton.trigger("click");
 
     const names = wrapper.findAll('[data-testid^="header-navigation-name-"]');
-    const urls = wrapper.findAll('[data-testid^="header-navigation-url-"]');
+    const descriptions = wrapper.findAll('[data-testid^="header-navigation-description-"]');
+    const qrUploads = wrapper.findAllComponents(ImageUploadStub).filter((node) =>
+      node.attributes("data-testid")?.startsWith("header-navigation-qr-upload-"),
+    );
     expect(names).toHaveLength(2);
-    expect(urls).toHaveLength(2);
+    expect(descriptions).toHaveLength(2);
+    expect(qrUploads).toHaveLength(2);
+    expect(wrapper.findAll('[data-testid^="header-navigation-icon-"]')).toHaveLength(2);
 
     await names[0].setValue("在线充值");
-    await urls[0].setValue("https://example.com/pay");
+    await descriptions[0].setValue("扫码打开充值客服");
+    qrUploads[0].vm.$emit("update:modelValue", validQrDataUrl);
     await names[1].setValue("售后支持");
-    await urls[1].setValue("https://example.com/support");
+    await descriptions[1].setValue("扫码联系售后");
+    qrUploads[1].vm.$emit("update:modelValue", validQrDataUrl);
+    await flushPromises();
 
     await wrapper.find("form").trigger("submit.prevent");
     await flushPromises();
@@ -911,17 +924,61 @@ describe("admin SettingsView payment visible method controls", () => {
           }),
           expect.objectContaining({
             label: "在线充值",
-            url: "https://example.com/pay",
+            url: "",
+            navigation_type: "qr",
+            qr_description: "扫码打开充值客服",
+            qr_image: validQrDataUrl,
             visibility: "all",
             placement: "header",
           }),
           expect.objectContaining({
             label: "售后支持",
-            url: "https://example.com/support",
+            url: "",
+            navigation_type: "qr",
+            qr_description: "扫码联系售后",
+            qr_image: validQrDataUrl,
             visibility: "all",
             placement: "header",
           }),
         ],
+      }),
+    );
+  });
+
+  it("loads and saves built-in navigation visibility and Model Plaza placement", async () => {
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      profile_navigation_enabled: false,
+      subscription_navigation_enabled: true,
+      model_plaza_placement: "sidebar",
+    });
+
+    const wrapper = mountView();
+    await flushPromises();
+
+    expect(
+      (wrapper.get('[data-testid="profile-navigation-toggle"]').element as HTMLInputElement)
+        .checked,
+    ).toBe(false);
+    expect(
+      (wrapper.get('[data-testid="subscription-navigation-toggle"]').element as HTMLInputElement)
+        .checked,
+    ).toBe(true);
+    expect(
+      (wrapper.get('[data-testid="model-plaza-placement"]').element as HTMLSelectElement).value,
+    ).toBe("sidebar");
+
+    await wrapper.get('[data-testid="profile-navigation-toggle"]').setValue(true);
+    await wrapper.get('[data-testid="subscription-navigation-toggle"]').setValue(false);
+    await wrapper.get('[data-testid="model-plaza-placement"]').setValue("header");
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profile_navigation_enabled: true,
+        subscription_navigation_enabled: false,
+        model_plaza_placement: "header",
       }),
     );
   });

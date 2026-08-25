@@ -165,11 +165,15 @@ type SystemSettings struct {
 	HomeContent                 string
 	CompactHomeEnabled          bool
 	HideCcsImportButton         bool
+	ProfileNavEnabled           bool
+	SubscriptionNavEnabled      bool
+	ModelPlazaNavPlacement      string
 	PurchaseSubscriptionEnabled bool
 	PurchaseSubscriptionURL     string
 	TableDefaultPageSize        int
 	TablePageSizeOptions        []int
 	CustomMenuItems             string // JSON array of custom menu items
+	HeaderNavQRImages           string // JSON object keyed by menu item ID
 	CustomEndpoints             string // JSON array of custom endpoints
 
 	DefaultConcurrency           int
@@ -361,6 +365,9 @@ type PublicSettings struct {
 	HomeContent                         string
 	CompactHomeEnabled                  bool
 	HideCcsImportButton                 bool
+	ProfileNavEnabled                   bool
+	SubscriptionNavEnabled              bool
+	ModelPlazaNavPlacement              string
 
 	PurchaseSubscriptionEnabled bool
 	PurchaseSubscriptionURL     string

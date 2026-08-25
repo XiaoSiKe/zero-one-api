@@ -170,6 +170,9 @@ type UpdateSettingsRequest struct {
 	HomeContent                 string                `json:"home_content"`
 	CompactHomeEnabled          bool                  `json:"compact_home_enabled"`
 	HideCcsImportButton         bool                  `json:"hide_ccs_import_button"`
+	ProfileNavEnabled           *bool                 `json:"profile_navigation_enabled"`
+	SubscriptionNavEnabled      *bool                 `json:"subscription_navigation_enabled"`
+	ModelPlazaNavPlacement      *string               `json:"model_plaza_placement"`
 	PurchaseSubscriptionEnabled *bool                 `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL     *string               `json:"purchase_subscription_url"`
 	TableDefaultPageSize        int                   `json:"table_default_page_size"`
@@ -564,6 +567,22 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	}
 	if utf8.RuneCountInString(communityQRDescription) > 240 {
 		response.BadRequest(c, "Community QR description is too long (max 240 characters)")
+		return
+	}
+	profileNavigationEnabled := previousSettings.ProfileNavEnabled
+	if req.ProfileNavEnabled != nil {
+		profileNavigationEnabled = *req.ProfileNavEnabled
+	}
+	subscriptionNavigationEnabled := previousSettings.SubscriptionNavEnabled
+	if req.SubscriptionNavEnabled != nil {
+		subscriptionNavigationEnabled = *req.SubscriptionNavEnabled
+	}
+	modelPlazaPlacement := previousSettings.ModelPlazaNavPlacement
+	if req.ModelPlazaNavPlacement != nil {
+		modelPlazaPlacement = strings.TrimSpace(*req.ModelPlazaNavPlacement)
+	}
+	if modelPlazaPlacement != "header" && modelPlazaPlacement != "sidebar" {
+		response.BadRequest(c, "Model Plaza placement must be 'header' or 'sidebar'")
 		return
 	}
 	landingNoticeEnabled, landingNoticeText, landingNoticeURL, err = service.NormalizeLandingNoticeSettings(
@@ -1317,6 +1336,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	)
 
 	customMenuJSON := previousSettings.CustomMenuItems
+	headerNavigationQRImagesJSON := previousSettings.HeaderNavQRImages
 	if req.CustomMenuItems != nil {
 		items := *req.CustomMenuItems
 		if len(items) > maxCustomMenuItems {
@@ -1332,28 +1352,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 				response.BadRequest(c, "Custom menu item label is too long (max 50 characters)")
 				return
 			}
-			urlTrimmed := strings.TrimSpace(item.URL)
-			if strings.HasPrefix(urlTrimmed, "md:") {
-				// Markdown page mode: URL = "md:<slug>"
-				slug := strings.TrimPrefix(urlTrimmed, "md:")
-				if slug == "" {
-					response.BadRequest(c, "Custom menu item markdown slug cannot be empty (use md:slug format)")
-					return
-				}
-			} else {
-				if urlTrimmed == "" {
-					response.BadRequest(c, "Custom menu item URL is required (use md:slug for markdown pages)")
-					return
-				}
-				if len(item.URL) > maxMenuItemURLLen {
-					response.BadRequest(c, "Custom menu item URL is too long (max 2048 characters)")
-					return
-				}
-				if err := config.ValidateAbsoluteHTTPURL(urlTrimmed); err != nil {
-					response.BadRequest(c, "Custom menu item URL must be an absolute http(s) URL or md:<slug>")
-					return
-				}
-			}
 			if item.Visibility != "user" && item.Visibility != "admin" && item.Visibility != "all" {
 				response.BadRequest(c, "Custom menu item visibility must be 'user', 'admin', or 'all'")
 				return
@@ -1363,6 +1361,48 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			} else if item.Placement != "sidebar" && item.Placement != "header" && item.Placement != "both" {
 				response.BadRequest(c, "Custom menu item placement must be 'sidebar', 'header', or 'both'")
 				return
+			}
+			if item.NavType != "" && item.NavType != "qr" {
+				response.BadRequest(c, "Custom menu item navigation type must be empty or 'qr'")
+				return
+			}
+			if item.NavType == "qr" {
+				if items[i].Placement != "header" {
+					response.BadRequest(c, "QR navigation entries must use header placement")
+					return
+				}
+				if utf8.RuneCountInString(item.QRDesc) > 240 {
+					response.BadRequest(c, "Header QR description is too long (max 240 characters)")
+					return
+				}
+				if _, ok := service.DecodeCommunityQRImage(strings.TrimSpace(item.QRImage)); !ok {
+					response.BadRequest(c, "Header QR image must be a valid PNG, JPEG, or WebP data URI no larger than 300 KiB")
+					return
+				}
+				items[i].URL = ""
+				items[i].QRDesc = strings.TrimSpace(item.QRDesc)
+				items[i].QRImage = strings.TrimSpace(item.QRImage)
+			} else {
+				urlTrimmed := strings.TrimSpace(item.URL)
+				if strings.HasPrefix(urlTrimmed, "md:") {
+					if strings.TrimPrefix(urlTrimmed, "md:") == "" {
+						response.BadRequest(c, "Custom menu item markdown slug cannot be empty (use md:slug format)")
+						return
+					}
+				} else {
+					if urlTrimmed == "" {
+						response.BadRequest(c, "Custom menu item URL is required (use md:slug for markdown pages)")
+						return
+					}
+					if len(item.URL) > maxMenuItemURLLen {
+						response.BadRequest(c, "Custom menu item URL is too long (max 2048 characters)")
+						return
+					}
+					if err := config.ValidateAbsoluteHTTPURL(urlTrimmed); err != nil {
+						response.BadRequest(c, "Custom menu item URL must be an absolute http(s) URL or md:<slug>")
+						return
+					}
+				}
 			}
 			if len(item.IconSVG) > maxMenuItemIconSVGLen {
 				response.BadRequest(c, "Custom menu item icon SVG is too large (max 10KB)")
@@ -1393,6 +1433,19 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			seen[item.ID] = struct{}{}
 		}
+		headerNavigationQRImages := make(map[string]string)
+		for i := range items {
+			if items[i].NavType == "qr" {
+				headerNavigationQRImages[items[i].ID] = items[i].QRImage
+			}
+			items[i].QRImage = ""
+		}
+		headerNavigationQRImageBytes, err := json.Marshal(headerNavigationQRImages)
+		if err != nil {
+			response.BadRequest(c, "Failed to serialize header navigation QR images")
+			return
+		}
+		headerNavigationQRImagesJSON = string(headerNavigationQRImageBytes)
 		menuBytes, err := json.Marshal(items)
 		if err != nil {
 			response.BadRequest(c, "Failed to serialize custom menu items")
@@ -1688,11 +1741,15 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		HomeContent:                            req.HomeContent,
 		CompactHomeEnabled:                     req.CompactHomeEnabled,
 		HideCcsImportButton:                    req.HideCcsImportButton,
+		ProfileNavEnabled:                      profileNavigationEnabled,
+		SubscriptionNavEnabled:                 subscriptionNavigationEnabled,
+		ModelPlazaNavPlacement:                 modelPlazaPlacement,
 		PurchaseSubscriptionEnabled:            purchaseEnabled,
 		PurchaseSubscriptionURL:                purchaseURL,
 		TableDefaultPageSize:                   req.TableDefaultPageSize,
 		TablePageSizeOptions:                   req.TablePageSizeOptions,
 		CustomMenuItems:                        customMenuJSON,
+		HeaderNavQRImages:                      headerNavigationQRImagesJSON,
 		CustomEndpoints:                        customEndpointsJSON,
 		DefaultConcurrency:                     req.DefaultConcurrency,
 		DefaultBalance:                         req.DefaultBalance,
@@ -2190,6 +2247,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	}
 	passkeyConfigured, passkeyRPID, passkeyRPOrigins := h.settingService.PasskeyConfiguration()
 
+	customMenuItems := dto.AttachHeaderNavQRImages(
+		dto.ParseCustomMenuItems(updatedSettings.CustomMenuItems),
+		updatedSettings.HeaderNavQRImages,
+	)
 	payload := dto.SystemSettings{
 		RegistrationEnabled:                                    updatedSettings.RegistrationEnabled,
 		EmailVerifyEnabled:                                     updatedSettings.EmailVerifyEnabled,
@@ -2320,11 +2381,14 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		HomeContent:                                            updatedSettings.HomeContent,
 		CompactHomeEnabled:                                     updatedSettings.CompactHomeEnabled,
 		HideCcsImportButton:                                    updatedSettings.HideCcsImportButton,
+		ProfileNavEnabled:                                      updatedSettings.ProfileNavEnabled,
+		SubscriptionNavEnabled:                                 updatedSettings.SubscriptionNavEnabled,
+		ModelPlazaNavPlacement:                                 updatedSettings.ModelPlazaNavPlacement,
 		PurchaseSubscriptionEnabled:                            updatedSettings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:                                updatedSettings.PurchaseSubscriptionURL,
 		TableDefaultPageSize:                                   updatedSettings.TableDefaultPageSize,
 		TablePageSizeOptions:                                   updatedSettings.TablePageSizeOptions,
-		CustomMenuItems:                                        dto.ParseCustomMenuItems(updatedSettings.CustomMenuItems),
+		CustomMenuItems:                                        customMenuItems,
 		CustomEndpoints:                                        dto.ParseCustomEndpoints(updatedSettings.CustomEndpoints),
 		DefaultConcurrency:                                     updatedSettings.DefaultConcurrency,
 		DefaultBalance:                                         updatedSettings.DefaultBalance,

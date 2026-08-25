@@ -11,6 +11,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
+	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -110,6 +111,38 @@ func (h *SettingHandler) GetCommunityQRImage(c *gin.Context) {
 	image, ok := service.DecodeCommunityQRImage(rawImage)
 	if !ok {
 		response.NotFound(c, "community QR image not found")
+		return
+	}
+	c.Data(http.StatusOK, image.MIMEType, image.Content)
+}
+
+// GetHeaderNavigationQRImage serves one validated per-entry QR image. The
+// route remains authenticated so QR bytes never enter anonymous settings JSON.
+func (h *SettingHandler) GetHeaderNavigationQRImage(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
+	c.Header("X-Content-Type-Options", "nosniff")
+
+	role, ok := middleware2.GetUserRoleFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	rawImage, enabled, err := h.settingService.GetHeaderNavigationQRImage(
+		c.Request.Context(),
+		strings.TrimSpace(c.Param("id")),
+		role,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if !enabled {
+		response.NotFound(c, "header navigation QR image not found")
+		return
+	}
+	image, ok := service.DecodeCommunityQRImage(rawImage)
+	if !ok {
+		response.NotFound(c, "header navigation QR image not found")
 		return
 	}
 	c.Data(http.StatusOK, image.MIMEType, image.Content)
