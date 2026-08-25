@@ -51,6 +51,9 @@ export function publicSettings(mode: 'v1' | 'v2' = 'v2') {
     home_content: '',
     compact_home_enabled: false,
     hide_ccs_import_button: false,
+    profile_navigation_enabled: true,
+    subscription_navigation_enabled: true,
+    model_plaza_placement: 'header',
     payment_enabled: false,
     risk_control_enabled: false,
     table_default_page_size: 20,
@@ -364,12 +367,18 @@ export async function seedConsole(
   options: {
     authenticated?: boolean
     user?: typeof adminUser
+    authMeUsers?: Array<typeof adminUser>
     communityQrEnabled?: boolean
     communityQrImage?: string
     communityQrTitle?: string
     communityQrDescription?: string
     affiliateEnabled?: boolean
     locale?: 'en' | 'zh'
+    profileNavigationEnabled?: boolean
+    subscriptionNavigationEnabled?: boolean
+    modelPlazaPlacement?: 'header' | 'sidebar'
+    userSidebarOrder?: string[]
+    adminSidebarOrder?: string[]
     customMenuItems?: Array<{
       id: string
       label: string
@@ -377,6 +386,9 @@ export async function seedConsole(
       url: string
       visibility: 'user' | 'admin' | 'all'
       placement?: 'sidebar' | 'header' | 'both'
+      navigation_type?: 'qr'
+      qr_description?: string
+      qr_image?: string
       sort_order: number
     }>
   } = {},
@@ -397,8 +409,14 @@ export async function seedConsole(
     affiliate_rebate_per_invitee_cap: 0,
     affiliate_admin_recharge_enabled: false,
     custom_menu_items: options.customMenuItems ?? [],
+    profile_navigation_enabled: options.profileNavigationEnabled ?? true,
+    subscription_navigation_enabled: options.subscriptionNavigationEnabled ?? true,
+    model_plaza_placement: options.modelPlazaPlacement ?? 'header',
+    user_sidebar_order: options.userSidebarOrder ?? [],
+    admin_sidebar_order: options.adminSidebarOrder ?? [],
   }
   let communityQrImage = options.communityQrImage ?? ''
+  let authMeRequestIndex = 0
   const affiliateUsers = [
     { id: 10, email: 'inviter@01yapi.test', username: '邀请人甲', role: 'user', status: 'active', created_at: '2026-02-01T00:00:00+08:00' },
     { id: 20, email: 'missed@01yapi.test', username: '遗漏客户乙', role: 'user', status: 'active', created_at: '2026-03-01T00:00:00+08:00' },
@@ -446,7 +464,12 @@ export async function seedConsole(
         user,
       })
     }
-    if (path === '/auth/me') return fulfill(route, user)
+    if (path === '/auth/me') {
+      const sequence = options.authMeUsers ?? []
+      const responseUser = sequence[Math.min(authMeRequestIndex, Math.max(0, sequence.length - 1))] ?? user
+      authMeRequestIndex += 1
+      return fulfill(route, responseUser)
+    }
     if (path === '/settings/community-qr') {
       if (route.request().headers().authorization !== 'Bearer visual-fixture-token') {
         return route.fulfill({ status: 401, body: 'unauthorized' })
@@ -461,12 +484,28 @@ export async function seedConsole(
         body: Buffer.from(communityQrPngBase64, 'base64'),
       })
     }
+    if (/^\/settings\/header-navigation\/[^/]+\/qr$/.test(path)) {
+      if (route.request().headers().authorization !== 'Bearer visual-fixture-token') {
+        return route.fulfill({ status: 401, body: 'unauthorized' })
+      }
+      const id = decodeURIComponent(path.split('/')[3])
+      const item = settings.custom_menu_items.find((candidate) => candidate.id === id)
+      if (!item || item.navigation_type !== 'qr' || !item.qr_image) {
+        return route.fulfill({ status: 404, body: 'not found' })
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: 'image/png',
+        headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
+        body: Buffer.from(communityQrPngBase64, 'base64'),
+      })
+    }
     if (path === '/settings/public') {
       return fulfill(route, {
         ...settings,
-        custom_menu_items: settings.custom_menu_items.filter(
-          (item) => item.visibility !== 'admin',
-        ),
+        custom_menu_items: settings.custom_menu_items
+          .filter((item) => item.visibility !== 'admin')
+          .map(({ qr_image: _qrImage, ...item }) => item),
       })
     }
     if (path === '/admin/settings' && route.request().method() === 'PUT') {
@@ -476,6 +515,11 @@ export async function seedConsole(
         community_qr_title?: string
         community_qr_description?: string
         custom_menu_items?: typeof settings.custom_menu_items
+        profile_navigation_enabled?: boolean
+        subscription_navigation_enabled?: boolean
+        model_plaza_placement?: 'header' | 'sidebar'
+        user_sidebar_order?: string[]
+        admin_sidebar_order?: string[]
         affiliate_enabled?: boolean
         affiliate_rebate_rate?: number
         affiliate_rebate_freeze_hours?: number
@@ -497,6 +541,21 @@ export async function seedConsole(
       }
       if (Array.isArray(submitted.custom_menu_items)) {
         settings.custom_menu_items = submitted.custom_menu_items
+      }
+      if (typeof submitted.profile_navigation_enabled === 'boolean') {
+        settings.profile_navigation_enabled = submitted.profile_navigation_enabled
+      }
+      if (typeof submitted.subscription_navigation_enabled === 'boolean') {
+        settings.subscription_navigation_enabled = submitted.subscription_navigation_enabled
+      }
+      if (submitted.model_plaza_placement === 'header' || submitted.model_plaza_placement === 'sidebar') {
+        settings.model_plaza_placement = submitted.model_plaza_placement
+      }
+      if (Array.isArray(submitted.user_sidebar_order)) {
+        settings.user_sidebar_order = submitted.user_sidebar_order
+      }
+      if (Array.isArray(submitted.admin_sidebar_order)) {
+        settings.admin_sidebar_order = submitted.admin_sidebar_order
       }
       if (typeof submitted.affiliate_enabled === 'boolean') {
         settings.affiliate_enabled = submitted.affiliate_enabled

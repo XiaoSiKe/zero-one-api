@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -28,7 +29,8 @@ func (s *settingHandlerPublicRepoStub) Get(ctx context.Context, key string) (*se
 }
 
 func (s *settingHandlerPublicRepoStub) GetValue(ctx context.Context, key string) (string, error) {
-	panic("unexpected GetValue call")
+	s.requestedKeys = []string{key}
+	return s.values[key], nil
 }
 
 func (s *settingHandlerPublicRepoStub) Set(ctx context.Context, key, value string) error {
@@ -130,6 +132,8 @@ func TestSettingHandler_GetPublicSettings_ProjectsUserAndAllCustomMenus(t *testi
 			{"id":"admin-help","visibility":"admin"},
 			{"id":"invalid-help","visibility":"guest"}
 		]`,
+		service.SettingKeyUserSidebarOrder:  `["/keys","/dashboard"]`,
+		service.SettingKeyAdminSidebarOrder: `["/admin/settings","/admin/dashboard"]`,
 	}}
 	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
 
@@ -141,7 +145,9 @@ func TestSettingHandler_GetPublicSettings_ProjectsUserAndAllCustomMenus(t *testi
 	require.Equal(t, http.StatusOK, recorder.Code)
 	var resp struct {
 		Data struct {
-			CustomMenuItems []struct {
+			UserSidebarOrder  []string `json:"user_sidebar_order"`
+			AdminSidebarOrder []string `json:"admin_sidebar_order"`
+			CustomMenuItems   []struct {
 				ID         string `json:"id"`
 				Visibility string `json:"visibility"`
 			} `json:"custom_menu_items"`
@@ -149,6 +155,8 @@ func TestSettingHandler_GetPublicSettings_ProjectsUserAndAllCustomMenus(t *testi
 	}
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
 	require.Len(t, resp.Data.CustomMenuItems, 2)
+	require.Equal(t, []string{"/keys", "/dashboard"}, resp.Data.UserSidebarOrder)
+	require.Equal(t, []string{"/admin/settings", "/admin/dashboard"}, resp.Data.AdminSidebarOrder)
 	require.Equal(t, []string{"user-help", "shared-help"}, []string{
 		resp.Data.CustomMenuItems[0].ID,
 		resp.Data.CustomMenuItems[1].ID,
@@ -523,6 +531,115 @@ func TestSettingHandler_GetCommunityQRImageServesValidatedBytesFromNarrowSetting
 	require.Equal(t, "nosniff", recorder.Header().Get("X-Content-Type-Options"))
 	require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"))
 	require.Equal(t, []string{service.SettingKeyCommunityQREnabled, service.SettingKeyCommunityQRImage}, repo.requestedKeys)
+}
+
+func TestSettingHandler_GetHeaderNavigationQRImageServesOnlyTheRequestedEntry(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	encoded := "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP8zwACTGCSAQANHQEDgslx/wAAAABJRU5ErkJggg=="
+	content, err := base64.StdEncoding.DecodeString(encoded)
+	require.NoError(t, err)
+	rawImage := "data:image/png;base64," + encoded
+	menuJSON, err := json.Marshal([]map[string]any{
+		{"id": "support", "placement": "header", "navigation_type": "qr", "visibility": "all"},
+		{"id": "docs", "placement": "both", "url": "https://example.com"},
+	})
+	require.NoError(t, err)
+	imageJSON, err := json.Marshal(map[string]string{"support": rawImage})
+	require.NoError(t, err)
+	repo := &settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeyCustomMenuItems:   string(menuJSON),
+		service.SettingKeyHeaderNavQRImages: string(imageJSON),
+	}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Params = gin.Params{{Key: "id", Value: "support"}}
+	c.Set(string(middleware2.ContextKeyUserRole), "user")
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/header-navigation/support/qr", nil)
+	h.GetHeaderNavigationQRImage(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, content, recorder.Body.Bytes())
+	require.Equal(t, "image/png", recorder.Header().Get("Content-Type"))
+	require.Equal(t, []string{
+		service.SettingKeyCustomMenuItems,
+		service.SettingKeyHeaderNavQRImages,
+	}, repo.requestedKeys)
+}
+
+func TestSettingHandler_GetHeaderNavigationQRImageHonorsRoleVisibility(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rawImage := "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP8zwACTGCSAQANHQEDgslx/wAAAABJRU5ErkJggg=="
+	menuJSON, err := json.Marshal([]map[string]any{{
+		"id": "admin-support", "placement": "header", "navigation_type": "qr", "visibility": "admin",
+	}})
+	require.NoError(t, err)
+	imageJSON, err := json.Marshal(map[string]string{"admin-support": rawImage})
+	require.NoError(t, err)
+	repo := &settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeyCustomMenuItems:   string(menuJSON),
+		service.SettingKeyHeaderNavQRImages: string(imageJSON),
+	}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+
+	requestAs := func(role string) *httptest.ResponseRecorder {
+		recorder := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(recorder)
+		c.Params = gin.Params{{Key: "id", Value: "admin-support"}}
+		c.Set(string(middleware2.ContextKeyUserRole), role)
+		c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/header-navigation/admin-support/qr", nil)
+		h.GetHeaderNavigationQRImage(c)
+		return recorder
+	}
+
+	require.Equal(t, http.StatusNotFound, requestAs("user").Code)
+	require.Equal(t, http.StatusOK, requestAs("admin").Code)
+}
+
+func TestSettingHandler_GetHeaderNavigationQRImageFailsClosed(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	validImage := "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP8zwACTGCSAQANHQEDgslx/wAAAABJRU5ErkJggg=="
+	menuJSON, err := json.Marshal([]map[string]any{
+		{"id": "sidebar", "placement": "sidebar", "navigation_type": "qr", "visibility": "all"},
+		{"id": "link", "placement": "header", "visibility": "all"},
+		{"id": "broken", "placement": "header", "navigation_type": "qr", "visibility": "all"},
+	})
+	require.NoError(t, err)
+	imageJSON, err := json.Marshal(map[string]string{
+		"sidebar": validImage,
+		"link":    validImage,
+		"broken":  "data:image/png;base64,%%%",
+	})
+	require.NoError(t, err)
+	repo := &settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeyCustomMenuItems:   string(menuJSON),
+		service.SettingKeyHeaderNavQRImages: string(imageJSON),
+	}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
+
+	request := func(id string, authenticated bool) *httptest.ResponseRecorder {
+		recorder := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(recorder)
+		c.Params = gin.Params{{Key: "id", Value: id}}
+		if authenticated {
+			c.Set(string(middleware2.ContextKeyUserRole), "user")
+		}
+		c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/header-navigation/"+id+"/qr", nil)
+		h.GetHeaderNavigationQRImage(c)
+		return recorder
+	}
+
+	unauthorized := request("sidebar", false)
+	require.Equal(t, http.StatusUnauthorized, unauthorized.Code)
+	require.Equal(t, "no-store", unauthorized.Header().Get("Cache-Control"))
+	require.Equal(t, "nosniff", unauthorized.Header().Get("X-Content-Type-Options"))
+	for _, id := range []string{"missing", "sidebar", "link", "broken"} {
+		recorder := request(id, true)
+		require.Equal(t, http.StatusNotFound, recorder.Code, id)
+		require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"), id)
+		require.Equal(t, "nosniff", recorder.Header().Get("X-Content-Type-Options"), id)
+	}
 }
 
 func TestSettingHandler_GetCommunityQRImageRejectsInvalidValues(t *testing.T) {

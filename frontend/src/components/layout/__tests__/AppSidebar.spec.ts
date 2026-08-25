@@ -68,6 +68,35 @@ describe('AppSidebar custom menu placement', () => {
   })
 })
 
+describe('AppSidebar configurable built-in navigation', () => {
+  it('gates profile and subscription entries with public settings', () => {
+    expect(componentSource).toContain('profileNavigationEnabled')
+    expect(componentSource).toContain('subscriptionNavigationEnabled')
+    expect(componentSource).toContain("path: '/profile'")
+    expect(componentSource).toContain("path: '/subscriptions'")
+    expect(componentSource).toContain(
+      "{ path: '/admin/subscriptions', label: t('nav.subscriptions'), icon: CreditCardIcon, hideInSimpleMode: true },"
+    )
+    expect(componentSource).not.toContain(
+      "{ path: '/admin/subscriptions', label: t('nav.subscriptions'), icon: CreditCardIcon, hideInSimpleMode: true, featureFlag: flagSubscriptionNavigation },"
+    )
+  })
+
+  it('moves Model Plaza into the sidebar only when configured there', () => {
+    expect(componentSource).toContain('modelPlazaPlacement')
+    expect(componentSource).toContain("path: '/model-plaza'")
+    expect(componentSource).toContain('flagModelPlazaInSidebar')
+  })
+
+  it('applies persisted role-specific sidebar order after visibility filtering', () => {
+    expect(componentSource).toContain('user_sidebar_order')
+    expect(componentSource).toContain('admin_sidebar_order')
+    expect(componentSource).toContain('sortNavItems')
+    expect(componentSource).toContain('userSidebarOrder.value')
+    expect(componentSource).toContain('adminSidebarOrder.value')
+  })
+})
+
 describe('AppSidebar affiliate navigation', () => {
   it('keeps the admin entry top-level and always reachable while gating the user entry', () => {
     const adminStart = componentSource.indexOf("      path: '/admin/affiliates',")

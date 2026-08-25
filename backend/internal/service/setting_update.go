@@ -374,6 +374,11 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyHomeContent] = settings.HomeContent
 	updates[SettingKeyCompactHomeEnabled] = strconv.FormatBool(settings.CompactHomeEnabled)
 	updates[SettingKeyHideCcsImportButton] = strconv.FormatBool(settings.HideCcsImportButton)
+	updates[SettingKeyProfileNavEnabled] = strconv.FormatBool(settings.ProfileNavEnabled)
+	updates[SettingKeySubscriptionNavEnabled] = strconv.FormatBool(settings.SubscriptionNavEnabled)
+	updates[SettingKeyModelPlazaNavPlacement] = normalizeModelPlazaNavPlacement(settings.ModelPlazaNavPlacement)
+	updates[SettingKeyUserSidebarOrder] = normalizeSidebarOrderJSON(settings.UserSidebarOrder)
+	updates[SettingKeyAdminSidebarOrder] = normalizeSidebarOrderJSON(settings.AdminSidebarOrder)
 	updates[SettingKeyPurchaseSubscriptionEnabled] = strconv.FormatBool(settings.PurchaseSubscriptionEnabled)
 	updates[SettingKeyPurchaseSubscriptionURL] = strings.TrimSpace(settings.PurchaseSubscriptionURL)
 	tableDefaultPageSize, tablePageSizeOptions := normalizeTablePreferences(
@@ -387,6 +392,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	}
 	updates[SettingKeyTablePageSizeOptions] = string(tablePageSizeOptionsJSON)
 	updates[SettingKeyCustomMenuItems] = settings.CustomMenuItems
+	updates[SettingKeyHeaderNavQRImages] = settings.HeaderNavQRImages
 	updates[SettingKeyCustomEndpoints] = settings.CustomEndpoints
 
 	// 默认配置

@@ -1,566 +1,566 @@
-// Community QR adapter for the approved recovered Console snapshot.
-//
-// The source Console owns this feature going forward. This adapter keeps the
-// currently deployed snapshot functional until a newly approved UI snapshot
-// replaces it, and deliberately yields whenever native UI is present.
+// Navigation settings adapter for the approved recovered Console.
+// The legacy asset name is retained to preserve immutable snapshot URLs.
 const ADMIN_SETTINGS_PATH = '/admin/settings'
 const ADMIN_SETTINGS_API = '/api/v1/admin/settings'
-const COMMUNITY_QR_IMAGE_URL = '/api/v1/settings/community-qr'
-const MAX_IMAGE_BYTES = 300 * 1024
-const SUPPORTED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp'])
-const DEFAULT_COMMUNITY_TITLE = '交流群'
-const DEFAULT_COMMUNITY_DESCRIPTION = '扫码加入交流群获取支持'
-const communityConfig = window.__APP_CONFIG__ || {}
+const MAX_MENU_ITEMS = 20
+const MAX_QR_BYTES = 300 * 1024
+const MAX_SVG_BYTES = 10 * 1024
+const SUPPORTED_QR_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp'])
 
-let communityEnabled = communityConfig.community_qr_enabled === true
-let communityTitle = normalizedCopy(communityConfig.community_qr_title, DEFAULT_COMMUNITY_TITLE)
-let communityDescription = normalizedCopy(
-  communityConfig.community_qr_description,
-  DEFAULT_COMMUNITY_DESCRIPTION,
-)
-let openDialog = null
+const USER_SIDEBAR_ITEMS = [
+  ['/dashboard', '仪表盘', 'Dashboard'],
+  ['/model-plaza', '模型广场', 'Model Plaza'],
+  ['/keys', 'API 密钥', 'API Keys'],
+  ['/batch-image', '批量图片', 'Batch Images'],
+  ['/usage', '使用记录', 'Usage'],
+  ['/available-channels', '可用渠道', 'Available Channels'],
+  ['/monitor', '渠道状态', 'Channel Status'],
+  ['/subscriptions', '我的订阅', 'My Subscriptions'],
+  ['/purchase', '购买订阅', 'Buy Subscription'],
+  ['/orders', '我的订单', 'My Orders'],
+  ['/redeem', '兑换', 'Redeem'],
+  ['/affiliate', '邀请返利', 'Affiliate'],
+  ['/profile', '个人资料', 'Profile'],
+]
 
-function normalizedCopy(value, fallback) {
-  return typeof value === 'string' && value.trim() ? value.trim() : fallback
+const ADMIN_SIDEBAR_ITEMS = [
+  ['/admin/dashboard', '仪表盘', 'Dashboard'],
+  ['/model-plaza', '模型广场', 'Model Plaza'],
+  ['/admin/ops', '运维监控', 'Operations'],
+  ['/admin/users', '用户管理', 'Users'],
+  ['/admin/groups', '分组管理', 'Groups'],
+  ['/admin/channels', '渠道管理', 'Channels'],
+  ['/admin/subscriptions', '订阅管理', 'Subscriptions'],
+  ['/admin/accounts', '账号管理', 'Accounts'],
+  ['/admin/announcements', '公告', 'Announcements'],
+  ['/admin/proxies', 'IP 管理', 'IP Management'],
+  ['/admin/security-audit', '安全审计', 'Security Audit'],
+  ['/admin/redeem', '兑换码', 'Redeem Codes'],
+  ['/admin/promo-codes', '优惠码', 'Promo Codes'],
+  ['/admin/affiliates', '邀请返利', 'Affiliate'],
+  ['/admin/orders', '订单管理', 'Orders'],
+  ['/admin/usage', '使用记录', 'Usage'],
+  ['/admin/audit-logs', '操作日志', 'Audit Logs'],
+  ['/admin/settings', '系统设置', 'Settings'],
+]
+
+const ICON_PRESETS = [
+  ['link', '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H15a4.5 4.5 0 010 9h-1.5m-3 0H9a4.5 4.5 0 010-9h1.5m-3 6h9"/></svg>'],
+  ['users', '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.1 9.1 0 00.98.06 8.96 8.96 0 003.02-.52 4.5 4.5 0 00-6.9-3.96M15 6.75a3 3 0 11-6 0 3 3 0 016 0zM4.5 20.12a7.5 7.5 0 0115 0A17.9 17.9 0 0112 21.75a17.9 17.9 0 01-7.5-1.63z"/></svg>'],
+  ['gift', '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.75h16.5v10.5H3.75V9.75zM2.25 6.75h19.5v3H2.25v-3zM12 6.75v13.5m0-13.5H9.75a2.25 2.25 0 110-4.5C12 2.25 12 6.75 12 6.75zm0 0h2.25a2.25 2.25 0 100-4.5C12 2.25 12 6.75 12 6.75z"/></svg>'],
+  ['book', '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 4.5A2.25 2.25 0 016.75 2.25H12v18H6.75A2.25 2.25 0 004.5 22.5v-18zm15 0a2.25 2.25 0 00-2.25-2.25H12v18h5.25a2.25 2.25 0 012.25 2.25v-18z"/></svg>'],
+  ['star', '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.5a.56.56 0 011.04 0l2.12 5.1a.56.56 0 00.47.34l5.5.44a.56.56 0 01.32.98l-4.2 3.59a.56.56 0 00-.18.55l1.28 5.37a.56.56 0 01-.84.61l-4.72-2.88a.56.56 0 00-.58 0l-4.72 2.88a.56.56 0 01-.84-.61l1.28-5.37a.56.56 0 00-.18-.55l-4.2-3.59a.56.56 0 01.32-.98l5.5-.44a.56.56 0 00.47-.34l2.12-5.1z"/></svg>'],
+]
+window.__ZERO_ONE_NAVIGATION_ICON_PRESETS__ = ICON_PRESETS
+
+let adminMenuItems = []
+let adminSettingsLoading = false
+let profileNavigationEnabled = true
+let subscriptionNavigationEnabled = true
+let modelPlazaPlacement = 'header'
+let userSidebarOrder = []
+let adminSidebarOrder = []
+
+function localText(zh, en) {
+  const locale = localStorage.getItem('sub2api_locale') || document.documentElement.lang || 'zh-CN'
+  return locale.toLowerCase().startsWith('zh') ? zh : en
 }
 
 function createElement(tagName, attributes = {}, text = '') {
   const element = document.createElement(tagName)
   for (const [name, value] of Object.entries(attributes)) {
     if (name === 'class') element.className = value
-    else if (name === 'dataset') Object.assign(element.dataset, value)
     else element.setAttribute(name, value)
   }
   if (text) element.textContent = text
   return element
 }
 
-function readAuthenticatedUser() {
+function authenticatedAdmin() {
   const token = localStorage.getItem('auth_token')
   const rawUser = localStorage.getItem('auth_user')
-  if (!token || !rawUser) return null
+  if (!token || !rawUser) return false
   try {
-    const user = JSON.parse(rawUser)
-    return user && typeof user === 'object' ? user : null
+    return JSON.parse(rawUser)?.role === 'admin'
   } catch {
-    return null
+    return false
   }
 }
 
-function isNativeElement(testId, overlayMarker) {
-  return [...document.querySelectorAll(`[data-testid="${testId}"]`)].some(
-    (element) => element.getAttribute('data-zero-one-community-qr') !== overlayMarker,
-  )
-}
-
-function createCommunityIcon() {
-  const svg = createElement('svg', {
-    'aria-hidden': 'true',
-    class: 'zero-one-community-qr-icon',
-    fill: 'none',
-    viewBox: '0 0 24 24',
-    stroke: 'currentColor',
-    'stroke-width': '1.7',
-  })
-  const people = createElement('path', {
-    'stroke-linecap': 'round',
-    'stroke-linejoin': 'round',
-    d: 'M18 18.75a6 6 0 00-12 0m9-10.5a3 3 0 11-6 0 3 3 0 016 0zm4.5 9.75a4.5 4.5 0 00-3.2-4.3m.95-7.45a2.25 2.25 0 010 4.5',
-  })
-  svg.append(people)
-  return svg
-}
-
-function closeCommunityDialog() {
-  if (!openDialog) return
-  const {
-    root,
-    trigger,
-    previousBodyOverflow,
-    onKeyDown,
-    imageAbortController,
-    imageObjectUrl,
-  } = openDialog
-  openDialog = null
-  imageAbortController.abort()
-  if (imageObjectUrl) URL.revokeObjectURL(imageObjectUrl)
-  document.removeEventListener('keydown', onKeyDown)
-  document.body.style.overflow = previousBodyOverflow
-  root.remove()
-  if (trigger?.isConnected) trigger.focus()
-  trigger?.setAttribute('aria-expanded', 'false')
-}
-
-function openCommunityDialog(trigger) {
-  if (openDialog) return
-
-  const previousBodyOverflow = document.body.style.overflow
-  const titleId = 'zero-one-community-qr-title'
-  const descriptionId = 'zero-one-community-qr-description'
-  const root = createElement('div', {
-    class: 'zero-one-community-qr-backdrop',
-    'data-testid': 'community-qr-dialog',
-    'data-zero-one-community-qr': 'dialog',
-  })
-  const dialog = createElement('section', {
-    class: 'zero-one-community-qr-dialog',
-    role: 'dialog',
-    'aria-modal': 'true',
-    'aria-labelledby': titleId,
-    'aria-describedby': descriptionId,
-  })
-  const header = createElement('header', { class: 'zero-one-community-qr-dialog-header' })
-  const heading = createElement('div')
-  heading.append(
-    createElement('h2', { id: titleId }, communityTitle),
-    createElement('p', { id: descriptionId }, communityDescription),
-  )
-  const closeButton = createElement('button', {
-    class: 'zero-one-community-qr-close',
-    type: 'button',
-    'aria-label': '关闭交流群二维码',
-    'data-testid': 'community-qr-dialog-close',
-  }, '×')
-  closeButton.addEventListener('click', closeCommunityDialog)
-  header.append(heading, closeButton)
-
-  const imageShell = createElement('div', { class: 'zero-one-community-qr-image-shell' })
-  const image = createElement('img', {
-    alt: '交流群二维码',
-    'data-testid': 'community-qr-image',
-    hidden: '',
-  })
-  const imageStatus = createElement(
-    'p',
-    { class: 'zero-one-community-qr-image-error', role: 'status', 'aria-live': 'polite' },
-    '正在安全加载二维码…',
-  )
-  let dialogState = null
-  image.addEventListener('error', () => {
-    if (openDialog !== dialogState) return
-    if (dialogState.imageObjectUrl) {
-      URL.revokeObjectURL(dialogState.imageObjectUrl)
-      dialogState.imageObjectUrl = ''
-    }
-    image.hidden = true
-    imageStatus.textContent = '二维码暂时无法加载，请稍后重试。'
-    imageStatus.setAttribute('role', 'alert')
-    imageStatus.hidden = false
-  })
-  imageShell.append(image, imageStatus)
-  dialog.append(header, imageShell)
-  root.append(dialog)
-
-  const onKeyDown = (event) => {
-    if (event.key === 'Escape') {
-      event.preventDefault()
-      closeCommunityDialog()
-      return
-    }
-    if (event.key === 'Tab') {
-      event.preventDefault()
-      closeButton.focus()
-    }
-  }
-  root.addEventListener('click', (event) => {
-    if (event.target === root) closeCommunityDialog()
-  })
-  document.addEventListener('keydown', onKeyDown)
-  document.body.append(root)
-  document.body.style.overflow = 'hidden'
-  trigger.setAttribute('aria-expanded', 'true')
-  const imageAbortController = new AbortController()
-  dialogState = {
-    root,
-    trigger,
-    previousBodyOverflow,
-    onKeyDown,
-    imageAbortController,
-    imageObjectUrl: '',
-  }
-  openDialog = dialogState
-  void loadAuthenticatedCommunityQrImage(dialogState, image, imageStatus)
-  closeButton.focus()
-}
-
-async function loadAuthenticatedCommunityQrImage(dialogState, image, imageStatus) {
-  try {
-    const headers = apiHeaders(false, false)
-    headers.Accept = 'image/png, image/jpeg, image/webp'
-    const response = await fetch(COMMUNITY_QR_IMAGE_URL, {
-      credentials: 'same-origin',
-      headers,
-      signal: dialogState.imageAbortController.signal,
-    })
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-
-    const contentType = (response.headers.get('Content-Type') || '')
-      .toLowerCase()
-      .split(';', 1)[0]
-    if (!SUPPORTED_IMAGE_TYPES.has(contentType)) {
-      throw new Error('Unsupported community QR image response')
-    }
-    const imageBlob = await response.blob()
-    if (imageBlob.size === 0) throw new Error('Empty community QR image response')
-    if (openDialog !== dialogState) return
-
-    const objectUrl = URL.createObjectURL(imageBlob)
-    if (openDialog !== dialogState) {
-      URL.revokeObjectURL(objectUrl)
-      return
-    }
-    dialogState.imageObjectUrl = objectUrl
-    image.src = objectUrl
-    image.hidden = false
-    imageStatus.hidden = true
-  } catch {
-    if (openDialog !== dialogState || dialogState.imageAbortController.signal.aborted) return
-    image.hidden = true
-    imageStatus.textContent = '二维码暂时无法加载，请稍后重试。'
-    imageStatus.setAttribute('role', 'alert')
-    imageStatus.hidden = false
-  }
-}
-
-function removeOverlayButton() {
-  document
-    .querySelector('[data-zero-one-community-qr="button"]')
-    ?.remove()
-  closeCommunityDialog()
-}
-
-function ensureCommunityButton() {
-  if (!communityEnabled || !readAuthenticatedUser()) {
-    removeOverlayButton()
-    return
-  }
-  if (isNativeElement('community-qr-button', 'button')) {
-    removeOverlayButton()
-    return
-  }
-  const existingButton = document.querySelector('[data-zero-one-community-qr="button"]')
-  if (existingButton instanceof HTMLButtonElement) {
-    const accessibleName = `打开${communityTitle}二维码`
-    if (existingButton.getAttribute('aria-label') !== accessibleName) {
-      existingButton.setAttribute('aria-label', accessibleName)
-    }
-    const label = existingButton.querySelector('span')
-    if (label && label.textContent !== communityTitle) label.textContent = communityTitle
-    return
-  }
-
-  const header = document.querySelector('header.app-header-surface')
-  if (!(header instanceof HTMLElement)) return
-  const modelPlaza = header.querySelector('a[href^="/model-plaza"]')
-  const actionRow = modelPlaza?.parentElement || header.querySelector(':scope > div > div:last-child')
-  if (!(actionRow instanceof HTMLElement)) return
-
-  const button = createElement('button', {
-    class: 'zero-one-community-qr-trigger',
-    type: 'button',
-    'aria-label': `打开${communityTitle}二维码`,
-    'aria-haspopup': 'dialog',
-    'aria-expanded': 'false',
-    'data-testid': 'community-qr-button',
-    'data-zero-one-community-qr': 'button',
-  })
-  button.append(createCommunityIcon(), createElement('span', {}, communityTitle))
-  button.addEventListener('click', () => openCommunityDialog(button))
-
-  if (modelPlaza) modelPlaza.after(button)
-  else actionRow.prepend(button)
-}
-
-function apiHeaders(includeContentType = false, includeAdminMarker = true) {
+function apiHeaders(includeContentType = false) {
   const headers = {
     Accept: 'application/json',
-    'Accept-Language': localStorage.getItem('sub2api_locale') || document.documentElement.lang || 'zh-CN',
+    'Accept-Language': localStorage.getItem('sub2api_locale') || 'zh-CN',
+    'X-Admin-UI-Request': '1',
   }
-  if (includeAdminMarker) Object.assign(headers, { 'X-Admin-UI-Request': '1' })
   const token = localStorage.getItem('auth_token')
-  if (token) headers.Authorization = `Bearer ${token}`
+  if (token) headers.Authorization = 'Bearer ' + token
   if (includeContentType) headers['Content-Type'] = 'application/json'
   return headers
 }
 
 async function readApiResponse(response) {
   const payload = await response.json().catch(() => null)
-  if (!response.ok) {
-    throw new Error(payload?.message || `HTTP ${response.status}`)
-  }
+  if (!response.ok) throw new Error(payload?.message || 'HTTP ' + response.status)
   if (payload && typeof payload === 'object' && 'code' in payload) {
-    if (payload.code !== 0) throw new Error(payload.message || '请求失败')
+    if (payload.code !== 0) throw new Error(payload.message || localText('请求失败', 'Request failed'))
     return payload.data
   }
   return payload
 }
 
-function supportedDataImage(value) {
-  return typeof value === 'string' && /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(value)
+function normalizeMenuItems(value) {
+  if (!Array.isArray(value)) return []
+  return value.filter((item) => item && typeof item === 'object').map((item, index) => ({
+    ...item,
+    id: typeof item.id === 'string' ? item.id : '',
+    label: typeof item.label === 'string' ? item.label : '',
+    icon_svg: typeof item.icon_svg === 'string' ? item.icon_svg : '',
+    url: typeof item.url === 'string' ? item.url : '',
+    visibility: ['user', 'admin', 'all'].includes(item.visibility) ? item.visibility : 'all',
+    placement: ['sidebar', 'header', 'both'].includes(item.placement) ? item.placement : 'sidebar',
+    navigation_type: item.navigation_type === 'qr' ? 'qr' : '',
+    qr_description: typeof item.qr_description === 'string' ? item.qr_description : '',
+    qr_image: typeof item.qr_image === 'string' ? item.qr_image : '',
+    sort_order: Number.isFinite(Number(item.sort_order)) ? Number(item.sort_order) : index,
+  }))
 }
 
-function createToggle(initialValue) {
-  const label = createElement('label', { class: 'zero-one-community-qr-toggle' })
-  const input = createElement('input', {
-    type: 'checkbox',
-    role: 'switch',
-    'aria-label': '在顶部导航显示交流群入口',
-    'data-testid': 'community-qr-toggle',
+function normalizeSidebarOrder(value) {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.filter((path) => typeof path === 'string' && path.startsWith('/')))]
+}
+
+function headerEntries() {
+  return adminMenuItems.map((item, index) => ({ item, index }))
+    .filter(({ item }) => item.placement === 'header')
+}
+
+function reindexMenuItems() {
+  adminMenuItems.forEach((item, index) => { item.sort_order = index })
+}
+
+function safeSvgElement(raw, className = '') {
+  if (typeof raw !== 'string' || !raw.trim()) return null
+  const documentNode = new DOMParser().parseFromString(raw, 'image/svg+xml')
+  const svg = documentNode.documentElement
+  if (svg.nodeName.toLowerCase() !== 'svg' || documentNode.querySelector('parsererror')) return null
+  for (const unsafe of svg.querySelectorAll('script, foreignObject, iframe, object, embed, style')) unsafe.remove()
+  for (const node of [svg, ...svg.querySelectorAll('*')]) {
+    for (const attribute of [...node.attributes]) {
+      const name = attribute.name.toLowerCase()
+      if (name.startsWith('on') || name === 'href' || name === 'xlink:href' || name === 'src') {
+        node.removeAttribute(attribute.name)
+      }
+    }
+  }
+  const imported = document.importNode(svg, true)
+  if (className) imported.setAttribute('class', className)
+  imported.setAttribute('aria-hidden', 'true')
+  return imported
+}
+
+function readFile(file, textMode) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onerror = () => reject(new Error(localText('读取文件失败。', 'Failed to read file.')))
+    if (textMode) reader.readAsText(file)
+    else reader.readAsDataURL(file)
   })
-  input.checked = initialValue
-  input.setAttribute('aria-checked', String(initialValue))
-  input.addEventListener('change', () => input.setAttribute('aria-checked', String(input.checked)))
-  label.append(input, createElement('span', { 'aria-hidden': 'true' }))
-  return { label, input }
 }
 
-function buildAdminPanel(cardBody) {
+function applySettings(settings) {
+  adminMenuItems = normalizeMenuItems(settings?.custom_menu_items)
+  profileNavigationEnabled = settings?.profile_navigation_enabled !== false
+  subscriptionNavigationEnabled = settings?.subscription_navigation_enabled !== false
+  modelPlazaPlacement = settings?.model_plaza_placement === 'sidebar' ? 'sidebar' : 'header'
+  userSidebarOrder = normalizeSidebarOrder(settings?.user_sidebar_order)
+  adminSidebarOrder = normalizeSidebarOrder(settings?.admin_sidebar_order)
+}
+
+function sidebarOrderCandidates(role) {
+  const base = (role === 'user' ? USER_SIDEBAR_ITEMS : ADMIN_SIDEBAR_ITEMS)
+    .map(([path, zh, en]) => ({ path, label: localText(zh, en) }))
+  const custom = adminMenuItems
+    .filter((item) => {
+      const visible = item.visibility === role || item.visibility === 'all'
+      return visible && item.placement !== 'header'
+    })
+    .map((item) => ({ path: '/custom/' + item.id, label: item.label }))
+  return [...base, ...custom]
+}
+
+function orderedSidebarItems(role) {
+  const candidates = sidebarOrderCandidates(role)
+  const byPath = new Map(candidates.map((item) => [item.path, item]))
+  const order = role === 'user' ? userSidebarOrder : adminSidebarOrder
+  const ordered = order.flatMap((path) => {
+    const item = byPath.get(path)
+    if (!item) return []
+    byPath.delete(path)
+    return [item]
+  })
+  return [...ordered, ...byPath.values()]
+}
+
+function renderSidebarOrderList(container, role) {
+  container.replaceChildren()
+  const items = orderedSidebarItems(role)
+  const order = items.map((item) => item.path)
+  if (role === 'user') userSidebarOrder = order
+  else adminSidebarOrder = order
+  items.forEach((item, index) => {
+    const row = createElement('div', {
+      class: 'zero-one-sidebar-order-item',
+      'data-sidebar-path': item.path,
+    })
+    row.append(createElement('span', { class: 'zero-one-sidebar-order-index' }, String(index + 1)))
+    row.append(createElement('span', { class: 'zero-one-sidebar-order-label' }, item.label))
+    const actions = createElement('span', { class: 'zero-one-sidebar-order-actions' })
+    ;[[-1, '↑', localText('上移', 'Move up'), 'up'], [1, '↓', localText('下移', 'Move down'), 'down']]
+      .forEach(([direction, glyph, label, key]) => {
+        const button = createElement('button', {
+          type: 'button',
+          'aria-label': label,
+          'data-direction': key,
+        }, glyph)
+        button.disabled = index + direction < 0 || index + direction >= items.length
+        button.addEventListener('click', () => {
+          const next = [...order]
+          const target = index + direction
+          ;[next[index], next[target]] = [next[target], next[index]]
+          if (role === 'user') userSidebarOrder = next
+          else adminSidebarOrder = next
+          renderSidebarOrderList(container, role)
+        })
+        actions.append(button)
+      })
+    row.append(actions)
+    container.append(row)
+  })
+}
+
+function createSidebarOrderEditor(role) {
+  const details = createElement('details', {
+    class: 'zero-one-sidebar-order-section',
+    'data-testid': role + '-sidebar-order-section',
+  })
+  details.append(createElement('summary', {}, role === 'user'
+    ? localText('普通用户侧栏顺序', 'Regular User Sidebar Order')
+    : localText('管理员侧栏顺序', 'Administrator Sidebar Order')))
+  details.append(createElement('p', {}, role === 'user'
+    ? localText('同时用于管理员“我的账户”分区；隐藏项目保留其排序位置。', 'Also applies to the administrator My Account section; hidden items keep their position.')
+    : localText('调整管理功能和管理员可见自定义页面的先后顺序。', 'Order administration features and administrator-visible custom pages.')))
+  const list = createElement('div', {
+    class: 'zero-one-sidebar-order-list',
+    'data-testid': role + '-sidebar-order-list',
+  })
+  renderSidebarOrderList(list, role)
+  details.append(list)
+  return details
+}
+
+function createToggleRow(title, hint, checked, testId, onChange) {
+  const row = createElement('label', { class: 'zero-one-navigation-toggle-row' })
+  const copy = createElement('span')
+  copy.append(createElement('strong', {}, title), createElement('small', {}, hint))
+  const input = createElement('input', { type: 'checkbox', 'data-testid': testId })
+  input.checked = checked
+  input.addEventListener('change', () => onChange(input.checked))
+  row.append(copy, input)
+  return row
+}
+
+function createIconChooser(item, visibleIndex, rerender) {
+  const editor = createElement('div', { class: 'zero-one-navigation-icon-editor' })
+  editor.append(createElement('span', {}, localText('SVG 图标', 'SVG Icon')))
+  const choices = createElement('div', {
+    class: 'zero-one-navigation-icon-choices',
+    role: 'group',
+    'aria-label': localText('内置 SVG 图标', 'Built-in SVG icons'),
+    'data-testid': 'header-navigation-icon-' + visibleIndex,
+  })
+  ICON_PRESETS.forEach(([id, svg]) => {
+    const selected = item.icon_svg === svg
+    const button = createElement('button', {
+      type: 'button',
+      class: 'zero-one-navigation-icon-choice' + (selected ? ' is-selected' : ''),
+      title: id,
+      'aria-label': id,
+      'aria-pressed': selected ? 'true' : 'false',
+      'data-testid': 'navigation-icon-preset-' + id,
+    })
+    const icon = safeSvgElement(svg)
+    if (icon) button.append(icon)
+    button.addEventListener('click', () => {
+      item.icon_svg = svg
+      rerender()
+    })
+    choices.append(button)
+  })
+  const uploadLabel = createElement('label', { class: 'zero-one-navigation-upload-button' }, localText('上传 SVG', 'Upload SVG'))
+  const upload = createElement('input', { type: 'file', accept: '.svg' })
+  upload.hidden = true
+  upload.addEventListener('change', async () => {
+    const file = upload.files?.[0]
+    upload.value = ''
+    if (!file || file.size > MAX_SVG_BYTES) return
+    const raw = await readFile(file, true).catch(() => '')
+    if (!safeSvgElement(raw)) return
+    item.icon_svg = raw.trim()
+    rerender()
+  })
+  uploadLabel.append(upload)
+  editor.append(choices, uploadLabel)
+  return editor
+}
+
+function renderItems(panel) {
+  const list = panel.querySelector('.zero-one-header-navigation-list')
+  if (!(list instanceof HTMLElement)) return
+  const rerender = () => renderItems(panel)
+  list.replaceChildren()
+  const entries = headerEntries()
+  if (!entries.length) {
+    list.append(createElement('p', {
+      class: 'zero-one-header-navigation-empty',
+      'data-testid': 'header-navigation-empty',
+    }, localText('尚未添加顶部入口。可按需添加一个或多个。', 'No header entries yet. Add one or more as needed.')))
+    return
+  }
+
+  entries.forEach(({ item, index }, visibleIndex) => {
+    const entry = createElement('div', { class: 'zero-one-header-navigation-entry' })
+    const entryHeader = createElement('div', { class: 'zero-one-header-navigation-entry-header' })
+    entryHeader.append(createElement('strong', {}, localText('顶部入口 #' + (visibleIndex + 1), 'Header Entry #' + (visibleIndex + 1))))
+    const actions = createElement('div', { class: 'zero-one-header-navigation-actions' })
+    ;[[-1, '↑'], [1, '↓']].forEach(([direction, text]) => {
+      if (visibleIndex + direction < 0 || visibleIndex + direction >= entries.length) return
+      const button = createElement('button', { type: 'button', class: 'zero-one-header-navigation-icon-button' }, text)
+      button.addEventListener('click', () => {
+        const target = headerEntries()[visibleIndex + direction].index
+        const current = adminMenuItems[index]
+        adminMenuItems[index] = adminMenuItems[target]
+        adminMenuItems[target] = current
+        reindexMenuItems()
+        rerender()
+      })
+      actions.append(button)
+    })
+    const remove = createElement('button', {
+      type: 'button',
+      class: 'zero-one-header-navigation-icon-button is-danger',
+      'aria-label': localText('删除', 'Remove'),
+    }, '×')
+    remove.addEventListener('click', () => {
+      adminMenuItems.splice(index, 1)
+      reindexMenuItems()
+      rerender()
+    })
+    actions.append(remove)
+    entryHeader.append(actions)
+
+    const fields = createElement('div', { class: 'zero-one-header-navigation-fields' })
+    const name = createElement('label')
+    name.append(createElement('span', {}, localText('顶部按钮及弹窗标题', 'Button and Dialog Title')))
+    const nameInput = createElement('input', {
+      type: 'text',
+      maxlength: '50',
+      placeholder: localText('如：交流群', 'e.g. Community'),
+      'data-testid': 'header-navigation-name-' + visibleIndex,
+    })
+    nameInput.value = item.label
+    nameInput.addEventListener('input', () => { item.label = nameInput.value })
+    name.append(nameInput)
+
+    const visibilityField = createElement('label')
+    visibilityField.append(createElement('span', {}, localText('可见范围', 'Visibility')))
+    const visibility = createElement('select', { 'data-testid': 'header-navigation-visibility-' + visibleIndex })
+    visibility.append(
+      new Option(localText('普通用户和管理员都可见', 'All signed-in users'), 'all'),
+      new Option(localText('仅普通用户', 'Regular users only'), 'user'),
+      new Option(localText('仅管理员', 'Administrators only'), 'admin'),
+    )
+    visibility.value = item.visibility
+    visibility.addEventListener('change', () => { item.visibility = visibility.value })
+    visibilityField.append(visibility)
+
+    const description = createElement('label', { class: 'zero-one-header-navigation-wide-field' })
+    description.append(createElement('span', {}, localText('弹窗副标题', 'Dialog Subtitle')))
+    const descriptionInput = createElement('input', {
+      type: 'text',
+      maxlength: '240',
+      placeholder: localText('扫码加入交流群获取支持', 'Scan to join and get support'),
+      'data-testid': 'header-navigation-description-' + visibleIndex,
+    })
+    descriptionInput.value = item.qr_description
+    descriptionInput.addEventListener('input', () => { item.qr_description = descriptionInput.value })
+    description.append(descriptionInput)
+
+    const qrField = createElement('div', { class: 'zero-one-header-navigation-wide-field zero-one-navigation-qr-field' })
+    qrField.append(createElement('span', {}, localText('二维码图片', 'QR Code Image')))
+    const preview = createElement('div', { class: 'zero-one-navigation-qr-preview' })
+    if (item.qr_image) preview.append(createElement('img', { src: item.qr_image, alt: '' }))
+    else preview.append(createElement('span', {}, localText('尚未选择', 'Not selected')))
+    const qrUploadLabel = createElement('label', {
+      class: 'zero-one-navigation-upload-button',
+      'data-testid': 'header-navigation-qr-upload-' + visibleIndex,
+    }, localText('选择二维码', 'Select QR Code'))
+    const qrUpload = createElement('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp' })
+    qrUpload.hidden = true
+    qrUpload.addEventListener('change', async () => {
+      const file = qrUpload.files?.[0]
+      qrUpload.value = ''
+      if (!file || !SUPPORTED_QR_TYPES.has(file.type) || file.size > MAX_QR_BYTES) return
+      item.qr_image = await readFile(file, false).catch(() => '')
+      if (item.qr_image) {
+        item.navigation_type = 'qr'
+        item.url = ''
+      }
+      rerender()
+    })
+    qrUploadLabel.append(qrUpload)
+    qrField.append(preview, qrUploadLabel)
+    fields.append(name, visibilityField, description, qrField, createIconChooser(item, visibleIndex, rerender))
+    entry.append(entryHeader, fields)
+    list.append(entry)
+  })
+}
+
+function buildAdminPanel(cardBody, settings) {
+  applySettings(settings)
   const panel = createElement('section', {
-    class: 'zero-one-community-qr-settings',
-    'data-testid': 'community-qr-settings',
-    'data-zero-one-community-qr': 'settings',
+    class: 'zero-one-header-navigation-settings',
+    'data-testid': 'header-navigation-settings',
+    'data-zero-one-header-navigation': 'settings',
   })
-  const header = createElement('div', { class: 'zero-one-community-qr-settings-header' })
+
+  const builtIn = createElement('div', { class: 'zero-one-navigation-built-in' })
+  builtIn.append(
+    createElement('h3', {}, localText('导航栏显示设置', 'Navigation Visibility')),
+    createElement('p', {}, localText('控制内置入口，以及模型广场在控制台中的位置。', 'Control built-in entries and Model Plaza placement.')),
+    createToggleRow(localText('个人资料', 'Profile'), localText('控制侧边导航入口。', 'Controls the sidebar entry.'), profileNavigationEnabled, 'profile-navigation-toggle', (value) => { profileNavigationEnabled = value }),
+    createToggleRow(localText('我的订阅', 'My Subscriptions'), localText('控制“我的订阅”和顶部订阅进度入口。', 'Controls My Subscriptions and the header progress entry.'), subscriptionNavigationEnabled, 'subscription-navigation-toggle', (value) => { subscriptionNavigationEnabled = value }),
+  )
+  const placementRow = createElement('label', { class: 'zero-one-navigation-placement-row' })
+  const placementCopy = createElement('span')
+  placementCopy.append(createElement('strong', {}, localText('模型广场位置', 'Model Plaza Placement')), createElement('small', {}, localText('只在选定的一个位置显示。', 'Shown in one selected area.')))
+  const placement = createElement('select', { 'data-testid': 'model-plaza-placement' })
+  placement.append(new Option(localText('顶部导航', 'Header'), 'header'), new Option(localText('侧边导航', 'Sidebar'), 'sidebar'))
+  placement.value = modelPlazaPlacement
+  placement.addEventListener('change', () => { modelPlazaPlacement = placement.value })
+  placementRow.append(placementCopy, placement)
+  builtIn.append(placementRow)
+  const orderEditors = createElement('div', { class: 'zero-one-sidebar-order-grid' })
+  orderEditors.append(createSidebarOrderEditor('user'), createSidebarOrderEditor('admin'))
+  builtIn.append(orderEditors)
+
+  const header = createElement('div', { class: 'zero-one-header-navigation-header' })
   const heading = createElement('div')
-  heading.append(
-    createElement('h3', {}, '顶部交流群入口'),
-    createElement('p', {}, '在控制台顶部展示交流群按钮，点击后打开二维码。'),
-  )
-  const toggle = createToggle(false)
-  header.append(heading, toggle.label)
+  heading.append(createElement('h3', {}, localText('顶部导航入口', 'Header Navigation Entries')), createElement('p', {}, localText('添加一个或多个二维码入口；点击顶部按钮后弹出二维码。', 'Add one or more QR entries shown as header buttons.')))
+  const addButton = createElement('button', { type: 'button', class: 'zero-one-header-navigation-add', 'data-testid': 'header-navigation-add' }, localText('＋ 添加顶部入口', '+ Add Header Entry'))
+  header.append(heading, addButton)
 
-  const copyFields = createElement('div', { class: 'zero-one-community-qr-copy-fields' })
-  const titleField = createElement('label', { class: 'zero-one-community-qr-copy-field' })
-  titleField.append(createElement('span', {}, '顶部按钮及弹窗标题'))
-  const titleInput = createElement('input', {
-    type: 'text',
-    maxlength: '80',
-    placeholder: DEFAULT_COMMUNITY_TITLE,
-    'data-testid': 'community-qr-title-input',
-  })
-  titleField.append(titleInput)
-  const descriptionField = createElement('label', { class: 'zero-one-community-qr-copy-field' })
-  descriptionField.append(createElement('span', {}, '弹窗副标题'))
-  const descriptionInput = createElement('input', {
-    type: 'text',
-    maxlength: '240',
-    placeholder: DEFAULT_COMMUNITY_DESCRIPTION,
-    'data-testid': 'community-qr-description-input',
-  })
-  descriptionField.append(descriptionInput)
-  copyFields.append(titleField, descriptionField)
-
-  const uploadRow = createElement('div', { class: 'zero-one-community-qr-upload-row' })
-  const preview = createElement('div', {
-    class: 'zero-one-community-qr-preview',
-    'data-testid': 'community-qr-preview',
-  })
-  const previewPlaceholder = createElement('span', {}, '尚未上传')
-  const previewImage = createElement('img', { alt: '交流群二维码预览', hidden: '' })
-  preview.append(previewPlaceholder, previewImage)
-
-  const controls = createElement('div', { class: 'zero-one-community-qr-upload-controls' })
-  const uploadLabel = createElement('label', { class: 'zero-one-community-qr-upload' }, '选择二维码')
-  const fileInput = createElement('input', {
-    type: 'file',
-    accept: '.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp',
-    'data-testid': 'community-qr-file-input',
-  })
-  uploadLabel.append(fileInput)
-  const removeButton = createElement('button', {
-    class: 'zero-one-community-qr-remove',
-    type: 'button',
-    'data-testid': 'community-qr-remove',
-  }, '移除')
-  controls.append(
-    createElement('p', {}, 'PNG、JPEG 或 WebP，最大 300 KiB。'),
-    uploadLabel,
-    removeButton,
-  )
-  uploadRow.append(preview, controls)
-
-  const footer = createElement('div', { class: 'zero-one-community-qr-settings-footer' })
-  const status = createElement('p', {
-    class: 'zero-one-community-qr-status',
-    role: 'status',
-    'aria-live': 'polite',
-    'data-testid': 'community-qr-status',
-  })
-  const saveButton = createElement('button', {
-    class: 'zero-one-community-qr-save',
-    type: 'button',
-    'data-testid': 'community-qr-save',
-  }, '保存交流群入口')
-  footer.append(status, saveButton)
-  panel.append(header, copyFields, uploadRow, footer)
-
+  const list = createElement('div', { class: 'zero-one-header-navigation-list' })
+  const footer = createElement('div', { class: 'zero-one-header-navigation-footer' })
+  const footerCopy = createElement('div')
+  const status = createElement('p', { class: 'zero-one-header-navigation-status', role: 'status', 'aria-live': 'polite', 'data-testid': 'header-navigation-status' })
+  footerCopy.append(createElement('p', { class: 'zero-one-header-navigation-hint' }, localText('这里只管理顶部二维码入口；侧边栏和双位置页面仍在下方管理。', 'This area manages header QR entries; other pages remain below.')), status)
+  const saveButton = createElement('button', { type: 'button', class: 'zero-one-header-navigation-save', 'data-testid': 'header-navigation-save' }, localText('保存导航设置', 'Save Navigation Settings'))
+  footer.append(footerCopy, saveButton)
+  panel.append(builtIn, header, list, footer)
   const landingNotice = cardBody.querySelector('[data-testid="landing-notice-settings"]')
   if (landingNotice) landingNotice.after(panel)
   else cardBody.prepend(panel)
 
-  let imageValue = ''
-  let saving = false
-
-  function setStatus(message, tone = '') {
+  const setStatus = (message, tone = '') => {
     status.textContent = message
     status.dataset.tone = tone
   }
-
-  function renderPreview() {
-    const hasImage = supportedDataImage(imageValue)
-    previewImage.hidden = !hasImage
-    previewPlaceholder.hidden = hasImage
-    removeButton.disabled = !hasImage
-    if (hasImage) previewImage.src = imageValue
-    else previewImage.removeAttribute('src')
-  }
-
-  function applySettings(settings) {
-    toggle.input.checked = settings?.community_qr_enabled === true
-    toggle.input.setAttribute('aria-checked', String(toggle.input.checked))
-    imageValue = supportedDataImage(settings?.community_qr_image)
-      ? settings.community_qr_image
-      : ''
-    titleInput.value = normalizedCopy(settings?.community_qr_title, DEFAULT_COMMUNITY_TITLE)
-    descriptionInput.value = normalizedCopy(
-      settings?.community_qr_description,
-      DEFAULT_COMMUNITY_DESCRIPTION,
-    )
-    renderPreview()
-  }
-
-  fileInput.addEventListener('change', () => {
-    const file = fileInput.files?.[0]
-    if (!file) return
-    if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
-      fileInput.value = ''
-      setStatus('请选择 PNG、JPEG 或 WebP 图片。', 'error')
-      return
-    }
-    if (file.size > MAX_IMAGE_BYTES) {
-      fileInput.value = ''
-      setStatus('图片不能超过 300 KiB。', 'error')
-      return
-    }
-    const reader = new FileReader()
-    reader.addEventListener('load', () => {
-      if (!supportedDataImage(reader.result)) {
-        setStatus('图片读取失败，请重新选择。', 'error')
-        return
-      }
-      imageValue = reader.result
-      renderPreview()
-      setStatus('二维码已导入，请保存设置。')
+  addButton.addEventListener('click', () => {
+    if (adminMenuItems.length >= MAX_MENU_ITEMS) return
+    adminMenuItems.push({
+      id: '',
+      label: '',
+      icon_svg: ICON_PRESETS[1][1],
+      url: '',
+      visibility: 'all',
+      placement: 'header',
+      navigation_type: 'qr',
+      qr_description: '',
+      qr_image: '',
+      sort_order: adminMenuItems.length,
     })
-    reader.addEventListener('error', () => setStatus('图片读取失败，请重新选择。', 'error'))
-    reader.readAsDataURL(file)
+    renderItems(panel)
   })
-
-  removeButton.addEventListener('click', () => {
-    imageValue = ''
-    fileInput.value = ''
-    toggle.input.checked = false
-    toggle.input.setAttribute('aria-checked', 'false')
-    renderPreview()
-    setStatus('二维码已移除，请保存设置。')
-  })
-
   saveButton.addEventListener('click', async () => {
-    if (saving) return
-    if (toggle.input.checked && !supportedDataImage(imageValue)) {
-      setStatus('启用顶部入口前，请先导入二维码。', 'error')
+    const invalid = headerEntries().find(({ item }) => !item.label.trim() || (item.navigation_type === 'qr' && !item.qr_image))
+    if (invalid) {
+      setStatus(localText('请填写标题并为新增入口选择二维码。', 'Enter a title and select a QR image.'), 'error')
       return
     }
-    saving = true
     saveButton.disabled = true
-    setStatus('正在保存…')
-    const submitted = {
-      community_qr_enabled: toggle.input.checked,
-      community_qr_image: imageValue,
-      community_qr_title: normalizedCopy(titleInput.value, DEFAULT_COMMUNITY_TITLE),
-      community_qr_description: normalizedCopy(
-        descriptionInput.value,
-        DEFAULT_COMMUNITY_DESCRIPTION,
-      ),
-    }
+    setStatus(localText('正在保存…', 'Saving…'))
     try {
-      await fetch(ADMIN_SETTINGS_API, {
+      const updated = await fetch(ADMIN_SETTINGS_API, {
         method: 'PUT',
         credentials: 'same-origin',
         headers: apiHeaders(true),
-        body: JSON.stringify(submitted),
+        body: JSON.stringify({
+          custom_menu_items: adminMenuItems,
+          profile_navigation_enabled: profileNavigationEnabled,
+          subscription_navigation_enabled: subscriptionNavigationEnabled,
+          model_plaza_placement: modelPlazaPlacement,
+          user_sidebar_order: userSidebarOrder,
+          admin_sidebar_order: adminSidebarOrder,
+          community_qr_enabled: false,
+        }),
       }).then(readApiResponse)
-      communityEnabled = submitted.community_qr_enabled
-      communityTitle = submitted.community_qr_title
-      communityDescription = submitted.community_qr_description
-      window.__APP_CONFIG__ = {
-        ...(window.__APP_CONFIG__ || {}),
-        community_qr_enabled: communityEnabled,
-        community_qr_title: communityTitle,
-        community_qr_description: communityDescription,
-      }
-      setStatus('交流群入口已保存。', 'success')
-      scheduleScan()
+      applySettings(updated)
+      renderItems(panel)
+      setStatus(localText('导航设置已保存，正在刷新…', 'Navigation settings saved. Refreshing…'), 'success')
+      window.setTimeout(() => window.location.reload(), 350)
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : '保存失败，请稍后重试。', 'error')
+      setStatus(error instanceof Error ? error.message : localText('保存失败。', 'Save failed.'), 'error')
     } finally {
-      saving = false
       saveButton.disabled = false
     }
   })
-
-  saveButton.disabled = true
-  setStatus('正在读取设置…')
-  fetch(ADMIN_SETTINGS_API, {
-    credentials: 'same-origin',
-    headers: apiHeaders(),
-  })
-    .then(readApiResponse)
-    .then((settings) => {
-      if (!panel.isConnected) return
-      applySettings(settings)
-      setStatus('')
-      saveButton.disabled = false
-    })
-    .catch((error) => {
-      if (!panel.isConnected) return
-      setStatus(error instanceof Error ? error.message : '读取设置失败。', 'error')
-    })
+  renderItems(panel)
 }
 
 function findSiteSettingsBody() {
-  const headings = document.querySelectorAll('h1, h2, h3')
-  const siteHeading = [...headings].find((heading) => {
-    const text = heading.textContent?.trim().toLocaleLowerCase()
+  const heading = [...document.querySelectorAll('h1, h2, h3')].find((node) => {
+    const text = node.textContent?.trim().toLowerCase()
     return text === '站点设置' || text === 'site settings'
   })
-  const card = siteHeading?.closest('.card')
-  if (!(card instanceof HTMLElement)) return null
-  return card.querySelector('.space-y-6.p-6') || card.lastElementChild
+  const card = heading?.closest('.card')
+  return card?.querySelector('.space-y-6.p-6') || card?.lastElementChild || null
 }
 
 function ensureAdminSettings() {
-  const overlayPanel = document.querySelector('[data-zero-one-community-qr="settings"]')
-  if (window.location.pathname !== ADMIN_SETTINGS_PATH || readAuthenticatedUser()?.role !== 'admin') {
-    overlayPanel?.remove()
+  const overlay = document.querySelector('[data-zero-one-header-navigation="settings"]')
+  if (window.location.pathname !== ADMIN_SETTINGS_PATH || !authenticatedAdmin()) {
+    overlay?.remove()
     return
   }
-  if (isNativeElement('community-qr-settings', 'settings')) {
-    overlayPanel?.remove()
+  const nativePanel = [...document.querySelectorAll('[data-testid="header-navigation-settings"]')].some((node) => !node.hasAttribute('data-zero-one-header-navigation'))
+  if (nativePanel) {
+    overlay?.remove()
     return
   }
-  if (overlayPanel) return
+  if (overlay || adminSettingsLoading) return
   const cardBody = findSiteSettingsBody()
-  if (cardBody instanceof HTMLElement) buildAdminPanel(cardBody)
+  if (!(cardBody instanceof HTMLElement)) return
+  adminSettingsLoading = true
+  fetch(ADMIN_SETTINGS_API, { credentials: 'same-origin', headers: apiHeaders() })
+    .then(readApiResponse)
+    .then((settings) => {
+      if (cardBody.isConnected) buildAdminPanel(cardBody, settings)
+    })
+    .catch(() => {})
+    .finally(() => { adminSettingsLoading = false })
 }
 
-function scanCommunityQr() {
-  ensureCommunityButton()
-  ensureAdminSettings()
-}
-
-function scheduleScan() {
-  window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.request()
-}
-
-window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.register('community-qr', scanCommunityQr)
+window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.register('header-navigation-settings', ensureAdminSettings)

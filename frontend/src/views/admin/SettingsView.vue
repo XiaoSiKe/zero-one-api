@@ -6377,81 +6377,323 @@
                 </div>
               </div>
 
-              <!-- Community QR Entry -->
+              <!-- Built-in Navigation Visibility -->
+              <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
+                <div>
+                  <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                    {{ t("admin.settings.site.navigation.title") }}
+                  </h3>
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.site.navigation.description") }}
+                  </p>
+                </div>
+
+                <div class="mt-4 divide-y divide-gray-100 dark:divide-dark-700">
+                  <div class="flex items-center justify-between gap-4 py-3">
+                    <div>
+                      <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ t("admin.settings.site.navigation.profile") }}
+                      </p>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {{ t("admin.settings.site.navigation.profileHint") }}
+                      </p>
+                    </div>
+                    <Toggle
+                      v-model="form.profile_navigation_enabled"
+                      data-testid="profile-navigation-toggle"
+                    />
+                  </div>
+
+                  <div class="flex items-center justify-between gap-4 py-3">
+                    <div>
+                      <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ t("admin.settings.site.navigation.subscriptions") }}
+                      </p>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {{ t("admin.settings.site.navigation.subscriptionsHint") }}
+                      </p>
+                    </div>
+                    <Toggle
+                      v-model="form.subscription_navigation_enabled"
+                      data-testid="subscription-navigation-toggle"
+                    />
+                  </div>
+
+                  <div class="grid grid-cols-1 gap-3 py-3 sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-center">
+                    <div>
+                      <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ t("admin.settings.site.navigation.modelPlaza") }}
+                      </p>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {{ t("admin.settings.site.navigation.modelPlazaHint") }}
+                      </p>
+                    </div>
+                    <select
+                      v-model="form.model_plaza_placement"
+                      class="input text-sm"
+                      data-testid="model-plaza-placement"
+                    >
+                      <option value="header">
+                        {{ t("admin.settings.site.navigation.header") }}
+                      </option>
+                      <option value="sidebar">
+                        {{ t("admin.settings.site.navigation.sidebar") }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="grid gap-4 py-4 lg:grid-cols-2">
+                    <details
+                      class="rounded-lg border border-gray-200 p-3 dark:border-dark-600"
+                      data-testid="user-sidebar-order-section"
+                    >
+                      <summary class="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ t("admin.settings.site.navigation.userOrder") }}
+                      </summary>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {{ t("admin.settings.site.navigation.userOrderHint") }}
+                      </p>
+                      <div
+                        class="mt-3 space-y-2"
+                        data-testid="user-sidebar-order-list"
+                      >
+                        <div
+                          v-for="(item, index) in userSidebarOrderItems"
+                          :key="item.path"
+                          :data-sidebar-path="item.path"
+                          class="flex min-h-10 items-center gap-3 rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-800"
+                        >
+                          <span class="w-5 shrink-0 text-center text-xs tabular-nums text-gray-400">{{ index + 1 }}</span>
+                          <span class="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{{ item.label }}</span>
+                          <div class="flex shrink-0 gap-1">
+                            <button
+                              type="button"
+                              class="btn-ghost btn-icon h-8 w-8"
+                              data-direction="up"
+                              :aria-label="t('admin.settings.site.navigation.moveUp')"
+                              :disabled="index === 0"
+                              @click="moveSidebarOrder('user', index, -1)"
+                            >↑</button>
+                            <button
+                              type="button"
+                              class="btn-ghost btn-icon h-8 w-8"
+                              data-direction="down"
+                              :aria-label="t('admin.settings.site.navigation.moveDown')"
+                              :disabled="index === userSidebarOrderItems.length - 1"
+                              @click="moveSidebarOrder('user', index, 1)"
+                            >↓</button>
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+
+                    <details
+                      class="rounded-lg border border-gray-200 p-3 dark:border-dark-600"
+                      data-testid="admin-sidebar-order-section"
+                    >
+                      <summary class="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ t("admin.settings.site.navigation.adminOrder") }}
+                      </summary>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {{ t("admin.settings.site.navigation.adminOrderHint") }}
+                      </p>
+                      <div
+                        class="mt-3 space-y-2"
+                        data-testid="admin-sidebar-order-list"
+                      >
+                        <div
+                          v-for="(item, index) in adminSidebarOrderItems"
+                          :key="item.path"
+                          :data-sidebar-path="item.path"
+                          class="flex min-h-10 items-center gap-3 rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-800"
+                        >
+                          <span class="w-5 shrink-0 text-center text-xs tabular-nums text-gray-400">{{ index + 1 }}</span>
+                          <span class="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{{ item.label }}</span>
+                          <div class="flex shrink-0 gap-1">
+                            <button
+                              type="button"
+                              class="btn-ghost btn-icon h-8 w-8"
+                              data-direction="up"
+                              :aria-label="t('admin.settings.site.navigation.moveUp')"
+                              :disabled="index === 0"
+                              @click="moveSidebarOrder('admin', index, -1)"
+                            >↑</button>
+                            <button
+                              type="button"
+                              class="btn-ghost btn-icon h-8 w-8"
+                              data-direction="down"
+                              :aria-label="t('admin.settings.site.navigation.moveDown')"
+                              :disabled="index === adminSidebarOrderItems.length - 1"
+                              @click="moveSidebarOrder('admin', index, 1)"
+                            >↓</button>
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Header Navigation Entries -->
               <div
                 class="border-t border-gray-100 pt-4 dark:border-dark-700"
-                data-testid="community-qr-settings"
+                data-testid="header-navigation-settings"
               >
                 <div class="flex items-center justify-between gap-4">
                   <div>
                     <h3 class="text-sm font-medium text-gray-900 dark:text-white">
-                      {{ t("admin.settings.site.communityQr.title") }}
+                      {{ t("admin.settings.site.headerNavigation.title") }}
                     </h3>
                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {{ t("admin.settings.site.communityQr.description") }}
+                      {{ t("admin.settings.site.headerNavigation.description") }}
                     </p>
                   </div>
-                  <Toggle
-                    v-model="form.community_qr_enabled"
-                    data-testid="community-qr-toggle"
-                    :disabled="!communityQrCanEnable"
-                    :aria-label="t('admin.settings.site.communityQr.enabled')"
-                  />
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm shrink-0"
+                    data-testid="header-navigation-add"
+                    @click="addHeaderNavigationItem"
+                  >
+                    <Icon name="plus" size="sm" class="mr-1.5" />
+                    {{ t("admin.settings.site.headerNavigation.add") }}
+                  </button>
                 </div>
 
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  {{
-                    t(
-                      communityQrCanEnable
-                        ? "admin.settings.site.communityQr.enabledHint"
-                        : "admin.settings.site.communityQr.uploadBeforeEnable",
-                    )
-                  }}
-                </p>
+                <div
+                  v-if="headerNavigationEntries.length === 0"
+                  class="mt-4 rounded-lg border border-dashed border-gray-300 px-4 py-5 text-center text-sm text-gray-500 dark:border-dark-600 dark:text-gray-400"
+                  data-testid="header-navigation-empty"
+                >
+                  {{ t("admin.settings.site.headerNavigation.empty") }}
+                </div>
 
-                <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {{ t("admin.settings.site.communityQr.dialogTitle") }}
-                    </label>
-                    <input
-                      v-model="form.community_qr_title"
-                      type="text"
-                      maxlength="80"
-                      class="input text-sm"
-                      data-testid="community-qr-title-input"
-                      :placeholder="t('admin.settings.site.communityQr.dialogTitlePlaceholder')"
-                    />
-                  </div>
-                  <div>
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {{ t("admin.settings.site.communityQr.dialogDescription") }}
-                    </label>
-                    <input
-                      v-model="form.community_qr_description"
-                      type="text"
-                      maxlength="240"
-                      class="input text-sm"
-                      data-testid="community-qr-description-input"
-                      :placeholder="t('admin.settings.site.communityQr.dialogDescriptionPlaceholder')"
-                    />
+                <div v-else class="mt-4 space-y-3">
+                  <div
+                    v-for="(entry, visibleIndex) in headerNavigationEntries"
+                    :key="entry.item.id || entry.index"
+                    class="rounded-lg border border-gray-200 p-4 dark:border-dark-600"
+                  >
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{
+                          t("admin.settings.site.headerNavigation.itemLabel", {
+                            n: visibleIndex + 1,
+                          })
+                        }}
+                      </span>
+                      <div class="flex items-center gap-1">
+                        <button
+                          v-if="visibleIndex > 0"
+                          type="button"
+                          class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700"
+                          :title="t('admin.settings.customMenu.moveUp')"
+                          @click="moveHeaderNavigationItem(visibleIndex, -1)"
+                        >
+                          <Icon name="chevronUp" size="sm" />
+                        </button>
+                        <button
+                          v-if="visibleIndex < headerNavigationEntries.length - 1"
+                          type="button"
+                          class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700"
+                          :title="t('admin.settings.customMenu.moveDown')"
+                          @click="moveHeaderNavigationItem(visibleIndex, 1)"
+                        >
+                          <Icon name="chevronDown" size="sm" />
+                        </button>
+                        <button
+                          type="button"
+                          class="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                          :title="t('admin.settings.site.headerNavigation.remove')"
+                          @click="removeMenuItem(entry.index)"
+                        >
+                          <Icon name="trash" size="sm" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ t("admin.settings.site.headerNavigation.name") }}
+                        </label>
+                        <input
+                          v-model="entry.item.label"
+                          type="text"
+                          maxlength="50"
+                          class="input text-sm"
+                          :data-testid="`header-navigation-name-${visibleIndex}`"
+                          :placeholder="t('admin.settings.site.headerNavigation.namePlaceholder')"
+                        />
+                      </div>
+                      <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ t("admin.settings.site.headerNavigation.visibility") }}
+                        </label>
+                        <select
+                          v-model="entry.item.visibility"
+                          class="input text-sm"
+                          :data-testid="`header-navigation-visibility-${visibleIndex}`"
+                        >
+                          <option value="all">
+                            {{ t("admin.settings.customMenu.visibilityAll") }}
+                          </option>
+                          <option value="user">
+                            {{ t("admin.settings.customMenu.visibilityUser") }}
+                          </option>
+                          <option value="admin">
+                            {{ t("admin.settings.customMenu.visibilityAdmin") }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="sm:col-span-2">
+                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ t("admin.settings.site.headerNavigation.dialogDescription") }}
+                        </label>
+                        <input
+                          v-model="entry.item.qr_description"
+                          type="text"
+                          maxlength="240"
+                          class="input text-sm"
+                          :data-testid="`header-navigation-description-${visibleIndex}`"
+                          :placeholder="t('admin.settings.site.headerNavigation.dialogDescriptionPlaceholder')"
+                        />
+                      </div>
+                      <div class="sm:col-span-2">
+                        <label class="mb-2 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ t("admin.settings.site.headerNavigation.qrImage") }}
+                        </label>
+                        <ImageUpload
+                          :model-value="entry.item.qr_image || ''"
+                          mode="image"
+                          :data-testid="`header-navigation-qr-upload-${visibleIndex}`"
+                          :accepted-mime-types="['image/png', 'image/jpeg', 'image/webp']"
+                          :upload-label="t('admin.settings.site.headerNavigation.selectQr')"
+                          :remove-label="t('admin.settings.site.headerNavigation.removeQr')"
+                          :hint="t('admin.settings.site.headerNavigation.qrHint')"
+                          :max-size="300 * 1024"
+                          @update:model-value="setHeaderNavigationQrImage(entry.index, $event)"
+                        />
+                      </div>
+                      <div class="sm:col-span-2">
+                        <label class="mb-2 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {{ t("admin.settings.customMenu.iconSvg") }}
+                        </label>
+                        <NavigationIconPicker
+                          v-model="entry.item.icon_svg"
+                          :data-testid="`header-navigation-icon-${visibleIndex}`"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div class="mt-4">
-                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {{ t("admin.settings.site.communityQr.image") }}
-                  </label>
-                  <ImageUpload
-                    v-model="form.community_qr_image"
-                    mode="image"
-                    data-testid="community-qr-upload"
-                    :accepted-mime-types="['image/png', 'image/jpeg', 'image/webp']"
-                    :upload-label="t('admin.settings.site.communityQr.upload')"
-                    :remove-label="t('admin.settings.site.communityQr.remove')"
-                    :hint="t('admin.settings.site.communityQr.imageHint')"
-                    :max-size="300 * 1024"
-                  />
+                <div class="mt-4 flex items-center justify-between gap-4">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.site.headerNavigation.hint") }}
+                  </p>
+                  <button type="submit" class="btn btn-primary btn-sm shrink-0">
+                    {{ t("admin.settings.site.headerNavigation.save") }}
+                  </button>
                 </div>
               </div>
 
@@ -6772,8 +7014,8 @@
             <div class="space-y-4 p-6">
               <!-- Existing menu items -->
               <div
-                v-for="(item, index) in form.custom_menu_items"
-                :key="item.id || index"
+                v-for="(entry, visibleIndex) in customMenuPageEntries"
+                :key="entry.item.id || entry.index"
                 class="rounded-lg border border-gray-200 p-4 dark:border-dark-600"
               >
                 <div class="mb-3 flex items-center justify-between">
@@ -6781,17 +7023,17 @@
                     class="text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {{
-                      t("admin.settings.customMenu.itemLabel", { n: index + 1 })
+                      t("admin.settings.customMenu.itemLabel", { n: visibleIndex + 1 })
                     }}
                   </span>
                   <div class="flex items-center gap-2">
                     <!-- Move up -->
                     <button
-                      v-if="index > 0"
+                      v-if="visibleIndex > 0"
                       type="button"
                       class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700"
                       :title="t('admin.settings.customMenu.moveUp')"
-                      @click="moveMenuItem(index, -1)"
+                      @click="moveCustomMenuPageItem(visibleIndex, -1)"
                     >
                       <svg
                         class="h-4 w-4"
@@ -6809,11 +7051,11 @@
                     </button>
                     <!-- Move down -->
                     <button
-                      v-if="index < form.custom_menu_items.length - 1"
+                      v-if="visibleIndex < customMenuPageEntries.length - 1"
                       type="button"
                       class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700"
                       :title="t('admin.settings.customMenu.moveDown')"
-                      @click="moveMenuItem(index, 1)"
+                      @click="moveCustomMenuPageItem(visibleIndex, 1)"
                     >
                       <svg
                         class="h-4 w-4"
@@ -6834,7 +7076,7 @@
                       type="button"
                       class="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
                       :title="t('admin.settings.customMenu.remove')"
-                      @click="removeMenuItem(index)"
+                      @click="removeMenuItem(entry.index)"
                     >
                       <svg
                         class="h-4 w-4"
@@ -6862,7 +7104,7 @@
                       {{ t("admin.settings.customMenu.name") }}
                     </label>
                     <input
-                      v-model="item.label"
+                      v-model="entry.item.label"
                       type="text"
                       class="input text-sm"
                       :placeholder="
@@ -6879,9 +7121,9 @@
                       {{ t("admin.settings.customMenu.visibility") }}
                     </label>
                     <select
-                      v-model="item.visibility"
+                      v-model="entry.item.visibility"
                       class="input text-sm"
-                      :data-testid="`custom-menu-visibility-${index}`"
+                      :data-testid="`custom-menu-visibility-${entry.index}`"
                     >
                       <option value="user">
                         {{ t("admin.settings.customMenu.visibilityUser") }}
@@ -6903,9 +7145,9 @@
                       {{ t("admin.settings.customMenu.placement") }}
                     </label>
                     <select
-                      v-model="item.placement"
+                      v-model="entry.item.placement"
                       class="input text-sm"
-                      :data-testid="`custom-menu-placement-${index}`"
+                      :data-testid="`custom-menu-placement-${entry.index}`"
                     >
                       <option value="sidebar">
                         {{ t("admin.settings.customMenu.placementSidebar") }}
@@ -6927,7 +7169,7 @@
                       {{ t("admin.settings.customMenu.url") }}
                     </label>
                     <input
-                      v-model="item.url"
+                      v-model="entry.item.url"
                       type="url"
                       class="input font-mono text-sm"
                       :placeholder="
@@ -6943,14 +7185,7 @@
                     >
                       {{ t("admin.settings.customMenu.iconSvg") }}
                     </label>
-                    <ImageUpload
-                      :model-value="item.icon_svg"
-                      mode="svg"
-                      size="sm"
-                      :upload-label="t('admin.settings.customMenu.uploadSvg')"
-                      :remove-label="t('admin.settings.customMenu.removeSvg')"
-                      @update:model-value="(v: string) => (item.icon_svg = v)"
-                    />
+                    <NavigationIconPicker v-model="entry.item.icon_svg" />
                   </div>
                 </div>
               </div>
@@ -8551,6 +8786,11 @@ import GroupOptionItem from "@/components/common/GroupOptionItem.vue";
 import Toggle from "@/components/common/Toggle.vue";
 import ProxySelector from "@/components/common/ProxySelector.vue";
 import ImageUpload from "@/components/common/ImageUpload.vue";
+import NavigationIconPicker from "@/components/common/NavigationIconPicker.vue";
+import {
+  DEFAULT_CUSTOM_MENU_ICON,
+  DEFAULT_HEADER_QR_ICON,
+} from "@/constants/navigationIcons";
 import BackupSettings from "@/views/admin/BackupView.vue";
 import EmailTemplateEditor from "@/views/admin/settings/EmailTemplateEditor.vue";
 import OpenAIFastPolicyUserSelector from "@/views/admin/settings/OpenAIFastPolicyUserSelector.vue";
@@ -9361,6 +9601,11 @@ const form = reactive<SettingsForm>({
   compact_home_enabled: false,
   backend_mode_enabled: false,
   hide_ccs_import_button: false,
+  profile_navigation_enabled: true,
+  subscription_navigation_enabled: true,
+  model_plaza_placement: "header" as "header" | "sidebar",
+  user_sidebar_order: [] as string[],
+  admin_sidebar_order: [] as string[],
   payment_enabled: false,
   risk_control_enabled: false,
   cyber_session_block_enabled: false,
@@ -9396,6 +9641,9 @@ const form = reactive<SettingsForm>({
     url: string;
     visibility: "user" | "admin" | "all";
     placement: "sidebar" | "header" | "both";
+    navigation_type?: "qr";
+    qr_description?: string;
+    qr_image?: string;
     sort_order: number;
   }>,
   custom_endpoints: [] as Array<{
@@ -9604,16 +9852,105 @@ const form = reactive<SettingsForm>({
 const landingNoticeUrlInvalid = computed(
   () => !isValidLandingNoticeUrl(form.landing_notice_url),
 );
-const communityQrCanEnable = computed(
-  () => form.community_qr_image.trim().length > 0,
+const indexedCustomMenuItems = computed(() =>
+  form.custom_menu_items.map((item, index) => ({ item, index })),
+);
+const headerNavigationEntries = computed(() =>
+  indexedCustomMenuItems.value.filter(({ item }) => item.placement === "header"),
+);
+const customMenuPageEntries = computed(() =>
+  indexedCustomMenuItems.value.filter(({ item }) => item.placement !== "header"),
 );
 
-watch(
-  () => form.community_qr_image,
-  (image) => {
-    if (!image.trim()) form.community_qr_enabled = false;
-  },
+interface SidebarOrderItem {
+  path: string;
+  label: string;
+}
+
+const persistedMenuItemIDPattern = /^[A-Za-z0-9_-]+$/;
+
+function hasPersistedMenuItemID(item: { id: string }): boolean {
+  return persistedMenuItemIDPattern.test(item.id);
+}
+
+const userSidebarOrderCandidates = computed<SidebarOrderItem[]>(() => [
+  { path: "/dashboard", label: t("nav.dashboard") },
+  { path: "/model-plaza", label: t("nav.modelPlaza") },
+  { path: "/keys", label: t("nav.apiKeys") },
+  { path: "/batch-image", label: t("nav.batchImage") },
+  { path: "/usage", label: t("nav.usage") },
+  { path: "/available-channels", label: t("nav.availableChannels") },
+  { path: "/monitor", label: t("nav.channelStatus") },
+  { path: "/subscriptions", label: t("nav.mySubscriptions") },
+  { path: "/purchase", label: t("nav.buySubscription") },
+  { path: "/orders", label: t("nav.myOrders") },
+  { path: "/redeem", label: t("nav.redeem") },
+  { path: "/affiliate", label: t("nav.affiliate") },
+  { path: "/profile", label: t("nav.profile") },
+  ...form.custom_menu_items
+    .filter((item) =>
+      hasPersistedMenuItemID(item) &&
+      (item.visibility === "user" || item.visibility === "all") &&
+      item.placement !== "header",
+    )
+    .map((item) => ({ path: `/custom/${item.id}`, label: item.label })),
+]);
+
+const adminSidebarOrderCandidates = computed<SidebarOrderItem[]>(() => [
+  { path: "/admin/dashboard", label: t("nav.dashboard") },
+  { path: "/model-plaza", label: t("nav.modelPlaza") },
+  { path: "/admin/ops", label: t("nav.ops") },
+  { path: "/admin/users", label: t("nav.users") },
+  { path: "/admin/groups", label: t("nav.groups") },
+  { path: "/admin/channels", label: t("nav.channelManagement") },
+  { path: "/admin/subscriptions", label: t("nav.subscriptions") },
+  { path: "/admin/accounts", label: t("nav.accounts") },
+  { path: "/admin/announcements", label: t("nav.announcements") },
+  { path: "/admin/proxies", label: t("nav.proxies") },
+  { path: "/admin/security-audit", label: t("nav.securityAudit") },
+  { path: "/admin/redeem", label: t("nav.redeemCodes") },
+  { path: "/admin/promo-codes", label: t("nav.promoCodes") },
+  { path: "/admin/affiliates", label: t("nav.affiliateManagement") },
+  { path: "/admin/orders", label: t("nav.orderManagement") },
+  { path: "/admin/usage", label: t("nav.usage") },
+  { path: "/admin/audit-logs", label: t("nav.auditLogs") },
+  { path: "/admin/settings", label: t("nav.settings") },
+  ...form.custom_menu_items
+    .filter((item) =>
+      hasPersistedMenuItemID(item) &&
+      (item.visibility === "admin" || item.visibility === "all") &&
+      item.placement !== "header",
+    )
+    .map((item) => ({ path: `/custom/${item.id}`, label: item.label })),
+]);
+
+function orderSidebarItems(items: SidebarOrderItem[], order: string[]): SidebarOrderItem[] {
+  const byPath = new Map(items.map((item) => [item.path, item]));
+  const ordered = order.flatMap((path) => {
+    const item = byPath.get(path);
+    if (!item) return [];
+    byPath.delete(path);
+    return [item];
+  });
+  return [...ordered, ...byPath.values()];
+}
+
+const userSidebarOrderItems = computed(() =>
+  orderSidebarItems(userSidebarOrderCandidates.value, form.user_sidebar_order),
 );
+const adminSidebarOrderItems = computed(() =>
+  orderSidebarItems(adminSidebarOrderCandidates.value, form.admin_sidebar_order),
+);
+
+function moveSidebarOrder(role: "user" | "admin", index: number, direction: -1 | 1): void {
+  const items = role === "user" ? userSidebarOrderItems.value : adminSidebarOrderItems.value;
+  const target = index + direction;
+  if (target < 0 || target >= items.length) return;
+  const order = items.map((item) => item.path);
+  [order[index], order[target]] = [order[target], order[index]];
+  if (role === "user") form.user_sidebar_order = order;
+  else form.admin_sidebar_order = order;
+}
 
 // 人机验证 UI 状态：单卡片「总开关 + 服务商单选」，落库仍是三个独立
 // enabled 键（与上游一致），由下面的映射保证同一时间至多一家启用。
@@ -10372,11 +10709,36 @@ async function setAndCopyOIDCRedirectUrl() {
 }
 
 // Custom menu item management
+function addHeaderNavigationItem() {
+  form.custom_menu_items.push({
+    id: "",
+    label: "",
+    icon_svg: DEFAULT_HEADER_QR_ICON,
+    url: "",
+    visibility: "all",
+    placement: "header",
+    navigation_type: "qr",
+    qr_description: "",
+    qr_image: "",
+    sort_order: form.custom_menu_items.length,
+  });
+}
+
+function setHeaderNavigationQrImage(index: number, image: string) {
+  const item = form.custom_menu_items[index];
+  if (!item) return;
+  item.qr_image = image;
+  if (image.trim()) {
+    item.navigation_type = "qr";
+    item.url = "";
+  }
+}
+
 function addMenuItem() {
   form.custom_menu_items.push({
     id: "",
     label: "",
-    icon_svg: "",
+    icon_svg: DEFAULT_CUSTOM_MENU_ICON,
     url: "",
     visibility: "user",
     placement: "sidebar",
@@ -10392,9 +10754,15 @@ function removeMenuItem(index: number) {
   });
 }
 
-function moveMenuItem(index: number, direction: -1 | 1) {
-  const targetIndex = index + direction;
-  if (targetIndex < 0 || targetIndex >= form.custom_menu_items.length) return;
+function moveVisibleMenuItem(
+  entries: Array<{ index: number }>,
+  visibleIndex: number,
+  direction: -1 | 1,
+) {
+  const targetVisibleIndex = visibleIndex + direction;
+  if (targetVisibleIndex < 0 || targetVisibleIndex >= entries.length) return;
+  const index = entries[visibleIndex].index;
+  const targetIndex = entries[targetVisibleIndex].index;
   const items = form.custom_menu_items;
   const temp = items[index];
   items[index] = items[targetIndex];
@@ -10403,6 +10771,14 @@ function moveMenuItem(index: number, direction: -1 | 1) {
   items.forEach((item, i) => {
     item.sort_order = i;
   });
+}
+
+function moveHeaderNavigationItem(visibleIndex: number, direction: -1 | 1) {
+  moveVisibleMenuItem(headerNavigationEntries.value, visibleIndex, direction);
+}
+
+function moveCustomMenuPageItem(visibleIndex: number, direction: -1 | 1) {
+  moveVisibleMenuItem(customMenuPageEntries.value, visibleIndex, direction);
 }
 
 // Custom endpoint management
@@ -10617,6 +10993,19 @@ async function loadSettings() {
           ? item.placement
           : "sidebar",
     }));
+    form.profile_navigation_enabled = settings.profile_navigation_enabled !== false;
+    form.subscription_navigation_enabled =
+      settings.subscription_navigation_enabled !== false;
+    form.model_plaza_placement =
+      settings.model_plaza_placement === "sidebar" ? "sidebar" : "header";
+    form.user_sidebar_order = orderSidebarItems(
+      userSidebarOrderCandidates.value,
+      Array.isArray(settings.user_sidebar_order) ? settings.user_sidebar_order : [],
+    ).map((item) => item.path);
+    form.admin_sidebar_order = orderSidebarItems(
+      adminSidebarOrderCandidates.value,
+      Array.isArray(settings.admin_sidebar_order) ? settings.admin_sidebar_order : [],
+    ).map((item) => item.path);
     syncCaptchaProviderSelection();
     if (!form.claude_oauth_system_prompt_blocks?.trim()) {
       form.claude_oauth_system_prompt_blocks =
@@ -10970,6 +11359,16 @@ async function saveSettings() {
       );
       return;
     }
+    const incompleteHeaderQR = form.custom_menu_items.find(
+      (item) =>
+        item.placement === "header" &&
+        item.navigation_type === "qr" &&
+        !item.qr_image?.trim(),
+    );
+    if (incompleteHeaderQR) {
+      appStore.showError(t("admin.settings.site.headerNavigation.qrRequired"));
+      return;
+    }
     // Validate URL fields — novalidate disables browser-native checks, so we validate here
     // Optional URL fields: auto-clear invalid values so they don't cause backend 400 errors
     if (!isValidHttpUrl(form.frontend_url)) form.frontend_url = "";
@@ -11025,8 +11424,7 @@ async function saveSettings() {
       landing_notice_enabled: form.landing_notice_enabled,
       landing_notice_text: form.landing_notice_text,
       landing_notice_url: form.landing_notice_url,
-      community_qr_enabled:
-        form.community_qr_enabled && communityQrCanEnable.value,
+      community_qr_enabled: false,
       community_qr_image: form.community_qr_image.trim(),
       community_qr_title: form.community_qr_title.trim() || "交流群",
       community_qr_description: form.community_qr_description.trim(),
@@ -11037,6 +11435,11 @@ async function saveSettings() {
       compact_home_enabled: form.compact_home_enabled,
       backend_mode_enabled: form.backend_mode_enabled,
       hide_ccs_import_button: form.hide_ccs_import_button,
+      profile_navigation_enabled: form.profile_navigation_enabled,
+      subscription_navigation_enabled: form.subscription_navigation_enabled,
+      model_plaza_placement: form.model_plaza_placement,
+      user_sidebar_order: userSidebarOrderItems.value.map((item) => item.path),
+      admin_sidebar_order: adminSidebarOrderItems.value.map((item) => item.path),
       table_default_page_size: form.table_default_page_size,
       table_page_size_options: form.table_page_size_options,
       custom_menu_items: form.custom_menu_items,

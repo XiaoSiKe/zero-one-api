@@ -66,7 +66,7 @@ function mountHeader() {
   return wrapper
 }
 
-describe('AppHeader community QR visibility', () => {
+describe('AppHeader custom header navigation', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
@@ -76,65 +76,51 @@ describe('AppHeader community QR visibility', () => {
     wrapper = undefined
   })
 
-  it('fails closed when an older public-settings payload omits the flag', () => {
+  it('renders configured header QR entries instead of legacy header links', () => {
     const appStore = useAppStore()
     const authStore = useAuthStore()
     authStore.user = signedInUser
     appStore.cachedPublicSettings = {
       model_plaza_enabled: false,
+      custom_menu_items: [
+        {
+          id: 'support',
+          label: '售后支持',
+          icon_svg: '<svg viewBox="0 0 24 24"><path d="M4 12h16" /></svg>',
+          url: '',
+          visibility: 'all',
+          placement: 'header',
+          navigation_type: 'qr',
+          qr_description: '扫码联系售后',
+          sort_order: 0,
+        },
+      ],
     } as PublicSettings
 
     const mounted = mountHeader()
 
-    expect(mounted.find('[data-testid="community-qr-button"]').exists()).toBe(false)
+    expect(mounted.find('[data-testid="header-qr-support"]').exists()).toBe(true)
+    expect(mounted.find('[data-testid="header-custom-menu-support"]').exists()).toBe(false)
   })
 
-  it('shows the entry to a signed-in user only when the public flag is explicitly true', () => {
+  it('hides header Model Plaza and subscription progress when configured for the sidebar or disabled', () => {
     const appStore = useAppStore()
     const authStore = useAuthStore()
     authStore.user = signedInUser
     appStore.cachedPublicSettings = {
-      model_plaza_enabled: false,
-      community_qr_enabled: true,
+      model_plaza_enabled: true,
+      model_plaza_placement: 'sidebar',
+      subscription_navigation_enabled: false,
+      custom_menu_items: [],
     } as PublicSettings
 
     const mounted = mountHeader()
 
-    expect(mounted.find('[data-testid="community-qr-button"]').exists()).toBe(true)
-    const entry = mounted.findComponent({ name: 'CommunityQrEntry' })
-    expect(entry.props('title')).toBe('')
-    expect(entry.props('description')).toBe('')
+    expect(mounted.find('[data-testid="header-model-plaza"]').exists()).toBe(false)
+    expect(mounted.findComponent({ name: 'SubscriptionProgressMini' }).exists()).toBe(false)
   })
 
-  it('passes configured QR copy to the dialog entry', () => {
-    const appStore = useAppStore()
-    const authStore = useAuthStore()
-    authStore.user = signedInUser
-    appStore.cachedPublicSettings = {
-      model_plaza_enabled: false,
-      community_qr_enabled: true,
-      community_qr_title: '售后二群',
-      community_qr_description: '扫码加入售后群获取支持',
-    } as PublicSettings
-
-    const entry = mountHeader().findComponent({ name: 'CommunityQrEntry' })
-    expect(entry.props('title')).toBe('售后二群')
-    expect(entry.props('description')).toBe('扫码加入售后群获取支持')
-  })
-
-  it('does not expose the entry before authentication', () => {
-    const appStore = useAppStore()
-    appStore.cachedPublicSettings = {
-      model_plaza_enabled: false,
-      community_qr_enabled: true,
-    } as PublicSettings
-
-    const mounted = mountHeader()
-
-    expect(mounted.find('[data-testid="community-qr-button"]').exists()).toBe(false)
-  })
-
-  it('shows only regular-user header iframe pages to regular users', () => {
+  it('shows only dual-placement iframe pages in the header for regular users', () => {
     const appStore = useAppStore()
     const authStore = useAuthStore()
     authStore.user = signedInUser
@@ -151,17 +137,17 @@ describe('AppHeader community QR visibility', () => {
     } as PublicSettings
 
     const mounted = mountHeader()
-    expect(mounted.find('[data-testid="header-custom-menu-user-header"]').exists()).toBe(true)
+    expect(mounted.find('[data-testid="header-custom-menu-user-header"]').exists()).toBe(false)
     expect(mounted.find('[data-testid="header-custom-menu-user-both"]').exists()).toBe(true)
-    expect(mounted.find('[data-testid="header-custom-menu-all-header"]').exists()).toBe(true)
+    expect(mounted.find('[data-testid="header-custom-menu-all-header"]').exists()).toBe(false)
     expect(mounted.find('[data-testid="header-custom-menu-all-both"]').exists()).toBe(true)
     expect(mounted.find('[data-testid="header-custom-menu-admin-header"]').exists()).toBe(false)
-    expect(mounted.text()).toContain('用户帮助')
+    expect(mounted.text()).not.toContain('用户帮助')
     expect(mounted.text()).toContain('双栏帮助')
     expect(mounted.text()).not.toContain('侧边帮助')
   })
 
-  it('shows only administrator header iframe pages to administrators', () => {
+  it('shows only dual-placement iframe pages in the header for administrators', () => {
     const authStore = useAuthStore()
     const adminSettingsStore = useAdminSettingsStore()
     authStore.user = adminUser
@@ -174,9 +160,9 @@ describe('AppHeader community QR visibility', () => {
     ]
 
     const mounted = mountHeader()
-    expect(mounted.find('[data-testid="header-custom-menu-admin-header"]').exists()).toBe(true)
+    expect(mounted.find('[data-testid="header-custom-menu-admin-header"]').exists()).toBe(false)
     expect(mounted.find('[data-testid="header-custom-menu-admin-both"]').exists()).toBe(true)
-    expect(mounted.find('[data-testid="header-custom-menu-all-header"]').exists()).toBe(true)
+    expect(mounted.find('[data-testid="header-custom-menu-all-header"]').exists()).toBe(false)
     expect(mounted.find('[data-testid="header-custom-menu-all-both"]').exists()).toBe(true)
     expect(mounted.find('[data-testid="header-custom-menu-user-header"]').exists()).toBe(false)
   })

@@ -53,11 +53,11 @@ onUnmounted(() => {
 .layout-section-fixed {
   @apply flex-shrink-0;
   position: relative;
-  z-index: 40;
+  z-index: 20;
 }
 
 .layout-section-fixed + .layout-section-fixed {
-  z-index: 30;
+  z-index: 10;
 }
 
 .layout-section-scrollable {

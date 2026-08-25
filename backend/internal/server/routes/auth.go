@@ -256,6 +256,7 @@ func RegisterAuthRoutes(
 	{
 		authenticated.GET("/auth/me", h.Auth.GetCurrentUser)
 		authenticated.GET("/settings/community-qr", h.Setting.GetCommunityQRImage)
+		authenticated.GET("/settings/header-navigation/:id/qr", h.Setting.GetHeaderNavigationQRImage)
 		// 撤销所有会话（需要认证）
 		authenticated.POST("/auth/revoke-all-sessions", h.Auth.RevokeAllSessions)
 		authenticated.POST("/auth/oauth/bind-token", h.Auth.PrepareOAuthBindAccessTokenCookie)

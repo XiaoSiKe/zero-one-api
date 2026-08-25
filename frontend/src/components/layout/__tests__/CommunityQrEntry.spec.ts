@@ -47,7 +47,13 @@ const BaseDialogStub = defineComponent({
   `,
 })
 
-function mountEntry(props: { title?: string; description?: string } = {}) {
+function mountEntry(props: {
+  title?: string
+  description?: string
+  imageEndpoint?: string
+  testId?: string
+  iconSvg?: string
+} = {}) {
   return mount(CommunityQrEntry, {
     props,
     global: {
@@ -82,7 +88,7 @@ describe('CommunityQrEntry', () => {
     const wrapper = mountEntry()
 
     const trigger = wrapper.get('[data-testid="community-qr-button"]')
-    expect(trigger.attributes('aria-label')).toBe('打开交流群二维码')
+    expect(trigger.attributes('aria-label')).toBe('打开交流群二维码: 交流群')
     expect(wrapper.find('[data-testid="community-qr-dialog"]').exists()).toBe(false)
     expect(wrapper.find('img').exists()).toBe(false)
 
@@ -103,6 +109,9 @@ describe('CommunityQrEntry', () => {
     expect(wrapper.get('[data-testid="community-qr-image"]').attributes('src')).toBe(
       'blob:community-qr',
     )
+    expect(wrapper.get('[data-testid="community-qr-image"]').attributes('alt')).toBe(
+      '交流群: 交流群二维码',
+    )
 
     await wrapper.get('[data-testid="dialog-close"]').trigger('click')
     expect(wrapper.find('[data-testid="community-qr-dialog"]').exists()).toBe(false)
@@ -117,12 +126,35 @@ describe('CommunityQrEntry', () => {
     })
 
     expect(wrapper.get('[data-testid="community-qr-button"]').text()).toContain('售后二群')
+    expect(wrapper.get('[data-testid="community-qr-button"]').attributes('aria-label')).toBe(
+      '打开交流群二维码: 售后二群',
+    )
     await wrapper.get('[data-testid="community-qr-button"]').trigger('click')
     await flushPromises()
 
     expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toBe('售后二群')
     expect(wrapper.text()).toContain('扫码加入售后群获取支持')
     expect(wrapper.get('.community-qr-image-frame').classes()).toContain('border')
+  })
+
+  it('supports a per-entry image endpoint, test id, and sanitized SVG icon', async () => {
+    getMock.mockResolvedValue({ data: new Blob(['qr'], { type: 'image/png' }) })
+    const wrapper = mountEntry({
+      title: '售后支持',
+      imageEndpoint: '/settings/header-navigation/support/qr',
+      testId: 'header-qr-support',
+      iconSvg: '<svg viewBox="0 0 24 24"><path d="M4 12h16" /></svg>',
+    })
+
+    const trigger = wrapper.get('[data-testid="header-qr-support"]')
+    expect(trigger.find('svg').exists()).toBe(true)
+    await trigger.trigger('click')
+    await flushPromises()
+
+    expect(getMock).toHaveBeenCalledWith('/settings/header-navigation/support/qr', {
+      responseType: 'blob',
+      signal: expect.any(AbortSignal),
+    })
   })
 
   it('shows a retryable error and accepts a later valid image response', async () => {

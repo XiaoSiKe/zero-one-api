@@ -217,6 +217,49 @@ func TestUpdateSettingsCustomMenuPlacementDefaultsAndValidates(t *testing.T) {
 		require.Contains(t, recorder.Body.String(), `"visibility":"all"`)
 	})
 
+	t.Run("QR image is stored outside public menu metadata", func(t *testing.T) {
+		h, repo := newStepUpSwitchTestHandler(t, map[string]string{})
+		rawImage := validCommunityQRImageForAdminTest("header")
+		recorder := doUpdateSettings(t, h, map[string]any{
+			"custom_menu_items": []map[string]any{{
+				"id": "support", "label": "售后支持", "url": "",
+				"visibility": "all", "placement": "header", "navigation_type": "qr",
+				"qr_description": "扫码联系售后", "qr_image": rawImage, "sort_order": 0,
+			}},
+		}, nil)
+
+		require.Equal(t, http.StatusOK, recorder.Code)
+		require.NotContains(t, repo.values[service.SettingKeyCustomMenuItems], rawImage)
+		require.NotContains(t, repo.values[service.SettingKeyCustomMenuItems], "qr_image")
+		require.Contains(t, repo.values[service.SettingKeyHeaderNavQRImages], rawImage)
+		require.Contains(t, recorder.Body.String(), `"qr_image":"`)
+	})
+
+	t.Run("removing an entry also removes its orphaned QR image", func(t *testing.T) {
+		oldImage := validCommunityQRImageForAdminTest("old")
+		newImage := validCommunityQRImageForAdminTest("new")
+		h, repo := newStepUpSwitchTestHandler(t, map[string]string{
+			service.SettingKeyCustomMenuItems: `[{
+				"id":"old-support","label":"旧售后","visibility":"all",
+				"placement":"header","navigation_type":"qr","sort_order":0
+			}]`,
+			service.SettingKeyHeaderNavQRImages: `{"old-support":"` + oldImage + `"}`,
+		})
+		recorder := doUpdateSettings(t, h, map[string]any{
+			"custom_menu_items": []map[string]any{{
+				"id": "new-support", "label": "新售后", "url": "",
+				"visibility": "all", "placement": "header", "navigation_type": "qr",
+				"qr_description": "扫码联系新售后", "qr_image": newImage, "sort_order": 0,
+			}},
+		}, nil)
+
+		require.Equal(t, http.StatusOK, recorder.Code)
+		require.NotContains(t, repo.values[service.SettingKeyHeaderNavQRImages], "old-support")
+		require.NotContains(t, repo.values[service.SettingKeyHeaderNavQRImages], oldImage)
+		require.Contains(t, repo.values[service.SettingKeyHeaderNavQRImages], "new-support")
+		require.Contains(t, repo.values[service.SettingKeyHeaderNavQRImages], newImage)
+	})
+
 	t.Run("invalid visibility is rejected", func(t *testing.T) {
 		h, _ := newStepUpSwitchTestHandler(t, map[string]string{})
 		recorder := doUpdateSettings(t, h, map[string]any{
@@ -229,6 +272,20 @@ func TestUpdateSettingsCustomMenuPlacementDefaultsAndValidates(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, recorder.Code)
 		require.Contains(t, recorder.Body.String(), "'user', 'admin', or 'all'")
 	})
+}
+
+func TestUpdateSettingsSidebarOrdersRoundTrip(t *testing.T) {
+	h, repo := newStepUpSwitchTestHandler(t, map[string]string{})
+	recorder := doUpdateSettings(t, h, map[string]any{
+		"user_sidebar_order":  []string{"/keys", "/dashboard", "/model-plaza"},
+		"admin_sidebar_order": []string{"/admin/settings", "/admin/dashboard"},
+	}, nil)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.JSONEq(t, `["/keys","/dashboard","/model-plaza"]`, repo.values[service.SettingKeyUserSidebarOrder])
+	require.JSONEq(t, `["/admin/settings","/admin/dashboard"]`, repo.values[service.SettingKeyAdminSidebarOrder])
+	require.Contains(t, recorder.Body.String(), `"user_sidebar_order":["/keys","/dashboard","/model-plaza"]`)
+	require.Contains(t, recorder.Body.String(), `"admin_sidebar_order":["/admin/settings","/admin/dashboard"]`)
 }
 
 func TestUpdateSettingsCommunityQRPartialPayloadKeepsOpsRuntimeEnabled(t *testing.T) {

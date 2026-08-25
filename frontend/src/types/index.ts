@@ -191,6 +191,10 @@ export interface CustomMenuItem {
   page_slug?: string
   visibility: 'user' | 'admin' | 'all'
   placement?: 'sidebar' | 'header' | 'both'
+  navigation_type?: 'qr'
+  qr_description?: string
+  /** Admin settings only. Public settings deliberately omit QR image data. */
+  qr_image?: string
   sort_order: number
 }
 
@@ -239,6 +243,11 @@ export interface PublicSettings {
   home_content: string
   compact_home_enabled: boolean
   hide_ccs_import_button: boolean
+  profile_navigation_enabled?: boolean
+  subscription_navigation_enabled?: boolean
+  model_plaza_placement?: 'header' | 'sidebar'
+  user_sidebar_order?: string[]
+  admin_sidebar_order?: string[]
   payment_enabled: boolean
   risk_control_enabled: boolean
   table_default_page_size: number

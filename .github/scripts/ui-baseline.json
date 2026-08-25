@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-08-25-r7",
-  "baseline_commit": "a05ae3883d81291adc18a08a03844aed2c09a7e7",
+  "baseline_ref": "ui-approved-2026-08-25-r14",
+  "baseline_commit": "851a0b597a476968a47c33776ae2e2df50941812",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -16,6 +16,7 @@
     "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v1.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v2.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-date-picker.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-header-navigation-settings.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-model-plaza-pricing.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-redeem-benefit.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-redeem-mystery-box.png",
@@ -73,12 +74,38 @@
       ]
     },
     {
-      "name": "community-qr-entry",
+      "name": "header-navigation-entries",
       "routes": ["/dashboard", "/admin/settings"],
       "paths": [
-        "frontend/src/components/layout/",
+        "frontend/src/api/admin/settings.ts",
+        "frontend/src/components/common/NavigationIconPicker.vue",
+        "frontend/src/components/common/__tests__/NavigationIconPicker.spec.ts",
+        "frontend/src/components/layout/AppHeader.vue",
+        "frontend/src/components/layout/AppSidebar.vue",
+        "frontend/src/components/layout/CommunityQrEntry.vue",
+        "frontend/src/components/layout/TablePageLayout.vue",
+        "frontend/src/components/layout/__tests__/AppHeader.communityQr.spec.ts",
+        "frontend/src/components/layout/__tests__/AppSidebar.spec.ts",
+        "frontend/src/components/layout/__tests__/CommunityQrEntry.spec.ts",
+        "frontend/src/components/layout/__tests__/TablePageLayout.spec.ts",
+        "frontend/src/constants/navigationIcons.ts",
+        "frontend/src/i18n/locales/en/admin/settings.ts",
+        "frontend/src/i18n/locales/zh/admin/settings.ts",
+        "frontend/src/stores/app.ts",
+        "frontend/src/types/index.ts",
         "frontend/src/views/admin/SettingsView.vue",
-        "deploy/zero-one/recovered-frontend/console/"
+        "frontend/src/views/admin/__tests__/SettingsView.spec.ts",
+        "deploy/zero-one/recovered-frontend/console/assets/TablePageLayout-layer-fix-9bab9fe9.css",
+        "deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.css",
+        "deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.js",
+        "deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.css",
+        "deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.js",
+        "deploy/zero-one/recovered-frontend/console/index.html",
+        "deploy/zero-one/test-live-routing.sh",
+        "deploy/zero-one/test-routing.sh",
+        "visual-regression/tests/__screenshots__/chromium-desktop/console-header-navigation-settings.png",
+        "visual-regression/tests/console.visual.spec.ts",
+        "visual-regression/tests/fixtures/api.ts"
       ]
     },
     {

@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest'
 
 const componentPath = resolve(dirname(fileURLToPath(import.meta.url)), '../TablePageLayout.vue')
 const componentSource = readFileSync(componentPath, 'utf8')
+const appHeaderPath = resolve(dirname(fileURLToPath(import.meta.url)), '../AppHeader.vue')
+const appHeaderSource = readFileSync(appHeaderPath, 'utf8')
 
 describe('TablePageLayout responsive table scrolling', () => {
   it('does not disable the table horizontal scroll container in mobile mode', () => {
@@ -24,19 +26,20 @@ describe('TablePageLayout responsive table scrolling', () => {
     )
   })
 
-  it('keeps toolbar dropdowns above the sticky navigation header', () => {
+  it('keeps route toolbars below the app header while remaining above table content', () => {
     const fixedSectionBlock = componentSource.match(
       /\.layout-section-fixed\s*\{([\s\S]*?)\n\}/
     )
 
     expect(fixedSectionBlock).not.toBeNull()
     expect(fixedSectionBlock?.[1]).toContain('position: relative;')
-    expect(fixedSectionBlock?.[1]).toContain('z-index: 40;')
+    expect(fixedSectionBlock?.[1]).toContain('z-index: 20;')
 
     const followingFixedSectionBlock = componentSource.match(
       /\.layout-section-fixed \+ \.layout-section-fixed\s*\{([\s\S]*?)\n\}/
     )
     expect(followingFixedSectionBlock).not.toBeNull()
-    expect(followingFixedSectionBlock?.[1]).toContain('z-index: 30;')
+    expect(followingFixedSectionBlock?.[1]).toContain('z-index: 10;')
+    expect(appHeaderSource).toContain('sticky top-0 z-30')
   })
 })

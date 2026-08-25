@@ -4,7 +4,7 @@ package middleware
 
 import (
 	"context"
-	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -105,7 +105,7 @@ func startRedis(t *testing.T, ctx context.Context) *redis.Client {
 	require.NoError(t, err)
 
 	rdb := redis.NewClient(&redis.Options{
-		Addr: fmt.Sprintf("%s:%d", redisHost, redisPort.Int()),
+		Addr: net.JoinHostPort(redisHost, redisPort.Port()),
 		DB:   0,
 	})
 	require.NoError(t, rdb.Ping(ctx).Err())

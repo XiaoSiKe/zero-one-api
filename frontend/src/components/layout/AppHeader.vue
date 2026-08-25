@@ -40,15 +40,27 @@
 
         <!-- Model Plaza Entry -->
         <router-link
-          v-if="user && modelPlazaEnabled"
+          v-if="user && modelPlazaEnabled && modelPlazaPlacement === 'header'"
           :to="{ path: '/model-plaza', query: { embedded: '1' } }"
+          data-testid="header-model-plaza"
           class="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white sm:flex"
         >
           <Icon name="grid" size="sm" />
           <span class="hidden sm:inline">{{ t('nav.modelPlaza') }}</span>
         </router-link>
 
-        <!-- Custom Header Pages -->
+        <!-- QR Header Entries -->
+        <CommunityQrEntry
+          v-for="item in headerQrNavigationItems"
+          :key="item.id"
+          :title="item.label"
+          :description="item.qr_description"
+          :icon-svg="item.icon_svg"
+          :image-endpoint="`/settings/header-navigation/${encodeURIComponent(item.id)}/qr`"
+          :test-id="`header-qr-${item.id}`"
+        />
+
+        <!-- Custom pages shown in both sidebar and header -->
         <router-link
           v-for="item in headerCustomMenuItems"
           :key="item.id"
@@ -60,18 +72,11 @@
           <span class="truncate">{{ item.label }}</span>
         </router-link>
 
-        <!-- Community QR Entry -->
-        <CommunityQrEntry
-          v-if="user && communityQrEnabled"
-          :title="communityQrTitle"
-          :description="communityQrDescription"
-        />
-
         <!-- Language Switcher -->
         <LocaleSwitcher />
 
         <!-- Subscription Progress (for users with active subscriptions) -->
-        <SubscriptionProgressMini v-if="user" />
+        <SubscriptionProgressMini v-if="user && subscriptionNavigationEnabled" />
 
         <!-- Balance Display -->
         <div
@@ -277,8 +282,8 @@ import { useAdminSettingsStore } from '@/stores/adminSettings'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMini.vue'
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
-import CommunityQrEntry from '@/components/layout/CommunityQrEntry.vue'
 import Icon from '@/components/icons/Icon.vue'
+import CommunityQrEntry from '@/components/layout/CommunityQrEntry.vue'
 import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, isFeatureFlagEnabled } from '@/utils/featureFlags'
 import { PRODUCT_GITHUB_URL } from '@/utils/branding'
@@ -297,24 +302,32 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const contactInfo = computed(() => appStore.contactInfo)
 const docUrl = computed(() => sanitizeUrl(appStore.docUrl))
 const modelPlazaEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.modelPlaza))
-const communityQrEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.communityQr))
-const communityQrTitle = computed(() => appStore.cachedPublicSettings?.community_qr_title || '')
-const communityQrDescription = computed(
-  () => appStore.cachedPublicSettings?.community_qr_description || ''
+const modelPlazaPlacement = computed(() =>
+  appStore.cachedPublicSettings?.model_plaza_placement === 'sidebar' ? 'sidebar' : 'header'
 )
-const headerCustomMenuItems = computed(() => {
+const subscriptionNavigationEnabled = computed(
+  () => appStore.cachedPublicSettings?.subscription_navigation_enabled !== false
+)
+const visibleHeaderItems = computed(() => {
   const visibility = authStore.isAdmin ? 'admin' : 'user'
   const items = authStore.isAdmin
     ? adminSettingsStore.customMenuItems
     : appStore.cachedPublicSettings?.custom_menu_items ?? []
-  return items
-    .filter(
+  return items.filter(
       (item) =>
         (item.visibility === visibility || item.visibility === 'all') &&
         (item.placement === 'header' || item.placement === 'both')
     )
     .sort((a, b) => a.sort_order - b.sort_order)
 })
+const headerQrNavigationItems = computed(() =>
+  visibleHeaderItems.value.filter(
+    (item) => item.placement === 'header' && item.navigation_type === 'qr'
+  )
+)
+const headerCustomMenuItems = computed(() =>
+  visibleHeaderItems.value.filter((item) => item.placement === 'both')
+)
 const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
 const availableBalance = computed(() => Number(user.value?.balance || 0))
 const frozenBalance = computed(() => Number(user.value?.frozen_balance || 0))

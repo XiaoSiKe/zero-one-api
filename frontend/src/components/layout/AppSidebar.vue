@@ -212,7 +212,7 @@ import { useAdminSettingsStore, useAppStore, useAuthStore, useOnboardingStore } 
 import VersionBadge from '@/components/common/VersionBadge.vue'
 import { sanitizeSvg } from '@/utils/sanitize'
 import { sanitizeUrl } from '@/utils/url'
-import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
+import { FeatureFlags, isFeatureFlagEnabled, makeSidebarFlag } from '@/utils/featureFlags'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
 
 interface NavItem {
@@ -276,6 +276,17 @@ const expandedGroups = ref<Set<string>>(new Set())
 const siteName = computed(() => appStore.siteName)
 const siteLogo = computed(() => sanitizeUrl(appStore.siteLogo || '', { allowRelative: true, allowDataUrl: true }))
 const siteVersion = computed(() => appStore.siteVersion)
+const profileNavigationEnabled = computed(
+  () => appStore.cachedPublicSettings?.profile_navigation_enabled !== false
+)
+const subscriptionNavigationEnabled = computed(
+  () => appStore.cachedPublicSettings?.subscription_navigation_enabled !== false
+)
+const modelPlazaPlacement = computed(() =>
+  appStore.cachedPublicSettings?.model_plaza_placement === 'sidebar' ? 'sidebar' : 'header'
+)
+const userSidebarOrder = computed(() => appStore.cachedPublicSettings?.user_sidebar_order ?? [])
+const adminSidebarOrder = computed(() => appStore.cachedPublicSettings?.admin_sidebar_order ?? [])
 
 // SVG Icon Components
 const DashboardIcon = {
@@ -704,6 +715,10 @@ const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
 const flagAdminPayment = () => adminSettingsStore.paymentEnabled
 const flagBatchImageAccess = () => canUseBatchImage.value
+const flagProfileNavigation = () => profileNavigationEnabled.value
+const flagSubscriptionNavigation = () => subscriptionNavigationEnabled.value
+const flagModelPlazaInSidebar = () =>
+  modelPlazaPlacement.value === 'sidebar' && isFeatureFlagEnabled(FeatureFlags.modelPlaza)
 
 // buildSelfNavItems 构造用户自己的导航项（用户端主菜单和管理员的"我的账户"子菜单共享这组声明）。
 // withDashboard=true 时包含仪表盘（用户端），false 时不含（管理员的个人区已经有独立仪表盘入口）。
@@ -714,6 +729,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
   const items: NavItem[] = []
   if (withDashboard) {
     items.push({ path: '/dashboard', label: t('nav.dashboard'), icon: DashboardIcon })
+    items.push({ path: '/model-plaza', label: t('nav.modelPlaza'), icon: DashboardIcon, featureFlag: flagModelPlazaInSidebar })
   }
   items.push(
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
@@ -721,12 +737,12 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     { path: '/available-channels', label: t('nav.availableChannels'), icon: ChannelIcon, hideInSimpleMode: true, featureFlag: flagAvailableChannels },
     { path: '/monitor', label: t('nav.channelStatus'), icon: SignalIcon, featureFlag: flagChannelMonitor },
-    { path: '/subscriptions', label: t('nav.mySubscriptions'), icon: CreditCardIcon, hideInSimpleMode: true },
+    { path: '/subscriptions', label: t('nav.mySubscriptions'), icon: CreditCardIcon, hideInSimpleMode: true, featureFlag: flagSubscriptionNavigation },
     { path: '/purchase', label: t('nav.buySubscription'), icon: RechargeSubscriptionIcon, hideInSimpleMode: true, featureFlag: flagPayment },
     { path: '/orders', label: t('nav.myOrders'), icon: OrderListIcon, hideInSimpleMode: true, featureFlag: flagPayment },
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
     { path: '/affiliate', label: t('nav.affiliate'), icon: UsersIcon, hideInSimpleMode: true, featureFlag: flagAffiliate },
-    { path: '/profile', label: t('nav.profile'), icon: UserIcon },
+    { path: '/profile', label: t('nav.profile'), icon: UserIcon, featureFlag: flagProfileNavigation },
     ...(withDashboard ? customMenuItemsForUser.value : []).map((item): NavItem => ({
       path: `/custom/${item.id}`,
       label: item.label,
@@ -743,15 +759,33 @@ function finalizeNav(items: NavItem[]): NavItem[] {
   return authStore.isSimpleMode ? visible.filter(item => !item.hideInSimpleMode) : visible
 }
 
+function sortNavItems(items: NavItem[], order: string[]): NavItem[] {
+  if (!order.length) return items
+  const positions = new Map(order.map((path, index) => [path, index]))
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((left, right) => {
+      const leftPosition = positions.get(left.item.path) ?? Number.MAX_SAFE_INTEGER
+      const rightPosition = positions.get(right.item.path) ?? Number.MAX_SAFE_INTEGER
+      return leftPosition - rightPosition || left.index - right.index
+    })
+    .map(({ item }) => item)
+}
+
 // User navigation items (for regular users)
-const userNavItems = computed((): NavItem[] => finalizeNav(buildSelfNavItems(true)))
+const userNavItems = computed((): NavItem[] =>
+  sortNavItems(finalizeNav(buildSelfNavItems(true)), userSidebarOrder.value)
+)
 
 // Personal navigation items (for admin's "My Account" section, without Dashboard).
 // Admins access 可用渠道 from this section just like regular users — there is no
 // separate admin entry, since the page is purely a user-facing view. Affiliate is
 // excluded because administrators use the single top-level affiliate workspace.
 const personalNavItems = computed((): NavItem[] =>
-  finalizeNav(buildSelfNavItems(false).filter((item) => item.path !== '/affiliate'))
+  sortNavItems(
+    finalizeNav(buildSelfNavItems(false).filter((item) => item.path !== '/affiliate')),
+    userSidebarOrder.value
+  )
 )
 
 // Custom menu items filtered by visibility
@@ -780,6 +814,7 @@ const customMenuItemsForAdmin = computed(() => {
 const adminNavItems = computed((): NavItem[] => {
   const baseItems: NavItem[] = [
     { path: '/admin/dashboard', label: t('nav.dashboard'), icon: DashboardIcon },
+    { path: '/model-plaza', label: t('nav.modelPlaza'), icon: DashboardIcon, featureFlag: flagModelPlazaInSidebar },
     { path: '/admin/ops', label: t('nav.ops'), icon: ChartIcon, featureFlag: flagOpsMonitoring },
     { path: '/admin/users', label: t('nav.users'), icon: UsersIcon, hideInSimpleMode: true },
     { path: '/admin/groups', label: t('nav.groups'), icon: FolderIcon, hideInSimpleMode: true },
@@ -843,14 +878,14 @@ const adminNavItems = computed((): NavItem[] => {
     for (const cm of customMenuItemsForAdmin.value) {
       filtered.push({ path: `/custom/${cm.id}`, label: cm.label, icon: null, iconSvg: cm.icon_svg })
     }
-    return filtered
+    return sortNavItems(filtered, adminSidebarOrder.value)
   }
 
   visible.push({ path: '/admin/settings', label: t('nav.settings'), icon: CogIcon })
   for (const cm of customMenuItemsForAdmin.value) {
     visible.push({ path: `/custom/${cm.id}`, label: cm.label, icon: null, iconSvg: cm.icon_svg })
   }
-  return visible
+  return sortNavItems(visible, adminSidebarOrder.value)
 })
 
 function toggleSidebar() {
@@ -1104,6 +1139,12 @@ onBeforeUnmount(() => {
 
 /* Custom SVG icon in sidebar: constrain size without overriding uploaded SVG colors */
 .sidebar-svg-icon {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 1.25rem;
+  align-items: center;
+  justify-content: center;
   color: currentColor;
 }
 
@@ -1111,6 +1152,8 @@ onBeforeUnmount(() => {
   display: block;
   width: 1.25rem;
   height: 1.25rem;
+  max-width: 1.25rem;
+  max-height: 1.25rem;
 }
 
 .sidebar-subnav-enter-active {

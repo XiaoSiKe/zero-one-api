@@ -1,16 +1,17 @@
 {
   "schema_version": 4,
   "repository": "Wei-Shaw/sub2api",
-  "release": "v0.1.181",
-  "commit": "3af5443b224823ae507a50c7b113aa50604409c8",
+  "release": "v0.1.182",
+  "commit": "5a7d469622911a6b1291a692376df5fa03f9ac2e",
   "upstream_sync": {
-    "previous_release": "v0.1.179",
-    "previous_commit": "75f88be5f75c27771836b586f7de1503afa0e3bc",
-    "product_commit": "3f6d59d6fbe977b913c086a74d7144575288fe6b",
-    "merge_commit": "f7e72a6dc6fa96a2b3207e52df815876edfb77f9"
+    "previous_release": "v0.1.181",
+    "previous_commit": "3af5443b224823ae507a50c7b113aa50604409c8",
+    "product_commit": "a3a6923db9dd21d0b454bfdccc53e54caae1116f",
+    "merge_commit": "6b997ae56e59464fa75e0724e54bb66ee7ed1bd2"
   },
   "approved_backports": [],
   "preserve_on_upstream_sync": [
+    ".github/audit-exceptions.yml",
     ".github/scripts/ui-baseline.json",
     ".github/scripts/verify-publish-source.mjs",
     ".github/scripts/verify-publish-source.test.mjs",
@@ -21,6 +22,9 @@
     ".github/scripts/verify-upstream-boundary.mjs",
     ".github/scripts/verify-upstream-boundary.test.mjs",
     ".github/upstream-baseline.json",
+    ".github/workflows/backend-ci.yml",
+    ".github/workflows/release.yml",
+    ".github/workflows/security-scan.yml",
     ".github/workflows/zero-one-ci.yml",
     ".github/workflows/zero-one-publish.yml",
     "DEV_GUIDE.md",
@@ -59,7 +63,11 @@
     "docs/TECHNICAL-PLAN.md",
     "docs/adr/0004-approved-ui-snapshot-at-edge.md",
     "docs/adr/0006-admin-affiliate-attribution.md",
+    "docs/adr/0007-configurable-console-navigation.md",
     "frontend/src/App.vue",
+    "frontend/package.json",
+    "frontend/pnpm-lock.yaml",
+    "frontend/pnpm-workspace.yaml",
     "frontend/src/__tests__/consoleShellOwnership.spec.ts",
     "frontend/src/api/__tests__/admin.affiliates.spec.ts",
     "frontend/src/api/admin/affiliates.ts",
@@ -69,6 +77,7 @@
     "frontend/src/components/layout/TablePageLayout.vue",
     "frontend/src/components/layout/__tests__/AppHeader.affiliateTitle.spec.ts",
     "frontend/src/components/layout/__tests__/AppSidebar.spec.ts",
+    "frontend/src/constants/navigationIcons.ts",
     "frontend/src/i18n/locales/en/admin/overview.ts",
     "frontend/src/i18n/locales/zh/admin/overview.ts",
     "frontend/src/style.css",
@@ -90,6 +99,7 @@
     "frontend/src/views/admin/RiskControlView.vue",
     "frontend/src/views/admin/SubscriptionsView.vue",
     "frontend/src/views/admin/UsageView.vue",
+    "frontend/src/views/admin/__tests__/UsageExportLibrary.spec.ts",
     "frontend/src/views/admin/UsersView.vue",
     "frontend/src/views/admin/orders/AdminOrdersView.vue",
     "frontend/src/views/admin/orders/AdminPaymentDashboardView.vue",
@@ -313,7 +323,7 @@
   "legacy_hotfixes": [
     {
       "name": "approved-v0.1.179-production-correctness-and-billing-compatibility",
-      "valid_for_release": "v0.1.181",
+      "valid_for_release": "v0.1.182",
       "exit_condition": "Remove each path when the first stable upstream release containing its equivalent production-correctness fix becomes the baseline; remove the entire block when no listed path remains.",
       "paths": [
         "backend/internal/handler/admin/admin_basic_handlers_test.go",
@@ -343,7 +353,7 @@
     },
     {
       "name": "approved-v0.1.179-version-metadata-alignment",
-      "valid_for_release": "v0.1.181",
+      "valid_for_release": "v0.1.182",
       "exit_condition": "Remove this metadata alignment when the first stable upstream release makes backend/cmd/server/VERSION match the baseline release.",
       "paths": [
         "backend/cmd/server/VERSION"
@@ -351,7 +361,7 @@
     },
     {
       "name": "approved-v0.1.179-race-safety",
-      "valid_for_release": "v0.1.181",
+      "valid_for_release": "v0.1.182",
       "exit_condition": "Remove each path when the first stable upstream release contains the equivalent race-safe runtime cache and asynchronous test fixture handling.",
       "paths": [
         "backend/internal/service/content_moderation.go",
@@ -362,7 +372,7 @@
     },
     {
       "name": "approved-v0.1.179-go-format-normalization",
-      "valid_for_release": "v0.1.181",
+      "valid_for_release": "v0.1.182",
       "exit_condition": "Remove each path when the first stable upstream release contains the same Go 1.26 formatting normalization.",
       "paths": [
         "backend/internal/handler/auth_current_user_test.go",
@@ -373,7 +383,7 @@
     },
     {
       "name": "approved-v0.1.179-remove-unconditional-sticky-debug-logs",
-      "valid_for_release": "v0.1.181",
+      "valid_for_release": "v0.1.182",
       "exit_condition": "Remove this hotfix when the first stable upstream release removes or explicitly gates the equivalent per-request sticky-session debug logs.",
       "paths": [
         "backend/internal/handler/gateway_handler.go",
@@ -382,19 +392,22 @@
     },
     {
       "name": "approved-v0.1.181-grok-mapping-test-isolation",
-      "valid_for_release": "v0.1.181",
+      "valid_for_release": "v0.1.182",
       "exit_condition": "Remove this hotfix when the first stable upstream release contains equivalent runtime model-mapping isolation in the canonical scheduling test.",
       "paths": [
         "backend/internal/service/openai_model_mapping_test.go"
       ]
     },
     {
-      "name": "approved-v0.1.181-x-image-security-update",
-      "valid_for_release": "v0.1.181",
-      "exit_condition": "Remove this hotfix when the first stable upstream release uses golang.org/x/image v0.45.0 or later and includes the compatible Go x-module dependency set.",
+      "name": "approved-v0.1.182-go-dependency-security-updates",
+      "valid_for_release": "v0.1.182",
+      "exit_condition": "Remove this hotfix when the first stable upstream release uses golang.org/x/image v0.45.0 or later, Testcontainers v0.44.0 or later, github.com/moby/go-archive v0.3.0 or later, and no longer depends on github.com/docker/docker.",
       "paths": [
         "backend/go.mod",
-        "backend/go.sum"
+        "backend/go.sum",
+        "backend/internal/middleware/rate_limiter_integration_test.go",
+        "backend/internal/repository/integration_harness_test.go",
+        "backend/internal/server/routes/auth_rate_limit_integration_test.go"
       ]
     }
   ],
@@ -411,6 +424,7 @@
         "frontend/src/composables/useChannelMonitorFormat.ts",
         "frontend/src/composables/useModelWhitelist.ts",
         "frontend/src/constants/__tests__/platforms.spec.ts",
+        "frontend/src/constants/navigationIcons.ts",
         "frontend/src/constants/platforms.ts",
         "frontend/src/features/channel-monitor-v2/",
         "frontend/src/features/prompt-audit/",
@@ -467,6 +481,7 @@
         "frontend/src/views/admin/RiskControlView.vue",
         "frontend/src/views/admin/SubscriptionsView.vue",
         "frontend/src/views/admin/UsageView.vue",
+        "frontend/src/views/admin/__tests__/UsageExportLibrary.spec.ts",
         "frontend/src/views/admin/UsersView.vue",
         "frontend/src/views/admin/__tests__/AccountsView.priorityColumn.spec.ts",
         "frontend/src/views/admin/__tests__/ChannelMonitorView.checkModeBadge.spec.ts",
@@ -498,6 +513,7 @@
         "frontend/src/views/user/KeysView.vue",
         "frontend/src/views/user/__tests__/KeysView.spec.ts",
         "frontend/src/views/user/PaymentResultView.vue",
+        "frontend/src/views/user/__tests__/PaymentResultView.spec.ts",
         "frontend/src/views/user/PaymentQRCodeView.vue",
         "frontend/src/views/user/PaymentView.vue",
         "frontend/src/views/user/ProfileView.vue",
@@ -610,6 +626,7 @@
         "backend/migrations/affiliate_manual_binding_migration_test.go",
         "backend/migrations/redeem_code_benefit_batch_migration_test.go",
         "docs/adr/0003-public-capabilities-and-coherent-release.md",
+        "docs/adr/0007-configurable-console-navigation.md",
         "frontend/src/api/__tests__/admin.affiliates.spec.ts",
         "frontend/src/api/admin/settings.ts",
         "frontend/src/api/admin/affiliates.ts",
@@ -680,8 +697,12 @@
       "owner": "Supported Preview",
       "paths": [
         ".github/.gitignore",
+        ".github/audit-exceptions.yml",
         ".github/scripts/",
         ".github/upstream-baseline.json",
+        ".github/workflows/backend-ci.yml",
+        ".github/workflows/release.yml",
+        ".github/workflows/security-scan.yml",
         ".github/workflows/zero-one-ci.yml",
         ".github/workflows/zero-one-publish.yml",
         ".dockerignore",
@@ -703,6 +724,9 @@
         "docs/adr/0004-approved-ui-snapshot-at-edge.md",
         "docs/adr/0005-canonical-product-domain.md",
         "docs/adr/0006-admin-affiliate-attribution.md",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
         "frontend/src/api/admin/channels.ts",
         "frontend/.eslintignore",
         "tools/check_pnpm_audit_exceptions.py"
@@ -742,6 +766,18 @@
     "frontend/src/types/"
   ],
   "immutable_exceptions": [
+    {
+      "name": "supported-preview-frontend-security-manifest",
+      "owner": "Supported Preview",
+      "path": "frontend/package.json",
+      "immutable_path": "frontend/package.json"
+    },
+    {
+      "name": "supported-preview-frontend-security-lockfile",
+      "owner": "Supported Preview",
+      "path": "frontend/pnpm-lock.yaml",
+      "immutable_path": "frontend/pnpm-lock.yaml"
+    },
     {
       "name": "console-skin-stable-console-shell-router",
       "owner": "Console Skin",

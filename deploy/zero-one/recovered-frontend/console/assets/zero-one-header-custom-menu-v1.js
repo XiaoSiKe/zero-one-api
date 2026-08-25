@@ -2,12 +2,22 @@
 // The source Console owns this behavior; this layer only bridges the immutable
 // preview snapshot and yields when native header placement controls are present.
 const ADMIN_SETTINGS_API = '/api/v1/admin/settings'
+const PUBLIC_SETTINGS_API = '/api/v1/settings/public'
 const ADMIN_SETTINGS_PATH = '/admin/settings'
 const MENU_GROUP_MARKER = 'zero-one-header-custom-menu-group'
 const CUSTOM_MENU_DESCRIPTION = '添加自定义 iframe 页面到侧边栏、顶部导航或同时显示在两处。每个页面可以选择普通用户、管理员或全部登录用户可见。'
 
 let adminMenuItems = []
+let adminNavigationSettings = null
 let adminSettingsRequested = false
+let publicNavigationSettings = window.__ZERO_ONE_PUBLIC_SETTINGS__ || window.__APP_CONFIG__ || null
+let publicSettingsRequested = false
+const customIconOverrides = new Map()
+
+function localText(zh, en) {
+  const locale = localStorage.getItem('sub2api_locale') || document.documentElement.lang || 'zh-CN'
+  return locale.toLowerCase().startsWith('zh') ? zh : en
+}
 
 // Recovered adapters create plain anchors outside Vue's render tree. Bind them
 // to the already-running Vue Router so internal navigation does not reload the
@@ -102,7 +112,7 @@ function normalizeMenuItems(value) {
 
 function currentMenuItems(user) {
   if (user?.role === 'admin') return adminMenuItems
-  return normalizeMenuItems(window.__APP_CONFIG__?.custom_menu_items)
+  return normalizeMenuItems(publicNavigationSettings?.custom_menu_items)
 }
 
 function isVisibleToUser(item, user) {
@@ -112,7 +122,10 @@ function isVisibleToUser(item, user) {
 
 function visibleHeaderItems(user) {
   return currentMenuItems(user)
-    .filter((item) => isVisibleToUser(item, user) && (item.placement === 'header' || item.placement === 'both'))
+    .filter((item) => isVisibleToUser(item, user) && (
+      item.placement === 'both' ||
+      (item.placement === 'header' && item.navigation_type === 'qr')
+    ))
     .sort((left, right) => Number(left.sort_order || 0) - Number(right.sort_order || 0))
 }
 
@@ -127,7 +140,7 @@ function visibleSidebarItems(user) {
     .sort((left, right) => Number(left.sort_order || 0) - Number(right.sort_order || 0))
 }
 
-function createLinkIcon() {
+function createFallbackIcon() {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   svg.setAttribute('viewBox', '0 0 24 24')
   svg.setAttribute('fill', 'none')
@@ -143,6 +156,94 @@ function createLinkIcon() {
   return svg
 }
 
+function createMenuIcon(item, className = 'zero-one-header-custom-menu-icon') {
+  const raw = typeof item?.icon_svg === 'string' ? item.icon_svg.trim() : ''
+  if (!raw) {
+    const fallback = createFallbackIcon()
+    fallback.setAttribute('class', className)
+    return fallback
+  }
+  const parsed = new DOMParser().parseFromString(raw, 'image/svg+xml')
+  const svg = parsed.documentElement
+  if (svg.nodeName.toLowerCase() !== 'svg' || parsed.querySelector('parsererror')) {
+    const fallback = createFallbackIcon()
+    fallback.setAttribute('class', className)
+    return fallback
+  }
+  for (const unsafe of svg.querySelectorAll('script, foreignObject, iframe, object, embed, style')) unsafe.remove()
+  for (const node of [svg, ...svg.querySelectorAll('*')]) {
+    for (const attribute of [...node.attributes]) {
+      const name = attribute.name.toLowerCase()
+      if (name.startsWith('on') || name === 'href' || name === 'xlink:href' || name === 'src') {
+        node.removeAttribute(attribute.name)
+      }
+    }
+  }
+  const icon = document.importNode(svg, true)
+  icon.setAttribute('class', className)
+  icon.setAttribute('aria-hidden', 'true')
+  return icon
+}
+
+function openQRDialog(item) {
+  document.querySelector('[data-zero-one-header-qr-dialog]')?.remove()
+  const overlay = document.createElement('div')
+  overlay.className = 'zero-one-header-qr-overlay'
+  overlay.setAttribute('data-zero-one-header-qr-dialog', item.id)
+  const panel = document.createElement('section')
+  panel.className = 'zero-one-header-qr-dialog'
+  panel.setAttribute('role', 'dialog')
+  panel.setAttribute('aria-modal', 'true')
+  panel.setAttribute('aria-label', item.label)
+  const header = document.createElement('div')
+  header.className = 'zero-one-header-qr-dialog-header'
+  const title = document.createElement('h2')
+  title.textContent = item.label
+  const close = document.createElement('button')
+  close.type = 'button'
+  close.textContent = '×'
+  close.setAttribute('aria-label', 'Close')
+  header.append(title, close)
+  const description = document.createElement('p')
+  description.textContent = item.qr_description || ''
+  const frame = document.createElement('div')
+  frame.className = 'zero-one-header-qr-frame'
+  frame.textContent = '正在加载二维码…'
+  panel.append(header, description, frame)
+  overlay.append(panel)
+  document.body.append(overlay)
+
+  let objectURL = ''
+  const dismiss = () => {
+    if (objectURL) URL.revokeObjectURL(objectURL)
+    overlay.remove()
+  }
+  close.addEventListener('click', dismiss)
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) dismiss()
+  })
+
+  fetch('/api/v1/settings/header-navigation/' + encodeURIComponent(item.id) + '/qr', {
+    credentials: 'same-origin',
+    headers: apiHeaders(),
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error('QR unavailable')
+      return response.blob()
+    })
+    .then((blob) => {
+      if (!overlay.isConnected || !['image/png', 'image/jpeg', 'image/webp'].includes(blob.type)) return
+      objectURL = URL.createObjectURL(blob)
+      const image = document.createElement('img')
+      image.src = objectURL
+      image.alt = item.label
+      frame.replaceChildren(image)
+    })
+    .catch(() => {
+      if (overlay.isConnected) frame.textContent = '二维码暂时无法加载'
+    })
+}
+
 function removeHeaderGroup() {
   document.querySelector(`[data-zero-one-header-menu="${MENU_GROUP_MARKER}"]`)?.remove()
 }
@@ -156,7 +257,7 @@ function renderHeaderMenu(user) {
   }
 
   const items = visibleHeaderItems(user)
-  const signature = JSON.stringify(items.map((item) => [item.id, item.label, item.sort_order]))
+  const signature = JSON.stringify(items.map((item) => [item.id, item.label, item.icon_svg, item.navigation_type, item.qr_description, item.sort_order]))
   const existing = document.querySelector(`[data-zero-one-header-menu="${MENU_GROUP_MARKER}"]`)
   if (existing?.getAttribute('data-signature') === signature) return
   existing?.remove()
@@ -172,12 +273,26 @@ function renderHeaderMenu(user) {
   group.setAttribute('data-zero-one-header-menu', MENU_GROUP_MARKER)
   group.setAttribute('data-signature', signature)
   for (const item of items) {
+    if (item.placement === 'header' && item.navigation_type === 'qr') {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'zero-one-header-custom-menu-link'
+      button.setAttribute('data-testid', `header-qr-${item.id}`)
+      button.setAttribute('data-zero-one-header-menu', 'qr')
+      button.append(createMenuIcon(item))
+      const label = document.createElement('span')
+      label.textContent = item.label.trim()
+      button.append(label)
+      button.addEventListener('click', () => openQRDialog(item))
+      group.append(button)
+      continue
+    }
     const link = document.createElement('a')
     link.className = 'zero-one-header-custom-menu-link'
     link.href = `/custom/${encodeURIComponent(item.id)}`
     link.setAttribute('data-testid', `header-custom-menu-${item.id}`)
     link.setAttribute('data-zero-one-header-menu', 'link')
-    link.append(createLinkIcon())
+    link.append(createMenuIcon(item))
     const label = document.createElement('span')
     label.textContent = item.label.trim()
     link.append(label)
@@ -189,11 +304,8 @@ function renderHeaderMenu(user) {
   else actionRow.prepend(group)
 }
 
-function createSidebarIcon() {
-  const icon = createLinkIcon()
-  icon.classList.remove('zero-one-header-custom-menu-icon')
-  icon.classList.add('h-5', 'w-5', 'flex-shrink-0')
-  return icon
+function createSidebarIcon(item) {
+  return createMenuIcon(item, 'h-5 w-5 flex-shrink-0')
 }
 
 function createSidebarLink(item, collapsed) {
@@ -204,7 +316,7 @@ function createSidebarLink(item, collapsed) {
   link.setAttribute('data-testid', `sidebar-custom-menu-${item.id}`)
   link.setAttribute('data-zero-one-sidebar-shared-menu', item.id)
   if (collapsed) link.title = item.label.trim()
-  link.append(createSidebarIcon())
+  link.append(createSidebarIcon(item))
 
   const label = document.createElement('span')
   label.className = `sidebar-label${collapsed ? ' sidebar-label-collapsed' : ''}`
@@ -294,6 +406,12 @@ function reconcileSidebar(user) {
     container.append(createSidebarLink(item, collapsed))
   }
 
+  const settings = runtimeNavigationSettings(user) || {}
+  const savedOrder = user.role === 'admin'
+    ? settings.admin_sidebar_order
+    : settings.user_sidebar_order
+  if (normalizeSidebarOrder(savedOrder).length) return
+
   let previousLink = insertionAnchor
   for (const item of sidebarItems) {
     const link = [...aside.querySelectorAll(`a[href="/custom/${CSS.escape(item.id)}"]`)]
@@ -302,6 +420,148 @@ function reconcileSidebar(user) {
     if (previousLink.nextElementSibling !== link) previousLink.after(link)
     previousLink = link
   }
+}
+
+function runtimeNavigationSettings(user) {
+  return user?.role === 'admin' ? adminNavigationSettings : publicNavigationSettings
+}
+
+function normalizeSidebarOrder(value) {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.filter((path) => typeof path === 'string' && path.startsWith('/')))]
+}
+
+function navigationPath(link) {
+  if (!(link instanceof HTMLAnchorElement)) return ''
+  const path = new URL(link.href, window.location.origin).pathname
+  return path === '/model-plaza' ? '/model-plaza' : path
+}
+
+function reorderSidebarSection(section, order) {
+  if (!(section instanceof HTMLElement) || !order.length) return
+  const links = [...section.children].filter((node) => node instanceof HTMLAnchorElement && node.classList.contains('sidebar-link'))
+  section.style.removeProperty('display')
+  section.style.removeProperty('flex-direction')
+  for (const link of links) link.style.removeProperty('order')
+  const positions = new Map(order.map((path, index) => [path, index]))
+  const sorted = links
+    .map((link, index) => ({ link, index }))
+    .sort((left, right) => {
+      const leftPosition = positions.get(navigationPath(left.link)) ?? Number.MAX_SAFE_INTEGER
+      const rightPosition = positions.get(navigationPath(right.link)) ?? Number.MAX_SAFE_INTEGER
+      return leftPosition - rightPosition || left.index - right.index
+    })
+    .map(({ link }) => link)
+  if (sorted.every((link, index) => link === links[index])) return
+  for (const link of sorted) section.append(link)
+}
+
+function previewSidebarSectionOrder(section, order) {
+  if (!(section instanceof HTMLElement) || !order.length) return
+  const links = [...section.children].filter((node) => node instanceof HTMLAnchorElement && node.classList.contains('sidebar-link'))
+  const positions = new Map(order.map((path, index) => [path, index]))
+  section.style.setProperty('display', 'flex')
+  section.style.setProperty('flex-direction', 'column')
+  links.forEach((link, index) => {
+    link.style.setProperty('order', String((positions.get(navigationPath(link)) ?? order.length + index) + 1))
+  })
+}
+
+function reconcileSidebarOrder(user) {
+  if (!user) return
+  const settings = runtimeNavigationSettings(user) || {}
+  const sections = [...document.querySelectorAll('aside nav .sidebar-section')]
+  const reconcileSection = window.location.pathname === ADMIN_SETTINGS_PATH
+    ? previewSidebarSectionOrder
+    : reorderSidebarSection
+  if (user.role === 'admin') {
+    reconcileSection(sections[0], normalizeSidebarOrder(settings.admin_sidebar_order))
+    reconcileSection(sections[1], normalizeSidebarOrder(settings.user_sidebar_order))
+  } else {
+    reconcileSection(sections[0], normalizeSidebarOrder(settings.user_sidebar_order))
+  }
+}
+
+function syncModelPlazaActiveState(link) {
+  if (!(link instanceof HTMLAnchorElement)) return
+  link.classList.remove('router-link-active', 'router-link-exact-active')
+  const active = window.location.pathname === '/model-plaza'
+  link.classList.toggle('sidebar-link-active', active)
+  if (active) link.setAttribute('aria-current', 'page')
+  else link.removeAttribute('aria-current')
+}
+
+function setNavigationLinkHidden(selector, hidden, marker) {
+  for (const link of document.querySelectorAll(selector)) {
+    if (!(link instanceof HTMLElement)) continue
+    link.hidden = hidden
+    if (hidden) {
+      link.setAttribute(marker, 'true')
+      link.style.setProperty('display', 'none', 'important')
+    } else {
+      link.removeAttribute(marker)
+      link.style.removeProperty('display')
+    }
+  }
+}
+
+function reconcileBuiltInNavigation(user) {
+  if (!user) return
+  const settings = runtimeNavigationSettings(user) || {}
+  const profileEnabled = settings.profile_navigation_enabled !== false
+  const subscriptionEnabled = settings.subscription_navigation_enabled !== false
+  const placement = settings.model_plaza_placement === 'sidebar' ? 'sidebar' : 'header'
+
+  setNavigationLinkHidden('aside a[href="/profile"]', !profileEnabled, 'data-zero-one-profile-hidden')
+  setNavigationLinkHidden(
+    'aside nav a[href="/subscriptions"]',
+    !subscriptionEnabled,
+    'data-zero-one-subscription-hidden',
+  )
+
+  for (const button of document.querySelectorAll('header button[title]')) {
+    const title = button.getAttribute('title')?.toLowerCase() || ''
+    if (!title.includes('订阅') && !title.includes('subscription')) continue
+    const container = button.parentElement
+    if (container instanceof HTMLElement) container.hidden = !subscriptionEnabled
+  }
+
+  setNavigationLinkHidden(
+    'header a[href^="/model-plaza"]',
+    placement !== 'header',
+    'data-zero-one-model-plaza-hidden',
+  )
+
+  const aside = document.querySelector('aside')
+  const existing = aside?.querySelector('[data-zero-one-model-plaza-sidebar]')
+  if (placement !== 'sidebar' || !(aside instanceof HTMLElement)) {
+    existing?.remove()
+    return
+  }
+  if (existing instanceof HTMLAnchorElement) {
+    syncModelPlazaActiveState(existing)
+    return
+  }
+  const dashboardPath = user.role === 'admin' ? '/admin/dashboard' : '/dashboard'
+  const dashboard = aside.querySelector('nav a.sidebar-link[href="' + dashboardPath + '"]')
+  if (!(dashboard instanceof HTMLAnchorElement)) return
+  const link = document.createElement('a')
+  link.href = '/model-plaza?embedded=1'
+  link.className = dashboard.className
+  link.classList.remove('router-link-active', 'router-link-exact-active', 'sidebar-link-active')
+  link.removeAttribute('aria-current')
+  link.setAttribute('aria-label', localText('模型广场', 'Model Plaza'))
+  link.setAttribute('data-zero-one-model-plaza-sidebar', 'true')
+  const icon = createFallbackIcon()
+  icon.setAttribute('class', 'h-5 w-5 flex-shrink-0 zero-one-sidebar-navigation-icon')
+  link.append(icon)
+  const label = document.createElement('span')
+  label.className = 'sidebar-label'
+  label.textContent = localText('模型广场', 'Model Plaza')
+  link.append(label)
+  bindInternalLink(link)
+  dashboard.after(link)
+  syncModelPlazaActiveState(link)
 }
 
 function findCustomMenuCard() {
@@ -326,7 +586,36 @@ function augmentCustomMenuItems(items) {
   return normalizeMenuItems(items).map((item, index) => ({
     ...item,
     placement: normalizePlacement(placements[index] ?? item.placement),
+    icon_svg: customIconOverrides.get(index) || item.icon_svg,
   }))
+}
+
+function ensureIconPresetControls(grid, index) {
+  if (grid.querySelector('[data-zero-one-custom-icon-presets]')) return
+  const field = document.createElement('div')
+  field.className = 'zero-one-custom-icon-presets'
+  field.setAttribute('data-zero-one-custom-icon-presets', String(index))
+  const label = document.createElement('label')
+  label.textContent = localText('内置 SVG 图标', 'Built-in SVG Icons')
+  const choices = document.createElement('div')
+  choices.className = 'zero-one-custom-icon-preset-choices'
+  const presets = window.__ZERO_ONE_NAVIGATION_ICON_PRESETS__ || []
+  for (const [id, svg] of presets) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.title = id
+    button.setAttribute('aria-label', id)
+    button.append(createMenuIcon({ icon_svg: svg }, 'zero-one-custom-icon-preset-svg'))
+    button.addEventListener('click', () => {
+      customIconOverrides.set(index, svg)
+      adminMenuItems[index].icon_svg = svg
+      for (const sibling of choices.querySelectorAll('button')) sibling.classList.remove('is-selected')
+      button.classList.add('is-selected')
+    })
+    choices.append(button)
+  }
+  field.append(label, choices)
+  grid.append(field)
 }
 
 function ensurePlacementControls(user) {
@@ -345,8 +634,10 @@ function ensurePlacementControls(user) {
     return node instanceof HTMLElement && node.querySelector('select') && node.querySelector('input')
   })
   itemCards.forEach((itemCard, index) => {
+    itemCard.hidden = normalizePlacement(adminMenuItems[index]?.placement) === 'header'
     const grid = itemCard.querySelector('.grid')
     if (!(grid instanceof HTMLElement)) return
+    ensureIconPresetControls(grid, index)
     const visibilitySelect = itemCard.querySelector(
       'select:not([data-zero-one-header-menu-placement])',
     )
@@ -391,6 +682,7 @@ function ensurePlacementControls(user) {
 
 function updateMenusAfterSave(items) {
   adminMenuItems = normalizeMenuItems(items)
+  customIconOverrides.clear()
   scheduleScan()
 }
 
@@ -429,15 +721,36 @@ function requestAdminSettings(user) {
     headers: apiHeaders(),
   })
     .then(readApiResponse)
-    .then((settings) => updateMenusAfterSave(settings?.custom_menu_items))
+    .then((settings) => {
+      adminNavigationSettings = settings
+      updateMenusAfterSave(settings?.custom_menu_items)
+    })
+    .catch(() => {})
+}
+
+function requestPublicSettings(user) {
+  if (!user || user.role === 'admin' || publicSettingsRequested) return
+  publicSettingsRequested = true
+  fetch(PUBLIC_SETTINGS_API, {
+    credentials: 'same-origin',
+    headers: apiHeaders(),
+  })
+    .then(readApiResponse)
+    .then((settings) => {
+      publicNavigationSettings = settings
+      scheduleScan()
+    })
     .catch(() => {})
 }
 
 function scan() {
   const user = authenticatedUser()
   requestAdminSettings(user)
+  requestPublicSettings(user)
   renderHeaderMenu(user)
   reconcileSidebar(user)
+  reconcileBuiltInNavigation(user)
+  reconcileSidebarOrder(user)
   ensurePlacementControls(user)
 }
 

@@ -458,6 +458,21 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.PurchaseSubscriptionURL != after.PurchaseSubscriptionURL {
 		changed = append(changed, "purchase_subscription_url")
 	}
+	if before.ProfileNavEnabled != after.ProfileNavEnabled {
+		changed = append(changed, "profile_navigation_enabled")
+	}
+	if before.SubscriptionNavEnabled != after.SubscriptionNavEnabled {
+		changed = append(changed, "subscription_navigation_enabled")
+	}
+	if before.ModelPlazaNavPlacement != after.ModelPlazaNavPlacement {
+		changed = append(changed, "model_plaza_placement")
+	}
+	if before.UserSidebarOrder != after.UserSidebarOrder {
+		changed = append(changed, "user_sidebar_order")
+	}
+	if before.AdminSidebarOrder != after.AdminSidebarOrder {
+		changed = append(changed, "admin_sidebar_order")
+	}
 	if before.TableDefaultPageSize != after.TableDefaultPageSize {
 		changed = append(changed, "table_default_page_size")
 	}
@@ -466,6 +481,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.CustomMenuItems != after.CustomMenuItems {
 		changed = append(changed, "custom_menu_items")
+	}
+	if before.HeaderNavQRImages != after.HeaderNavQRImages {
+		changed = append(changed, "header_navigation_qr_images")
 	}
 	if before.CustomEndpoints != after.CustomEndpoints {
 		changed = append(changed, "custom_endpoints")

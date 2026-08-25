@@ -12,8 +12,8 @@ const manifest = validateManifest(
 )
 
 test('validates the approved UI baseline manifest', () => {
-  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-25-r7')
-  assert.equal(manifest.baseline_commit, 'a05ae3883d81291adc18a08a03844aed2c09a7e7')
+  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-25-r14')
+  assert.equal(manifest.baseline_commit, '851a0b597a476968a47c33776ae2e2df50941812')
   assert.equal(manifest.edge_build.console_source, 'deploy/zero-one/recovered-frontend/console')
   assert.deepEqual(
     manifest.protected_surfaces.map(({ name }) => name),
@@ -21,7 +21,7 @@ test('validates the approved UI baseline manifest', () => {
       'landing-home',
       'auth',
       'console-shell',
-      'community-qr-entry',
+      'header-navigation-entries',
       'affiliate-attribution',
       'model-plaza-pricing',
       'redeem-benefits-mystery-box',

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { communityQrPngBase64, regularUser, seedConsole } from './fixtures/api'
 
 const affiliateConsoleOrigin =
@@ -716,7 +716,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
     page.on('console', (message) => {
       if (message.type() === 'error') consoleErrors.push(message.text())
     })
-    page.on('pageerror', (error) => pageErrors.push(error.message))
+    page.on('pageerror', (error) => pageErrors.push(error.stack || error.message))
     await page.addInitScript(() => {
       ;(window as Window & { __zeroOneDocumentSentinel?: number }).__zeroOneDocumentSentinel = Math.random()
       window.addEventListener('beforeunload', () => {
@@ -1207,22 +1207,25 @@ test.describe('Console standalone affiliate administration contracts', () => {
   })
 })
 
-test.describe('Console community QR contracts', () => {
+test.describe('Console header navigation settings contracts', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
     await page.clock.setFixedTime(new Date('2026-08-16T12:00:00+08:00'))
     await seedConsole(page, 'v2', {
-      communityQrEnabled: false,
-      communityQrImage: '',
-      communityQrTitle: '交流群',
-      communityQrDescription: '扫码加入交流群获取支持',
+      communityQrEnabled: true,
+      userSidebarOrder: ['/keys', '/dashboard', '/model-plaza'],
+      adminSidebarOrder: ['/admin/settings', '/admin/dashboard', '/model-plaza'],
+      customMenuItems: [
+        { id: 'recharge', label: '在线充值', icon_svg: '', url: '', visibility: 'user', placement: 'header', navigation_type: 'qr', qr_description: '扫码联系充值客服', qr_image: `data:image/png;base64,${communityQrPngBase64}`, sort_order: 0 },
+        { id: 'docs', label: '接入教程', icon_svg: '', url: 'https://example.com/docs', visibility: 'all', placement: 'sidebar', sort_order: 1 },
+        { id: 'support', label: '售后支持', icon_svg: '', url: '', visibility: 'all', placement: 'header', navigation_type: 'qr', qr_description: '扫码联系售后', qr_image: `data:image/png;base64,${communityQrPngBase64}`, sort_order: 2 },
+      ],
     })
   })
 
-  test('administrator import enables one header button and an accessible QR dialog', async ({ page }) => {
+  test('administrator can add multiple header-only entries without duplicating them below', async ({ page }) => {
     let savedBody: Record<string, unknown> | null = null
     let savedHeaders: Record<string, string> = {}
-    let imageHeaders: Record<string, string> = {}
     page.on('request', (request) => {
       if (
         request.method() === 'PUT' &&
@@ -1231,109 +1234,290 @@ test.describe('Console community QR contracts', () => {
         savedBody = request.postDataJSON() as Record<string, unknown>
         savedHeaders = request.headers()
       }
-      if (
-        request.method() === 'GET' &&
-        new URL(request.url()).pathname === '/api/v1/settings/community-qr'
-      ) {
-        imageHeaders = request.headers()
-      }
     })
 
     await page.goto('http://127.0.0.1:4173/admin/settings')
-    const panel = page.getByTestId('community-qr-settings')
-    const toggle = page.getByTestId('community-qr-toggle')
-    const fileInput = page.getByTestId('community-qr-file-input')
-    const save = page.getByTestId('community-qr-save')
-    const status = page.getByTestId('community-qr-status')
-    const titleInput = page.getByTestId('community-qr-title-input')
-    const descriptionInput = page.getByTestId('community-qr-description-input')
+    const panel = page.getByTestId('header-navigation-settings')
+    const names = panel.locator('[data-testid^="header-navigation-name-"]')
+    const descriptions = panel.locator('[data-testid^="header-navigation-description-"]')
 
     await expect(panel).toBeVisible()
-    await expect(save).toBeEnabled()
-    await expect(panel.getByText('顶部按钮及弹窗标题', { exact: true })).toBeVisible()
-    await expect(titleInput).toHaveValue('交流群')
-    await expect(descriptionInput).toHaveValue('扫码加入交流群获取支持')
-    await toggle.check()
-    await save.click()
-    await expect(status).toHaveText('启用顶部入口前，请先导入二维码。')
+    await expect(page.getByTestId('community-qr-settings')).toHaveCount(0)
+    await expect(page.getByTestId('community-qr-button')).toHaveCount(0)
+    await expect(names).toHaveCount(2)
+    await expect(names.nth(0)).toHaveValue('在线充值')
+    await expect(names.nth(1)).toHaveValue('售后支持')
+    await expect(descriptions).toHaveCount(2)
+    await expect(page.getByTestId('profile-navigation-toggle')).toBeChecked()
+    await expect(page.getByTestId('subscription-navigation-toggle')).toBeChecked()
+    await expect(page.getByTestId('model-plaza-placement')).toHaveValue('header')
+    await expect(page.getByTestId('user-sidebar-order-list').locator('[data-sidebar-path]').first()).toHaveAttribute('data-sidebar-path', '/keys')
+    await expect(page.getByTestId('admin-sidebar-order-list').locator('[data-sidebar-path]').first()).toHaveAttribute('data-sidebar-path', '/admin/settings')
+    await expect.poll(() => page.locator('aside nav a[href="/admin/settings"], aside nav a[href="/admin/dashboard"]').evaluateAll((links) =>
+      Object.fromEntries(links.map((link) => [link.getAttribute('href'), link.getBoundingClientRect().top])),
+    )).toMatchObject({
+      '/admin/settings': expect.any(Number),
+      '/admin/dashboard': expect.any(Number),
+    })
+    expect(await page.locator('aside nav a[href="/admin/settings"], aside nav a[href="/admin/dashboard"]').evaluateAll((links) => {
+      const tops = Object.fromEntries(links.map((link) => [link.getAttribute('href'), link.getBoundingClientRect().top]))
+      return tops['/admin/settings'] < tops['/admin/dashboard']
+    })).toBe(true)
+    await expect(page.getByTestId('custom-menu-visibility-0')).toBeHidden()
+    await expect(page.getByTestId('custom-menu-visibility-1')).toBeVisible()
 
-    await fileInput.setInputFiles({
-      name: 'community-qr.png',
+    await page.getByTestId('header-navigation-add').click()
+    await expect(names).toHaveCount(3)
+    await names.nth(2).fill('运营公告')
+    await descriptions.nth(2).fill('扫码查看运营公告')
+    await page.getByTestId('header-navigation-qr-upload-2').locator('input').setInputFiles({
+      name: 'ops-qr.png',
       mimeType: 'image/png',
       buffer: Buffer.from(communityQrPngBase64, 'base64'),
     })
-    await expect(panel.getByRole('img', { name: '交流群二维码预览' })).toBeVisible()
-    await titleInput.fill('售后二群')
-    await descriptionInput.fill('扫码加入售后群获取支持')
-    await save.click()
-    await expect(status).toHaveText('交流群入口已保存。')
-    await expect.poll(() => savedBody).not.toBeNull()
-    expect(savedBody).toEqual({
-      community_qr_enabled: true,
-      community_qr_image: `data:image/png;base64,${communityQrPngBase64}`,
-      community_qr_title: '售后二群',
-      community_qr_description: '扫码加入售后群获取支持',
+    await page.getByTestId('header-navigation-visibility-2').selectOption('admin')
+    await page.getByTestId('header-navigation-icon-2').getByTestId('navigation-icon-preset-star').click()
+    await page.getByTestId('subscription-navigation-toggle').uncheck()
+    await page.getByTestId('model-plaza-placement').selectOption('sidebar')
+    await page.getByTestId('user-sidebar-order-section').locator('summary').click()
+    await page.getByTestId('user-sidebar-order-list').locator('[data-sidebar-path="/keys"]').getByRole('button', { name: '下移' }).click()
+    await page.getByTestId('user-sidebar-order-section').locator('summary').click()
+
+    await page.waitForTimeout(5_500)
+    await page.locator('.settings-tabs-shell').evaluate((element: HTMLElement) => {
+      element.style.position = 'static'
     })
+    await page.locator('header.app-header-surface').evaluate((element: HTMLElement) => {
+      element.style.position = 'static'
+    })
+    await panel.evaluate((element) => {
+      window.scrollTo(0, window.scrollY + element.getBoundingClientRect().top - 160)
+    })
+    await expect(panel).toHaveScreenshot('console-header-navigation-settings.png', {
+      maxDiffPixelRatio: 0.02,
+    })
+    await page.getByTestId('header-navigation-save').click()
+    await expect.poll(() => savedBody).not.toBeNull()
+    const submittedBody = savedBody as unknown as Record<string, unknown>
+    expect(submittedBody).toMatchObject({
+      community_qr_enabled: false,
+      profile_navigation_enabled: true,
+      subscription_navigation_enabled: false,
+      model_plaza_placement: 'sidebar',
+    })
+    expect((submittedBody.user_sidebar_order as string[]).slice(0, 3)).toEqual([
+      '/dashboard', '/keys', '/model-plaza',
+    ])
+    expect((submittedBody.admin_sidebar_order as string[]).slice(0, 3)).toEqual([
+      '/admin/settings', '/admin/dashboard', '/model-plaza',
+    ])
+    expect(submittedBody.custom_menu_items).toEqual([
+      expect.objectContaining({ id: 'recharge', placement: 'header' }),
+      expect.objectContaining({ id: 'docs', placement: 'sidebar' }),
+      expect.objectContaining({ id: 'support', placement: 'header' }),
+      expect.objectContaining({
+        label: '运营公告',
+        visibility: 'admin',
+        placement: 'header',
+        navigation_type: 'qr',
+        qr_description: '扫码查看运营公告',
+      }),
+    ])
     expect(savedHeaders.authorization).toBe('Bearer visual-fixture-token')
     expect(savedHeaders['accept-language']).toBe('zh')
     expect(savedHeaders['x-admin-ui-request']).toBe('1')
+  })
+})
 
+test.describe('Console payment result balance refresh contract', () => {
+  test.beforeEach(async ({}, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop')
+  })
+
+  test('refreshes the authenticated user once after a balance order completes', async ({ page }) => {
+    let authMeRequests = 0
+    let documentRequests = 0
+    const consoleErrors: string[] = []
+    const pageErrors: string[] = []
+
+    await seedConsole(page, 'v2', {
+      user: regularUser,
+      authMeUsers: [regularUser, { ...regularUser, balance: 184.25 }],
+    })
+
+    page.on('console', (message) => {
+      if (message.type() === 'error') consoleErrors.push(message.text())
+    })
+    page.on('pageerror', (error) => pageErrors.push(error.message))
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname === '/api/v1/auth/me') {
+        authMeRequests += 1
+      }
+      if (request.resourceType() === 'document' && request.frame() === page.mainFrame()) {
+        documentRequests += 1
+      }
+    })
+    await page.route('**/api/v1/payment/public/orders/resolve', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json; charset=utf-8',
+        body: JSON.stringify({
+          code: 0,
+          message: 'ok',
+          data: {
+            out_trade_no: 'balance-v182',
+            status: 'COMPLETED',
+            paid: true,
+            created_at: '2026-08-25T12:00:00+08:00',
+            expires_at: '2026-08-25T12:30:00+08:00',
+          },
+        }),
+      })
+    })
+
+    await page.goto('http://127.0.0.1:4173/payment/result?resume_token=v182-balance')
+    await page.waitForTimeout(250)
+    expect(pageErrors).toEqual([])
+    await expect(page.getByRole('heading', { name: '支付成功' })).toBeVisible()
+    await expect.poll(() => authMeRequests).toBe(2)
+    await expect.poll(() => page.evaluate(() => {
+      const raw = localStorage.getItem('auth_user')
+      return raw ? JSON.parse(raw).balance : null
+    })).toBe(184.25)
+
+    await page.waitForTimeout(250)
+    expect(authMeRequests).toBe(2)
+    expect(documentRequests).toBe(1)
+    expect(consoleErrors).toEqual([])
+  })
+})
+
+test.describe('Console header floating layer contracts', () => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop')
+    await seedConsole(page, 'v2')
+  })
+
+  test('keeps language and account menus above the API key toolbar', async ({ page }) => {
+    await page.goto('http://127.0.0.1:4173/keys')
+
+    const assertPanelOwnsItsCenterPoint = async (panel: Locator) => {
+      await expect(panel).toBeVisible()
+      expect(await panel.evaluate((element) => {
+        const rect = element.getBoundingClientRect()
+        const topmost = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 12)
+        return topmost === element || element.contains(topmost)
+      })).toBe(true)
+    }
+
+    const localeTrigger = page.locator('header button').filter({ hasText: 'ZH' })
+    await localeTrigger.click()
+    await assertPanelOwnsItsCenterPoint(page.locator('header .absolute.right-0.z-50.mt-1.w-32'))
+    await localeTrigger.click()
+
+    await page.getByRole('button', { name: '用户菜单' }).click()
+    await assertPanelOwnsItsCenterPoint(page.locator('header .dropdown.right-0'))
+  })
+})
+
+test.describe('Console built-in sidebar navigation contracts', () => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop')
+  })
+
+  test('regular users get one Model Plaza row inside nav and hidden personal entries', async ({ page }) => {
+    await seedConsole(page, 'v2', {
+      user: regularUser,
+      profileNavigationEnabled: false,
+      subscriptionNavigationEnabled: false,
+      modelPlazaPlacement: 'sidebar',
+      userSidebarOrder: [
+        '/dashboard', '/keys', '/batch-image', '/usage', '/available-channels', '/monitor',
+        '/subscriptions', '/purchase', '/orders', '/redeem', '/affiliate', '/profile',
+        '/model-plaza', '/custom/user-tool', '/custom/all-tool',
+      ],
+      customMenuItems: [
+        { id: 'user-tool', label: '用户工具', icon_svg: '<svg viewBox="0 0 24 24"><path d="M4 12h16"/></svg>', url: 'https://example.com/tool', visibility: 'user', placement: 'sidebar', sort_order: 0 },
+        { id: 'all-tool', label: '共享工具', icon_svg: '<svg viewBox="0 0 24 24"><path d="M12 4v16"/></svg>', url: 'https://example.com/all-tool', visibility: 'all', placement: 'both', sort_order: 1 },
+      ],
+    })
+    await page.goto('http://127.0.0.1:4173/dashboard')
+    await page.evaluate(() => {
+      delete (window as Window & { __APP_CONFIG__?: unknown }).__APP_CONFIG__
+      ;(window as Window & {
+        __ZERO_ONE_NAVIGATION_RECONCILIATION__?: { request: () => void }
+      }).__ZERO_ONE_NAVIGATION_RECONCILIATION__?.request()
+    })
+
+    await expect(page.locator('header a[href^="/model-plaza"]')).toBeHidden()
+    await expect(page.locator('aside nav a[href="/profile"]')).toBeHidden()
+    await expect(page.locator('aside nav a[href="/subscriptions"]')).toBeHidden()
+    await expect.poll(() => page.locator('header a[href^="/model-plaza"]').evaluate((element) =>
+      getComputedStyle(element).display,
+    )).toBe('none')
+    await expect.poll(() => page.locator('aside nav a[href="/profile"]').evaluate((element) =>
+      getComputedStyle(element).display,
+    )).toBe('none')
+    await expect.poll(() => page.locator('aside nav a[href="/subscriptions"]').evaluate((element) =>
+      getComputedStyle(element).display,
+    )).toBe('none')
+
+    const modelPlaza = page.locator('aside nav a[data-zero-one-model-plaza-sidebar]')
+    await expect(modelPlaza).toHaveCount(1)
+    await expect(modelPlaza).toBeVisible()
+    expect(await page.locator('aside .sidebar-header [data-zero-one-model-plaza-sidebar]').count())
+      .toBe(0)
+    const orderedHrefs = await page.locator('aside nav .sidebar-section').first().locator(':scope > a.sidebar-link').evaluateAll((links) =>
+      links.map((link) => new URL((link as HTMLAnchorElement).href).pathname),
+    )
+    expect(orderedHrefs.slice(0, 2)).toEqual(['/dashboard', '/keys'])
+    expect(orderedHrefs.slice(-3)).toEqual(['/model-plaza', '/custom/user-tool', '/custom/all-tool'])
+    await expect.poll(() => modelPlaza.locator('svg').evaluate((svg) => {
+      const rect = svg.getBoundingClientRect()
+      return [rect.width, rect.height]
+    })).toEqual([20, 20])
+    await expect.poll(() => page.locator('aside nav a[href="/custom/user-tool"]').locator('svg').evaluate((svg) => {
+      const rect = svg.getBoundingClientRect()
+      return [rect.width, rect.height]
+    })).toEqual([20, 20])
+  })
+
+  test('administrator business Subscriptions stays visible while My Subscriptions hides', async ({ page }) => {
+    await seedConsole(page, 'v2', {
+      profileNavigationEnabled: false,
+      subscriptionNavigationEnabled: false,
+      modelPlazaPlacement: 'sidebar',
+      adminSidebarOrder: ['/admin/settings', '/admin/dashboard', '/model-plaza'],
+    })
     await page.goto('http://127.0.0.1:4173/admin/dashboard')
-    const trigger = page.getByTestId('community-qr-button')
-    await expect(trigger).toHaveCount(1)
-    await expect(trigger).toBeVisible()
-    await expect(trigger).toContainText('售后二群')
-    await expect(trigger).toHaveAccessibleName('打开售后二群二维码')
-    expect(
-      await trigger.evaluate((element) => element.previousElementSibling?.getAttribute('href')),
-    ).toBe('/model-plaza?embedded=1')
 
-    await trigger.click()
-    const dialog = page.getByRole('dialog', { name: '售后二群' })
-    const close = page.getByTestId('community-qr-dialog-close')
-    const image = page.getByTestId('community-qr-image')
-    await expect(dialog).toBeVisible()
-    await expect(dialog).toContainText('扫码加入售后群获取支持')
-    await expect(dialog).toHaveCSS('background-color', 'rgb(5, 5, 5)')
-    const imageShell = dialog.locator('.zero-one-community-qr-image-shell')
-    await expect(imageShell).toHaveCSS('background-color', 'rgb(228, 228, 231)')
-    await expect(imageShell).toHaveCSS('border-color', 'rgb(244, 244, 245)')
-    await expect(image).toHaveAttribute('src', /^blob:/)
-    await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.complete && node.naturalWidth > 0)).toBe(true)
-    expect(imageHeaders.authorization).toBe('Bearer visual-fixture-token')
-    expect(imageHeaders['x-admin-ui-request']).toBeUndefined()
-    await expect(close).toBeFocused()
-    const firstImageObjectUrl = await image.getAttribute('src')
-
-    await page.keyboard.press('Escape')
-    await expect(dialog).toHaveCount(0)
-    await expect(trigger).toBeFocused()
-    expect(
-      await page.evaluate(async (objectUrl) => {
-        try {
-          await fetch(objectUrl!)
-          return false
-        } catch {
-          return true
-        }
-      }, firstImageObjectUrl),
-    ).toBe(true)
-
-    await trigger.click()
-    await page.getByTestId('community-qr-dialog-close').click()
-    await expect(page.getByTestId('community-qr-dialog')).toHaveCount(0)
-    await expect(trigger).toBeFocused()
+    await expect(page.locator('header a[href^="/model-plaza"]')).toBeHidden()
+    await expect(page.locator('aside nav a[href="/profile"]')).toBeHidden()
+    await expect(page.locator('aside nav a[href="/subscriptions"]')).toBeHidden()
+    await expect(page.locator('aside nav a[href="/admin/subscriptions"]')).toBeVisible()
+    await expect.poll(() => page.locator('header a[href^="/model-plaza"]').evaluate((element) =>
+      getComputedStyle(element).display,
+    )).toBe('none')
+    await expect(page.locator('aside nav a[data-zero-one-model-plaza-sidebar]')).toHaveCount(1)
+    await expect(page.locator('aside nav .sidebar-section').first().locator('a.sidebar-link').nth(0)).toHaveAttribute('href', '/admin/settings')
+    const dashboard = page.locator('aside nav a[href="/admin/dashboard"]')
+    const modelPlaza = page.locator('aside nav a[data-zero-one-model-plaza-sidebar]')
+    await dashboard.click()
+    await expect(dashboard).toHaveClass(/sidebar-link-active/)
+    await expect(dashboard).toHaveAttribute('aria-current', 'page')
+    await expect(modelPlaza).not.toHaveClass(/(?:router-link-(?:exact-)?active|sidebar-link-active)/)
+    await expect(modelPlaza).not.toHaveAttribute('aria-current', 'page')
   })
 })
 
 test.describe('Console header custom iframe menu contracts', () => {
   const customMenuItems = [
-    { id: 'user-header', label: '用户帮助', icon_svg: '', url: 'https://example.com/user', visibility: 'user' as const, placement: 'header' as const, sort_order: 1 },
+    { id: 'user-header', label: '用户帮助', icon_svg: '', url: '', visibility: 'user' as const, placement: 'header' as const, navigation_type: 'qr' as const, qr_description: '扫码查看用户帮助', qr_image: `data:image/png;base64,${communityQrPngBase64}`, sort_order: 1 },
     { id: 'user-both', label: '用户双栏', icon_svg: '', url: 'https://example.com/user-both', visibility: 'user' as const, placement: 'both' as const, sort_order: 2 },
-    { id: 'admin-header', label: '管理工具', icon_svg: '', url: 'https://example.com/admin', visibility: 'admin' as const, placement: 'header' as const, sort_order: 3 },
+    { id: 'admin-header', label: '管理工具', icon_svg: '', url: '', visibility: 'admin' as const, placement: 'header' as const, navigation_type: 'qr' as const, qr_description: '扫码查看管理工具', qr_image: `data:image/png;base64,${communityQrPngBase64}`, sort_order: 3 },
     { id: 'admin-sidebar', label: '侧边工具', icon_svg: '', url: 'https://example.com/sidebar', visibility: 'admin' as const, placement: 'sidebar' as const, sort_order: 4 },
     { id: 'admin-both', label: '管理双栏', icon_svg: '', url: 'https://example.com/admin-both', visibility: 'admin' as const, placement: 'both' as const, sort_order: 5 },
-    { id: 'all-header', label: '共享顶部', icon_svg: '', url: 'https://example.com/all-header', visibility: 'all' as const, placement: 'header' as const, sort_order: 6 },
+    { id: 'all-header', label: '共享顶部', icon_svg: '', url: '', visibility: 'all' as const, placement: 'header' as const, navigation_type: 'qr' as const, qr_description: '扫码查看共享内容', qr_image: `data:image/png;base64,${communityQrPngBase64}`, sort_order: 6 },
     { id: 'all-sidebar', label: '共享侧边', icon_svg: '', url: 'https://example.com/all-sidebar', visibility: 'all' as const, placement: 'sidebar' as const, sort_order: 7 },
     { id: 'all-both', label: '共享双栏', icon_svg: '', url: 'https://example.com/all-both', visibility: 'all' as const, placement: 'both' as const, sort_order: 8 },
   ]
@@ -1347,11 +1531,11 @@ test.describe('Console header custom iframe menu contracts', () => {
     await seedConsole(page, 'v2', { user: regularUser, customMenuItems })
     await page.goto('http://127.0.0.1:4173/dashboard')
 
-    await expect(page.getByTestId('header-custom-menu-user-header')).toBeVisible()
+    await expect(page.getByTestId('header-qr-user-header')).toBeVisible()
     await expect(page.getByTestId('header-custom-menu-user-both')).toBeVisible()
-    await expect(page.getByTestId('header-custom-menu-all-header')).toBeVisible()
+    await expect(page.getByTestId('header-qr-all-header')).toBeVisible()
     await expect(page.getByTestId('header-custom-menu-all-both')).toBeVisible()
-    await expect(page.getByTestId('header-custom-menu-admin-header')).toHaveCount(0)
+    await expect(page.getByTestId('header-qr-admin-header')).toHaveCount(0)
     await expect(page.locator('aside a[href="/custom/admin-sidebar"]')).toHaveCount(0)
     await expect(page.locator('aside a[href="/custom/user-header"]')).toBeHidden()
     await expect(page.locator('aside a[href="/custom/user-both"]')).toBeVisible()
@@ -1371,11 +1555,11 @@ test.describe('Console header custom iframe menu contracts', () => {
     await seedConsole(page, 'v2', { customMenuItems })
     await page.goto('http://127.0.0.1:4173/admin/dashboard')
 
-    await expect(page.getByTestId('header-custom-menu-admin-header')).toBeVisible()
+    await expect(page.getByTestId('header-qr-admin-header')).toBeVisible()
     await expect(page.getByTestId('header-custom-menu-admin-both')).toBeVisible()
-    await expect(page.getByTestId('header-custom-menu-all-header')).toBeVisible()
+    await expect(page.getByTestId('header-qr-all-header')).toBeVisible()
     await expect(page.getByTestId('header-custom-menu-all-both')).toBeVisible()
-    await expect(page.getByTestId('header-custom-menu-user-header')).toHaveCount(0)
+    await expect(page.getByTestId('header-qr-user-header')).toHaveCount(0)
     await expect(page.locator('aside a[href="/custom/user-header"]')).toBeHidden()
     await expect(page.locator('aside a[href="/custom/user-both"]')).toBeHidden()
     await expect(page.locator('aside a[href="/custom/admin-header"]')).toBeHidden()
@@ -1394,24 +1578,22 @@ test.describe('Console header custom iframe menu contracts', () => {
     ])
 
     await page.goto('http://127.0.0.1:4173/admin/settings')
-    const placement = page.getByTestId('custom-menu-placement-2')
-    await expect(placement).toHaveValue('header')
-    await expect(placement.locator('option[value="both"]')).toHaveText('侧边栏和顶部栏都显示')
+    await expect(page.getByTestId('custom-menu-placement-2')).toBeHidden()
     await expect(page.getByTestId('custom-menu-placement-4')).toHaveValue('both')
-    const sharedVisibility = page.getByTestId('custom-menu-visibility-5')
+    const sharedVisibility = page.getByTestId('custom-menu-visibility-7')
     await expect(sharedVisibility.locator('option[value="all"]')).toHaveText('普通用户和管理员都可见')
     await expect(sharedVisibility).toHaveValue('all')
-    await page.getByTestId('custom-menu-visibility-2').selectOption('all')
-    await placement.selectOption('both')
+    await expect(page.getByTestId('header-navigation-name-1')).toHaveValue('管理工具')
+    await page.getByTestId('header-navigation-visibility-1').selectOption('all')
     const settingsRequest = page.waitForRequest((request) =>
       request.method() === 'PUT' && new URL(request.url()).pathname === '/api/v1/admin/settings',
     )
-    await page.locator('form').dispatchEvent('submit')
+    await page.getByTestId('header-navigation-save').click()
     const submitted = (await settingsRequest).postDataJSON() as {
       custom_menu_items: Array<{ id: string; placement?: string; visibility?: string }>
     }
     expect(submitted.custom_menu_items.find((item) => item.id === 'admin-header')?.placement)
-      .toBe('both')
+      .toBe('header')
     expect(submitted.custom_menu_items.find((item) => item.id === 'admin-header')?.visibility)
       .toBe('all')
     expect(submitted.custom_menu_items.find((item) => item.id === 'admin-both')?.placement)
@@ -1489,8 +1671,8 @@ test.describe('Console header custom iframe menu contracts', () => {
       () => (window as Window & { __zeroOneHeaderSentinel?: number }).__zeroOneHeaderSentinel,
     )
     documentNavigations = 0
-    await page.getByTestId('header-custom-menu-admin-header').click()
-    await expect(page).toHaveURL('http://127.0.0.1:4173/custom/admin-header')
+    await page.getByTestId('header-custom-menu-admin-both').click()
+    await expect(page).toHaveURL('http://127.0.0.1:4173/custom/admin-both')
     await page.goBack()
     await expect(page).toHaveURL('http://127.0.0.1:4173/admin/dashboard')
     await page.getByTestId('sidebar-custom-menu-all-sidebar').click()
@@ -1520,7 +1702,8 @@ test.describe('Console header custom iframe menu contracts', () => {
       }
     })
     await page.goto('http://127.0.0.1:4173/admin/settings')
-    await expect(page.getByTestId('custom-menu-placement-0')).toBeVisible()
+    await expect(page.getByTestId('header-navigation-settings')).toBeVisible()
+    await expect(page.getByTestId('custom-menu-placement-0')).toBeHidden()
     const description = page.getByRole('heading', { name: '自定义菜单页面' })
       .locator('xpath=following-sibling::p[1]')
     await expect(description).toHaveText(
@@ -1653,14 +1836,15 @@ test.describe('Console visual contracts', () => {
     const response = await page.goto('http://127.0.0.1:4173/login')
     expect(response?.status()).toBe(200)
     const html = await response!.text()
-    expect(html).toContain('/assets/redeem-cachebust-20260820-fix6/index-9xJBhx8B.js')
+    expect(html).toContain('/assets/v182-payment-refresh-20260825/index-9xJBhx8B.js')
     expect(html).toContain('/assets/zero-one-local-preview-guard-v2.js')
     expect(html).toContain('/assets/zero-one-navigation-reconciliation-v1.js?v=2')
     expect(html).toContain('/assets/zero-one-console-parity-v1.js?v=4')
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=4')
-    expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=5')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=6')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=3')
+    expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=9')
+    expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=5')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=12')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=5')
     expect(html).toContain('/assets/zero-one-ccswitch-launch-v1.js?v=1')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.js?v=4')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.css?v=3')
