@@ -126,7 +126,8 @@ PostgreSQL。
 3. `docker compose ... pull sub2api edge`。
 4. `docker compose ... up -d --no-build sub2api`，等待健康并核对迁移账本。
 5. 验证公开设置、登录、API 鉴权和一条低成本探针请求。
-6. `docker compose ... up -d --no-build edge`，再做规范域名、兼容 308、SSE 与 WebSocket smoke test。
+6. 按 [`OPERATIONS.md` 的 Safe Edge switch](OPERATIONS.md#safe-edge-switch)
+   唯一流程切换 Edge，随后再做兼容 308、SSE 与 WebSocket smoke test。
 
 迁移以 `schema_migrations.filename` 的完整文件名记账，不只看数字前缀。v0.1.181 会分别执行 `229_affiliate_manual_binding.sql`、`229_plugins.sql` 和 `230_plugin_artifacts.sql`；前两个同为 `229_` 不构成冲突。三项迁移均应先在生产备份的隔离恢复库上验证。
 

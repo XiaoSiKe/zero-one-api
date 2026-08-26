@@ -94,6 +94,16 @@
 
         <!-- Iframe embed mode -->
         <div v-else class="custom-embed-shell">
+          <div
+            v-if="iframeLoading"
+            data-testid="custom-page-loading"
+            class="custom-embed-loading"
+            role="status"
+            aria-live="polite"
+          >
+            <div class="custom-embed-loading-spinner" aria-hidden="true"></div>
+            <p>{{ t('customPage.loadingEmbedded') }}</p>
+          </div>
           <a
             :href="embeddedUrl"
             target="_blank"
@@ -104,9 +114,14 @@
             {{ t('customPage.openInNewTab') }}
           </a>
           <iframe
+            :key="menuItemId"
             :src="embeddedUrl"
+            :title="menuItem?.label || t('customPage.title')"
+            :data-custom-page-id="menuItemId"
             class="custom-embed-frame"
+            :class="{ 'custom-embed-frame-loading': iframeLoading }"
             allowfullscreen
+            @load="handleEmbeddedFrameLoad"
           ></iframe>
         </div>
       </div>
@@ -139,6 +154,7 @@ const authStore = useAuthStore()
 const adminSettingsStore = useAdminSettingsStore()
 
 const loading = ref(false)
+const iframeLoading = ref(false)
 const pageTheme = ref<'light' | 'dark'>('light')
 const renderedHtml = ref('')
 const markdownContainer = ref<HTMLElement | null>(null)
@@ -186,6 +202,20 @@ const isValidUrl = computed(() => {
   const url = embeddedUrl.value
   return url.startsWith('http://') || url.startsWith('https://')
 })
+
+watch([menuItemId, embeddedUrl], ([, url]) => {
+  iframeLoading.value = url.startsWith('http://') || url.startsWith('https://')
+}, { immediate: true, flush: 'sync' })
+
+function handleEmbeddedFrameLoad(event: Event) {
+  const frame = event.currentTarget
+  if (
+    frame instanceof HTMLIFrameElement &&
+    frame.dataset.customPageId === menuItemId.value
+  ) {
+    iframeLoading.value = false
+  }
+}
 
 function generateHeadingId(text: string, index: number): string {
   const base = text
@@ -446,6 +476,16 @@ onUnmounted(() => {
   @apply shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-dark-800/80;
 }
 
+.custom-embed-loading {
+  @apply absolute inset-0 z-[5] flex flex-col items-center justify-center gap-3;
+  @apply bg-gray-50 text-gray-600 dark:bg-dark-900 dark:text-dark-300;
+  @apply text-sm font-medium;
+}
+
+.custom-embed-loading-spinner {
+  @apply h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent;
+}
+
 .custom-embed-frame {
   display: block;
   margin: 0;
@@ -455,6 +495,10 @@ onUnmounted(() => {
   border-radius: 0;
   box-shadow: none;
   background: transparent;
+}
+
+.custom-embed-frame-loading {
+  visibility: hidden;
 }
 </style>
 

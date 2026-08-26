@@ -377,6 +377,7 @@ export async function seedConsole(
     profileNavigationEnabled?: boolean
     subscriptionNavigationEnabled?: boolean
     modelPlazaPlacement?: 'header' | 'sidebar'
+    version?: string
     userSidebarOrder?: string[]
     adminSidebarOrder?: string[]
     customMenuItems?: Array<{
@@ -412,6 +413,7 @@ export async function seedConsole(
     profile_navigation_enabled: options.profileNavigationEnabled ?? true,
     subscription_navigation_enabled: options.subscriptionNavigationEnabled ?? true,
     model_plaza_placement: options.modelPlazaPlacement ?? 'header',
+    version: options.version ?? publicSettings(mode).version,
     user_sidebar_order: options.userSidebarOrder ?? [],
     admin_sidebar_order: options.adminSidebarOrder ?? [],
   }
@@ -540,7 +542,10 @@ export async function seedConsole(
         settings.community_qr_description = submitted.community_qr_description
       }
       if (Array.isArray(submitted.custom_menu_items)) {
-        settings.custom_menu_items = submitted.custom_menu_items
+        settings.custom_menu_items = submitted.custom_menu_items.map((item, index) => ({
+          ...item,
+          id: item.id || `generated-menu-${index}`,
+        }))
       }
       if (typeof submitted.profile_navigation_enabled === 'boolean') {
         settings.profile_navigation_enabled = submitted.profile_navigation_enabled

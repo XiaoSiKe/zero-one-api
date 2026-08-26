@@ -263,15 +263,36 @@ this repository.
 
 Before release, record the deployed Sub2API and edge image digests and take a database backup. Deploy immutable images, run the routing and smoke checks, then announce completion.
 
+### Safe Edge switch
+
+After the Backend-first checks pass, Edge must be switched only through the
+repository-owned gate:
+
+```bash
+sh deploy/zero-one/safe-edge-switch.sh \
+  deploy/zero-one/.env \
+  ghcr.io/01-yang/zero-one-edge@sha256:<64-lowercase-hex-digest>
+```
+
+The script accepts only an immutable digest, locks concurrent releases, saves a
+restricted `.env.before-edge-*` rollback copy and changes only `EDGE_IMAGE`. It
+recreates Edge with `--no-deps --no-build`, proves that Sub2API, PostgreSQL and
+Redis keep the same healthy container identities, and waits up to 90 seconds
+for the canonical HTTPS health endpoint through local port 443. Container
+`running` alone is never readiness. Pull, recreation, dependency-isolation or
+HTTPS failures restore the previous digest and require the old Edge to pass the
+same HTTPS gate; a failed rollback is reported separately. Do not replace this
+entrypoint with a direct `docker compose up edge` during a release.
+
 The approved UI is a separate release boundary. The current protected snapshot
-is the `ui-approved-2026-08-25-r14` tag at commit
-`851a0b597a476968a47c33776ae2e2df50941812`. The
-`ui-approved-2026-08-25-r13` tag remains immutable as the previous accepted UI.
+is the `ui-approved-2026-08-26-r15` tag at commit
+`9dcaf261df26fbe056a25cf266634223816f2b32`. The
+`ui-approved-2026-08-25-r14` tag remains immutable as the previous accepted UI.
 An upstream version update must not modify `landing/src`, the protected console
 source paths, or `deploy/zero-one/recovered-frontend`. This explicitly covers
 the landing page, login/register pages, the console shell, model-plaza pricing,
-the community entry, Affiliate Attribution, and the redeem, benefit-code, and
-mystery-box surfaces. The API and shared type
+the community entry, Affiliate Attribution, online recharge and custom-page
+loading, and the redeem, benefit-code, and mystery-box surfaces. The API and shared type
 paths under `frontend/src/api` and `frontend/src/types` remain available for
 compatibility work. CI runs `verify-ui-boundary.mjs` and fails before a build if
 the protected UI changes or if `Dockerfile.edge` switches away from the pinned
@@ -297,7 +318,11 @@ regression output first, commit the reviewed UI, create a new dated
 `.github/scripts/ui-baseline.json` with the tag and commit. Do not move the tag
 as part of an ordinary upstream sync.
 
-Rollback uses the previous image digests without rolling back the database unless an upstream migration is proven incompatible. Database rollback is a separate destructive operation and must be based on a verified backup and maintenance window.
+The safe Edge switch performs its own application rollback. Other application
+rollback uses the previous image digests without rolling back the database
+unless an upstream migration is proven incompatible. Database rollback is a
+separate destructive operation and must be based on a verified backup and
+maintenance window.
 
 ## Required Smoke Tests
 

@@ -79,13 +79,15 @@ start without building. `CADDY_IMAGE` and `NODE_IMAGE` are build inputs only;
 the edge image already contains Caddy and the Vite build output:
 
 ```bash
-docker compose --env-file deploy/zero-one/.env -f deploy/zero-one/compose.yml pull
-docker compose --env-file deploy/zero-one/.env -f deploy/zero-one/compose.yml up -d --no-build
+docker compose --env-file deploy/zero-one/.env -f deploy/zero-one/compose.yml pull postgres redis sub2api
+docker compose --env-file deploy/zero-one/.env -f deploy/zero-one/compose.yml up -d --no-build postgres redis sub2api
 ```
 
-Keep the previous image digests in the release record for rollback. The full
-settings, backup, monitoring, recovery and smoke-test procedure is in
-[`../../docs/OPERATIONS.md`](../../docs/OPERATIONS.md).
+Keep the previous image digests in the release record for rollback. Switch Edge
+only through the authoritative
+[Safe Edge switch procedure](../../docs/OPERATIONS.md#safe-edge-switch); the
+same operations manual owns settings, backup, monitoring, recovery and smoke
+tests.
 
 The static repository checks are available as
 `sh deploy/zero-one/test-routing.sh`, `sh deploy/zero-one/test-compose.sh`,

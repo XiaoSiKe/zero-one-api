@@ -1,0 +1,9 @@
+.zero-one-redeem-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.zero-one-redeem-actions > .btn {
+  width: 100%;
+  min-height: 52px;
+}

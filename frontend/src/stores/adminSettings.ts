@@ -50,39 +50,64 @@ export const useAdminSettingsStore = defineStore('adminSettings', () => {
   const opsQueryModeDefault = ref(readCachedString('ops_query_mode_default_cached', 'auto'))
   const paymentEnabled = ref(readCachedBool('payment_enabled_cached', false))
   const customMenuItems = ref<CustomMenuItem[]>([])
+  let activeRequest: Promise<void> | null = null
+  let queuedRefresh: Promise<void> | null = null
+  let settingsRevision = 0
 
-  async function fetch(force = false): Promise<void> {
-    if (loaded.value && !force) return
-    if (loading.value) return
+  function fetch(force = false): Promise<void> {
+    if (activeRequest) {
+      if (force && !queuedRefresh) {
+        settingsRevision += 1
+        queuedRefresh = activeRequest
+          .then(() => fetch(true))
+          .finally(() => {
+            queuedRefresh = null
+          })
+      }
+      return force ? queuedRefresh! : activeRequest
+    }
+    if (loaded.value && !force) return Promise.resolve()
+    if (force) settingsRevision += 1
 
     loading.value = true
-    try {
-      const [settings, paymentConfigResp] = await Promise.all([
+    const requestRevision = settingsRevision
+    const request = Promise.all([
         adminAPI.settings.getSettings(),
         adminAPI.payment.getConfig()
       ])
-      opsMonitoringEnabled.value = settings.ops_monitoring_enabled ?? true
-      writeCachedBool('ops_monitoring_enabled_cached', opsMonitoringEnabled.value)
+      .then(([settings, paymentConfigResp]) => {
+        if (requestRevision !== settingsRevision) return
+        opsMonitoringEnabled.value = settings.ops_monitoring_enabled ?? true
+        writeCachedBool('ops_monitoring_enabled_cached', opsMonitoringEnabled.value)
 
-      opsRealtimeMonitoringEnabled.value = settings.ops_realtime_monitoring_enabled ?? true
-      writeCachedBool('ops_realtime_monitoring_enabled_cached', opsRealtimeMonitoringEnabled.value)
+        opsRealtimeMonitoringEnabled.value = settings.ops_realtime_monitoring_enabled ?? true
+        writeCachedBool('ops_realtime_monitoring_enabled_cached', opsRealtimeMonitoringEnabled.value)
 
-      opsQueryModeDefault.value = settings.ops_query_mode_default || 'auto'
-      writeCachedString('ops_query_mode_default_cached', opsQueryModeDefault.value)
+        opsQueryModeDefault.value = settings.ops_query_mode_default || 'auto'
+        writeCachedString('ops_query_mode_default_cached', opsQueryModeDefault.value)
 
-      customMenuItems.value = Array.isArray(settings.custom_menu_items) ? settings.custom_menu_items : []
+        customMenuItems.value = Array.isArray(settings.custom_menu_items) ? settings.custom_menu_items : []
 
-      paymentEnabled.value = paymentConfigResp.data?.enabled ?? false
-      writeCachedBool('payment_enabled_cached', paymentEnabled.value)
+        paymentEnabled.value = paymentConfigResp.data?.enabled ?? false
+        writeCachedBool('payment_enabled_cached', paymentEnabled.value)
 
-      loaded.value = true
-    } catch (err) {
-      // Keep cached/default value: do not "flip" the UI based on a transient fetch failure.
-      loaded.value = true
-      console.error('[adminSettings] Failed to fetch settings:', err)
-    } finally {
-      loading.value = false
-    }
+        loaded.value = true
+      })
+      .catch((err) => {
+        if (requestRevision !== settingsRevision) return
+        // Keep cached/default value: do not "flip" the UI based on a transient fetch failure.
+        loaded.value = true
+        console.error('[adminSettings] Failed to fetch settings:', err)
+      })
+      .finally(() => {
+        if (activeRequest === request) {
+          activeRequest = null
+          loading.value = false
+        }
+      })
+
+    activeRequest = request
+    return request
   }
 
   function setOpsMonitoringEnabledLocal(value: boolean) {

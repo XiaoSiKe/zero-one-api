@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-08-25-r14",
-  "baseline_commit": "851a0b597a476968a47c33776ae2e2df50941812",
+  "baseline_ref": "ui-approved-2026-08-26-r15",
+  "baseline_commit": "9dcaf261df26fbe056a25cf266634223816f2b32",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -165,6 +165,38 @@
         "visual-regression/tests/__screenshots__/chromium-desktop/console-shell-light-expanded.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-user-redeem.png",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-affiliate-customers.png",
+        "visual-regression/tests/console.visual.spec.ts",
+        "visual-regression/tests/fixtures/api.ts"
+      ]
+    },
+    {
+      "name": "online-recharge-and-custom-pages",
+      "routes": ["/dashboard", "/redeem", "/custom/{id}"],
+      "paths": [
+        "frontend/src/components/user/dashboard/UserDashboardQuickActions.vue",
+        "frontend/src/components/user/dashboard/__tests__/UserDashboardQuickActions.spec.ts",
+        "frontend/src/i18n/locales/en/dashboard.ts",
+        "frontend/src/i18n/locales/en/misc.ts",
+        "frontend/src/i18n/locales/zh/dashboard.ts",
+        "frontend/src/i18n/locales/zh/misc.ts",
+        "frontend/src/stores/app.ts",
+        "frontend/src/stores/adminSettings.ts",
+        "frontend/src/stores/__tests__/app.spec.ts",
+        "frontend/src/stores/__tests__/adminSettings.spec.ts",
+        "frontend/src/utils/online-recharge.ts",
+        "frontend/src/utils/__tests__/online-recharge.spec.ts",
+        "frontend/src/views/user/CustomPageView.vue",
+        "frontend/src/views/user/RedeemView.vue",
+        "frontend/src/views/user/__tests__/CustomPageView.spec.ts",
+        "frontend/src/views/user/__tests__/RedeemView.spec.ts",
+        "deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.css",
+        "deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.js",
+        "deploy/zero-one/recovered-frontend/console/assets/zero-one-redeem-actions-v1.css",
+        "deploy/zero-one/recovered-frontend/console/assets/zero-one-redeem-actions-v1.js",
+        "deploy/zero-one/recovered-frontend/console/index.html",
+        "deploy/zero-one/test-live-routing.sh",
+        "deploy/zero-one/test-routing.sh",
+        "visual-regression/tests/__screenshots__/chromium-desktop/console-user-redeem.png",
         "visual-regression/tests/console.visual.spec.ts",
         "visual-regression/tests/fixtures/api.ts"
       ]

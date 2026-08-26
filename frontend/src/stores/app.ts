@@ -35,6 +35,8 @@ export const useAppStore = defineStore('app', () => {
   const docUrl = ref<string>('')
   const cachedPublicSettings = ref<PublicSettings | null>(null)
   let publicSettingsRequest: Promise<PublicSettings | null> | null = null
+  let queuedPublicSettingsRefresh: Promise<PublicSettings | null> | null = null
+  let publicSettingsRevision = 0
 
   // Version cache state
   const versionLoaded = ref<boolean>(false)
@@ -309,11 +311,20 @@ export const useAppStore = defineStore('app', () => {
    * @param force - Force refresh from API
    */
   function fetchPublicSettings(force = false): Promise<PublicSettings | null> {
-    // An active request always wins over cache/force semantics so every caller observes
-    // the same refresh result and no older request can overwrite a newer one.
     if (publicSettingsRequest) {
+      if (force && !queuedPublicSettingsRefresh) {
+        publicSettingsRevision += 1
+        queuedPublicSettingsRefresh = publicSettingsRequest
+          .then(() => fetchPublicSettings(true))
+          .finally(() => {
+            queuedPublicSettingsRefresh = null
+          })
+      }
+      if (force) return queuedPublicSettingsRefresh!
       return publicSettingsRequest
     }
+
+    if (force) publicSettingsRevision += 1
 
     // Check for injected config from server (eliminates flash)
     if (!publicSettingsLoaded.value && !force && window.__APP_CONFIG__) {
@@ -391,6 +402,7 @@ export const useAppStore = defineStore('app', () => {
     }
 
     publicSettingsLoading.value = true
+    const requestRevision = publicSettingsRevision
     let apiRequest: Promise<PublicSettings>
     try {
       apiRequest = fetchPublicSettingsAPI()
@@ -402,7 +414,9 @@ export const useAppStore = defineStore('app', () => {
 
     const request = apiRequest
       .then((data) => {
-        applySettings(data)
+        if (requestRevision === publicSettingsRevision) {
+          applySettings(data)
+        }
         return data
       })
       .catch((error) => {
@@ -424,6 +438,7 @@ export const useAppStore = defineStore('app', () => {
    * Clear public settings cache
    */
   function clearPublicSettingsCache(): void {
+    publicSettingsRevision += 1
     publicSettingsLoaded.value = false
     cachedPublicSettings.value = null
   }
