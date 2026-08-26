@@ -123,7 +123,9 @@ jobs:
         run: |
           sh -n deploy/zero-one/backup-postgres.sh
           sh -n deploy/zero-one/restore-drill.sh
+          sh -n deploy/zero-one/safe-edge-switch.sh
           sh -n deploy/zero-one/test-direct-upstream.sh
+          sh -n deploy/zero-one/test-safe-edge-switch.sh
           sh -n deploy/zero-one/test-compose.sh
           sh -n deploy/zero-one/test-live-routing.sh
           sh -n deploy/zero-one/test-routing.sh
@@ -156,6 +158,8 @@ jobs:
           test "$(docker compose --env-file deploy/zero-one/.env.example -f deploy/zero-one/compose.yml -f deploy/zero-one/compose.bootstrap.yml config --format json | jq -r '.services.sub2api.ports[0].host_ip + ":" + (.services.sub2api.ports[0].published | tostring)')" = '127.0.0.1:18080'
       - name: Verify production and preview Compose contract
         run: sh deploy/zero-one/test-compose.sh
+      - name: Verify safe Edge switch and rollback contract
+        run: sh deploy/zero-one/test-safe-edge-switch.sh
       - name: Build source-revision Sub2API image
         run: docker build --file Dockerfile --tag zero-one-sub2api:sha-${{ github.sha }} .
       - name: Build source-revision edge image
