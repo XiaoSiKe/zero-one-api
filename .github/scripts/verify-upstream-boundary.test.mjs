@@ -329,6 +329,27 @@ test('retains critical affiliate attribution and upgrade-guard files across upst
     'frontend/src/views/user/UsageView.vue',
     'frontend/src/views/user/UserOrdersView.vue',
   ]
+  const settingsAndRechargePreservedPaths = [
+    'backend/internal/service/channel_monitor_quota_mode_test.go',
+    'deploy/zero-one/recovered-frontend/console/assets/zero-one-redeem-actions-v1.css',
+    'deploy/zero-one/recovered-frontend/console/assets/zero-one-redeem-actions-v1.js',
+    'deploy/zero-one/safe-edge-switch.sh',
+    'deploy/zero-one/test-safe-edge-switch.sh',
+    'frontend/src/components/user/dashboard/UserDashboardQuickActions.vue',
+    'frontend/src/components/user/dashboard/__tests__/UserDashboardQuickActions.spec.ts',
+    'frontend/src/i18n/locales/en/dashboard.ts',
+    'frontend/src/i18n/locales/en/misc.ts',
+    'frontend/src/i18n/locales/zh/dashboard.ts',
+    'frontend/src/i18n/locales/zh/misc.ts',
+    'frontend/src/stores/__tests__/adminSettings.spec.ts',
+    'frontend/src/stores/__tests__/app.spec.ts',
+    'frontend/src/stores/adminSettings.ts',
+    'frontend/src/stores/app.ts',
+    'frontend/src/utils/__tests__/online-recharge.spec.ts',
+    'frontend/src/utils/online-recharge.ts',
+    'frontend/src/views/user/__tests__/CustomPageView.spec.ts',
+    'frontend/src/views/user/__tests__/RedeemView.spec.ts',
+  ].sort()
   const actualPaths = baseline.preserve_on_upstream_sync
   assert.deepEqual(
     actualPaths.filter((path) => legacyPreservedPaths.includes(path)),
@@ -337,6 +358,10 @@ test('retains critical affiliate attribution and upgrade-guard files across upst
   assert.deepEqual(
     actualPaths.filter((path) => navigationPreservedPaths.includes(path)),
     navigationPreservedPaths,
+  )
+  assert.deepEqual(
+    actualPaths.filter((path) => settingsAndRechargePreservedPaths.includes(path)).sort(),
+    settingsAndRechargePreservedPaths,
   )
   assert.ok(actualPaths.length >= legacyPreservedPaths.length + navigationPreservedPaths.length)
   assert.deepEqual(

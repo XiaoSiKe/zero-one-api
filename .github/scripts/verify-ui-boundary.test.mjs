@@ -12,8 +12,8 @@ const manifest = validateManifest(
 )
 
 test('validates the approved UI baseline manifest', () => {
-  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-25-r14')
-  assert.equal(manifest.baseline_commit, '851a0b597a476968a47c33776ae2e2df50941812')
+  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-26-r15')
+  assert.equal(manifest.baseline_commit, '9dcaf261df26fbe056a25cf266634223816f2b32')
   assert.equal(manifest.edge_build.console_source, 'deploy/zero-one/recovered-frontend/console')
   assert.deepEqual(
     manifest.protected_surfaces.map(({ name }) => name),
@@ -23,9 +23,22 @@ test('validates the approved UI baseline manifest', () => {
       'console-shell',
       'header-navigation-entries',
       'affiliate-attribution',
+      'online-recharge-and-custom-pages',
       'model-plaza-pricing',
       'redeem-benefits-mystery-box',
     ],
+  )
+
+  const onlineRecharge = manifest.protected_surfaces.find(
+    ({ name }) => name === 'online-recharge-and-custom-pages',
+  )
+  assert.ok(onlineRecharge)
+  assert.deepEqual(onlineRecharge.routes, ['/dashboard', '/redeem', '/custom/{id}'])
+  assert.ok(onlineRecharge.paths.includes('frontend/src/utils/online-recharge.ts'))
+  assert.ok(
+    onlineRecharge.paths.includes(
+      'deploy/zero-one/recovered-frontend/console/assets/zero-one-redeem-actions-v1.js',
+    ),
   )
 
   const affiliate = manifest.protected_surfaces.find(
