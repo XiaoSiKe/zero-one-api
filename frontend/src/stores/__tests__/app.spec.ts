@@ -325,33 +325,38 @@ describe('useAppStore', () => {
   // --- 公开设置 ---
 
   describe('公开设置加载', () => {
-    it('并发调用复用并等待同一个请求，包括 force 调用', async () => {
-      const deferred = createDeferred<PublicSettings>()
-      vi.mocked(getPublicSettings).mockReturnValue(deferred.promise)
-      const settings = createPublicSettings({ payment_enabled: true })
+    it('活动请求期间的多个 force 调用只追加一次刷新，旧响应不覆盖新设置', async () => {
+      const staleRequest = createDeferred<PublicSettings>()
+      const freshRequest = createDeferred<PublicSettings>()
+      const staleSettings = createPublicSettings({ site_name: 'Stale Site' })
+      const freshSettings = createPublicSettings({ site_name: 'Fresh Site' })
+      vi.mocked(getPublicSettings)
+        .mockReturnValueOnce(staleRequest.promise)
+        .mockReturnValueOnce(freshRequest.promise)
       const store = useAppStore()
 
       const first = store.fetchPublicSettings()
       const second = store.fetchPublicSettings()
       const forced = store.fetchPublicSettings(true)
+      const forcedAgain = store.fetchPublicSettings(true)
 
       expect(getPublicSettings).toHaveBeenCalledTimes(1)
 
-      const settled = vi.fn()
-      void first.then(settled)
-      void second.then(settled)
-      void forced.then(settled)
-      await Promise.resolve()
-      expect(settled).not.toHaveBeenCalled()
+      staleRequest.resolve(staleSettings)
+      await expect(Promise.all([first, second])).resolves.toEqual([
+        staleSettings,
+        staleSettings,
+      ])
+      await vi.waitFor(() => expect(getPublicSettings).toHaveBeenCalledTimes(2))
+      expect(store.cachedPublicSettings).toBeNull()
 
-      deferred.resolve(settings)
-      await expect(Promise.all([first, second, forced])).resolves.toEqual([
-        settings,
-        settings,
-        settings,
+      freshRequest.resolve(freshSettings)
+      await expect(Promise.all([forced, forcedAgain])).resolves.toEqual([
+        freshSettings,
+        freshSettings,
       ])
       expect(store.publicSettingsLoaded).toBe(true)
-      expect(store.cachedPublicSettings?.payment_enabled).toBe(true)
+      expect(store.siteName).toBe('Fresh Site')
     })
 
     it('force 在无活动请求时绕过缓存，刷新期间的普通调用等待刷新结果', async () => {

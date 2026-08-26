@@ -110,6 +110,40 @@ func TestUpdateSettingsLandingNoticePartialUpdateKeepsUnsentFields(t *testing.T)
 	require.Contains(t, rec.Body.String(), `"landing_notice_url":"/old-target"`)
 }
 
+func TestUpdateSettingsRepresentativeValuesSurviveSubsequentGet(t *testing.T) {
+	h, repo := newStepUpSwitchTestHandler(t, map[string]string{
+		service.SettingKeySiteName:           "Old Gateway",
+		service.SettingKeyCompactHomeEnabled: "false",
+		service.SettingKeyChannelMonitorMode:  service.ChannelMonitorModeV1,
+		service.SettingKeyCustomMenuItems:     "[]",
+	})
+
+	menuItems := []map[string]any{{
+		"id": "latest-help", "label": "最新帮助", "url": "https://example.com/latest",
+		"visibility": "all", "placement": "both", "sort_order": 0,
+	}}
+	updateRecorder := doUpdateSettings(t, h, map[string]any{
+		"site_name":            "Latest Gateway",
+		"compact_home_enabled": true,
+		"channel_monitor_mode": service.ChannelMonitorModeV2,
+		"custom_menu_items":    menuItems,
+	}, nil)
+	require.Equal(t, http.StatusOK, updateRecorder.Code)
+
+	getRecorder := httptest.NewRecorder()
+	getContext, _ := gin.CreateTestContext(getRecorder)
+	getContext.Request = httptest.NewRequest(http.MethodGet, "/api/v1/admin/settings", nil)
+	h.GetSettings(getContext)
+
+	require.Equal(t, http.StatusOK, getRecorder.Code)
+	require.Contains(t, getRecorder.Body.String(), `"site_name":"Latest Gateway"`)
+	require.Contains(t, getRecorder.Body.String(), `"compact_home_enabled":true`)
+	require.Contains(t, getRecorder.Body.String(), `"channel_monitor_mode":"v2"`)
+	require.Contains(t, getRecorder.Body.String(), `"label":"最新帮助"`)
+	require.NotContains(t, getRecorder.Body.String(), "Old Gateway")
+	require.Equal(t, "Latest Gateway", repo.values[service.SettingKeySiteName])
+}
+
 func TestSettingHandlerCommunityQRAdminGetAndPartialUpdateRoundTrip(t *testing.T) {
 	oldImage := validCommunityQRImageForAdminTest("old")
 	newImage := validCommunityQRImageForAdminTest("new")
