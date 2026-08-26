@@ -49,6 +49,25 @@
         />
       </button>
 
+      <button
+        data-testid="dashboard-purchase-credits"
+        @click="router.push(onlineRechargePath)"
+        class="group flex w-full items-center gap-4 rounded-lg bg-gray-50 p-4 text-left transition-colors duration-200 hover:bg-gray-100 dark:bg-dark-800/50 dark:hover:bg-dark-800"
+      >
+        <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-dark-700">
+          <Icon name="creditCard" size="lg" class="text-gray-700 dark:text-gray-200" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ t('dashboard.purchaseCredits') }}</p>
+          <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('dashboard.purchaseCreditsDesc') }}</p>
+        </div>
+        <Icon
+          name="chevronRight"
+          size="md"
+          class="text-gray-400 transition-colors group-hover:text-gray-700 dark:text-dark-500 dark:group-hover:text-gray-200"
+        />
+      </button>
+
       <button @click="router.push('/redeem')" class="group flex w-full items-center gap-4 rounded-lg bg-gray-50 p-4 text-left transition-colors duration-200 hover:bg-gray-100 dark:bg-dark-800/50 dark:hover:bg-dark-800">
         <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-dark-700">
           <Icon name="gift" size="lg" class="text-gray-700 dark:text-gray-200" />
@@ -68,14 +87,21 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
+import { useAppStore } from '@/stores'
+import { resolveOnlineRechargePath } from '@/utils/online-recharge'
 const router = useRouter()
 const { t } = useI18n()
+const appStore = useAppStore()
 const { canUseBatchImage, refreshBatchImageAccess } = useBatchImageAccess()
+
+const onlineRechargePath = computed(() =>
+  resolveOnlineRechargePath(appStore.cachedPublicSettings?.custom_menu_items)
+)
 
 onMounted(() => {
   void refreshBatchImageAccess()

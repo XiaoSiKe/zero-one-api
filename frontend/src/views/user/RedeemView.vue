@@ -45,34 +45,43 @@
               </p>
             </div>
 
-            <button
-              type="submit"
-              :disabled="!redeemCode || submitting"
-              class="btn btn-primary w-full py-3"
-            >
-              <svg
-                v-if="submitting"
-                class="-ml-1 mr-2 h-5 w-5 animate-spin"
-                fill="none"
-                viewBox="0 0 24 24"
+            <div class="space-y-3">
+              <button
+                type="submit"
+                :disabled="!redeemCode || submitting"
+                class="btn btn-primary btn-specular redeem-home-action w-full py-3"
               >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              <Icon v-else name="checkCircle" size="md" class="mr-2" />
-              {{ submitting ? t('redeem.redeeming') : t('redeem.redeemButton') }}
-            </button>
+                <svg
+                  v-if="submitting"
+                  class="-ml-1 mr-2 h-5 w-5 animate-spin"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <Icon v-else name="checkCircle" size="md" class="mr-2" />
+                {{ submitting ? t('redeem.redeeming') : t('redeem.redeemButton') }}
+              </button>
+
+              <router-link
+                :to="onlineRechargePath"
+                class="btn btn-primary btn-specular redeem-home-action w-full py-3"
+              >
+                {{ t('redeem.onlineRecharge') }}
+              </router-link>
+            </div>
           </form>
         </div>
       </div>
@@ -331,9 +340,10 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { useSubscriptionStore } from '@/stores/subscriptions'
-import { redeemAPI, authAPI, type RedeemHistoryItem } from '@/api'
+import { redeemAPI, type RedeemHistoryItem } from '@/api'
 import Icon from '@/components/icons/Icon.vue'
 import { formatDateTime } from '@/utils/format'
+import { resolveOnlineRechargePath } from '@/utils/online-recharge'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -354,11 +364,14 @@ const redeemResult = ref<{
   validity_days?: number
 } | null>(null)
 const errorMessage = ref('')
+const onlineRechargePath = computed(() =>
+  resolveOnlineRechargePath(appStore.cachedPublicSettings?.custom_menu_items)
+)
 
 // History data
 const history = ref<RedeemHistoryItem[]>([])
 const loadingHistory = ref(false)
-const contactInfo = ref('')
+const contactInfo = computed(() => appStore.cachedPublicSettings?.contact_info || '')
 
 // Helper functions for history display
 const isBalanceType = (type: string) => {
@@ -474,16 +487,97 @@ const handleRedeem = async () => {
 
 onMounted(async () => {
   fetchHistory()
-  try {
-    const settings = await authAPI.getPublicSettings()
-    contactInfo.value = settings.contact_info || ''
-  } catch (error) {
-    console.error('Failed to load contact info:', error)
+  if (!appStore.publicSettingsLoaded) {
+    try {
+      await appStore.fetchPublicSettings()
+    } catch (error) {
+      console.error('Failed to load public settings:', error)
+    }
   }
 })
 </script>
 
 <style scoped>
+@property --redeem-action-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 125deg;
+}
+
+.redeem-home-action {
+  --redeem-action-angle: 125deg;
+  --redeem-action-rim: rgb(255 255 255 / 0.86);
+  --redeem-action-rim-soft: rgb(255 255 255 / 0.24);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 52px;
+  border-color: #3f3f46;
+  color: #f5f5f5;
+  background: #111113;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.08),
+    0 10px 24px rgb(0 0 0 / 0.34);
+  animation: redeem-action-rim-turn 4.8s linear infinite;
+}
+
+.redeem-home-action::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--redeem-action-angle),
+    transparent 0deg 16deg,
+    var(--redeem-action-rim-soft) 27deg,
+    var(--redeem-action-rim) 35deg,
+    var(--redeem-action-rim-soft) 44deg,
+    transparent 56deg 194deg,
+    var(--redeem-action-rim-soft) 208deg,
+    transparent 224deg 360deg
+  );
+  content: '';
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.82;
+  transition: opacity 180ms ease-out;
+}
+
+.redeem-home-action > * {
+  position: relative;
+  z-index: 1;
+}
+
+.redeem-home-action:hover:not(:disabled) {
+  border-color: #52525b;
+  color: #fff;
+  background: #18181b;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.12),
+    0 14px 28px rgb(0 0 0 / 0.42);
+  transform: none;
+}
+
+.redeem-home-action:hover:not(:disabled)::before,
+.redeem-home-action:focus-visible:not(:disabled)::before {
+  opacity: 1;
+}
+
+.redeem-home-action:disabled::before {
+  opacity: 0.28;
+}
+
+@keyframes redeem-action-rim-turn {
+  to {
+    --redeem-action-angle: 485deg;
+  }
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition:

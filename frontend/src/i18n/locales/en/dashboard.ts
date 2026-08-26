@@ -55,6 +55,8 @@ export default {
     batchImageAgentDesc: 'Copy instructions for an agent',
     viewUsage: 'View Usage',
     checkDetailedLogs: 'Check detailed usage logs',
+    purchaseCredits: 'Purchase Credits',
+    purchaseCreditsDesc: 'Go to online recharge',
     redeemCode: 'Redeem Code',
     addBalanceWithCode: 'Add balance with a code'
   },
@@ -673,6 +675,7 @@ export default {
     redeemCodeHint: 'Redeem codes are case-sensitive',
     redeeming: 'Redeeming...',
     redeemButton: 'Redeem Code',
+    onlineRecharge: 'Top Up Online',
     redeemSuccess: 'Code Redeemed Successfully!',
     redeemFailed: 'Redemption Failed',
     added: 'Added',

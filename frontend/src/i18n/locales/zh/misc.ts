@@ -75,6 +75,7 @@ export default {
   customPage: {
     title: '自定义页面',
     openInNewTab: '新窗口打开',
+    loadingEmbedded: '正在全力加载中，请稍等！',
     notFoundTitle: '页面不存在',
     notFoundDesc: '该自定义页面不存在或已被删除。',
     notConfiguredTitle: '页面链接未配置',

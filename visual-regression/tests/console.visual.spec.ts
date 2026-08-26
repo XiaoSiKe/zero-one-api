@@ -110,9 +110,9 @@ test.describe('Console public auth contracts', () => {
     await page.getByRole('button', { name: '登录', exact: true }).click()
 
     await expect(page).toHaveURL('http://127.0.0.1:4173/admin/dashboard')
-    await expect(page.locator('aside a.sidebar-link[href="/admin/dashboard"]')).toHaveClass(
-      /sidebar-link-active/,
-    )
+    await expect(page.locator(
+      'aside:not([data-zero-one-sidebar-continuity]) a.sidebar-link[href="/admin/dashboard"]',
+    )).toHaveClass(/sidebar-link-active/)
   })
 
   test('regular user login selects the user dashboard with matching card motion', async ({ page }, testInfo) => {
@@ -1612,6 +1612,55 @@ test.describe('Console header custom iframe menu contracts', () => {
     }
   })
 
+  test('ignores an administrator settings GET that started before a successful save', async ({ page }) => {
+    const initialItems = [{
+      id: 'saved-menu',
+      label: '旧入口',
+      icon_svg: '',
+      url: 'https://example.com/saved-menu',
+      visibility: 'all' as const,
+      placement: 'both' as const,
+      sort_order: 0,
+    }]
+    await seedConsole(page, 'v2', { customMenuItems: initialItems })
+    let releaseStaleSettings!: () => void
+    const staleSettingsGate = new Promise<void>((resolve) => {
+      releaseStaleSettings = resolve
+    })
+    await page.route('**/api/v1/admin/settings', async (route) => {
+      if (route.request().method() === 'GET' && route.request().resourceType() === 'fetch') {
+        await staleSettingsGate
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json; charset=utf-8',
+          body: JSON.stringify({
+            code: 0,
+            message: 'ok',
+            data: { custom_menu_items: initialItems },
+          }),
+        })
+        return
+      }
+      await route.fallback()
+    })
+
+    await page.goto('http://127.0.0.1:4173/admin/settings')
+    await page.getByPlaceholder('如：帮助中心').first().fill('新入口')
+    const settingsResponse = page.waitForResponse((response) =>
+      response.request().method() === 'PUT' &&
+      new URL(response.url()).pathname === '/api/v1/admin/settings',
+    )
+    await page.getByRole('button', { name: '保存设置', exact: true }).click()
+    await settingsResponse
+    const menuLink = page.locator('aside a[href="/custom/saved-menu"]:visible')
+    await expect(menuLink).toContainText('新入口')
+
+    releaseStaleSettings()
+    await page.waitForTimeout(100)
+    await expect(menuLink).toContainText('新入口')
+    await expect(menuLink).not.toContainText('旧入口')
+  })
+
   test('keeps injected shared sidebar rows visible during administrator navigation', async ({ page }) => {
     await seedConsole(page, 'v2', { customMenuItems })
     await page.goto(`${affiliateConsoleOrigin}/admin/dashboard`)
@@ -1685,6 +1734,169 @@ test.describe('Console header custom iframe menu contracts', () => {
     expect(await page.evaluate(
       () => sessionStorage.getItem('zero-one-header-beforeunload'),
     )).toBeNull()
+  })
+
+  test('dashboard purchase credits follows the configured online recharge page', async ({ page }) => {
+    const rechargeItem = {
+      id: 'online-recharge',
+      label: '在线充值',
+      icon_svg: '',
+      url: 'https://embed.01yapi.test/recharge',
+      visibility: 'user' as const,
+      placement: 'both' as const,
+      sort_order: 0,
+    }
+    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [rechargeItem] })
+    await page.route('https://embed.01yapi.test/**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/html; charset=utf-8',
+        body: '<!doctype html><html><body>online recharge</body></html>',
+      }),
+    )
+    let documentNavigations = 0
+    page.on('request', (request) => {
+      if (request.resourceType() === 'document' && request.frame() === page.mainFrame()) {
+        documentNavigations += 1
+      }
+    })
+
+    await page.goto('http://127.0.0.1:4173/dashboard')
+    documentNavigations = 0
+    const action = page.getByTestId('dashboard-purchase-credits')
+    await expect(action).toBeVisible()
+    await expect(action).toContainText('购买额度')
+    await action.click()
+
+    await expect(page).toHaveURL('http://127.0.0.1:4173/custom/online-recharge')
+    await expect(page.locator('main iframe.custom-embed-frame')).toHaveAttribute(
+      'src',
+      /\/recharge(?:\?|$)/,
+    )
+    expect(documentNavigations).toBe(0)
+  })
+
+  test('keeps purchase credits available when an administrator opens the user dashboard', async ({ page }) => {
+    const rechargeItem = {
+      id: 'shared-online-recharge',
+      label: '在线充值',
+      icon_svg: '',
+      url: 'https://embed.01yapi.test/shared-recharge',
+      visibility: 'all' as const,
+      placement: 'both' as const,
+      sort_order: 0,
+    }
+    await seedConsole(page, 'v2', { customMenuItems: [rechargeItem] })
+    await page.goto('http://127.0.0.1:4173/dashboard')
+
+    await expect(page.getByTestId('dashboard-purchase-credits')).toBeVisible()
+  })
+
+  test('switches custom iframe content between header and sidebar menu links', async ({ page }) => {
+    const switchingItems = [
+      {
+        id: 'radar',
+        label: '雷达检测中心',
+        icon_svg: '',
+        url: 'https://embed.01yapi.test/radar',
+        visibility: 'all' as const,
+        placement: 'both' as const,
+        sort_order: 0,
+      },
+      {
+        id: 'tutorial',
+        label: '接入教程',
+        icon_svg: '',
+        url: 'https://embed.01yapi.test/tutorial',
+        visibility: 'user' as const,
+        placement: 'sidebar' as const,
+        sort_order: 1,
+      },
+    ]
+    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: switchingItems })
+    let releaseTutorial: (() => void) | undefined
+    const tutorialRelease = new Promise<void>((resolve) => {
+      releaseTutorial = resolve
+    })
+    await page.route('https://embed.01yapi.test/**', async (route) => {
+      if (new URL(route.request().url()).pathname === '/tutorial') {
+        await tutorialRelease
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/html; charset=utf-8',
+        body: '<!doctype html><html><body>custom page</body></html>',
+      })
+    })
+    await page.goto('http://127.0.0.1:4173/dashboard')
+
+    await page.getByTestId('header-custom-menu-radar').click()
+    await expect(page).toHaveURL('http://127.0.0.1:4173/custom/radar')
+    await expect(page.locator('main iframe.custom-embed-frame')).toHaveAttribute(
+      'src',
+      /\/radar(?:\?|$)/,
+    )
+    await expect(page.locator('main iframe.custom-embed-frame')).toHaveAttribute(
+      'data-zero-one-custom-page-id',
+      'radar',
+    )
+    await page.getByTestId('header-custom-menu-radar').click()
+    await expect(page.getByTestId('custom-page-loading')).toHaveCount(0)
+    await expect(page.locator('main iframe.custom-embed-frame')).toHaveCSS('visibility', 'visible')
+
+    const tutorialLink = page.locator('aside a[href="/custom/tutorial"]:visible')
+    await expect(tutorialLink).toHaveCount(1)
+    await tutorialLink.click()
+    await expect(page).toHaveURL('http://127.0.0.1:4173/custom/tutorial')
+    const loading = page.getByTestId('custom-page-loading')
+    await expect(loading).toBeVisible()
+    await expect(loading).toHaveText('正在全力加载中，请稍等！')
+    await expect(page.locator('main iframe.custom-embed-frame')).toHaveCSS('visibility', 'hidden')
+
+    releaseTutorial?.()
+    await expect(page.locator('main iframe.custom-embed-frame')).toHaveAttribute(
+      'src',
+      /\/tutorial(?:\?|$)/,
+    )
+    await expect(page.locator('main iframe.custom-embed-frame')).toHaveAttribute(
+      'data-zero-one-custom-page-id',
+      'tutorial',
+    )
+    await expect(page.locator('main iframe.custom-embed-frame')).toHaveAttribute(
+      'title',
+      '接入教程',
+    )
+    await expect(loading).toHaveCount(0)
+    await expect(page.locator('main iframe.custom-embed-frame')).toHaveCSS('visibility', 'visible')
+  })
+
+  test('keeps a newly added custom page in the bottom save request', async ({ page }) => {
+    await seedConsole(page, 'v2', { customMenuItems })
+    await page.goto('http://127.0.0.1:4173/admin/settings')
+
+    const section = page.getByRole('heading', { name: '自定义菜单页面' }).locator('..').locator('..')
+    await section.getByRole('button', { name: '添加菜单项' }).click()
+    await section.getByPlaceholder('如：帮助中心').last().fill('新菜单')
+    await section.getByPlaceholder('https://example.com/page').last().fill('https://example.com/new')
+    await section.locator('select:not([data-zero-one-header-menu-placement])').last().selectOption('all')
+    const placementSelects = section.locator('[data-zero-one-header-menu-placement]')
+    await placementSelects.last().selectOption('both')
+
+    const settingsRequest = page.waitForRequest((request) =>
+      request.method() === 'PUT' && new URL(request.url()).pathname === '/api/v1/admin/settings',
+    )
+    await page.getByRole('button', { name: '保存设置', exact: true }).click()
+    const submitted = (await settingsRequest).postDataJSON() as {
+      custom_menu_items: Array<{ id: string; label: string; placement?: string; url: string }>
+    }
+    expect(submitted.custom_menu_items).toContainEqual(expect.objectContaining({
+      id: '',
+      label: '新菜单',
+      placement: 'both',
+      url: 'https://example.com/new',
+    }))
+    await expect(page.locator('aside a[href="/custom/generated-menu-8"]:visible')).toHaveCount(1)
+    await expect(page.getByTestId('header-custom-menu-generated-menu-8')).toBeVisible()
   })
 
   test('settles the custom-menu settings description without repeated child mutations', async ({ page }) => {
@@ -1843,8 +2055,10 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=4')
     expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=9')
     expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=5')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=12')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=5')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=17')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=6')
+    expect(html).toContain('/assets/zero-one-redeem-actions-v1.js?v=1')
+    expect(html).toContain('/assets/zero-one-redeem-actions-v1.css?v=1')
     expect(html).toContain('/assets/zero-one-ccswitch-launch-v1.js?v=1')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.js?v=4')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.css?v=3')
@@ -2050,10 +2264,58 @@ test.describe('Console visual contracts', () => {
     })
   })
 
+  test('user redeem follows the configured online recharge navigation without reloading', async ({ page }) => {
+    await page.unroute('**/api/v1/**')
+    await seedConsole(page, 'v2', {
+      version: '0.1.183',
+      customMenuItems: [
+        {
+          id: 'online-recharge',
+          label: '在线充值',
+          icon_svg: '<svg viewBox="0 0 24 24"><path d="M4 7h16v10H4z"/></svg>',
+          url: 'https://embed.01yapi.test/recharge',
+          visibility: 'all',
+          placement: 'both',
+          sort_order: 0,
+        },
+      ],
+    })
+    await page.route('https://embed.01yapi.test/**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/html; charset=utf-8',
+        body: '<!doctype html><html><body>在线充值</body></html>',
+      }),
+    )
+    await page.goto('http://127.0.0.1:4173/redeem')
+
+    const recharge = page.locator('[data-zero-one-redeem-recharge="true"]')
+    await expect(recharge).toHaveAttribute('href', '/custom/online-recharge')
+
+    let documentNavigations = 0
+    page.on('request', (request) => {
+      if (request.resourceType() === 'document' && request.frame() === page.mainFrame()) {
+        documentNavigations += 1
+      }
+    })
+    await recharge.click()
+
+    await expect(page).toHaveURL('http://127.0.0.1:4173/custom/online-recharge')
+    expect(documentNavigations).toBe(0)
+  })
+
   test('user redeem form', async ({ page }) => {
+    await page.unroute('**/api/v1/**')
+    await seedConsole(page, 'v2', { version: '0.1.183' })
     await page.goto('http://127.0.0.1:4173/redeem')
     await page.evaluate(() => document.fonts.ready)
     await expect(page.locator('#code')).toBeVisible()
+    await expect(page.locator('[data-zero-one-redeem-actions="true"]')).toBeVisible()
+    await expect(page.getByRole('button', { name: '兑换', exact: true })).toHaveClass(/btn-specular/)
+    await expect(page.getByRole('link', { name: '在线充值', exact: true })).toHaveAttribute(
+      'href',
+      '/purchase?tab=recharge',
+    )
     await expect(page).toHaveScreenshot('console-user-redeem.png')
   })
 })

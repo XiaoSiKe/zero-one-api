@@ -23,6 +23,8 @@ recovered_header_navigation="$repo_root/deploy/zero-one/recovered-frontend/conso
 recovered_header_navigation_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.css"
 recovered_header_custom_menu="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.js"
 recovered_header_custom_menu_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.css"
+recovered_redeem_actions="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-redeem-actions-v1.js"
+recovered_redeem_actions_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-redeem-actions-v1.css"
 recovered_ccswitch_launch="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-ccswitch-launch-v1.js"
 recovered_affiliate_admin="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-affiliate-admin-v1.js"
 recovered_affiliate_admin_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-affiliate-admin-v1.css"
@@ -85,10 +87,12 @@ require "$recovered_console_index" 'await import("/assets/zero-one-console-parit
 require "$recovered_console_index" 'href="/assets/zero-one-console-parity-v1.css?v=4"'
 require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=9")'
 require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=5"'
-require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=12")'
+require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=17")'
 require "$recovered_header_custom_menu" "style.setProperty('display', 'none', 'important')"
 require "$recovered_console_index" 'window.__ZERO_ONE_PUBLIC_SETTINGS__ = payload.data'
-require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=5"'
+require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=6"'
+require "$recovered_console_index" 'await import("/assets/zero-one-redeem-actions-v1.js?v=1")'
+require "$recovered_console_index" 'href="/assets/zero-one-redeem-actions-v1.css?v=1"'
 require "$recovered_console_index" 'await import("/assets/zero-one-ccswitch-launch-v1.js?v=1")'
 require "$recovered_console_index" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=4")'
 require "$recovered_console_index" 'href="/assets/zero-one-affiliate-admin-v1.css?v=3"'
@@ -147,6 +151,9 @@ require "$recovered_header_custom_menu" "itemCard.hidden = normalizePlacement(ad
 require "$recovered_header_custom_menu" 'data-zero-one-header-menu-placement'
 require "$recovered_header_custom_menu" "nav a.sidebar-link[href=\"' + dashboardPath + '\"]"
 require "$recovered_header_custom_menu" 'publicNavigationSettings'
+require "$recovered_header_custom_menu" 'normalizeMenuItemsForSave(items)'
+require "$recovered_header_custom_menu" 'savedSettings?.custom_menu_items'
+require "$recovered_header_custom_menu" 'reconcileCustomPageFrame(user)'
 require "$recovered_header_custom_menu" 'reconcileSidebarOrder'
 require "$recovered_header_custom_menu" 'previewSidebarSectionOrder'
 require "$recovered_header_custom_menu" 'if (normalizeSidebarOrder(savedOrder).length) return'
@@ -157,6 +164,11 @@ require "$recovered_header_custom_menu" 'description.textContent !== CUSTOM_MENU
 require "$recovered_header_custom_menu" 'XMLHttpRequest.prototype.send'
 require "$recovered_header_custom_menu_css" '.zero-one-header-custom-menu-link'
 require "$recovered_header_custom_menu_css" '.zero-one-header-qr-overlay'
+require "$recovered_redeem_actions" "const REDEEM_PATH = '/redeem'"
+require "$recovered_redeem_actions" "const ONLINE_RECHARGE_LABEL = '在线充值'"
+require "$recovered_redeem_actions" "window.__ZERO_ONE_BIND_INTERNAL_LINK__?.(recharge)"
+require "$recovered_redeem_actions" "register('redeem-actions', enhanceRedeemActions)"
+require "$recovered_redeem_actions_css" '.zero-one-redeem-actions'
 require "$recovered_ccswitch_launch" "href.startsWith('ccswitch://')"
 require "$recovered_ccswitch_launch" 'delay === LEGACY_PROBE_DELAY_MS'
 require "$recovered_ccswitch_launch" "includes('keys.ccSwitchNotInstalled')"

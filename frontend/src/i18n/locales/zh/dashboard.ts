@@ -55,6 +55,8 @@ export default {
     batchImageAgentDesc: '复制给 Agent 的任务说明',
     viewUsage: '查看使用记录',
     checkDetailedLogs: '查看详细的使用日志',
+    purchaseCredits: '购买额度',
+    purchaseCreditsDesc: '前往在线充值',
     redeemCode: '兑换码',
     addBalanceWithCode: '使用兑换码充值'
   },
@@ -678,6 +680,7 @@ export default {
     redeemCodeHint: '兑换码区分大小写',
     redeeming: '兑换中...',
     redeemButton: '兑换',
+    onlineRecharge: '在线充值',
     redeemSuccess: '兑换成功！',
     redeemFailed: '兑换失败',
     added: '已添加',

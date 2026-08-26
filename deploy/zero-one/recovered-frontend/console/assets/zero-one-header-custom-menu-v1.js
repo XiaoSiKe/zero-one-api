@@ -10,6 +10,7 @@ const CUSTOM_MENU_DESCRIPTION = '添加自定义 iframe 页面到侧边栏、顶
 let adminMenuItems = []
 let adminNavigationSettings = null
 let adminSettingsRequested = false
+let adminSettingsRevision = 0
 let publicNavigationSettings = window.__ZERO_ONE_PUBLIC_SETTINGS__ || window.__APP_CONFIG__ || null
 let publicSettingsRequested = false
 const customIconOverrides = new Map()
@@ -48,6 +49,14 @@ function installInternalLinkBridge() {
       if (!router || typeof router.push !== 'function') return
 
       event.preventDefault()
+      const customPageMatch = target.pathname.match(/^\/custom\/([^/?#]+)$/)
+      const destinationChanged =
+        target.pathname !== window.location.pathname ||
+        target.search !== window.location.search ||
+        target.hash !== window.location.hash
+      if (customPageMatch && destinationChanged) {
+        beginCustomPageLoad(decodeURIComponent(customPageMatch[1]))
+      }
       const destination = `${target.pathname}${target.search}${target.hash}`
       try {
         const navigation = router.push(destination)
@@ -106,6 +115,15 @@ function normalizeMenuItems(value) {
   return value.filter((item) => {
     return item && typeof item === 'object' &&
       typeof item.id === 'string' && /^[A-Za-z0-9_-]+$/.test(item.id) &&
+      typeof item.label === 'string' && item.label.trim()
+  })
+}
+
+function normalizeMenuItemsForSave(value) {
+  if (!Array.isArray(value)) return []
+  return value.filter((item) => {
+    return item && typeof item === 'object' &&
+      typeof item.id === 'string' &&
       typeof item.label === 'string' && item.label.trim()
   })
 }
@@ -564,6 +582,126 @@ function reconcileBuiltInNavigation(user) {
   syncModelPlazaActiveState(link)
 }
 
+function reconcileCustomPageFrame(user) {
+  const match = window.location.pathname.match(/^\/custom\/([^/?#]+)$/)
+  if (!match) return
+  const id = decodeURIComponent(match[1])
+  const frame = document.querySelector('main iframe.custom-embed-frame')
+  if (!(frame instanceof HTMLIFrameElement)) return
+  const item = currentMenuItems(user).find((candidate) => candidate.id === id)
+  if (item?.label) frame.title = item.label.trim()
+
+  if (frame.dataset.zeroOneCustomPageId !== id) {
+    beginCustomPageLoad(id, frame)
+  } else if (frame.dataset.zeroOneCustomPageLoaded !== 'true') {
+    showCustomPageLoading(frame)
+  }
+}
+
+function configuredPageMatchesFrame(frame, item) {
+  try {
+    const configured = new URL(item.url, window.location.origin)
+    const actual = new URL(frame.src, window.location.origin)
+    return configured.origin === actual.origin && configured.pathname === actual.pathname
+  } catch {
+    return false
+  }
+}
+
+function showCustomPageLoading(frame) {
+  const shell = frame.closest('.custom-embed-shell')
+  if (!(shell instanceof HTMLElement)) return
+  frame.classList.add('zero-one-custom-page-frame-loading')
+
+  let overlay = shell.querySelector('[data-testid="custom-page-loading"]')
+  if (!(overlay instanceof HTMLElement)) {
+    overlay = document.createElement('div')
+    overlay.className = 'zero-one-custom-page-loading'
+    overlay.setAttribute('data-testid', 'custom-page-loading')
+    overlay.setAttribute('role', 'status')
+    overlay.setAttribute('aria-live', 'polite')
+    const spinner = document.createElement('span')
+    spinner.className = 'zero-one-custom-page-loading-spinner'
+    spinner.setAttribute('aria-hidden', 'true')
+    const text = document.createElement('span')
+    text.textContent = localText(
+      '正在全力加载中，请稍等！',
+      'Loading at full speed. Please wait!',
+    )
+    overlay.append(spinner, text)
+    shell.prepend(overlay)
+  }
+}
+
+function finishCustomPageLoad(frame) {
+  const match = window.location.pathname.match(/^\/custom\/([^/?#]+)$/)
+  if (!match) return
+  const id = decodeURIComponent(match[1])
+  if (frame.dataset.zeroOneCustomPageId !== id) return
+  const item = currentMenuItems(authenticatedUser()).find((candidate) => candidate.id === id)
+  if (!item || !configuredPageMatchesFrame(frame, item)) return
+
+  frame.dataset.zeroOneCustomPageLoaded = 'true'
+  frame.classList.remove('zero-one-custom-page-frame-loading')
+  frame.closest('.custom-embed-shell')
+    ?.querySelector('[data-testid="custom-page-loading"]')
+    ?.remove()
+}
+
+function beginCustomPageLoad(id, candidateFrame) {
+  const frame = candidateFrame || document.querySelector('main iframe.custom-embed-frame')
+  if (!(frame instanceof HTMLIFrameElement)) return
+  frame.dataset.zeroOneCustomPageId = id
+  frame.dataset.zeroOneCustomPageLoaded = 'false'
+  showCustomPageLoading(frame)
+
+  if (frame.dataset.zeroOneCustomPageLoadBound !== 'true') {
+    frame.dataset.zeroOneCustomPageLoadBound = 'true'
+    frame.addEventListener('load', () => finishCustomPageLoad(frame))
+  }
+}
+
+function onlineRechargePath() {
+  const item = normalizeMenuItems(publicNavigationSettings?.custom_menu_items).find((candidate) =>
+    candidate.navigation_type !== 'qr' &&
+    candidate.label.trim() === '在线充值' &&
+    candidate.id
+  )
+  return item ? `/custom/${encodeURIComponent(item.id)}` : '/purchase?tab=recharge'
+}
+
+function reconcileDashboardPurchaseAction(user) {
+  if (!user || window.location.pathname !== '/dashboard') return
+  const heading = [...document.querySelectorAll('main h2')].find((node) => {
+    const text = node.textContent?.trim().toLowerCase()
+    return text === '快捷操作' || text === 'quick actions'
+  })
+  const actions = heading?.parentElement?.nextElementSibling
+  if (!(actions instanceof HTMLElement)) return
+  if (actions.querySelector('[data-testid="dashboard-purchase-credits"]')) return
+
+  const redeem = [...actions.querySelectorAll('button')].find((button) => {
+    const text = button.textContent?.toLowerCase() || ''
+    return text.includes('兑换码') || text.includes('redeem code')
+  })
+  if (!(redeem instanceof HTMLButtonElement)) return
+
+  const action = redeem.cloneNode(true)
+  if (!(action instanceof HTMLButtonElement)) return
+  action.type = 'button'
+  action.setAttribute('data-testid', 'dashboard-purchase-credits')
+  const labels = action.querySelectorAll('p')
+  if (labels[0]) labels[0].textContent = localText('购买额度', 'Purchase Credits')
+  if (labels[1]) labels[1].textContent = localText('前往在线充值', 'Go to online recharge')
+  action.addEventListener('click', () => {
+    const router = document.querySelector('#app')?.__vue_app__?.config?.globalProperties?.$router
+    if (router && typeof router.push === 'function') {
+      void router.push(onlineRechargePath())
+    }
+  })
+  redeem.before(action)
+}
+
 function findCustomMenuCard() {
   const heading = [...document.querySelectorAll('h1, h2, h3')].find((node) => {
     const text = node.textContent?.trim().toLowerCase()
@@ -583,7 +721,7 @@ function normalizePlacement(value) {
 
 function augmentCustomMenuItems(items) {
   const placements = placementValuesFromDOM()
-  return normalizeMenuItems(items).map((item, index) => ({
+  return normalizeMenuItemsForSave(items).map((item, index) => ({
     ...item,
     placement: normalizePlacement(placements[index] ?? item.placement),
     icon_svg: customIconOverrides.get(index) || item.icon_svg,
@@ -704,7 +842,25 @@ function installXHRSaveBridge() {
           payload.custom_menu_items = augmentCustomMenuItems(payload.custom_menu_items)
           nextBody = JSON.stringify(payload)
           this.addEventListener('load', () => {
-            if (this.status >= 200 && this.status < 300) updateMenusAfterSave(payload.custom_menu_items)
+            if (this.status < 200 || this.status >= 300) return
+            adminSettingsRevision += 1
+            let savedSettings = null
+            try {
+              const response = typeof this.response === 'string'
+                ? JSON.parse(this.response)
+                : this.response
+              savedSettings = response && typeof response === 'object' && 'code' in response
+                ? response.data
+                : response
+            } catch {}
+            if (savedSettings && typeof savedSettings === 'object') {
+              adminNavigationSettings = savedSettings
+            }
+            updateMenusAfterSave(
+              Array.isArray(savedSettings?.custom_menu_items)
+                ? savedSettings.custom_menu_items
+                : payload.custom_menu_items,
+            )
           }, { once: true })
         }
       }
@@ -716,12 +872,14 @@ function installXHRSaveBridge() {
 function requestAdminSettings(user) {
   if (user?.role !== 'admin' || adminSettingsRequested) return
   adminSettingsRequested = true
+  const requestRevision = adminSettingsRevision
   fetch(ADMIN_SETTINGS_API, {
     credentials: 'same-origin',
     headers: apiHeaders(),
   })
     .then(readApiResponse)
     .then((settings) => {
+      if (requestRevision !== adminSettingsRevision) return
       adminNavigationSettings = settings
       updateMenusAfterSave(settings?.custom_menu_items)
     })
@@ -752,6 +910,8 @@ function scan() {
   reconcileBuiltInNavigation(user)
   reconcileSidebarOrder(user)
   ensurePlacementControls(user)
+  reconcileCustomPageFrame(user)
+  reconcileDashboardPurchaseAction(user)
 }
 
 function scheduleScan() {
