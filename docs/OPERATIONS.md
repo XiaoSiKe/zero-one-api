@@ -285,9 +285,12 @@ same HTTPS gate; a failed rollback is reported separately. Do not replace this
 entrypoint with a direct `docker compose up edge` during a release.
 
 The approved UI is a separate release boundary. The current protected snapshot
-is the `ui-approved-2026-08-27-r17` tag at commit
-`108d3d6865889416a00807d49d6567f88a2e777f`. The
-`ui-approved-2026-08-27-r16` tag remains immutable as the previous accepted UI.
+is the `ui-approved-2026-08-28-r1` tag at commit
+`80dd4fbf94b4d6a5c20681f5607735f6decff90c`. The
+`ui-approved-2026-08-27-r17` tag remains immutable as the previous accepted UI;
+all older approval tags also remain unchanged. The new snapshot passed native
+Linux x86 visual and interaction verification (143 passed, 65 existing viewport
+exclusions) in [GitHub Actions run 33104422137](https://github.com/01-Yang/zero-one-api/actions/runs/33104422137).
 An upstream version update must not modify `landing/src`, the protected console
 source paths, or `deploy/zero-one/recovered-frontend`. This explicitly covers
 the landing page, login/register pages, the console shell, model-plaza pricing,
