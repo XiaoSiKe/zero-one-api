@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/gatewaytiming"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
@@ -61,6 +62,22 @@ func Logger() gin.HandlerFunc {
 			zap.String("protocol", protocol),
 			zap.String("method", method),
 			zap.String("path", path),
+		}
+		if timing := gatewaytiming.FromContext(c.Request.Context()); timing != nil {
+			snapshot := timing.Snapshot()
+			fields = append(fields,
+				zap.Int("gateway_timing_version", 1),
+				zap.Int("upstream_attempts", snapshot.Attempts),
+				zap.Int64("gateway_auth_ms", snapshot.AuthMs),
+				zap.Int64("user_queue_ms", snapshot.UserQueueMs),
+				zap.Int64("account_queue_ms", snapshot.AccountQueueMs),
+				zap.Int64("account_selection_ms", snapshot.RoutingMs),
+				zap.Int64("upstream_headers_total_ms", snapshot.UpstreamHeadersMs),
+				zap.Int64("retry_backoff_ms", snapshot.RetryBackoffMs),
+			)
+			if snapshot.FirstOutputMs != nil {
+				fields = append(fields, zap.Int("gateway_first_output_ms", *snapshot.FirstOutputMs))
+			}
 		}
 		if rejected {
 			fields = append(fields,

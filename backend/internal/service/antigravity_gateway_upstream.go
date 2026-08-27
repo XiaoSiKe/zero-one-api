@@ -256,7 +256,7 @@ func (s *AntigravityGatewayService) streamUpstreamResponse(c *gin.Context, resp 
 			}
 
 			// 记录首 token 时间
-			if firstTokenMs == nil && len(line) > 0 {
+			if data, ok := extractAnthropicSSEDataLine(line); firstTokenMs == nil && ok && anthropicStreamDataHasVisibleOutput(data) {
 				ms := int(time.Since(startTime).Milliseconds())
 				firstTokenMs = &ms
 			}
@@ -265,7 +265,9 @@ func (s *AntigravityGatewayService) streamUpstreamResponse(c *gin.Context, resp 
 			s.extractSSEUsage(line, usage)
 
 			// 透传行
-			cw.Fprintf("%s\n", line)
+			if cw.Fprintf("%s\n", line) && line == "" && firstTokenMs != nil {
+				markHTTPFirstOutput(c)
+			}
 
 		case <-intervalCh:
 			lastRead := time.Unix(0, atomic.LoadInt64(&lastReadAt))

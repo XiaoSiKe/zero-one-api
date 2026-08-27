@@ -323,7 +323,6 @@ func (s *OpenAIGatewayService) handleCCStreamingFromNativeAnthropic(
 
 	var usage ClaudeUsage
 	var firstTokenMs *int
-	firstChunk := true
 	clientDisconnected := false
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -390,16 +389,14 @@ func (s *OpenAIGatewayService) handleCCStreamingFromNativeAnthropic(
 			clientDisconnected = true
 			return false
 		}
+		if firstTokenMs == nil && httpSSEFrameHasVisibleOutput(out) {
+			ms := int(time.Since(startTime).Milliseconds())
+			firstTokenMs = &ms
+		}
 		return false
 	}
 
 	processAnthropicEvent := func(event *apicompat.AnthropicStreamEvent) bool {
-		if firstChunk {
-			firstChunk = false
-			ms := int(time.Since(startTime).Milliseconds())
-			firstTokenMs = &ms
-		}
-
 		// usage 恒累计（含客户端断开后的排水阶段，payg 上游照常计费）。
 		if event.Type == "message_delta" && event.Usage != nil {
 			mergeAnthropicUsage(&usage, *event.Usage)
@@ -421,8 +418,10 @@ func (s *OpenAIGatewayService) handleCCStreamingFromNativeAnthropic(
 				writeChunk(chunk)
 			}
 		}
-		if len(responsesEvents) > 0 {
-			c.Writer.Flush()
+		if len(responsesEvents) > 0 && !clientDisconnected {
+			if err := flushHTTPStream(c, firstTokenMs != nil); err != nil {
+				clientDisconnected = true
+			}
 		}
 		return false
 	}

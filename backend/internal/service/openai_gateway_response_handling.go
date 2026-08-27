@@ -119,6 +119,7 @@ func (s *OpenAIGatewayService) handleStreamingResponseWithReasoning(ctx context.
 		maxLineSize = s.cfg.Gateway.MaxLineSize
 	}
 	var firstTokenMs *int
+	httpVisibleOutputReady := false
 	firstOutputProgressObserved := false
 	bufferedWriter := bufio.NewWriterSize(w, 4*1024)
 	var firstOutputStage *openAIFirstOutputStage
@@ -152,8 +153,7 @@ func (s *OpenAIGatewayService) handleStreamingResponseWithReasoning(ctx context.
 				return err
 			}
 		}
-		flusher.Flush()
-		return nil
+		return flushHTTPStream(c, httpVisibleOutputReady)
 	}
 
 	usage := &OpenAIUsage{}
@@ -281,9 +281,10 @@ func (s *OpenAIGatewayService) handleStreamingResponseWithReasoning(ctx context.
 		clientDisconnected = true
 		logger.LegacyPrintf("service.openai_gateway", "Client disconnected during streaming, continuing to drain upstream for billing")
 	}
-	completeGuardedEvent := func(queueDrained bool) {
+	completeGuardedEvent := func(queueDrained, delimited bool) {
 		completedProgressEvent := eventStartsClientOutput
 		completedVisibleEvent := eventStartsVisibleOutput
+		httpVisibleOutputReady = httpVisibleOutputReady || (completedVisibleEvent && delimited)
 		shouldFlush := eventShouldFlush || (queueDrained && clientOutputStarted)
 		eventInProgress = false
 		if !clientDisconnected {
@@ -369,7 +370,7 @@ func (s *OpenAIGatewayService) handleStreamingResponseWithReasoning(ctx context.
 	finalizeStream := func() (*openaiStreamingResult, error) {
 		if stageFirstOutput && eventInProgress {
 			// EOF dispatches the final SSE event even without a trailing blank line.
-			completeGuardedEvent(true)
+			completeGuardedEvent(true, false)
 		}
 		if codexFailureTerminal && sawBareError && !sawResponseFailed && bareErrorAccountSideEffectsPending {
 			s.handleOpenAIStreamTerminalAccountSideEffects(c, account, bareErrorPayload, failedMessage, resp.Header)
@@ -738,7 +739,7 @@ func (s *OpenAIGatewayService) handleStreamingResponseWithReasoning(ctx context.
 				}
 			}
 			if streamEarlyErr == nil {
-				completeGuardedEvent(queueDrained)
+				completeGuardedEvent(queueDrained, true)
 			}
 			if terminalFailurePending && streamEarlyErr == nil {
 				terminalFailurePending = false
@@ -759,6 +760,7 @@ func (s *OpenAIGatewayService) handleStreamingResponseWithReasoning(ctx context.
 				return
 			}
 			shouldFlush = eventShouldFlush || (queueDrained && clientOutputStarted)
+			httpVisibleOutputReady = httpVisibleOutputReady || firstTokenMs != nil
 			eventShouldFlush = false
 			if failureDelivered {
 				terminalFailurePending = false
@@ -862,7 +864,7 @@ func (s *OpenAIGatewayService) handleStreamingResponseWithReasoning(ctx context.
 				if stageFirstOutput && eventInProgress {
 					// EOF dispatches the final SSE event even without a trailing blank
 					// line. Do not synthesize extra bytes on the downstream wire.
-					completeGuardedEvent(true)
+					completeGuardedEvent(true, false)
 				}
 				return finalizeStream()
 			}

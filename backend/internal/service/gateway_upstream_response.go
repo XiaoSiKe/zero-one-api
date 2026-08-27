@@ -1081,13 +1081,15 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 							// 否则会漏计当前事件携带的 usage 导致少计费。后续写入由
 							// clientDisconnected 守卫跳过。
 						} else {
-							flusher.Flush()
+							if err := flushHTTPStream(c, firstTokenMs != nil || httpSSEFrameHasVisibleOutput(string(restored))); err != nil {
+								clientDisconnected = true
+							}
 							lastDataAt = time.Now()
 							resetKeepaliveTimer()
 						}
 					}
 					if data != "" {
-						if firstTokenMs == nil && data != "[DONE]" {
+						if firstTokenMs == nil && anthropicStreamDataHasVisibleOutput(data) {
 							ms := int(time.Since(startTime).Milliseconds())
 							firstTokenMs = &ms
 						}

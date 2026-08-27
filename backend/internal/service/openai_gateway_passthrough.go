@@ -1180,7 +1180,7 @@ func openAIStreamItemHasVisibleOutput(item gjson.Result) bool {
 	}
 	for _, path := range []string{"content", "summary"} {
 		for _, part := range item.Get(path).Array() {
-			if part.Get("text").String() != "" || part.Get("transcript").String() != "" {
+			if part.Get("text").String() != "" || part.Get("transcript").String() != "" || part.Get("refusal").String() != "" {
 				return true
 			}
 		}
@@ -1201,7 +1201,7 @@ func openAIStreamDataStartsVisibleOutput(data, eventType string) bool {
 	}
 	if strings.HasSuffix(eventType, ".delta") {
 		delta := gjson.Get(trimmed, "delta")
-		return delta.Exists() && delta.String() != ""
+		return delta.Type == gjson.String && delta.Str != ""
 	}
 	switch eventType {
 	case "response.output_text.done",
@@ -1211,6 +1211,8 @@ func openAIStreamDataStartsVisibleOutput(data, eventType string) bool {
 		return gjson.Get(trimmed, "text").String() != ""
 	case "response.function_call_arguments.done":
 		return gjson.Get(trimmed, "arguments").String() != ""
+	case "response.refusal.done":
+		return gjson.Get(trimmed, "refusal").String() != ""
 	case "response.custom_tool_call_input.done":
 		return gjson.Get(trimmed, "input").String() != ""
 	case "response.image_generation_call.partial_image":
@@ -1218,7 +1220,7 @@ func openAIStreamDataStartsVisibleOutput(data, eventType string) bool {
 	case "response.content_part.added", "response.content_part.done",
 		"response.reasoning_summary_part.added", "response.reasoning_summary_part.done":
 		part := gjson.Get(trimmed, "part")
-		return part.Get("text").String() != "" || part.Get("transcript").String() != ""
+		return part.Get("text").String() != "" || part.Get("transcript").String() != "" || part.Get("refusal").String() != ""
 	case "response.output_item.added", "response.output_item.done":
 		return openAIStreamItemHasVisibleOutput(gjson.Get(trimmed, "item"))
 	case "response.completed", "response.done":
@@ -1720,7 +1722,7 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 	}
 
 	w := c.Writer
-	flusher, ok := w.(http.Flusher)
+	_, ok := w.(http.Flusher)
 	if !ok {
 		return nil, errors.New("streaming not supported")
 	}
@@ -1751,12 +1753,15 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 	pendingLines := make([]string, 0, 8)
 	// flushPending 表示已写入但未到 SSE 空行边界的脏状态；defer 兜底函数退出前的残留，断连后不再 Flush。
 	flushPending := false
+	httpVisibleOutputReady := false
 	pendingSSEEventType := ""
 	flushPendingOutput := func() {
 		if clientDisconnected || !flushPending {
 			return
 		}
-		flusher.Flush()
+		if err := flushHTTPStream(c, httpVisibleOutputReady); err != nil {
+			clientDisconnected = true
+		}
 		flushPending = false
 	}
 	defer flushPendingOutput()
@@ -2013,6 +2018,7 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 				clientOutputStarted = true
 				flushPending = true
 				if line == "" {
+					httpVisibleOutputReady = httpVisibleOutputReady || firstTokenMs != nil
 					flushPendingOutput()
 				}
 			}

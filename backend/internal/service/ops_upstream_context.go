@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/gatewaytiming"
 	"github.com/gin-gonic/gin"
 )
 
@@ -72,6 +73,16 @@ func IsResponseCommitted(c *gin.Context) bool {
 func SetOpsLatencyMs(c *gin.Context, key string, value int64) {
 	if c == nil || strings.TrimSpace(key) == "" || value < 0 {
 		return
+	}
+	if key == OpsTimeToFirstTokenMsKey && c.Request != nil {
+		if timing := gatewaytiming.FromContext(c.Request.Context()); timing != nil {
+			firstOutput := timing.Snapshot().FirstOutputMs
+			if firstOutput == nil {
+				c.Set(key, nil)
+				return
+			}
+			value = int64(*firstOutput)
+		}
 	}
 	c.Set(key, value)
 }

@@ -50,6 +50,7 @@ type antigravityClientWriter struct {
 	disconnected     bool
 	prefix           string // 日志前缀，标识来源方法
 	beforeFirstWrite func()
+	httpContext      *gin.Context
 }
 
 func newAntigravityClientWriter(w gin.ResponseWriter, flusher http.Flusher, prefix string) *antigravityClientWriter {
@@ -67,6 +68,9 @@ func (cw *antigravityClientWriter) Write(p []byte) bool {
 		return false
 	}
 	cw.flusher.Flush()
+	if cw.httpContext != nil && httpSSEFrameHasVisibleOutput(string(p)) {
+		markHTTPFirstOutput(cw.httpContext)
+	}
 	return true
 }
 
@@ -1100,6 +1104,7 @@ func (s *AntigravityGatewayService) handleClaudeStreamingResponse(c *gin.Context
 	lastDataAt := time.Now()
 
 	cw := newAntigravityClientWriter(c.Writer, flusher, "antigravity claude")
+	cw.httpContext = c
 
 	// 仅发送一次错误事件，避免多次写入导致协议混乱
 	errorEventSent := false

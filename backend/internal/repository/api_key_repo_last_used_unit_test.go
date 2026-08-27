@@ -191,6 +191,28 @@ func TestAPIKeyRepository_UpdateLastUsed(t *testing.T) {
 	require.WithinDuration(t, target, after.UpdatedAt, time.Second)
 }
 
+func TestAPIKeyRepository_UpdateLastUsedNeverMovesTimestampsBackwards(t *testing.T) {
+	repo, client := newAPIKeyRepoSQLite(t)
+	ctx := context.Background()
+	user := mustCreateAPIKeyRepoUser(t, ctx, client, "monotonic-last-used@test.com")
+	key := &service.APIKey{UserID: user.ID, Key: "sk-monotonic-last-used", Name: "monotonic", Status: service.StatusActive}
+	require.NoError(t, repo.Create(ctx, key))
+	created, err := repo.GetByID(ctx, key.ID)
+	require.NoError(t, err)
+	oldArrival := created.UpdatedAt.Add(-time.Hour)
+	require.NoError(t, repo.UpdateLastUsed(ctx, key.ID, oldArrival))
+	afterOld, err := repo.GetByID(ctx, key.ID)
+	require.NoError(t, err)
+	require.Equal(t, created.UpdatedAt, afterOld.UpdatedAt, "delayed bookkeeping must not undo later key edits")
+	latest := time.Now().UTC().Add(time.Hour).Truncate(time.Second)
+	require.NoError(t, repo.UpdateLastUsed(ctx, key.ID, latest))
+	require.NoError(t, repo.UpdateLastUsed(ctx, key.ID, latest.Add(-time.Minute)))
+	after, err := repo.GetByID(ctx, key.ID)
+	require.NoError(t, err)
+	require.WithinDuration(t, latest, *after.LastUsedAt, time.Millisecond)
+	require.WithinDuration(t, latest, after.UpdatedAt, time.Millisecond)
+}
+
 func TestAPIKeyRepository_UpdateLastUsedDeletedKey(t *testing.T) {
 	repo, client := newAPIKeyRepoSQLite(t)
 	ctx := context.Background()

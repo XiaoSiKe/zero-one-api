@@ -1095,8 +1095,10 @@ func TestAPIKeyAuthTouchesLastUsedOnSuccess(t *testing.T) {
 		User:   user,
 	}
 
-	var touchedID int64
-	var touchedAt time.Time
+	touched := make(chan struct {
+		id int64
+		at time.Time
+	}, 1)
 	apiKeyRepo := &stubApiKeyRepo{
 		getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
 			if key != apiKey.Key {
@@ -1106,14 +1108,17 @@ func TestAPIKeyAuthTouchesLastUsedOnSuccess(t *testing.T) {
 			return &clone, nil
 		},
 		updateLastUsed: func(ctx context.Context, id int64, usedAt time.Time) error {
-			touchedID = id
-			touchedAt = usedAt
+			touched <- struct {
+				id int64
+				at time.Time
+			}{id: id, at: usedAt}
 			return nil
 		},
 	}
 
 	cfg := &config.Config{RunMode: config.RunModeSimple}
 	apiKeyService := service.NewAPIKeyService(apiKeyRepo, nil, nil, nil, nil, nil, cfg)
+	cleanupLastUsedWriter(t, apiKeyService)
 	router := newAuthTestRouter(apiKeyService, nil, cfg)
 
 	w := httptest.NewRecorder()
@@ -1122,8 +1127,13 @@ func TestAPIKeyAuthTouchesLastUsedOnSuccess(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, apiKey.ID, touchedID)
-	require.False(t, touchedAt.IsZero(), "expected touch timestamp")
+	select {
+	case touch := <-touched:
+		require.Equal(t, apiKey.ID, touch.id)
+		require.False(t, touch.at.IsZero(), "expected touch timestamp")
+	case <-time.After(time.Second):
+		t.Fatal("successful authentication did not queue last-used metadata")
+	}
 }
 
 func TestAPIKeyAuthTouchLastUsedFailureDoesNotBlock(t *testing.T) {
@@ -1144,7 +1154,7 @@ func TestAPIKeyAuthTouchLastUsedFailureDoesNotBlock(t *testing.T) {
 		User:   user,
 	}
 
-	touchCalls := 0
+	var touchCalls atomic.Int32
 	apiKeyRepo := &stubApiKeyRepo{
 		getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
 			if key != apiKey.Key {
@@ -1154,13 +1164,14 @@ func TestAPIKeyAuthTouchLastUsedFailureDoesNotBlock(t *testing.T) {
 			return &clone, nil
 		},
 		updateLastUsed: func(ctx context.Context, id int64, usedAt time.Time) error {
-			touchCalls++
+			touchCalls.Add(1)
 			return errors.New("db unavailable")
 		},
 	}
 
 	cfg := &config.Config{RunMode: config.RunModeSimple}
 	apiKeyService := service.NewAPIKeyService(apiKeyRepo, nil, nil, nil, nil, nil, cfg)
+	cleanupLastUsedWriter(t, apiKeyService)
 	router := newAuthTestRouter(apiKeyService, nil, cfg)
 
 	w := httptest.NewRecorder()
@@ -1169,7 +1180,7 @@ func TestAPIKeyAuthTouchLastUsedFailureDoesNotBlock(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code, "touch failure should not block request")
-	require.Equal(t, 1, touchCalls)
+	require.Eventually(t, func() bool { return touchCalls.Load() == 1 }, time.Second, time.Millisecond)
 }
 
 func TestAPIKeyAuthTouchesLastUsedInStandardMode(t *testing.T) {
@@ -1190,7 +1201,7 @@ func TestAPIKeyAuthTouchesLastUsedInStandardMode(t *testing.T) {
 		User:   user,
 	}
 
-	touchCalls := 0
+	var touchCalls atomic.Int32
 	apiKeyRepo := &stubApiKeyRepo{
 		getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
 			if key != apiKey.Key {
@@ -1200,13 +1211,14 @@ func TestAPIKeyAuthTouchesLastUsedInStandardMode(t *testing.T) {
 			return &clone, nil
 		},
 		updateLastUsed: func(ctx context.Context, id int64, usedAt time.Time) error {
-			touchCalls++
+			touchCalls.Add(1)
 			return nil
 		},
 	}
 
 	cfg := &config.Config{RunMode: config.RunModeStandard}
 	apiKeyService := service.NewAPIKeyService(apiKeyRepo, nil, nil, nil, nil, nil, cfg)
+	cleanupLastUsedWriter(t, apiKeyService)
 	router := newAuthTestRouter(apiKeyService, nil, cfg)
 
 	w := httptest.NewRecorder()
@@ -1215,7 +1227,7 @@ func TestAPIKeyAuthTouchesLastUsedInStandardMode(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, 1, touchCalls)
+	require.Eventually(t, func() bool { return touchCalls.Load() == 1 }, time.Second, time.Millisecond)
 }
 
 func TestAPIKeyAuthBillingInfoSkipsBillingAndSideEffects(t *testing.T) {
@@ -1317,19 +1329,20 @@ func TestAPIKeyAuthUsageStillTouchesLastUsed(t *testing.T) {
 
 	user := &service.User{ID: 7, Role: service.RoleUser, Status: service.StatusActive, Balance: 10}
 	apiKey := &service.APIKey{ID: 100, UserID: user.ID, Key: "usage-touch", Status: service.StatusActive, User: user}
-	touchCalls := 0
+	var touchCalls atomic.Int32
 	apiKeyRepo := &stubApiKeyRepo{
 		getByKey: func(context.Context, string) (*service.APIKey, error) {
 			clone := *apiKey
 			return &clone, nil
 		},
 		updateLastUsed: func(context.Context, int64, time.Time) error {
-			touchCalls++
+			touchCalls.Add(1)
 			return nil
 		},
 	}
 	cfg := &config.Config{RunMode: config.RunModeStandard}
 	apiKeyService := service.NewAPIKeyService(apiKeyRepo, nil, nil, nil, nil, nil, cfg)
+	cleanupLastUsedWriter(t, apiKeyService)
 	router := newAuthTestRouter(apiKeyService, nil, cfg)
 
 	w := httptest.NewRecorder()
@@ -1338,7 +1351,7 @@ func TestAPIKeyAuthUsageStillTouchesLastUsed(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, 1, touchCalls)
+	require.Eventually(t, func() bool { return touchCalls.Load() == 1 }, time.Second, time.Millisecond)
 }
 
 func TestAPIKeyAuthAllowsBalanceBelowMinimumReserve(t *testing.T) {

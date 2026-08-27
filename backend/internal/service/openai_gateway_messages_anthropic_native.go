@@ -426,7 +426,7 @@ func (s *OpenAIGatewayService) handleNativeAnthropicStreamingResponse(
 				if anthropicStreamEventIsTerminal("", trimmed) {
 					sawTerminalEvent = true
 				}
-				if firstTokenMs == nil && trimmed != "" && trimmed != "[DONE]" {
+				if firstTokenMs == nil && anthropicStreamDataHasVisibleOutput(trimmed) {
 					ms := int(time.Since(startTime).Milliseconds())
 					firstTokenMs = &ms
 				}
@@ -448,7 +448,9 @@ func (s *OpenAIGatewayService) handleNativeAnthropicStreamingResponse(
 					logger.LegacyPrintf("service.gateway", "[CN Anthropic 直通] Client disconnected during streaming, continue draining upstream for usage: account=%d", account.ID)
 				} else if line == "" {
 					// 按 SSE 事件边界刷出，减少每行 flush 带来的 syscall 开销。
-					flusher.Flush()
+					if err := flushHTTPStream(c, firstTokenMs != nil); err != nil {
+						clientDisconnected = true
+					}
 					lastDataAt = time.Now()
 					resetKeepaliveTimer()
 					inPartialEvent = false

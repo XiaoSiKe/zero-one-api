@@ -704,8 +704,10 @@ func TestApiKeyAuthWithSubscriptionGoogle_TouchesLastUsedOnSuccess(t *testing.T)
 		User:   user,
 	}
 
-	var touchedID int64
-	var touchedAt time.Time
+	touched := make(chan struct {
+		id int64
+		at time.Time
+	}, 1)
 	r := gin.New()
 	apiKeyService := newTestAPIKeyService(fakeAPIKeyRepo{
 		getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
@@ -716,11 +718,14 @@ func TestApiKeyAuthWithSubscriptionGoogle_TouchesLastUsedOnSuccess(t *testing.T)
 			return &clone, nil
 		},
 		updateLastUsed: func(ctx context.Context, id int64, usedAt time.Time) error {
-			touchedID = id
-			touchedAt = usedAt
+			touched <- struct {
+				id int64
+				at time.Time
+			}{id: id, at: usedAt}
 			return nil
 		},
 	})
+	cleanupLastUsedWriter(t, apiKeyService)
 	cfg := &config.Config{RunMode: config.RunModeSimple}
 	r.Use(APIKeyAuthWithSubscriptionGoogle(apiKeyService, nil, cfg))
 	r.GET("/v1beta/test", func(c *gin.Context) { c.JSON(200, gin.H{"ok": true}) })
@@ -731,8 +736,13 @@ func TestApiKeyAuthWithSubscriptionGoogle_TouchesLastUsedOnSuccess(t *testing.T)
 	r.ServeHTTP(rec, req)
 
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Equal(t, apiKey.ID, touchedID)
-	require.False(t, touchedAt.IsZero())
+	select {
+	case touch := <-touched:
+		require.Equal(t, apiKey.ID, touch.id)
+		require.False(t, touch.at.IsZero())
+	case <-time.After(time.Second):
+		t.Fatal("successful authentication did not queue last-used metadata")
+	}
 }
 
 func TestApiKeyAuthWithSubscriptionGoogle_TouchFailureDoesNotBlock(t *testing.T) {
@@ -753,7 +763,7 @@ func TestApiKeyAuthWithSubscriptionGoogle_TouchFailureDoesNotBlock(t *testing.T)
 		User:   user,
 	}
 
-	touchCalls := 0
+	var touchCalls atomic.Int32
 	r := gin.New()
 	apiKeyService := newTestAPIKeyService(fakeAPIKeyRepo{
 		getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
@@ -764,10 +774,11 @@ func TestApiKeyAuthWithSubscriptionGoogle_TouchFailureDoesNotBlock(t *testing.T)
 			return &clone, nil
 		},
 		updateLastUsed: func(ctx context.Context, id int64, usedAt time.Time) error {
-			touchCalls++
+			touchCalls.Add(1)
 			return errors.New("write failed")
 		},
 	})
+	cleanupLastUsedWriter(t, apiKeyService)
 	cfg := &config.Config{RunMode: config.RunModeSimple}
 	r.Use(APIKeyAuthWithSubscriptionGoogle(apiKeyService, nil, cfg))
 	r.GET("/v1beta/test", func(c *gin.Context) { c.JSON(200, gin.H{"ok": true}) })
@@ -778,7 +789,7 @@ func TestApiKeyAuthWithSubscriptionGoogle_TouchFailureDoesNotBlock(t *testing.T)
 	r.ServeHTTP(rec, req)
 
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Equal(t, 1, touchCalls)
+	require.Eventually(t, func() bool { return touchCalls.Load() == 1 }, time.Second, time.Millisecond)
 }
 
 func TestApiKeyAuthWithSubscriptionGoogle_TouchesLastUsedInStandardMode(t *testing.T) {
@@ -799,7 +810,7 @@ func TestApiKeyAuthWithSubscriptionGoogle_TouchesLastUsedInStandardMode(t *testi
 		User:   user,
 	}
 
-	touchCalls := 0
+	var touchCalls atomic.Int32
 	r := gin.New()
 	apiKeyService := newTestAPIKeyService(fakeAPIKeyRepo{
 		getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
@@ -810,10 +821,11 @@ func TestApiKeyAuthWithSubscriptionGoogle_TouchesLastUsedInStandardMode(t *testi
 			return &clone, nil
 		},
 		updateLastUsed: func(ctx context.Context, id int64, usedAt time.Time) error {
-			touchCalls++
+			touchCalls.Add(1)
 			return nil
 		},
 	})
+	cleanupLastUsedWriter(t, apiKeyService)
 	cfg := &config.Config{RunMode: config.RunModeStandard}
 	r.Use(APIKeyAuthWithSubscriptionGoogle(apiKeyService, nil, cfg))
 	r.GET("/v1beta/test", func(c *gin.Context) { c.JSON(200, gin.H{"ok": true}) })
@@ -824,7 +836,16 @@ func TestApiKeyAuthWithSubscriptionGoogle_TouchesLastUsedInStandardMode(t *testi
 	r.ServeHTTP(rec, req)
 
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Equal(t, 1, touchCalls)
+	require.Eventually(t, func() bool { return touchCalls.Load() == 1 }, time.Second, time.Millisecond)
+}
+
+func cleanupLastUsedWriter(t *testing.T, svc *service.APIKeyService) {
+	t.Helper()
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		require.NoError(t, svc.StopLastUsedWorker(ctx))
+	})
 }
 
 func TestApiKeyAuthWithSubscriptionGoogle_SubscriptionLimitExceededReturns429(t *testing.T) {

@@ -189,6 +189,7 @@ func (s *OpenAIGatewayService) streamChatCompletionsAsResponses(
 	state.ToolSearchDeclared = toolSearch
 	state.NamespaceTools = namespaceTools
 	clientDisconnected := false
+	visibleOutputWritten := false
 
 	writeEvents := func(events []apicompat.ResponsesStreamEvent) {
 		if clientDisconnected || len(events) == 0 {
@@ -212,8 +213,11 @@ func (s *OpenAIGatewayService) streamChatCompletionsAsResponses(
 				)
 				return
 			}
+			visibleOutputWritten = visibleOutputWritten || httpSSEFrameHasVisibleOutput(sse)
 		}
-		c.Writer.Flush()
+		if err := flushHTTPStream(c, visibleOutputWritten); err != nil {
+			clientDisconnected = true
+		}
 	}
 
 	scan := s.scanCCStream(c, resp, "openai responses chat fallback", requestID, startTime, func(chunk *apicompat.ChatCompletionsChunk) {
@@ -286,8 +290,13 @@ func chatChunkStartsResponsesOutput(chunk *apicompat.ChatCompletionsChunk) bool 
 		return false
 	}
 	for _, choice := range chunk.Choices {
-		if choice.Delta.Content != nil || choice.Delta.ReasoningContent != nil || len(choice.Delta.ToolCalls) > 0 {
+		if (choice.Delta.Content != nil && *choice.Delta.Content != "") || (choice.Delta.ReasoningContent != nil && *choice.Delta.ReasoningContent != "") {
 			return true
+		}
+		for _, call := range choice.Delta.ToolCalls {
+			if call.Function.Arguments != "" {
+				return true
+			}
 		}
 	}
 	return false

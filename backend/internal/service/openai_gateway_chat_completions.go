@@ -59,6 +59,7 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 	promptCacheKey string,
 	defaultMappedModel string,
 ) (*OpenAIForwardResult, error) {
+	ctx = withHTTPUpstreamClientContext(ctx, c)
 	beginUpstreamResponseModelObservation(c)
 	setCodexToolNameReverse(c, nil)
 	if _, err := s.prepareCodexAccountIdentitySource(ctx, c, account); err != nil {
@@ -637,7 +638,7 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 
 	var usage OpenAIUsage
 	var firstTokenMs *int
-	firstChunk := true
+	visibleOutputWritten := false
 	clientDisconnected := false
 	clientOutputStarted := false
 	pendingSSE := make([]string, 0, 4)
@@ -692,8 +693,7 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 
 	processDataLine := func(payload string) bool {
 		payload = string(restoreCodexToolNamesFromContext(c, []byte(payload)))
-		if firstChunk {
-			firstChunk = false
+		if firstTokenMs == nil && openAIStreamDataStartsVisibleOutput(payload, "") {
 			ms := int(time.Since(startTime).Milliseconds())
 			firstTokenMs = &ms
 		}
@@ -842,10 +842,13 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 					)
 					break
 				}
+				visibleOutputWritten = visibleOutputWritten || httpSSEFrameHasVisibleOutput(sse)
 			}
 		}
 		if len(chunks) > 0 && !clientDisconnected && clientOutputStarted {
-			c.Writer.Flush()
+			if err := flushHTTPStream(c, visibleOutputWritten); err != nil {
+				clientDisconnected = true
+			}
 		}
 		return isTerminalEvent
 	}
@@ -895,6 +898,7 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 					)
 					break
 				}
+				visibleOutputWritten = visibleOutputWritten || httpSSEFrameHasVisibleOutput(sse)
 			}
 		}
 		if !clientDisconnected && !clientOutputStarted {
@@ -928,7 +932,9 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 			clientOutputStarted = !clientDisconnected
 		}
 		if !clientDisconnected {
-			c.Writer.Flush()
+			if err := flushHTTPStream(c, visibleOutputWritten); err != nil {
+				clientDisconnected = true
+			}
 		}
 		logOpenAISuccessMissingUsage(c.Request.Context(), c, account, resp, &usage, terminalEventType, clientDisconnected)
 		return resultWithUsage(), nil

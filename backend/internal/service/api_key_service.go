@@ -8,7 +8,6 @@ import (
 	"html"
 	"math"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -308,7 +307,8 @@ type APIKeyService struct {
 	authInvalidationConnected atomic.Bool
 	authInvalidationFailures  atomic.Uint64
 	lastUsedTouchL1           sync.Map // keyID -> nextAllowedAt(time.Time)
-	lastUsedTouchSF           singleflight.Group
+	lastUsedWriterOnce        sync.Once
+	lastUsedWriter            *apiKeyLastUsedWriter
 }
 
 type APIKeyAuthLookupMetrics struct {
@@ -967,36 +967,14 @@ func (s *APIKeyService) ValidateKey(ctx context.Context, key string) (*APIKey, *
 	return apiKey, user, nil
 }
 
-// TouchLastUsed 通过防抖更新 api_keys.last_used_at，减少高频写放大。
-// 该操作为尽力而为，不应阻塞主请求链路。
+// TouchLastUsed 仅提交尽力而为的元数据更新，不等待数据库或占用计费任务队列。
 func (s *APIKeyService) TouchLastUsed(ctx context.Context, keyID int64) error {
 	if keyID <= 0 {
 		return nil
 	}
-
-	now := time.Now()
-	if v, ok := s.lastUsedTouchL1.Load(keyID); ok {
-		if nextAllowedAt, ok := v.(time.Time); ok && now.Before(nextAllowedAt) {
-			return nil
-		}
-	}
-
-	_, err, _ := s.lastUsedTouchSF.Do(strconv.FormatInt(keyID, 10), func() (any, error) {
-		latest := time.Now()
-		if v, ok := s.lastUsedTouchL1.Load(keyID); ok {
-			if nextAllowedAt, ok := v.(time.Time); ok && latest.Before(nextAllowedAt) {
-				return nil, nil
-			}
-		}
-
-		if err := s.apiKeyRepo.UpdateLastUsed(ctx, keyID, latest); err != nil {
-			s.lastUsedTouchL1.Store(keyID, latest.Add(apiKeyLastUsedFailBackoff))
-			return nil, fmt.Errorf("touch api key last used: %w", err)
-		}
-		s.lastUsedTouchL1.Store(keyID, latest.Add(apiKeyLastUsedMinTouch))
-		return nil, nil
-	})
-	return err
+	s.StartLastUsedWorker()
+	s.lastUsedWriter.submit(keyID, time.Now())
+	return nil
 }
 
 // IncrementUsage 增加API Key使用次数（可选：用于统计）

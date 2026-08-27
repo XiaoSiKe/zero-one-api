@@ -386,7 +386,6 @@ func (s *GatewayService) handleCCStreamingFromAnthropic(
 
 	var usage ClaudeUsage
 	var firstTokenMs *int
-	firstChunk := true
 
 	scanner := bufio.NewScanner(resp.Body)
 	maxLineSize := defaultMaxLineSize
@@ -419,16 +418,14 @@ func (s *GatewayService) handleCCStreamingFromAnthropic(
 		if _, err := fmt.Fprint(c.Writer, out); err != nil {
 			return true // client disconnected
 		}
+		if firstTokenMs == nil && httpSSEFrameHasVisibleOutput(out) {
+			ms := int(time.Since(startTime).Milliseconds())
+			firstTokenMs = &ms
+		}
 		return false
 	}
 
 	processAnthropicEvent := func(event *apicompat.AnthropicStreamEvent) bool {
-		if firstChunk {
-			firstChunk = false
-			ms := int(time.Since(startTime).Milliseconds())
-			firstTokenMs = &ms
-		}
-
 		// Extract usage from message_delta
 		if event.Type == "message_delta" && event.Usage != nil {
 			mergeAnthropicUsage(&usage, *event.Usage)
@@ -448,8 +445,7 @@ func (s *GatewayService) handleCCStreamingFromAnthropic(
 				}
 			}
 		}
-		c.Writer.Flush()
-		return false
+		return flushHTTPStream(c, firstTokenMs != nil) != nil
 	}
 
 	for scanner.Scan() {

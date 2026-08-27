@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -278,6 +279,8 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 	requestID := resp.Header.Get("x-request-id")
 	writeStreamHeaders := s.newStreamHeaderWriter(c, resp.Header)
 	scanner := s.newUpstreamSSEScanner(resp.Body)
+	pump := newAnthropicNativeLinePump(scanner, s.anthropicNativeStreamInterval())
+	defer pump.stop()
 
 	var usage OpenAIUsage
 	var firstTokenMs *int
@@ -318,18 +321,29 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 		}
 	}
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	var scanErr error
+	sawDone := false
+	visibleOutputComplete := false
+	for {
+		line, err := pump.next()
+		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				scanErr = err
+				_ = resp.Body.Close()
+			}
+			break
+		}
 		refusalDetector.ObserveSSELine(line)
 		if payload, ok := extractOpenAISSEDataLine(line); ok {
 			trimmedPayload := strings.TrimSpace(payload)
+			sawDone = sawDone || trimmedPayload == "[DONE]"
 			if trimmedPayload != "[DONE]" {
 				observer.ObserveOpenAI([]byte(payload), strings.TrimSpace(gjson.Get(payload, "type").String()))
 				usageOnlyChunk := isOpenAIChatUsageOnlyStreamChunk(payload)
 				if u := extractCCStreamUsage(payload); u != nil {
 					usage = *u
 				}
-				if firstTokenMs == nil && !usageOnlyChunk {
+				if firstTokenMs == nil && !usageOnlyChunk && chatStreamDataHasVisibleOutput(payload) {
 					elapsed := int(time.Since(startTime).Milliseconds())
 					firstTokenMs = &elapsed
 				}
@@ -340,17 +354,20 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 
 		writeLine(line)
 		if line == "" {
+			visibleOutputComplete = visibleOutputComplete || firstTokenMs != nil
 			if !clientDisconnected && clientOutputStarted {
-				c.Writer.Flush()
+				if err := flushHTTPStream(c, visibleOutputComplete); err != nil {
+					clientDisconnected = true
+				}
+			}
+			if sawDone {
+				break
 			}
 			continue
 		}
-		if !clientDisconnected && clientOutputStarted {
-			c.Writer.Flush()
-		}
 	}
 
-	if err := scanner.Err(); err != nil {
+	if err := scanErr; err != nil {
 		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 			logger.L().Warn("openai chat_completions raw: stream read error",
 				zap.Error(err),
@@ -374,10 +391,21 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 				}
 			}
 			if !clientDisconnected {
-				c.Writer.Flush()
+				if err := flushHTTPStream(c, visibleOutputComplete); err != nil {
+					clientDisconnected = true
+				}
 				clientOutputStarted = true
 			}
 		}
+	}
+	if scanErr == nil && !clientDisconnected && clientOutputStarted {
+		// Preserve residual bytes at EOF, but it does not delimit an SSE event.
+		if err := flushHTTPStream(c, visibleOutputComplete); err != nil {
+			clientDisconnected = true
+		}
+	}
+	if scanErr != nil {
+		scanErr = fmt.Errorf("stream usage incomplete: %w", scanErr)
 	}
 
 	return &OpenAIForwardResult{
@@ -394,7 +422,8 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 		Stream:                        true,
 		Duration:                      time.Since(startTime),
 		FirstTokenMs:                  firstTokenMs,
-	}, nil
+		ClientDisconnect:              clientDisconnected,
+	}, scanErr
 }
 
 // ensureOpenAIChatStreamUsage 确保 raw Chat Completions 流式请求会让上游返回 usage。
