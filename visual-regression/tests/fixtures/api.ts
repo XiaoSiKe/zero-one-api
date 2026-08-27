@@ -377,6 +377,9 @@ export async function seedConsole(
     profileNavigationEnabled?: boolean
     subscriptionNavigationEnabled?: boolean
     modelPlazaPlacement?: 'header' | 'sidebar'
+    siteLogo?: string
+    paymentEnabled?: boolean
+    riskControlEnabled?: boolean
     version?: string
     userSidebarOrder?: string[]
     adminSidebarOrder?: string[]
@@ -413,6 +416,8 @@ export async function seedConsole(
     profile_navigation_enabled: options.profileNavigationEnabled ?? true,
     subscription_navigation_enabled: options.subscriptionNavigationEnabled ?? true,
     model_plaza_placement: options.modelPlazaPlacement ?? 'header',
+    site_logo: options.siteLogo ?? '',
+    risk_control_enabled: options.riskControlEnabled ?? false,
     version: options.version ?? publicSettings(mode).version,
     user_sidebar_order: options.userSidebarOrder ?? [],
     admin_sidebar_order: options.adminSidebarOrder ?? [],
@@ -492,7 +497,8 @@ export async function seedConsole(
       }
       const id = decodeURIComponent(path.split('/')[3])
       const item = settings.custom_menu_items.find((candidate) => candidate.id === id)
-      if (!item || item.navigation_type !== 'qr' || !item.qr_image) {
+      if (!item || item.navigation_type !== 'qr' || !item.qr_image ||
+        (item.visibility !== 'all' && item.visibility !== user.role)) {
         return route.fulfill({ status: 404, body: 'not found' })
       }
       return route.fulfill({
@@ -503,8 +509,17 @@ export async function seedConsole(
       })
     }
     if (path === '/settings/public') {
+      if (requestUrl.searchParams.get('scope') === 'logo') {
+        return route.fulfill({
+          contentType: 'image/png',
+          body: Buffer.from(communityQrPngBase64, 'base64'),
+        })
+      }
       return fulfill(route, {
         ...settings,
+        site_logo: settings.site_logo.startsWith('data:')
+          ? '/api/v1/settings/public?scope=logo&v=visual-fixture'
+          : settings.site_logo,
         custom_menu_items: settings.custom_menu_items
           .filter((item) => item.visibility !== 'admin')
           .map(({ qr_image: _qrImage, ...item }) => item),
@@ -583,7 +598,23 @@ export async function seedConsole(
       return fulfill(route, { ...settings, community_qr_image: communityQrImage })
     }
     if (path === '/admin/settings') {
+      if (requestUrl.searchParams.get('scope') === 'navigation') {
+        return fulfill(route, {
+          custom_menu_items: settings.custom_menu_items.map(({ qr_image: _qrImage, ...item }) => item),
+          user_sidebar_order: settings.user_sidebar_order,
+          admin_sidebar_order: settings.admin_sidebar_order,
+          profile_navigation_enabled: settings.profile_navigation_enabled,
+          subscription_navigation_enabled: settings.subscription_navigation_enabled,
+          model_plaza_placement: settings.model_plaza_placement,
+          ops_monitoring_enabled: true,
+          ops_realtime_monitoring_enabled: true,
+          ops_query_mode_default: 'auto',
+        })
+      }
       return fulfill(route, { ...settings, community_qr_image: communityQrImage })
+    }
+    if (path === '/admin/payment/config') {
+      return fulfill(route, { enabled: options.paymentEnabled ?? false })
     }
     if (path === '/admin/groups/all') return fulfill(route, [])
     if (path === '/usage/dashboard/stats') return fulfill(route, dashboardStats)

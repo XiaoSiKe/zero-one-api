@@ -1,9 +1,6 @@
 package handler
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
 	"html"
 	"net/http"
 	"strings"
@@ -16,17 +13,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
-const (
-	publicSettingsPath     = "/api/v1/settings/public"
-	maxPublicSiteLogoBytes = 300 * 1024
-)
-
-type publicSiteLogo struct {
-	mimeType string
-	content  []byte
-	revision string
-}
 
 // SettingHandler handles public settings and narrowly scoped authenticated
 // setting assets. Authentication remains an explicit route-level contract.
@@ -68,7 +54,7 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		}
 		response.Success(c, dto.LandingPublicSettings{
 			SiteName:                   settings.SiteName,
-			SiteLogo:                   landingSiteLogoURL(settings.SiteLogo),
+			SiteLogo:                   service.PublicSiteLogoURL(settings.SiteLogo),
 			SiteSubtitle:               settings.SiteSubtitle,
 			DocURL:                     settings.DocURL,
 			RegistrationEnabled:        settings.RegistrationEnabled,
@@ -99,17 +85,12 @@ func (h *SettingHandler) GetCommunityQRImage(c *gin.Context) {
 	c.Header("Cache-Control", "no-store")
 	c.Header("X-Content-Type-Options", "nosniff")
 
-	rawImage, enabled, err := h.settingService.GetCommunityQRImage(c.Request.Context())
+	image, enabled, err := h.settingService.GetCommunityQRImage(c.Request.Context())
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
 	if !enabled {
-		response.NotFound(c, "community QR image not found")
-		return
-	}
-	image, ok := service.DecodeCommunityQRImage(rawImage)
-	if !ok {
 		response.NotFound(c, "community QR image not found")
 		return
 	}
@@ -127,7 +108,7 @@ func (h *SettingHandler) GetHeaderNavigationQRImage(c *gin.Context) {
 		response.Unauthorized(c, "User not authenticated")
 		return
 	}
-	rawImage, enabled, err := h.settingService.GetHeaderNavigationQRImage(
+	image, enabled, err := h.settingService.GetHeaderNavigationQRImage(
 		c.Request.Context(),
 		strings.TrimSpace(c.Param("id")),
 		role,
@@ -137,11 +118,6 @@ func (h *SettingHandler) GetHeaderNavigationQRImage(c *gin.Context) {
 		return
 	}
 	if !enabled {
-		response.NotFound(c, "header navigation QR image not found")
-		return
-	}
-	image, ok := service.DecodeCommunityQRImage(rawImage)
-	if !ok {
 		response.NotFound(c, "header navigation QR image not found")
 		return
 	}
@@ -159,70 +135,22 @@ func (h *SettingHandler) getPublicSiteLogo(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	logo, ok := decodePublicSiteLogo(rawLogo)
+	logo, ok := service.DecodePublicSiteLogo(rawLogo)
 	if !ok {
 		response.NotFound(c, "site logo not found")
 		return
 	}
 
-	etag := `"` + logo.revision + `"`
+	etag := `"` + logo.Revision + `"`
 	c.Header("ETag", etag)
-	if c.Query("v") == logo.revision {
+	if c.Query("v") == logo.Revision {
 		c.Header("Cache-Control", "public, max-age=31536000, immutable")
 	}
 	if c.Request.Header.Get("If-None-Match") == etag {
 		c.AbortWithStatus(http.StatusNotModified)
 		return
 	}
-	c.Data(http.StatusOK, logo.mimeType, logo.content)
-}
-
-func landingSiteLogoURL(rawLogo string) string {
-	logo, ok := decodePublicSiteLogo(rawLogo)
-	if ok {
-		return publicSettingsPath + "?scope=logo&v=" + logo.revision
-	}
-	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(rawLogo)), "data:") {
-		return ""
-	}
-	return rawLogo
-}
-
-func decodePublicSiteLogo(rawLogo string) (publicSiteLogo, bool) {
-	metadata, encoded, ok := strings.Cut(strings.TrimSpace(rawLogo), ",")
-	if !ok || encoded == "" || strings.ContainsAny(encoded, " \t\r\n") {
-		return publicSiteLogo{}, false
-	}
-	metadataParts := strings.Split(metadata, ";")
-	if len(metadataParts) != 2 || !strings.EqualFold(metadataParts[1], "base64") {
-		return publicSiteLogo{}, false
-	}
-	mimeType := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(strings.ToLower(metadataParts[0]), "data:")))
-	if !isAllowedPublicSiteLogoMIME(mimeType) || len(encoded) > base64.StdEncoding.EncodedLen(maxPublicSiteLogoBytes) {
-		return publicSiteLogo{}, false
-	}
-	content, err := base64.StdEncoding.Strict().DecodeString(encoded)
-	if err != nil || len(content) == 0 || len(content) > maxPublicSiteLogoBytes {
-		return publicSiteLogo{}, false
-	}
-	hash := sha256.New()
-	_, _ = hash.Write([]byte(mimeType))
-	_, _ = hash.Write([]byte{0})
-	_, _ = hash.Write(content)
-	return publicSiteLogo{
-		mimeType: mimeType,
-		content:  content,
-		revision: hex.EncodeToString(hash.Sum(nil)),
-	}, true
-}
-
-func isAllowedPublicSiteLogoMIME(mimeType string) bool {
-	switch mimeType {
-	case "image/avif", "image/gif", "image/jpeg", "image/jpg", "image/png", "image/webp":
-		return true
-	default:
-		return false
-	}
+	c.Data(http.StatusOK, logo.MIMEType, logo.Content)
 }
 
 // UnsubscribeNotificationEmail handles optional notification email opt-outs.

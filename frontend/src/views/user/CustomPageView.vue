@@ -1,7 +1,7 @@
 <template>
     <div class="custom-page-layout">
       <div class="card console-card-motion-static flex-1 min-h-0 overflow-hidden">
-        <div v-if="loading" class="flex h-full items-center justify-center py-12">
+        <div v-if="loading && (!menuItem || isMarkdownMode)" class="flex h-full items-center justify-center py-12">
           <div
             class="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"
           ></div>
@@ -102,7 +102,17 @@
             aria-live="polite"
           >
             <div class="custom-embed-loading-spinner" aria-hidden="true"></div>
-            <p>{{ t('customPage.loadingEmbedded') }}</p>
+            <p v-if="iframeSlow" data-testid="custom-page-slow">{{ t('customPage.loadingSlow') }}</p>
+            <p v-else>{{ t('customPage.loadingEmbedded') }}</p>
+            <button
+              v-if="iframeSlow"
+              type="button"
+              class="btn btn-secondary btn-sm"
+              data-testid="custom-page-retry"
+              @click="beginEmbeddedLoad"
+            >
+              {{ t('customPage.retry') }}
+            </button>
           </div>
           <a
             :href="embeddedUrl"
@@ -114,10 +124,12 @@
             {{ t('customPage.openInNewTab') }}
           </a>
           <iframe
-            :key="menuItemId"
+            :key="iframeGeneration"
+            ref="embeddedFrame"
             :src="embeddedUrl"
             :title="menuItem?.label || t('customPage.title')"
             :data-custom-page-id="menuItemId"
+            :data-load-generation="iframeGeneration"
             class="custom-embed-frame"
             :class="{ 'custom-embed-frame-loading': iframeLoading }"
             allowfullscreen
@@ -155,6 +167,10 @@ const adminSettingsStore = useAdminSettingsStore()
 
 const loading = ref(false)
 const iframeLoading = ref(false)
+const iframeSlow = ref(false)
+const iframeGeneration = ref(0)
+const embeddedFrame = ref<HTMLIFrameElement | null>(null)
+let iframeSlowTimeout: ReturnType<typeof setTimeout> | null = null
 const pageTheme = ref<'light' | 'dark'>('light')
 const renderedHtml = ref('')
 const markdownContainer = ref<HTMLElement | null>(null)
@@ -167,13 +183,12 @@ const menuItemId = computed(() => route.params.id as string)
 
 const menuItem = computed(() => {
   const id = menuItemId.value
-  const publicItems = appStore.cachedPublicSettings?.custom_menu_items ?? []
-  const found = publicItems.find((item) => item.id === id) ?? null
-  if (found) return found
   if (authStore.isAdmin) {
-    return adminSettingsStore.customMenuItems.find((item) => item.id === id) ?? null
+    const adminItem = adminSettingsStore.customMenuItems.find((item) => item.id === id) ?? null
+    if (adminItem || adminSettingsStore.loaded) return adminItem
   }
-  return null
+  const publicItems = appStore.cachedPublicSettings?.custom_menu_items ?? []
+  return publicItems.find((item) => item.id === id) ?? null
 })
 
 const markdownSlug = computed(() => {
@@ -203,17 +218,36 @@ const isValidUrl = computed(() => {
   return url.startsWith('http://') || url.startsWith('https://')
 })
 
-watch([menuItemId, embeddedUrl], ([, url]) => {
-  iframeLoading.value = url.startsWith('http://') || url.startsWith('https://')
-}, { immediate: true, flush: 'sync' })
+function clearEmbeddedTimeout() {
+  if (iframeSlowTimeout !== null) clearTimeout(iframeSlowTimeout)
+  iframeSlowTimeout = null
+}
+
+function beginEmbeddedLoad() {
+  const generation = ++iframeGeneration.value
+  clearEmbeddedTimeout()
+  iframeSlow.value = false
+  iframeLoading.value = isValidUrl.value
+  if (!iframeLoading.value) return
+  iframeSlowTimeout = setTimeout(() => {
+    if (generation === iframeGeneration.value && iframeLoading.value) iframeSlow.value = true
+  }, 15000)
+}
+
+watch([menuItemId, embeddedUrl], beginEmbeddedLoad, { immediate: true, flush: 'sync' })
 
 function handleEmbeddedFrameLoad(event: Event) {
   const frame = event.currentTarget
   if (
     frame instanceof HTMLIFrameElement &&
-    frame.dataset.customPageId === menuItemId.value
+    frame === embeddedFrame.value &&
+    frame.dataset.customPageId === menuItemId.value &&
+    frame.dataset.loadGeneration === String(iframeGeneration.value) &&
+    frame.getAttribute('src') === embeddedUrl.value
   ) {
+    clearEmbeddedTimeout()
     iframeLoading.value = false
+    iframeSlow.value = false
   }
 }
 
@@ -383,6 +417,7 @@ onMounted(async () => {
     })
   }
 
+  if (authStore.isAdmin) void adminSettingsStore.fetch()
   if (appStore.publicSettingsLoaded) return
   loading.value = true
   try {
@@ -393,6 +428,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  clearEmbeddedTimeout()
   if (themeObserver) {
     themeObserver.disconnect()
     themeObserver = null

@@ -337,7 +337,18 @@
     "visual-regression/tests/__screenshots__/chromium-mobile/landing-mobile-token-discount.png",
     "visual-regression/tests/__screenshots__/chromium-mobile/landing-mobile-traffic-status.png",
     "visual-regression/tests/landing.visual.spec.ts",
-    "visual-regression/tsconfig.json"
+    "visual-regression/tsconfig.json",
+    "backend/internal/service/public_site_logo.go",
+    "backend/internal/service/setting_navigation.go",
+    "backend/internal/service/setting_service.go",
+    "deploy/zero-one/recovered-frontend/console/assets/AppLayout.vue_vue_type_script_setup_true_lang-gmb2csy1.js",
+    "deploy/zero-one/recovered-frontend/console/assets/CustomPageView-CDztmpKe.js",
+    "deploy/zero-one/recovered-frontend/console/assets/index-9xJBhx8B.js",
+    "deploy/zero-one/recovered-frontend/console/assets/navigation-loading-20260827",
+    "frontend/src/components/layout/CommunityQrEntry.vue",
+    "frontend/src/components/layout/__tests__/CommunityQrEntry.spec.ts",
+    "frontend/src/utils/navigation-order.ts",
+    "frontend/src/components/layout/__tests__/AppHeader.communityQr.spec.ts"
   ],
   "legacy_hotfixes": [
     {
@@ -551,7 +562,8 @@
         "frontend/tailwind.config.js",
         "frontend/vite.config.ts",
         "landing/src/components/Action.tsx",
-        "landing/src/styles/action.css"
+        "landing/src/styles/action.css",
+        "frontend/src/utils/navigation-order.ts"
       ]
     },
     {
@@ -716,7 +728,10 @@
         "landing/tsconfig.json",
         "landing/tsconfig.node.json",
         "landing/vite.config.ts",
-        "landing/vitest.config.ts"
+        "landing/vitest.config.ts",
+        "backend/internal/service/setting_service.go",
+        "backend/internal/service/setting_navigation.go",
+        "backend/internal/service/public_site_logo.go"
       ]
     },
     {

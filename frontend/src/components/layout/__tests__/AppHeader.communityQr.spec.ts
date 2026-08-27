@@ -1,19 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { nextTick, reactive } from 'vue'
 import AppHeader from '../AppHeader.vue'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { useAdminSettingsStore } from '@/stores/adminSettings'
-import type { PublicSettings, User } from '@/types'
+import type { CustomMenuItem, PublicSettings, User } from '@/types'
+
+const routeState = reactive({
+  name: 'Dashboard',
+  params: {} as Record<string, string>,
+  meta: { title: 'Dashboard' },
+})
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: vi.fn() }),
-  useRoute: () => ({
-    name: 'Dashboard',
-    params: {},
-    meta: { title: 'Dashboard' },
-  }),
+  useRoute: () => routeState,
 }))
 
 vi.mock('vue-i18n', async () => {
@@ -69,6 +72,9 @@ function mountHeader() {
 describe('AppHeader custom header navigation', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    routeState.name = 'Dashboard'
+    routeState.params = {}
+    routeState.meta = { title: 'Dashboard' }
   })
 
   afterEach(() => {
@@ -165,5 +171,64 @@ describe('AppHeader custom header navigation', () => {
     expect(mounted.find('[data-testid="header-custom-menu-all-header"]').exists()).toBe(false)
     expect(mounted.find('[data-testid="header-custom-menu-all-both"]').exists()).toBe(true)
     expect(mounted.find('[data-testid="header-custom-menu-user-header"]').exists()).toBe(false)
+  })
+
+  function setAdminNavigation(items: CustomMenuItem[]) {
+    const store = useAdminSettingsStore()
+    store.navigationSettings = {
+      custom_menu_items: items,
+      user_sidebar_order: [], admin_sidebar_order: [],
+      profile_navigation_enabled: true, subscription_navigation_enabled: true,
+      model_plaza_placement: 'header', ops_monitoring_enabled: true,
+      ops_realtime_monitoring_enabled: true, ops_query_mode_default: 'auto',
+    }
+    store.customMenuItems = items
+    store.loaded = true
+  }
+
+  it('keeps the current admin title when a stale public menu copy arrives later', async () => {
+    const appStore = useAppStore()
+    const authStore = useAuthStore()
+    authStore.user = adminUser
+    authStore.token = 'header-test-token'
+    routeState.name = 'CustomPage'
+    routeState.params = { id: 'guide' }
+    const original: CustomMenuItem = {
+      id: 'guide', label: '旧公开标题', icon_svg: '', url: 'https://example.test/guide',
+      visibility: 'all', placement: 'sidebar', sort_order: 0,
+    }
+    appStore.cachedPublicSettings = { custom_menu_items: [original] } as PublicSettings
+    setAdminNavigation([{ ...original, label: '已保存的新标题' }])
+    const mounted = mountHeader()
+    expect(mounted.get('h1').text()).toBe('已保存的新标题')
+
+    appStore.cachedPublicSettings.custom_menu_items = [{ ...original, label: '后到的公开副本' }]
+    await nextTick()
+    expect(mounted.get('h1').text()).toBe('已保存的新标题')
+
+    authStore.user = signedInUser
+    await nextTick()
+    expect(mounted.get('h1').text()).toBe('后到的公开副本')
+  })
+
+  it('does not restore a deleted admin title from the public fallback', async () => {
+    const appStore = useAppStore()
+    const authStore = useAuthStore()
+    authStore.user = adminUser
+    authStore.token = 'header-test-token'
+    routeState.name = 'CustomPage'
+    routeState.params = { id: 'removed' }
+    routeState.meta = { title: '自定义页面' }
+    const original: CustomMenuItem = {
+      id: 'removed', label: '原菜单标题', icon_svg: '', url: 'https://example.test/removed',
+      visibility: 'all', placement: 'sidebar', sort_order: 0,
+    }
+    appStore.cachedPublicSettings = { custom_menu_items: [original] } as PublicSettings
+    const mounted = mountHeader()
+    expect(mounted.get('h1').text()).toBe('原菜单标题')
+
+    setAdminNavigation([])
+    await nextTick()
+    expect(mounted.get('h1').text()).toBe('自定义页面')
   })
 })

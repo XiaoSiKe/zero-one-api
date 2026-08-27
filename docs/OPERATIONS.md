@@ -285,9 +285,9 @@ same HTTPS gate; a failed rollback is reported separately. Do not replace this
 entrypoint with a direct `docker compose up edge` during a release.
 
 The approved UI is a separate release boundary. The current protected snapshot
-is the `ui-approved-2026-08-26-r15` tag at commit
-`9dcaf261df26fbe056a25cf266634223816f2b32`. The
-`ui-approved-2026-08-25-r14` tag remains immutable as the previous accepted UI.
+is the `ui-approved-2026-08-27-r17` tag at commit
+`108d3d6865889416a00807d49d6567f88a2e777f`. The
+`ui-approved-2026-08-27-r16` tag remains immutable as the previous accepted UI.
 An upstream version update must not modify `landing/src`, the protected console
 source paths, or `deploy/zero-one/recovered-frontend`. This explicitly covers
 the landing page, login/register pages, the console shell, model-plaza pricing,
@@ -323,6 +323,34 @@ rollback uses the previous image digests without rolling back the database
 unless an upstream migration is proven incompatible. Database rollback is a
 separate destructive operation and must be based on a verified backup and
 maintenance window.
+
+## 导航与加载修复验收（2026-08-27）
+
+本次工作只提交源码、恢复快照及保护记录，不自动发布镜像或变更生产服务器。
+后续上线仍须遵循同一提交构建 Backend/Edge、Backend-first 和现有安全切换流程。
+轻量导航接口先随 Backend 就绪，再切换使用它的 Edge；管理员完整设置编辑接口保持兼容。
+
+- 管理员导航使用 `GET /api/v1/admin/settings?scope=navigation`，只返回九个导航字段；
+  不读取或返回 Logo、二维码原图和支付配置。普通设置编辑仍使用完整 GET/PUT。
+  多个导航消费者共享读取并沿用现有令牌续期，支付请求慢或失败不能阻塞菜单；保存成功值不能被先前请求覆盖。
+- 验证仪表盘第一、折叠组及子菜单整体排序、模型广场、自定义菜单和邀请返利路径别名。
+  保存、刷新、简洁模式、手机侧栏、折叠与路由切换后，实际顺序和键盘顺序应一致；空闲时无持续重排。
+- 二维码只在点击后逐次鉴权，响应保留 `no-store` 和 `nosniff`。服务内缓存只复用已校验
+  内容，最多 16 项、5 MiB；每次读取当前配置并重新判断角色，撤权、删除、换图、读取失败均不得绕过。
+  测试关闭取消、重新打开、损坏图片和下载／解码超过 15 秒后重试，确认 Blob URL 被释放。
+- 测试 iframe 先于菜单元数据完成、同 ID 修改名称和 URL、快速切换以及重试后的旧事件。
+  15 秒慢加载提示不代表失败或成功；重试创建新代次，迟到成功清除提示，新窗口入口仍可用。
+  不预加载外部页面，不把第三方网络耗时记为站内性能改善。
+- 公共设置与首屏注入对支持的栅格 Logo 使用带版本号的同源 URL；后台保留原图编辑值。
+  Console 原有 SVG data URI 保持兼容，但不得将 SVG 放入同源图片端点白名单，Landing 规则不变。恢复版 HTML
+  从 328,002 字节降到 5,137 字节（98.43%），不再内嵌约 323 KB Logo。
+  同一 1024 像素二维码服务基准：冷缓存约 0.917–1.053 ms/op、1.135 MB/op；
+  热缓存约 12.18–12.65 µs/op、29.4 KB/op。该数据只衡量服务处理，不包含外网传输。
+
+每次发布前回放 Console/Landing 全量测试、Go ordinary/unit/integration、lint/security、
+固定 Playwright 1.55.1 镜像的全部视觉与交互用例、保护清单、资源闭包、Compose 和双镜像路由测试。
+测试内明确选择跳过的外部探测应单独列出，不得把缺少凭据或环境的测试写成已执行通过。
+截图仅在审核实际差异后更新；先创建新的不可变 UI 批准标签，再更新基线清单，保留旧标签。
 
 ## Required Smoke Tests
 

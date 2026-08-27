@@ -76,6 +76,8 @@ export default {
     title: '自定义页面',
     openInNewTab: '新窗口打开',
     loadingEmbedded: '正在全力加载中，请稍等！',
+    loadingSlow: '页面加载较慢，可以继续等待、重新加载或在新窗口打开。',
+    retry: '重新加载',
     notFoundTitle: '页面不存在',
     notFoundDesc: '该自定义页面不存在或已被删除。',
     notConfiguredTitle: '页面链接未配置',

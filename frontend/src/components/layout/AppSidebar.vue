@@ -47,6 +47,7 @@
             <template v-if="item.children?.length">
               <button
                 type="button"
+                :data-navigation-path="item.path"
                 class="sidebar-link mb-1 w-full"
                 :class="{
                   'sidebar-link-active': isGroupActive(item) && !isGroupExpanded(item),
@@ -214,6 +215,7 @@ import { sanitizeSvg } from '@/utils/sanitize'
 import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, isFeatureFlagEnabled, makeSidebarFlag } from '@/utils/featureFlags'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
+import { sortNavItems } from '@/utils/navigation-order'
 
 interface NavItem {
   path: string
@@ -276,17 +278,20 @@ const expandedGroups = ref<Set<string>>(new Set())
 const siteName = computed(() => appStore.siteName)
 const siteLogo = computed(() => sanitizeUrl(appStore.siteLogo || '', { allowRelative: true, allowDataUrl: true }))
 const siteVersion = computed(() => appStore.siteVersion)
+const navigationSettings = computed(() =>
+  (isAdmin.value ? adminSettingsStore.navigationSettings : null) ?? appStore.cachedPublicSettings
+)
 const profileNavigationEnabled = computed(
-  () => appStore.cachedPublicSettings?.profile_navigation_enabled !== false
+  () => navigationSettings.value?.profile_navigation_enabled !== false
 )
 const subscriptionNavigationEnabled = computed(
-  () => appStore.cachedPublicSettings?.subscription_navigation_enabled !== false
+  () => navigationSettings.value?.subscription_navigation_enabled !== false
 )
 const modelPlazaPlacement = computed(() =>
-  appStore.cachedPublicSettings?.model_plaza_placement === 'sidebar' ? 'sidebar' : 'header'
+  navigationSettings.value?.model_plaza_placement === 'sidebar' ? 'sidebar' : 'header'
 )
-const userSidebarOrder = computed(() => appStore.cachedPublicSettings?.user_sidebar_order ?? [])
-const adminSidebarOrder = computed(() => appStore.cachedPublicSettings?.admin_sidebar_order ?? [])
+const userSidebarOrder = computed(() => navigationSettings.value?.user_sidebar_order ?? [])
+const adminSidebarOrder = computed(() => navigationSettings.value?.admin_sidebar_order ?? [])
 
 // SVG Icon Components
 const DashboardIcon = {
@@ -759,19 +764,6 @@ function finalizeNav(items: NavItem[]): NavItem[] {
   return authStore.isSimpleMode ? visible.filter(item => !item.hideInSimpleMode) : visible
 }
 
-function sortNavItems(items: NavItem[], order: string[]): NavItem[] {
-  if (!order.length) return items
-  const positions = new Map(order.map((path, index) => [path, index]))
-  return items
-    .map((item, index) => ({ item, index }))
-    .sort((left, right) => {
-      const leftPosition = positions.get(left.item.path) ?? Number.MAX_SAFE_INTEGER
-      const rightPosition = positions.get(right.item.path) ?? Number.MAX_SAFE_INTEGER
-      return leftPosition - rightPosition || left.index - right.index
-    })
-    .map(({ item }) => item)
-}
-
 // User navigation items (for regular users)
 const userNavItems = computed((): NavItem[] =>
   sortNavItems(finalizeNav(buildSelfNavItems(true)), userSidebarOrder.value)
@@ -984,9 +976,9 @@ document.documentElement.classList.toggle('dark', isDark.value)
 
 // Fetch admin settings (for feature-gated nav items like Ops).
 watch(
-  isAdmin,
-  (v) => {
-    if (v) {
+  [isAdmin, () => authStore.user?.id, () => !!authStore.token],
+  ([admin]) => {
+    if (admin) {
       adminSettingsStore.fetch()
     }
   },

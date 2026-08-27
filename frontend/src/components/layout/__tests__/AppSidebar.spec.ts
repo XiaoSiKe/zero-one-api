@@ -2,8 +2,49 @@ import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
+import { createMemoryHistory, createRouter } from 'vue-router'
+import { nextTick, reactive } from 'vue'
+import AppSidebar from '../AppSidebar.vue'
+import { sortNavItems } from '@/utils/navigation-order'
+import type { NavigationSettings } from '@/api/admin/settings'
 import type { CustomMenuItem } from '@/types'
+
+const sidebarAuth = reactive({ isAdmin: true, isSimpleMode: false })
+const sidebarApp = reactive({
+  sidebarCollapsed: false, mobileOpen: false, siteName: '零一', siteLogo: '', siteVersion: '',
+  sidebarScrollTop: 0, contactInfo: '', docUrl: '',
+  cachedPublicSettings: {
+    admin_sidebar_order: [] as string[], user_sidebar_order: [] as string[],
+    custom_menu_items: [] as CustomMenuItem[], profile_navigation_enabled: true,
+    subscription_navigation_enabled: true, model_plaza_placement: 'sidebar',
+  },
+  toggleSidebar: vi.fn(), setMobileOpen: vi.fn(),
+})
+const sidebarAdmin = reactive({
+  customMenuItems: [] as CustomMenuItem[], navigationSettings: null as NavigationSettings | null,
+  opsMonitoringEnabled: true, paymentEnabled: true, fetch: vi.fn(),
+})
+vi.mock('@/stores', () => ({
+  useAppStore: () => sidebarApp,
+  useAuthStore: () => sidebarAuth,
+  useAdminSettingsStore: () => sidebarAdmin,
+  useOnboardingStore: () => ({ isCurrentStep: () => false }),
+}))
+vi.mock('@/composables/useBatchImageAccess', () => ({
+  useBatchImageAccess: () => ({ canUseBatchImage: { value: false }, refreshBatchImageAccess: vi.fn() }),
+}))
+vi.mock('@/utils/featureFlags', () => ({
+  FeatureFlags: {},
+  isFeatureFlagEnabled: () => true,
+  makeSidebarFlag: () => () => true,
+}))
+vi.mock('vue-i18n', async (importOriginal) => ({
+  ...await importOriginal<typeof import('vue-i18n')>(),
+  useI18n: () => ({ t: (key: string) => key }),
+}))
+enableAutoUnmount(afterEach)
 
 const componentPath = resolve(dirname(fileURLToPath(import.meta.url)), '../AppSidebar.vue')
 const componentSource = readFileSync(componentPath, 'utf8')
@@ -211,5 +252,117 @@ describe('AppSidebar managed release updates', () => {
     expect(inPlaceBranch).toBeGreaterThan(managedBranch)
     expect(versionBadgeSource).toContain("t('version.managedUpdateHint')")
     expect(versionBadgeSource).toContain("t('version.managedRollbackHint')")
+  })
+})
+
+describe('AppSidebar rendered ordering', () => {
+  beforeEach(() => {
+    sidebarAuth.isAdmin = true
+    sidebarAuth.isSimpleMode = false
+    sidebarApp.sidebarCollapsed = false
+    sidebarApp.cachedPublicSettings.admin_sidebar_order = []
+    sidebarApp.cachedPublicSettings.user_sidebar_order = []
+    sidebarApp.cachedPublicSettings.custom_menu_items = []
+    sidebarApp.cachedPublicSettings.profile_navigation_enabled = true
+    sidebarAdmin.customMenuItems = []
+    sidebarAdmin.navigationSettings = null
+  })
+
+  async function renderSidebar() {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }],
+    })
+    await router.push('/admin/dashboard')
+    return { router, wrapper: mount(AppSidebar, {
+      global: { plugins: [router], stubs: { VersionBadge: true } },
+    }) }
+  }
+
+  it('keeps dashboard first with duplicate saved paths and moves complete expandable groups', async () => {
+    sidebarApp.cachedPublicSettings.admin_sidebar_order = [
+      '/admin/dashboard', '/admin/channels', '/admin/orders', '/admin/security-audit', '/admin/dashboard', '/removed',
+    ]
+    const { router, wrapper } = await renderSidebar()
+    const section = wrapper.findAll('.sidebar-section')[0]
+    const topLevelLabels = () => Array.from(section.element.children)
+      .filter((item) => item.matches('a.sidebar-link, button.sidebar-link'))
+      .map((item) => item.getAttribute('aria-label'))
+
+    expect(topLevelLabels().slice(0, 4)).toEqual([
+      'nav.dashboard', 'nav.channelManagement', 'nav.orderManagement', 'nav.securityAudit',
+    ])
+    const group = section.get('button[aria-label="nav.channelManagement"]')
+    expect(group.attributes('data-navigation-path')).toBe('/admin/channels')
+    await group.trigger('click')
+    expect(group.attributes('aria-expanded')).toBe('true')
+    const children = group.element.nextElementSibling!
+    expect(Array.from(children.querySelectorAll('a')).map((item) => item.getAttribute('href')))
+      .toEqual(['/admin/channels/pricing', '/admin/channels/monitor'])
+    await router.push('/admin/channels/monitor')
+    expect(topLevelLabels().slice(0, 2)).toEqual(['nav.dashboard', 'nav.channelManagement'])
+    sidebarApp.sidebarCollapsed = true
+    await nextTick()
+    expect(topLevelLabels().slice(0, 2)).toEqual(['nav.dashboard', 'nav.channelManagement'])
+  })
+
+  it('keeps visible user and admin personal entries in the same configured order', async () => {
+    sidebarApp.cachedPublicSettings.user_sidebar_order = ['/profile', '/usage', '/keys', '/usage', '/removed']
+    sidebarApp.cachedPublicSettings.profile_navigation_enabled = false
+    const { wrapper } = await renderSidebar()
+    const personal = wrapper.findAll('.sidebar-section')[1]
+    expect(personal.findAll('a.sidebar-link').slice(0, 2).map((link) => link.attributes('href')))
+      .toEqual(['/usage', '/keys'])
+    expect(personal.find('a[href="/profile"]').exists()).toBe(false)
+
+    sidebarAuth.isAdmin = false
+    await nextTick()
+    expect(wrapper.findAll('a.sidebar-link').slice(0, 2).map((link) => link.attributes('href')))
+      .toEqual(['/usage', '/keys'])
+  })
+
+  it('keeps filtered simple-mode groups out and orders model plaza and custom entries once', async () => {
+    sidebarAuth.isSimpleMode = true
+    sidebarAdmin.customMenuItems = [{
+      id: 'help', label: '帮助', icon_svg: '', url: 'https://example.test/help',
+      visibility: 'admin', placement: 'sidebar', sort_order: 0,
+    }]
+    sidebarApp.cachedPublicSettings.admin_sidebar_order = [
+      '/admin/channels', '/custom/help', '/model-plaza', '/admin/dashboard', '/custom/help',
+    ]
+    const { wrapper } = await renderSidebar()
+    expect(wrapper.findAll('a.sidebar-link').slice(0, 3).map((link) => link.attributes('href')))
+      .toEqual(['/custom/help', '/model-plaza', '/admin/dashboard'])
+    expect(wrapper.findAll('a[href="/custom/help"]')).toHaveLength(1)
+    expect(wrapper.find('button[aria-label="nav.channelManagement"]').exists()).toBe(false)
+    expect(wrapper.findAll('.sidebar-section')).toHaveLength(1)
+  })
+
+  it('uses the lightweight admin projection when the public order is stale', async () => {
+    sidebarApp.cachedPublicSettings.admin_sidebar_order = ['/admin/settings', '/admin/dashboard']
+    sidebarAdmin.navigationSettings = {
+      custom_menu_items: [], user_sidebar_order: [],
+      admin_sidebar_order: ['/admin/dashboard', '/admin/channels'],
+      profile_navigation_enabled: false, subscription_navigation_enabled: false,
+      model_plaza_placement: 'header', ops_monitoring_enabled: true,
+      ops_realtime_monitoring_enabled: true, ops_query_mode_default: 'auto',
+    }
+    const { wrapper } = await renderSidebar()
+    expect(wrapper.findAll('a.sidebar-link')[0].attributes('href')).toBe('/admin/dashboard')
+    expect(wrapper.find('a[href="/profile"]').exists()).toBe(false)
+    expect(wrapper.find('a[href="/model-plaza"]').exists()).toBe(false)
+    sidebarAuth.isAdmin = false
+    await nextTick()
+    expect(wrapper.find('a[href="/profile"]').exists()).toBe(true)
+  })
+
+  it('ignores malformed order values without extracting children or duplicating menu entries', () => {
+    const group = { path: '/admin/channels', children: [{ path: '/admin/channels/monitor' }] }
+    const items = [group, { path: '/keys' }, { path: '/model-plaza' }, { path: '/keys' }]
+    const ordered = sortNavItems(items, ['/admin/channels/monitor', null, '/keys', '/missing', '/keys'])
+    expect(ordered.map((item) => item.path)).toEqual(['/keys', '/admin/channels', '/model-plaza'])
+    expect(ordered[1]).toBe(group)
+    expect(sortNavItems(items, { order: ['/keys'] }).map((item) => item.path))
+      .toEqual(['/admin/channels', '/keys', '/model-plaza'])
   })
 })

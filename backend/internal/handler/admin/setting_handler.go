@@ -101,6 +101,17 @@ func (h *SettingHandler) SetStepUpDeps(totpService *service.TotpService, userSer
 // GetSettings 获取所有系统设置
 // GET /api/v1/admin/settings
 func (h *SettingHandler) GetSettings(c *gin.Context) {
+	if c.Query("scope") == "navigation" {
+		settings, err := h.settingService.GetAdminNavigationSettings(c.Request.Context())
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+		settings.OpsMonitoringEnabled = settings.OpsMonitoringEnabled && h.opsService != nil && h.opsService.IsMonitoringEnabled(c.Request.Context())
+		response.Success(c, settings)
+		return
+	}
+
 	settings, err := h.settingService.GetAllSettings(c.Request.Context())
 	if err != nil {
 		response.ErrorFrom(c, err)

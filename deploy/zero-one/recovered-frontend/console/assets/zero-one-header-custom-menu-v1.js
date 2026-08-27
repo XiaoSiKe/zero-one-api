@@ -11,8 +11,16 @@ let adminMenuItems = []
 let adminNavigationSettings = null
 let adminSettingsRequested = false
 let adminSettingsRevision = 0
+let publishedNavigationRevision = -1
+let adminNavigationRequest = null
+let queuedNavigationRefresh = null
+let navigationController = null
+let navigationUserKey = ''
+let adminRetryAfter = 0
+let setNavigationClient
+const navigationClientReady = new Promise((resolve) => { setNavigationClient = resolve })
 let publicNavigationSettings = window.__ZERO_ONE_PUBLIC_SETTINGS__ || window.__APP_CONFIG__ || null
-let publicSettingsRequested = false
+let publicSettingsRequested = Boolean(window.__ZERO_ONE_PUBLIC_SETTINGS__)
 const customIconOverrides = new Map()
 
 function localText(zh, en) {
@@ -88,6 +96,119 @@ function authenticatedUser() {
   }
 }
 
+function navigationIdentity(user = authenticatedUser()) {
+  return user?.id != null ? `${user.id}:${user.role}` : ''
+}
+
+function ensureNavigationIdentity(user) {
+  const identity = navigationIdentity(user)
+  if (identity === navigationUserKey) return
+  navigationUserKey = identity
+  adminSettingsRevision += 1
+  navigationController?.abort()
+  navigationController = null
+  adminNavigationRequest = null
+  queuedNavigationRefresh = null
+  adminSettingsRequested = false
+  adminRetryAfter = 0
+  adminNavigationSettings = null
+  publishedNavigationRevision = -1
+  adminMenuItems = []
+  customIconOverrides.clear()
+  activeQRDialog?.dismiss()
+  window.dispatchEvent(new CustomEvent('zero-one-admin-navigation', { detail: null }))
+}
+
+function navigationProjection(settings) {
+  const keys = [
+    'user_sidebar_order', 'admin_sidebar_order', 'profile_navigation_enabled',
+    'subscription_navigation_enabled', 'model_plaza_placement',
+    'ops_monitoring_enabled', 'ops_realtime_monitoring_enabled', 'ops_query_mode_default',
+  ]
+  const projected = Object.fromEntries(keys.map((key) => [key, settings[key]]))
+  projected.custom_menu_items = normalizeMenuItems(settings.custom_menu_items).map((item) => {
+    const { qr_image, ...metadata } = item
+    return metadata
+  })
+  return projected
+}
+
+function publishAdminNavigation(settings) {
+  adminNavigationSettings = navigationProjection(settings)
+  publishedNavigationRevision = adminSettingsRevision
+  adminMenuItems = adminNavigationSettings.custom_menu_items
+  window.dispatchEvent(new CustomEvent('zero-one-admin-navigation', {
+    detail: { identity: navigationUserKey, settings: adminNavigationSettings },
+  }))
+  scheduleScan()
+}
+
+function acceptSavedNavigation(settings) {
+  ensureNavigationIdentity(authenticatedUser())
+  adminSettingsRevision += 1
+  activeQRDialog?.dismiss()
+  customIconOverrides.clear()
+  publishAdminNavigation(settings)
+}
+
+// Native sidebar and recovered adapters share only this narrow read. Full
+// settings GET/PUT calls still belong to their original editors.
+function loadAdminNavigation(force = false) {
+  const user = authenticatedUser()
+  ensureNavigationIdentity(user)
+  if (user?.role !== 'admin') return Promise.reject(new Error('Administrator required'))
+  if (adminNavigationRequest) {
+    if (force && !queuedNavigationRefresh) {
+      adminSettingsRevision += 1
+      const identity = navigationUserKey
+      const refresh = adminNavigationRequest.catch(() => null).then(() => {
+        if (queuedNavigationRefresh === refresh) queuedNavigationRefresh = null
+        return identity === navigationUserKey ? loadAdminNavigation(true) : null
+      })
+      queuedNavigationRefresh = refresh
+    }
+    return force ? queuedNavigationRefresh : adminNavigationRequest
+  }
+  if (adminNavigationSettings && !force) return Promise.resolve(adminNavigationSettings)
+  adminSettingsRevision += 1
+  const revision = adminSettingsRevision
+  const identity = navigationUserKey
+  const controller = new AbortController()
+  navigationController = controller
+  const timeout = window.setTimeout(() => controller.abort(), 15_000)
+  let cancelWaiting
+  const aborted = new Promise((_, reject) => {
+    cancelWaiting = () => reject(new DOMException('Navigation read cancelled', 'AbortError'))
+    controller.signal.addEventListener('abort', cancelWaiting, { once: true })
+  })
+  // Use the existing authenticated client so token renewal, timezone and
+  // cancellation keep the native shell's semantics. Adapters still share one read.
+  const request = Promise.race([navigationClientReady, aborted])
+    .then((read) => read(controller.signal))
+    .then((settings) => {
+      if (identity !== navigationIdentity()) return null
+      if (revision === adminSettingsRevision) publishAdminNavigation(settings)
+      return adminNavigationSettings
+    })
+    .finally(() => {
+      clearTimeout(timeout)
+      controller.signal.removeEventListener('abort', cancelWaiting)
+      if (adminNavigationRequest === request) {
+        adminNavigationRequest = null
+        navigationController = null
+      }
+    })
+  adminNavigationRequest = request
+  return request
+}
+
+window.__ZERO_ONE_ADMIN_NAVIGATION__ = {
+  load: loadAdminNavigation, apply: acceptSavedNavigation, identity: navigationIdentity,
+  setClient: setNavigationClient,
+  revision: () => adminSettingsRevision,
+  current: () => ({ settings: adminNavigationSettings, revision: publishedNavigationRevision }),
+}
+
 function apiHeaders(includeContentType = false) {
   const headers = {
     Accept: 'application/json',
@@ -129,7 +250,9 @@ function normalizeMenuItemsForSave(value) {
 }
 
 function currentMenuItems(user) {
-  if (user?.role === 'admin') return adminMenuItems
+  if (user?.role === 'admin') {
+    return adminNavigationSettings ? adminMenuItems : normalizeMenuItems(publicNavigationSettings?.custom_menu_items)
+  }
   return normalizeMenuItems(publicNavigationSettings?.custom_menu_items)
 }
 
@@ -203,8 +326,13 @@ function createMenuIcon(item, className = 'zero-one-header-custom-menu-icon') {
   return icon
 }
 
+let activeQRDialog = null
+
 function openQRDialog(item) {
-  document.querySelector('[data-zero-one-header-qr-dialog]')?.remove()
+  activeQRDialog?.dismiss()
+  const identity = navigationIdentity()
+  if (!identity) return
+  const previousFocus = document.activeElement
   const overlay = document.createElement('div')
   overlay.className = 'zero-one-header-qr-overlay'
   overlay.setAttribute('data-zero-one-header-qr-dialog', item.id)
@@ -220,46 +348,125 @@ function openQRDialog(item) {
   const close = document.createElement('button')
   close.type = 'button'
   close.textContent = '×'
-  close.setAttribute('aria-label', 'Close')
+  close.setAttribute('aria-label', localText('关闭', 'Close'))
   header.append(title, close)
   const description = document.createElement('p')
   description.textContent = item.qr_description || ''
   const frame = document.createElement('div')
   frame.className = 'zero-one-header-qr-frame'
-  frame.textContent = '正在加载二维码…'
   panel.append(header, description, frame)
   overlay.append(panel)
   document.body.append(overlay)
 
   let objectURL = ''
-  const dismiss = () => {
+  let request = null
+  let timeout = 0
+  let generation = 0
+  const releaseImage = () => {
     if (objectURL) URL.revokeObjectURL(objectURL)
-    overlay.remove()
+    objectURL = ''
   }
+  const dismiss = () => {
+    generation += 1
+    request?.abort()
+    clearTimeout(timeout)
+    releaseImage()
+    overlay.remove()
+    document.removeEventListener('keydown', onKeydown)
+    if (activeQRDialog?.dismiss === dismiss) activeQRDialog = null
+    if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus()
+  }
+  const onKeydown = (event) => {
+    if (event.key === 'Escape') dismiss()
+    if (event.key !== 'Tab') return
+    const buttons = [...panel.querySelectorAll('button')]
+    const first = buttons[0]
+    const last = buttons.at(-1)
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+  activeQRDialog = { id: item.id, identity, dismiss }
+  document.addEventListener('keydown', onKeydown)
   close.addEventListener('click', dismiss)
   overlay.addEventListener('click', (event) => {
     if (event.target === overlay) dismiss()
   })
 
-  fetch('/api/v1/settings/header-navigation/' + encodeURIComponent(item.id) + '/qr', {
-    credentials: 'same-origin',
-    headers: apiHeaders(),
-  })
-    .then((response) => {
+  const showError = () => {
+    releaseImage()
+    const error = document.createElement('div')
+    error.dataset.testid = 'community-qr-error'
+    error.setAttribute('role', 'alert')
+    const message = document.createElement('p')
+    message.textContent = localText('二维码暂时无法加载，请稍后重试', 'Unable to load QR code. Please retry.')
+    const retry = document.createElement('button')
+    retry.type = 'button'
+    retry.className = 'btn btn-secondary btn-sm'
+    retry.dataset.testid = 'community-qr-retry'
+    retry.textContent = localText('重试', 'Retry')
+    retry.addEventListener('click', loadImage)
+    error.append(message, retry)
+    frame.replaceChildren(error)
+  }
+
+  async function loadImage() {
+    const current = ++generation
+    request?.abort()
+    clearTimeout(timeout)
+    releaseImage()
+    const loading = document.createElement('span')
+    loading.dataset.testid = 'community-qr-loading'
+    loading.setAttribute('role', 'status')
+    loading.textContent = localText('正在安全加载二维码…', 'Securely loading QR code…')
+    frame.replaceChildren(loading)
+    const controller = new AbortController()
+    request = controller
+    const live = () => current === generation && overlay.isConnected && navigationIdentity() === identity
+    timeout = window.setTimeout(() => {
+      if (!live()) return
+      generation += 1
+      controller.abort()
+      request = null
+      showError()
+    }, 15_000)
+    try {
+      const response = await fetch('/api/v1/settings/header-navigation/' + encodeURIComponent(item.id) + '/qr', {
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: apiHeaders(),
+        signal: controller.signal,
+      })
       if (!response.ok) throw new Error('QR unavailable')
-      return response.blob()
-    })
-    .then((blob) => {
-      if (!overlay.isConnected || !['image/png', 'image/jpeg', 'image/webp'].includes(blob.type)) return
+      const blob = await response.blob()
+      if (!live()) return
+      if (!blob.size || blob.size > 300 * 1024 || !['image/png', 'image/jpeg', 'image/webp'].includes(blob.type.toLowerCase().split(';')[0])) {
+        throw new Error('Invalid QR response')
+      }
       objectURL = URL.createObjectURL(blob)
       const image = document.createElement('img')
       image.src = objectURL
       image.alt = item.label
+      image.dataset.testid = 'community-qr-image'
+      await image.decode()
+      if (!live()) return
+      if (controller.signal.aborted) throw new Error('QR request timed out')
       frame.replaceChildren(image)
-    })
-    .catch(() => {
-      if (overlay.isConnected) frame.textContent = '二维码暂时无法加载'
-    })
+    } catch {
+      if (live()) showError()
+    } finally {
+      if (current === generation) {
+        clearTimeout(timeout)
+        request = null
+      }
+    }
+  }
+  close.focus()
+  void loadImage()
 }
 
 function removeHeaderGroup() {
@@ -413,6 +620,15 @@ function reconcileSidebar(user) {
       continue
     }
     if (injectedLink instanceof HTMLAnchorElement) {
+      const signature = JSON.stringify([item.label.trim(), item.icon_svg || ''])
+      if (injectedLink.dataset.zeroOneMenuSignature !== signature) {
+        injectedLink.setAttribute('aria-label', item.label.trim())
+        const label = injectedLink.querySelector('.sidebar-label')
+        if (label && label.textContent !== item.label.trim()) label.textContent = item.label.trim()
+        const icon = injectedLink.querySelector('svg')
+        if (icon) icon.replaceWith(createMenuIcon(item, 'h-5 w-5 flex-shrink-0 zero-one-sidebar-navigation-icon'))
+        injectedLink.dataset.zeroOneMenuSignature = signature
+      }
       injectedLink.classList.toggle('sidebar-link-collapsed', collapsed)
       const label = injectedLink.querySelector('.sidebar-label')
       label?.classList.toggle('sidebar-label-collapsed', collapsed)
@@ -424,24 +640,10 @@ function reconcileSidebar(user) {
     container.append(createSidebarLink(item, collapsed))
   }
 
-  const settings = runtimeNavigationSettings(user) || {}
-  const savedOrder = user.role === 'admin'
-    ? settings.admin_sidebar_order
-    : settings.user_sidebar_order
-  if (normalizeSidebarOrder(savedOrder).length) return
-
-  let previousLink = insertionAnchor
-  for (const item of sidebarItems) {
-    const link = [...aside.querySelectorAll(`a[href="/custom/${CSS.escape(item.id)}"]`)]
-      .find((candidate) => candidate instanceof HTMLAnchorElement && !candidate.hidden)
-    if (!(link instanceof HTMLAnchorElement) || link.parentElement !== container) continue
-    if (previousLink.nextElementSibling !== link) previousLink.after(link)
-    previousLink = link
-  }
 }
 
 function runtimeNavigationSettings(user) {
-  return user?.role === 'admin' ? adminNavigationSettings : publicNavigationSettings
+  return user?.role === 'admin' ? adminNavigationSettings || publicNavigationSettings : publicNavigationSettings
 }
 
 function normalizeSidebarOrder(value) {
@@ -450,53 +652,89 @@ function normalizeSidebarOrder(value) {
 }
 
 function navigationPath(link) {
+  if (link instanceof HTMLElement && link.dataset.navigationPath) return link.dataset.navigationPath
   if (!(link instanceof HTMLAnchorElement)) return ''
-  const path = new URL(link.href, window.location.origin).pathname
-  return path === '/model-plaza' ? '/model-plaza' : path
+  return new URL(link.href, window.location.origin).pathname
 }
 
-function reorderSidebarSection(section, order) {
-  if (!(section instanceof HTMLElement) || !order.length) return
-  const links = [...section.children].filter((node) => node instanceof HTMLAnchorElement && node.classList.contains('sidebar-link'))
+// The recovered Vue template uses a Fragment for each admin row, and another
+// Fragment for a collapsible group. Keep their text anchors and the transition
+// subtree with the row: moving just an <a> breaks both ordering and Vue updates.
+function sidebarRowNodes(row) {
+  const depth = Number(row.dataset.navigationFragments || 0)
+  let start = row
+  for (let index = 0; index < depth; index += 1) {
+    if (start.previousSibling?.nodeType !== Node.TEXT_NODE) return [row]
+    start = start.previousSibling
+  }
+  let end = row
+  let anchors = 0
+  while (anchors < depth && end.nextSibling) {
+    end = end.nextSibling
+    if (end.nodeType === Node.TEXT_NODE) anchors += 1
+  }
+  if (anchors !== depth) return [row]
+  const nodes = []
+  for (let node = start; node; node = node.nextSibling) {
+    nodes.push(node)
+    if (node === end) break
+  }
+  return nodes
+}
+
+window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.rowNodes = sidebarRowNodes
+
+function reorderSidebarSection(section, order, role, user) {
+  if (!(section instanceof HTMLElement)) return
+  const rows = [...section.children].filter((node) =>
+    node instanceof HTMLElement && node.classList.contains('sidebar-link'),
+  )
+  if (!rows.length) return
   section.style.removeProperty('display')
   section.style.removeProperty('flex-direction')
-  for (const link of links) link.style.removeProperty('order')
+  const defaultPaths = [
+    ...window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.defaultSidebarOrders[role],
+    ...visibleSidebarItems(user).map((item) => `/custom/${item.id}`),
+  ]
+  const defaults = new Map(defaultPaths.map((path, index) => [path, index]))
+  for (const row of rows) {
+    row.style.removeProperty('order')
+    const path = navigationPath(row)
+    if (!defaults.has(path)) defaults.set(path, defaults.size)
+  }
   const positions = new Map(order.map((path, index) => [path, index]))
-  const sorted = links
-    .map((link, index) => ({ link, index }))
+  const units = rows.map((row) => ({ row, nodes: sidebarRowNodes(row) }))
+  const sorted = [...units]
     .sort((left, right) => {
-      const leftPosition = positions.get(navigationPath(left.link)) ?? Number.MAX_SAFE_INTEGER
-      const rightPosition = positions.get(navigationPath(right.link)) ?? Number.MAX_SAFE_INTEGER
-      return leftPosition - rightPosition || left.index - right.index
+      const leftPath = navigationPath(left.row)
+      const rightPath = navigationPath(right.row)
+      const leftPosition = positions.get(leftPath) ?? Number.MAX_SAFE_INTEGER
+      const rightPosition = positions.get(rightPath) ?? Number.MAX_SAFE_INTEGER
+      return leftPosition - rightPosition || defaults.get(leftPath) - defaults.get(rightPath)
     })
-    .map(({ link }) => link)
-  if (sorted.every((link, index) => link === links[index])) return
-  for (const link of sorted) section.append(link)
-}
-
-function previewSidebarSectionOrder(section, order) {
-  if (!(section instanceof HTMLElement) || !order.length) return
-  const links = [...section.children].filter((node) => node instanceof HTMLAnchorElement && node.classList.contains('sidebar-link'))
-  const positions = new Map(order.map((path, index) => [path, index]))
-  section.style.setProperty('display', 'flex')
-  section.style.setProperty('flex-direction', 'column')
-  links.forEach((link, index) => {
-    link.style.setProperty('order', String((positions.get(navigationPath(link)) ?? order.length + index) + 1))
-  })
+  if (sorted.every((unit, index) => unit === units[index])) return
+  let cursor = units[0].nodes[0]
+  for (const unit of sorted) {
+    for (const node of unit.nodes) {
+      if (node === cursor) cursor = cursor.nextSibling
+      else section.insertBefore(node, cursor)
+    }
+  }
 }
 
 function reconcileSidebarOrder(user) {
   if (!user) return
   const settings = runtimeNavigationSettings(user) || {}
-  const sections = [...document.querySelectorAll('aside nav .sidebar-section')]
-  const reconcileSection = window.location.pathname === ADMIN_SETTINGS_PATH
-    ? previewSidebarSectionOrder
-    : reorderSidebarSection
-  if (user.role === 'admin') {
-    reconcileSection(sections[0], normalizeSidebarOrder(settings.admin_sidebar_order))
-    reconcileSection(sections[1], normalizeSidebarOrder(settings.user_sidebar_order))
-  } else {
-    reconcileSection(sections[0], normalizeSidebarOrder(settings.user_sidebar_order))
+  for (const aside of document.querySelectorAll('aside:not([data-zero-one-sidebar-continuity])')) {
+    const nav = aside.querySelector(':scope > nav.sidebar-nav')
+    if (!nav) continue
+    const sections = [...nav.querySelectorAll(':scope > .sidebar-section')]
+    if (user.role === 'admin') {
+      reorderSidebarSection(sections[0], normalizeSidebarOrder(settings.admin_sidebar_order), 'admin', user)
+      reorderSidebarSection(sections[1], normalizeSidebarOrder(settings.user_sidebar_order), 'user', user)
+    } else {
+      reorderSidebarSection(sections[0], normalizeSidebarOrder(settings.user_sidebar_order), 'user', user)
+    }
   }
 }
 
@@ -578,22 +816,38 @@ function reconcileBuiltInNavigation(user) {
   label.textContent = localText('模型广场', 'Model Plaza')
   link.append(label)
   bindInternalLink(link)
-  dashboard.after(link)
+  sidebarRowNodes(dashboard).at(-1).after(link)
   syncModelPlazaActiveState(link)
+}
+
+const customPageLoads = new WeakMap()
+let activeCustomPageFrame = null
+
+function releaseCustomPageFrame() {
+  const state = activeCustomPageFrame && customPageLoads.get(activeCustomPageFrame)
+  if (state) clearTimeout(state.timeout)
+  activeCustomPageFrame = null
 }
 
 function reconcileCustomPageFrame(user) {
   const match = window.location.pathname.match(/^\/custom\/([^/?#]+)$/)
-  if (!match) return
+  if (!match) {
+    releaseCustomPageFrame()
+    return
+  }
   const id = decodeURIComponent(match[1])
   const frame = document.querySelector('main iframe.custom-embed-frame')
-  if (!(frame instanceof HTMLIFrameElement)) return
+  if (!(frame instanceof HTMLIFrameElement)) {
+    releaseCustomPageFrame()
+    return
+  }
   const item = currentMenuItems(user).find((candidate) => candidate.id === id)
   if (item?.label) frame.title = item.label.trim()
-
-  if (frame.dataset.zeroOneCustomPageId !== id) {
+  const state = customPageLoads.get(frame)
+  if (!state || state.id !== id || state.url !== frame.src) {
     beginCustomPageLoad(id, frame)
-  } else if (frame.dataset.zeroOneCustomPageLoaded !== 'true') {
+  }
+  if (!finishCustomPageLoad(frame)) {
     showCustomPageLoading(frame)
   }
 }
@@ -614,6 +868,10 @@ function showCustomPageLoading(frame) {
   frame.classList.add('zero-one-custom-page-frame-loading')
 
   let overlay = shell.querySelector('[data-testid="custom-page-loading"]')
+  if (overlay?.querySelector('[data-testid="custom-page-slow"]') && !customPageLoads.get(frame)?.slow) {
+    overlay.remove()
+    overlay = null
+  }
   if (!(overlay instanceof HTMLElement)) {
     overlay = document.createElement('div')
     overlay.className = 'zero-one-custom-page-loading'
@@ -631,34 +889,84 @@ function showCustomPageLoading(frame) {
     overlay.append(spinner, text)
     shell.prepend(overlay)
   }
+  const state = customPageLoads.get(frame)
+  if (state?.slow && !overlay.querySelector('[data-testid="custom-page-slow"]')) {
+    const message = document.createElement('p')
+    message.dataset.testid = 'custom-page-slow'
+    message.textContent = localText(
+      '加载较慢，可以重试或在新窗口打开。',
+      'This page is taking longer to load. Retry or open it in a new window.',
+    )
+    const retry = document.createElement('button')
+    retry.type = 'button'
+    retry.className = 'btn btn-secondary btn-sm'
+    retry.dataset.testid = 'custom-page-retry'
+    retry.textContent = localText('重试', 'Retry')
+    retry.addEventListener('click', () => {
+      if (frame === activeCustomPageFrame && frame.isConnected) {
+        // The native component owns replacement, so stale frames/load events
+        // cannot complete a retry or leave a detached iframe in Vue's tree.
+        frame.dispatchEvent(new Event('retry'))
+      }
+    })
+    overlay.replaceChildren(message, retry)
+  }
 }
 
 function finishCustomPageLoad(frame) {
+  if (!frame.isConnected || frame !== document.querySelector('main iframe.custom-embed-frame')) return false
   const match = window.location.pathname.match(/^\/custom\/([^/?#]+)$/)
-  if (!match) return
+  if (!match) return false
   const id = decodeURIComponent(match[1])
-  if (frame.dataset.zeroOneCustomPageId !== id) return
+  const state = customPageLoads.get(frame)
+  if (!state || state.id !== id || state.url !== frame.src || !state.loadSeen) return false
   const item = currentMenuItems(authenticatedUser()).find((candidate) => candidate.id === id)
-  if (!item || !configuredPageMatchesFrame(frame, item)) return
+  if (!item || !configuredPageMatchesFrame(frame, item)) return false
 
+  clearTimeout(state.timeout)
   frame.dataset.zeroOneCustomPageLoaded = 'true'
   frame.classList.remove('zero-one-custom-page-frame-loading')
   frame.closest('.custom-embed-shell')
     ?.querySelector('[data-testid="custom-page-loading"]')
     ?.remove()
+  return true
 }
 
 function beginCustomPageLoad(id, candidateFrame) {
   const frame = candidateFrame || document.querySelector('main iframe.custom-embed-frame')
   if (!(frame instanceof HTMLIFrameElement)) return
+  if (frame.dataset.customPageId && frame.dataset.customPageId !== id) {
+    // An internal link has been clicked but Vue has not replaced the old page.
+    showCustomPageLoading(frame)
+    return
+  }
+  if (frame !== activeCustomPageFrame) releaseCustomPageFrame()
+  activeCustomPageFrame = frame
+  const previous = customPageLoads.get(frame)
+  if (previous) clearTimeout(previous.timeout)
+  const state = { id, url: frame.src, loadSeen: false, slow: false, timeout: 0 }
+  customPageLoads.set(frame, state)
   frame.dataset.zeroOneCustomPageId = id
   frame.dataset.zeroOneCustomPageLoaded = 'false'
   showCustomPageLoading(frame)
 
-  if (frame.dataset.zeroOneCustomPageLoadBound !== 'true') {
-    frame.dataset.zeroOneCustomPageLoadBound = 'true'
-    frame.addEventListener('load', () => finishCustomPageLoad(frame))
+  state.timeout = window.setTimeout(() => {
+    if (!frame.isConnected || customPageLoads.get(frame) !== state || frame !== activeCustomPageFrame) return
+    state.slow = true
+    showCustomPageLoading(frame)
+  }, 15_000)
+}
+
+window.__ZERO_ONE_CUSTOM_PAGE_LOADED__ = (frame) => {
+  if (!(frame instanceof HTMLIFrameElement) || !frame.isConnected || frame !== document.querySelector('main iframe.custom-embed-frame')) return
+  const id = frame.dataset.customPageId
+  let state = customPageLoads.get(frame)
+  if (!state || state.id !== id || state.url !== frame.src) {
+    beginCustomPageLoad(id, frame)
+    state = customPageLoads.get(frame)
   }
+  state.loadSeen = true
+  finishCustomPageLoad(frame)
 }
 
 function onlineRechargePath() {
@@ -758,6 +1066,7 @@ function ensureIconPresetControls(grid, index) {
 
 function ensurePlacementControls(user) {
   if (window.location.pathname !== ADMIN_SETTINGS_PATH || user?.role !== 'admin') return
+  if (!adminNavigationSettings) return
   const card = findCustomMenuCard()
   if (!(card instanceof HTMLElement)) return
 
@@ -818,10 +1127,16 @@ function ensurePlacementControls(user) {
   })
 }
 
-function updateMenusAfterSave(items) {
-  adminMenuItems = normalizeMenuItems(items)
-  customIconOverrides.clear()
-  scheduleScan()
+function confirmedXHRSettings(request) {
+  if (request.status < 200 || request.status >= 300) return null
+  try {
+    const payload = typeof request.response === 'string' ? JSON.parse(request.response) : request.response
+    if (payload && 'code' in payload && payload.code !== 0) return null
+    const settings = payload && typeof payload === 'object' && 'code' in payload ? payload.data : payload
+    return settings && Array.isArray(settings.custom_menu_items) ? settings : null
+  } catch {
+    return null
+  }
 }
 
 function installXHRSaveBridge() {
@@ -835,32 +1150,34 @@ function installXHRSaveBridge() {
   XMLHttpRequest.prototype.send = function send(body) {
     let nextBody = body
     try {
-      const path = new URL(this.__zeroOneSettingsURL, window.location.origin).pathname
+      const requestURL = new URL(this.__zeroOneSettingsURL, window.location.origin)
+      const path = requestURL.pathname
+      if (this.__zeroOneSettingsMethod === 'GET' && path === ADMIN_SETTINGS_API && requestURL.searchParams.get('scope') !== 'navigation' && window.location.pathname === ADMIN_SETTINGS_PATH) {
+        const identity = navigationIdentity()
+        const revision = adminSettingsRevision
+        this.addEventListener('load', () => {
+          if (identity !== navigationIdentity() || revision !== adminSettingsRevision) return
+          const settings = confirmedXHRSettings(this)
+          // Reuse the editor's successful full read, without rewriting its
+          // request or keeping its image bytes in the navigation cache.
+          if (settings) publishAdminNavigation(settings)
+        }, { once: true })
+      }
       if (this.__zeroOneSettingsMethod === 'PUT' && path === ADMIN_SETTINGS_API && typeof body === 'string') {
         const payload = JSON.parse(body)
         if (Array.isArray(payload.custom_menu_items)) {
+          const identity = navigationIdentity()
           payload.custom_menu_items = augmentCustomMenuItems(payload.custom_menu_items)
           nextBody = JSON.stringify(payload)
           this.addEventListener('load', () => {
-            if (this.status < 200 || this.status >= 300) return
-            adminSettingsRevision += 1
-            let savedSettings = null
-            try {
-              const response = typeof this.response === 'string'
-                ? JSON.parse(this.response)
-                : this.response
-              savedSettings = response && typeof response === 'object' && 'code' in response
-                ? response.data
-                : response
-            } catch {}
-            if (savedSettings && typeof savedSettings === 'object') {
-              adminNavigationSettings = savedSettings
+            if (this.status < 200 || this.status >= 300 || identity !== navigationIdentity()) return
+            const savedSettings = confirmedXHRSettings(this)
+            if (savedSettings) {
+              acceptSavedNavigation(savedSettings)
+            } else {
+              // Do not turn an unconfirmed request body into authoritative state.
+              void loadAdminNavigation(true).catch(() => {})
             }
-            updateMenusAfterSave(
-              Array.isArray(savedSettings?.custom_menu_items)
-                ? savedSettings.custom_menu_items
-                : payload.custom_menu_items,
-            )
           }, { once: true })
         }
       }
@@ -870,20 +1187,25 @@ function installXHRSaveBridge() {
 }
 
 function requestAdminSettings(user) {
-  if (user?.role !== 'admin' || adminSettingsRequested) return
+  if (user?.role !== 'admin' || adminSettingsRequested || Date.now() < adminRetryAfter) return
   adminSettingsRequested = true
-  const requestRevision = adminSettingsRevision
-  fetch(ADMIN_SETTINGS_API, {
-    credentials: 'same-origin',
-    headers: apiHeaders(),
+  const identity = navigationIdentity(user)
+  void loadAdminNavigation().catch(() => {
+    if (identity !== navigationUserKey) return
+    adminSettingsRequested = false
+    adminRetryAfter = Date.now() + 5_000
   })
-    .then(readApiResponse)
-    .then((settings) => {
-      if (requestRevision !== adminSettingsRevision) return
-      adminNavigationSettings = settings
-      updateMenusAfterSave(settings?.custom_menu_items)
-    })
-    .catch(() => {})
+}
+
+function reconcileQRDialog(user) {
+  if (!activeQRDialog) return
+  const item = currentMenuItems(user).find((candidate) => candidate.id === activeQRDialog.id)
+  if (
+    activeQRDialog.identity !== navigationIdentity(user) || !item ||
+    !isVisibleToUser(item, user) || item.placement !== 'header' || item.navigation_type !== 'qr'
+  ) {
+    activeQRDialog.dismiss()
+  }
 }
 
 function requestPublicSettings(user) {
@@ -903,14 +1225,15 @@ function requestPublicSettings(user) {
 
 function scan() {
   const user = authenticatedUser()
+  ensureNavigationIdentity(user)
   requestAdminSettings(user)
   requestPublicSettings(user)
   renderHeaderMenu(user)
   reconcileSidebar(user)
   reconcileBuiltInNavigation(user)
-  reconcileSidebarOrder(user)
   ensurePlacementControls(user)
   reconcileCustomPageFrame(user)
+  reconcileQRDialog(user)
   reconcileDashboardPurchaseAction(user)
 }
 
@@ -919,4 +1242,13 @@ function scheduleScan() {
 }
 
 installXHRSaveBridge()
+window.addEventListener('storage', scheduleScan)
+window.addEventListener('online', () => { adminRetryAfter = 0; scheduleScan() })
+window.addEventListener('pagehide', () => {
+  activeQRDialog?.dismiss()
+  releaseCustomPageFrame()
+})
 window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.register('header-custom-menu', scan)
+window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.register('sidebar-order', () => {
+  reconcileSidebarOrder(authenticatedUser())
+}, { final: true })

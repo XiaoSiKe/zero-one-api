@@ -7,6 +7,7 @@
   if (window.__ZERO_ONE_NAVIGATION_RECONCILIATION__) return
 
   const reconciliations = new Map()
+  const finalReconciliations = new Map()
   let scheduled = false
   let appObserver = null
   let sidebarContinuityFrame = 0
@@ -15,7 +16,7 @@
 
   function flush() {
     scheduled = false
-    for (const reconcile of reconciliations.values()) {
+    for (const reconcile of [...reconciliations.values(), ...finalReconciliations.values()]) {
       try {
         reconcile()
       } catch (error) {
@@ -39,13 +40,14 @@
     appObserver.observe(app, { childList: true, subtree: true })
   }
 
-  function register(name, reconcile) {
+  function register(name, reconcile, { final = false } = {}) {
     if (typeof name !== 'string' || !name || typeof reconcile !== 'function') {
       throw new TypeError('Recovered Console reconcile registration is invalid')
     }
-    reconciliations.set(name, reconcile)
+    const registrations = final ? finalReconciliations : reconciliations
+    registrations.set(name, reconcile)
     request()
-    return () => reconciliations.delete(name)
+    return () => registrations.delete(name)
   }
 
   function isPlainSidebarNavigation(event, link) {

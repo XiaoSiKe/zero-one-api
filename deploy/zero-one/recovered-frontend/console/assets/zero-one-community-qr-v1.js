@@ -44,6 +44,11 @@ const ADMIN_SIDEBAR_ITEMS = [
   ['/admin/settings', '系统设置', 'Settings'],
 ]
 
+window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.defaultSidebarOrders = {
+  user: USER_SIDEBAR_ITEMS.map(([path]) => path),
+  admin: ADMIN_SIDEBAR_ITEMS.flatMap(([path]) => path === '/admin/settings' ? ['/keys', path] : [path]),
+}
+
 const ICON_PRESETS = [
   ['link', '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H15a4.5 4.5 0 010 9h-1.5m-3 0H9a4.5 4.5 0 010-9h1.5m-3 6h9"/></svg>'],
   ['users', '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.1 9.1 0 00.98.06 8.96 8.96 0 003.02-.52 4.5 4.5 0 00-6.9-3.96M15 6.75a3 3 0 11-6 0 3 3 0 016 0zM4.5 20.12a7.5 7.5 0 0115 0A17.9 17.9 0 0112 21.75a17.9 17.9 0 01-7.5-1.63z"/></svg>'],
@@ -501,6 +506,7 @@ function buildAdminPanel(cardBody, settings) {
       return
     }
     saveButton.disabled = true
+    const identity = window.__ZERO_ONE_ADMIN_NAVIGATION__.identity()
     setStatus(localText('正在保存…', 'Saving…'))
     try {
       const updated = await fetch(ADMIN_SETTINGS_API, {
@@ -517,6 +523,8 @@ function buildAdminPanel(cardBody, settings) {
           community_qr_enabled: false,
         }),
       }).then(readApiResponse)
+      if (identity !== window.__ZERO_ONE_ADMIN_NAVIGATION__.identity()) return
+      window.__ZERO_ONE_ADMIN_NAVIGATION__.apply(updated)
       applySettings(updated)
       renderItems(panel)
       setStatus(localText('导航设置已保存，正在刷新…', 'Navigation settings saved. Refreshing…'), 'success')

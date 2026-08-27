@@ -208,10 +208,19 @@ aside nav a.sidebar-link > svg {
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
+  padding: 1.5rem;
+  text-align: center;
   background: rgb(249 250 251);
   color: rgb(75 85 99);
   font-size: 0.875rem;
   font-weight: 500;
+}
+
+.zero-one-header-qr-frame [data-testid="community-qr-error"] {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  text-align: center;
 }
 
 .dark .zero-one-custom-page-loading {

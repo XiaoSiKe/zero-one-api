@@ -199,6 +199,7 @@ function createStandaloneNavLink(collapsed) {
     'aria-label': '邀请返利',
     'data-testid': 'admin-affiliate-nav',
     'data-zero-one-affiliate-admin': 'nav',
+    'data-navigation-path': AFFILIATE_PATH_PREFIX,
   })
   link.append(
     createAffiliateIcon(),
@@ -290,7 +291,10 @@ function ensureStandaloneNavigation() {
       legacyGroup ||
       adminSection.querySelector('a[href="/admin/usage"]') ||
       adminSection.querySelector('a[href="/admin/settings"]')
-    if (insertionPoint) insertionPoint.before(link)
+    if (insertionPoint) {
+      const start = window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.rowNodes(insertionPoint)[0]
+      start.before(link)
+    }
     else adminSection.append(link)
   }
   reconcileStandaloneNavLink(link, collapsed)

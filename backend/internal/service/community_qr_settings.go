@@ -2,14 +2,17 @@ package service
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
 	"strings"
+	"sync"
 
 	"golang.org/x/image/webp"
+	"golang.org/x/sync/singleflight"
 )
 
 // MaxCommunityQRImageBytes bounds both persisted and authenticated QR responses.
@@ -21,13 +24,81 @@ const (
 	MaxCommunityQRImagePixels     = 16_000_000
 	DefaultCommunityQRTitle       = "交流群"
 	DefaultCommunityQRDescription = "扫码加入交流群获取支持"
+	maxCommunityQRCacheEntries    = 16
+	maxCommunityQRCacheBytes      = 5 * 1024 * 1024
 )
 
-// CommunityQRImage is the validated authenticated image representation. Callers must
-// decode through DecodeCommunityQRImage before serving persisted content.
+// CommunityQRImage is the validated authenticated image representation.
+// Content may be shared by concurrent responses and must not be modified.
 type CommunityQRImage struct {
 	MIMEType string
 	Content  []byte
+}
+
+type communityQRCacheEntry struct {
+	fingerprint [sha256.Size]byte
+	image       CommunityQRImage
+}
+
+// communityQRImageCache caches successful content validation only. Entry
+// configuration and role authorization are always checked before consulting it.
+// It holds neither the raw data URI nor an authorization decision.
+type communityQRImageCache struct {
+	mu       sync.Mutex
+	entries  []communityQRCacheEntry // most recent first, at most 16 entries
+	bytes    int
+	inflight singleflight.Group
+}
+
+func (c *communityQRImageCache) getOrDecode(rawImage string, decode func(string) (CommunityQRImage, bool)) (CommunityQRImage, bool) {
+	fingerprint := sha256.Sum256([]byte(rawImage))
+	if image, ok := c.get(fingerprint); ok {
+		return image, true
+	}
+	result, _, _ := c.inflight.Do(string(fingerprint[:]), func() (any, error) {
+		if image, ok := c.get(fingerprint); ok {
+			return image, nil
+		}
+		image, ok := decode(rawImage)
+		if !ok {
+			return nil, nil
+		}
+		c.remember(fingerprint, image)
+		return image, nil
+	})
+	image, ok := result.(CommunityQRImage)
+	return image, ok
+}
+
+func (c *communityQRImageCache) get(fingerprint [sha256.Size]byte) (CommunityQRImage, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for i, entry := range c.entries {
+		if entry.fingerprint == fingerprint {
+			copy(c.entries[1:i+1], c.entries[:i])
+			c.entries[0] = entry
+			return entry.image, true
+		}
+	}
+	return CommunityQRImage{}, false
+}
+
+func (c *communityQRImageCache) remember(fingerprint [sha256.Size]byte, image CommunityQRImage) {
+	if len(image.Content) > maxCommunityQRCacheBytes {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for len(c.entries) >= maxCommunityQRCacheEntries || c.bytes+len(image.Content) > maxCommunityQRCacheBytes {
+		last := len(c.entries) - 1
+		c.bytes -= len(c.entries[last].image.Content)
+		c.entries[last] = communityQRCacheEntry{}
+		c.entries = c.entries[:last]
+	}
+	c.entries = append(c.entries, communityQRCacheEntry{})
+	copy(c.entries[1:], c.entries[:len(c.entries)-1])
+	c.entries[0] = communityQRCacheEntry{fingerprint: fingerprint, image: image}
+	c.bytes += len(image.Content)
 }
 
 // NormalizeCommunityQRSettings validates the admin-facing setting pair. The

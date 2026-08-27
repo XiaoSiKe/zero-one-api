@@ -19,6 +19,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const publicSettingsPath = "/api/v1/settings/public"
+
 type settingHandlerPublicRepoStub struct {
 	values        map[string]string
 	requestedKeys []string
@@ -326,12 +328,13 @@ func TestSettingHandler_GetPublicSettings_ExposesWeChatOAuthModeCapabilities(t *
 	require.True(t, resp.Data.WeChatOAuthMPEnabled)
 }
 
-func TestSettingHandler_GetPublicSettings_DefaultResponsePreservesDataSiteLogo(t *testing.T) {
+func TestSettingHandler_GetPublicSettings_DefaultResponseUsesRevisionedSiteLogo(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	rawLogo := "data:image/png;base64," + base64.StdEncoding.EncodeToString([]byte("legacy-logo"))
-	h := NewSettingHandler(service.NewSettingService(&settingHandlerPublicRepoStub{values: map[string]string{
+	rawLogo := "data:image/png;base64," + base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{0x42}, 242*1024))
+	settings := service.NewSettingService(&settingHandlerPublicRepoStub{values: map[string]string{
 		service.SettingKeySiteLogo: rawLogo,
-	}}, &config.Config{}), "test-version")
+	}}, &config.Config{})
+	h := NewSettingHandler(settings, "test-version")
 
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
@@ -345,9 +348,60 @@ func TestSettingHandler_GetPublicSettings_DefaultResponsePreservesDataSiteLogo(t
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
 	var returnedLogo string
 	require.NoError(t, json.Unmarshal(resp.Data["site_logo"], &returnedLogo))
-	require.Equal(t, rawLogo, returnedLogo)
+	require.Less(t, len(returnedLogo), 160)
+	require.Equal(t, service.PublicSiteLogoURL(rawLogo), returnedLogo)
+	require.Less(t, recorder.Body.Len(), 10_000)
+	require.NotContains(t, recorder.Body.String(), rawLogo)
 	require.Contains(t, resp.Data, "payment_enabled")
 	require.Contains(t, resp.Data, "email_verify_enabled")
+	firstFrame, err := settings.GetPublicSettingsForInjection(context.Background())
+	require.NoError(t, err)
+	firstFrameJSON, err := json.Marshal(firstFrame)
+	require.NoError(t, err)
+	publicJSON, err := json.Marshal(resp.Data)
+	require.NoError(t, err)
+	require.JSONEq(t, string(publicJSON), string(firstFrameJSON))
+	t.Logf("logo field: %d -> %d bytes; public response: %d bytes", len(rawLogo), len(returnedLogo), recorder.Body.Len())
+}
+
+func TestSettingHandler_GetPublicSettings_ConsolePreservesSVGDataLogo(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rawLogo := "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(`<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0h20v20z"/></svg>`))
+	settings := service.NewSettingService(&settingHandlerPublicRepoStub{values: map[string]string{
+		service.SettingKeySiteLogo: rawLogo,
+	}}, &config.Config{})
+	h := NewSettingHandler(settings, "test-version")
+	request := func(path string) *httptest.ResponseRecorder {
+		recorder := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(recorder)
+		c.Request = httptest.NewRequest(http.MethodGet, path, nil)
+		h.GetPublicSettings(c)
+		return recorder
+	}
+	for path, want := range map[string]string{
+		publicSettingsPath:                    rawLogo,
+		publicSettingsPath + "?scope=landing": "",
+	} {
+		recorder := request(path)
+		require.Equal(t, http.StatusOK, recorder.Code)
+		var result struct {
+			Data struct {
+				SiteLogo string `json:"site_logo"`
+			} `json:"data"`
+		}
+		require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &result))
+		require.Equal(t, want, result.Data.SiteLogo, path)
+	}
+	firstFrame, err := settings.GetPublicSettingsForInjection(context.Background())
+	require.NoError(t, err)
+	firstFrameJSON, err := json.Marshal(firstFrame)
+	require.NoError(t, err)
+	require.Contains(t, string(firstFrameJSON), rawLogo)
+	resource := request(publicSettingsPath + "?scope=logo")
+	require.Equal(t, http.StatusNotFound, resource.Code, "SVG must never be served as an active same-origin logo resource")
+	require.NotContains(t, resource.Body.String(), rawLogo)
+	require.Empty(t, service.ConsoleSiteLogoURL(strings.Replace(rawLogo, "image/svg+xml", "image/svg+xml-unknown", 1)))
+	require.Empty(t, service.ConsoleSiteLogoURL(strings.Replace(rawLogo, "image/svg+xml", "text/html", 1)))
 }
 
 func TestSettingHandler_GetPublicSettings_LandingScopeIsSmallProjection(t *testing.T) {
@@ -402,25 +456,25 @@ func TestSettingHandler_GetPublicSettings_LandingScopeIsSmallProjection(t *testi
 
 	var returnedLogo string
 	require.NoError(t, json.Unmarshal(resp.Data["site_logo"], &returnedLogo))
-	require.Equal(t, landingSiteLogoURL(rawLogo), returnedLogo)
+	require.Equal(t, service.PublicSiteLogoURL(rawLogo), returnedLogo)
 	require.True(t, strings.HasPrefix(returnedLogo, publicSettingsPath+"?scope=logo&v="))
 }
 
-func TestLandingSiteLogoURLPreservesURLLogos(t *testing.T) {
+func TestPublicSiteLogoURLPreservesURLLogos(t *testing.T) {
 	for _, logoURL := range []string{
 		"https://cdn.example.com/logo.png",
 		"/uploads/logo.webp",
 	} {
-		require.Equal(t, logoURL, landingSiteLogoURL(logoURL))
+		require.Equal(t, logoURL, service.PublicSiteLogoURL(logoURL))
 	}
-	require.Empty(t, landingSiteLogoURL("data:image/png;base64,not-valid-base64"))
+	require.Empty(t, service.PublicSiteLogoURL("data:image/png;base64,not-valid-base64"))
 }
 
 func TestSettingHandler_GetPublicSiteLogoServesRevisionedImage(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	content := []byte("\x89PNG\r\n\x1a\nlogo-content")
 	rawLogo := "data:image/png;base64," + base64.StdEncoding.EncodeToString(content)
-	logo, ok := decodePublicSiteLogo(rawLogo)
+	logo, ok := service.DecodePublicSiteLogo(rawLogo)
 	require.True(t, ok)
 	repo := &settingHandlerPublicRepoStub{values: map[string]string{
 		service.SettingKeySiteLogo: rawLogo,
@@ -430,14 +484,14 @@ func TestSettingHandler_GetPublicSiteLogoServesRevisionedImage(t *testing.T) {
 
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
-	c.Request = httptest.NewRequest(http.MethodGet, publicSettingsPath+"?scope=logo&v="+logo.revision, nil)
+	c.Request = httptest.NewRequest(http.MethodGet, publicSettingsPath+"?scope=logo&v="+logo.Revision, nil)
 	h.GetPublicSettings(c)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
 	require.Equal(t, content, recorder.Body.Bytes())
 	require.Equal(t, "image/png", recorder.Header().Get("Content-Type"))
 	require.Equal(t, "nosniff", recorder.Header().Get("X-Content-Type-Options"))
-	require.Equal(t, `"`+logo.revision+`"`, recorder.Header().Get("ETag"))
+	require.Equal(t, `"`+logo.Revision+`"`, recorder.Header().Get("ETag"))
 	require.Equal(t, "public, max-age=31536000, immutable", recorder.Header().Get("Cache-Control"))
 	require.Equal(t, []string{service.SettingKeySiteLogo}, repo.requestedKeys)
 
@@ -450,8 +504,8 @@ func TestSettingHandler_GetPublicSiteLogoServesRevisionedImage(t *testing.T) {
 
 	notModifiedRecorder := httptest.NewRecorder()
 	notModifiedContext, _ := gin.CreateTestContext(notModifiedRecorder)
-	notModifiedContext.Request = httptest.NewRequest(http.MethodGet, publicSettingsPath+"?scope=logo&v="+logo.revision, nil)
-	notModifiedContext.Request.Header.Set("If-None-Match", `"`+logo.revision+`"`)
+	notModifiedContext.Request = httptest.NewRequest(http.MethodGet, publicSettingsPath+"?scope=logo&v="+logo.Revision, nil)
+	notModifiedContext.Request.Header.Set("If-None-Match", `"`+logo.Revision+`"`)
 	h.GetPublicSettings(notModifiedContext)
 	require.Equal(t, http.StatusNotModified, notModifiedRecorder.Code)
 	require.Empty(t, notModifiedRecorder.Body.Bytes())
@@ -459,7 +513,7 @@ func TestSettingHandler_GetPublicSiteLogoServesRevisionedImage(t *testing.T) {
 
 func TestSettingHandler_GetPublicSiteLogoRejectsInvalidValues(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	tooLarge := "data:image/png;base64," + base64.StdEncoding.EncodeToString(make([]byte, maxPublicSiteLogoBytes+1))
+	tooLarge := "data:image/png;base64," + base64.StdEncoding.EncodeToString(make([]byte, service.MaxPublicSiteLogoBytes+1))
 	for name, rawLogo := range map[string]string{
 		"empty":               "",
 		"external URL":        "https://cdn.example.com/logo.png",
