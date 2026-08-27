@@ -115,11 +115,23 @@ func (r *paymentOrderLifecycleRedeemRepo) Update(context.Context, *RedeemCode) e
 	panic("unexpected call")
 }
 
+func (r *paymentOrderLifecycleRedeemRepo) GetByCodeForUpdate(ctx context.Context, code string) (*RedeemCode, error) {
+	return r.GetByCode(ctx, code)
+}
+
+func (r *paymentOrderLifecycleRedeemRepo) Expire(context.Context, int64) (*RedeemCode, error) {
+	panic("unexpected call")
+}
+
 func (r *paymentOrderLifecycleRedeemRepo) BatchUpdate(context.Context, []int64, RedeemCodeBatchUpdateFields) (int64, error) {
 	panic("unexpected call")
 }
 
 func (r *paymentOrderLifecycleRedeemRepo) Delete(context.Context, int64) error {
+	panic("unexpected call")
+}
+
+func (r *paymentOrderLifecycleRedeemRepo) BatchDelete(context.Context, []int64) (int64, error) {
 	panic("unexpected call")
 }
 

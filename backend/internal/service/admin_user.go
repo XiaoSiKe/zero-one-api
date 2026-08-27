@@ -1325,26 +1325,9 @@ func (s *adminServiceImpl) DeleteRedeemCode(ctx context.Context, id int64) error
 }
 
 func (s *adminServiceImpl) BatchDeleteRedeemCodes(ctx context.Context, ids []int64) (int64, error) {
-	var deleted int64
-	for _, id := range ids {
-		if err := s.redeemCodeRepo.Delete(ctx, id); err == nil {
-			deleted++
-		}
-	}
-	return deleted, nil
+	return s.redeemCodeRepo.BatchDelete(ctx, ids)
 }
 
 func (s *adminServiceImpl) ExpireRedeemCode(ctx context.Context, id int64) (*RedeemCode, error) {
-	code, err := s.redeemCodeRepo.GetByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if code.IsUsed() {
-		return nil, ErrRedeemCodeUsed
-	}
-	code.Status = StatusExpired
-	if err := s.redeemCodeRepo.Update(ctx, code); err != nil {
-		return nil, err
-	}
-	return code, nil
+	return s.redeemCodeRepo.Expire(ctx, id)
 }

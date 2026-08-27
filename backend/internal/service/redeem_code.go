@@ -55,7 +55,7 @@ func (r *RedeemCode) IsCodeRedacted() bool {
 }
 
 func (r *RedeemCode) IsUsed() bool {
-	return r.Status == StatusUsed
+	return r.Status == StatusUsed || r.UsedBy != nil || r.UsedAt != nil
 }
 
 func (r *RedeemCode) IsExpired() bool {
@@ -73,7 +73,7 @@ func (r *RedeemCode) IsExpiredAt(now time.Time) bool {
 }
 
 func (r *RedeemCode) CanUse() bool {
-	return r.Status == StatusUnused && !r.IsExpired()
+	return r.Status == StatusUnused && !r.IsUsed() && !r.IsExpired()
 }
 
 func GenerateRedeemCode() (string, error) {

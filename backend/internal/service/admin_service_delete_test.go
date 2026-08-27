@@ -416,6 +416,9 @@ type redeemRepoStub struct {
 	batchUpdateResult int64
 	batchUpdateErr    error
 	batchUpdateCalled bool
+	batchDeleteIDs    []int64
+	batchDeleteResult int64
+	batchDeleteErr    error
 }
 
 func (s *redeemRepoStub) Create(ctx context.Context, code *RedeemCode) error {
@@ -437,6 +440,24 @@ func (s *redeemRepoStub) GetByID(ctx context.Context, id int64) (*RedeemCode, er
 
 func (s *redeemRepoStub) GetByCode(ctx context.Context, code string) (*RedeemCode, error) {
 	panic("unexpected GetByCode call")
+}
+
+func (s *redeemRepoStub) GetByCodeForUpdate(ctx context.Context, code string) (*RedeemCode, error) {
+	return s.GetByCode(ctx, code)
+}
+
+func (s *redeemRepoStub) Expire(ctx context.Context, id int64) (*RedeemCode, error) {
+	code, err := s.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if code.IsUsed() {
+		return nil, ErrRedeemCodeUsed
+	}
+	clone := *code
+	clone.Status = StatusExpired
+	s.updatedCodes = append(s.updatedCodes, &clone)
+	return &clone, nil
 }
 
 func (s *redeemRepoStub) Update(ctx context.Context, code *RedeemCode) error {
@@ -469,6 +490,14 @@ func (s *redeemRepoStub) Delete(ctx context.Context, id int64) error {
 
 func (s *redeemRepoStub) Use(ctx context.Context, id, userID int64) error {
 	panic("unexpected Use call")
+}
+
+func (s *redeemRepoStub) BatchDelete(_ context.Context, ids []int64) (int64, error) {
+	s.batchDeleteIDs = append([]int64(nil), ids...)
+	if s.batchDeleteErr != nil {
+		return 0, s.batchDeleteErr
+	}
+	return s.batchDeleteResult, nil
 }
 
 func (s *redeemRepoStub) List(ctx context.Context, params pagination.PaginationParams) ([]RedeemCode, *pagination.PaginationResult, error) {
@@ -790,27 +819,39 @@ func TestAdminService_ExpireRedeemCodeRejectsUsedBatchClaim(t *testing.T) {
 }
 
 func TestAdminService_BatchDeleteRedeemCodes_Success(t *testing.T) {
-	repo := &redeemRepoStub{}
+	repo := &redeemRepoStub{batchDeleteResult: 3}
 	svc := &adminServiceImpl{redeemCodeRepo: repo}
 
 	deleted, err := svc.BatchDeleteRedeemCodes(context.Background(), []int64{1, 2, 3})
 	require.NoError(t, err)
 	require.Equal(t, int64(3), deleted)
-	require.Equal(t, []int64{1, 2, 3}, repo.deletedIDs)
+	require.Equal(t, []int64{1, 2, 3}, repo.batchDeleteIDs)
+	require.Empty(t, repo.deletedIDs, "batch deletion must be one repository operation")
 }
 
-func TestAdminService_BatchDeleteRedeemCodes_PartialFailures(t *testing.T) {
+func TestAdminService_BatchDeleteRedeemCodesUsesAffectedCount(t *testing.T) {
+	repo := &redeemRepoStub{batchDeleteResult: 1}
+	svc := &adminServiceImpl{redeemCodeRepo: repo}
+	deleted, err := svc.BatchDeleteRedeemCodes(context.Background(), []int64{1, 1, 999})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), deleted)
+	require.Equal(t, []int64{1, 1, 999}, repo.batchDeleteIDs)
+	require.Empty(t, repo.deletedIDs)
+}
+
+func TestAdminService_BatchDeleteRedeemCodes_PropagatesDatabaseFailure(t *testing.T) {
+	dbErr := errors.New("db error")
 	repo := &redeemRepoStub{
 		deleteErrByID: map[int64]error{
-			2: errors.New("db error"),
+			2: dbErr,
 		},
+		batchDeleteErr: dbErr,
 	}
 	svc := &adminServiceImpl{redeemCodeRepo: repo}
 
 	deleted, err := svc.BatchDeleteRedeemCodes(context.Background(), []int64{1, 2, 3})
-	require.NoError(t, err)
-	require.Equal(t, int64(2), deleted)
-	require.Equal(t, []int64{1, 2, 3}, repo.deletedIDs)
+	require.ErrorIs(t, err, dbErr)
+	require.Zero(t, deleted)
 }
 
 func TestAdminService_GenerateBenefitCodesCreatesOneAtomicBatch(t *testing.T) {

@@ -63,8 +63,20 @@ func (s *redeemCodeRepoStub) BatchUpdate(context.Context, []int64, RedeemCodeBat
 	panic("unexpected BatchUpdate call")
 }
 
+func (s *redeemCodeRepoStub) GetByCodeForUpdate(ctx context.Context, code string) (*RedeemCode, error) {
+	return s.GetByCode(ctx, code)
+}
+
+func (s *redeemCodeRepoStub) Expire(context.Context, int64) (*RedeemCode, error) {
+	panic("unexpected Expire call")
+}
+
 func (s *redeemCodeRepoStub) Delete(context.Context, int64) error {
 	panic("unexpected Delete call")
+}
+
+func (s *redeemCodeRepoStub) BatchDelete(context.Context, []int64) (int64, error) {
+	panic("unexpected BatchDelete call")
 }
 
 func (s *redeemCodeRepoStub) Use(_ context.Context, id, userID int64) error {

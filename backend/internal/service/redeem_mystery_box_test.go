@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -42,4 +43,18 @@ func TestRedeemCodeHashRedactionCannotBeRedeemedAsPlaintext(t *testing.T) {
 	require.Len(t, hash, 64)
 	require.NotEqual(t, code, redacted)
 	require.NotEqual(t, hash, RedeemCodeHash(redacted))
+}
+
+func TestCurrencyCentsRejectsZeroRoundingAndStorageOverflow(t *testing.T) {
+	for _, value := range []float64{1e-9, 1e-8, 0.009, 1.000000001, 1.001, 1e12, math.NaN(), math.Inf(1), math.Inf(-1)} {
+		t.Run(fmt.Sprintf("%g", value), func(t *testing.T) {
+			_, err := currencyCents(value)
+			require.Error(t, err)
+		})
+	}
+	for _, value := range []float64{0.01, 1.23, 999999999999.99} {
+		cents, err := currencyCents(value)
+		require.NoError(t, err)
+		require.Equal(t, value, float64(cents)/100)
+	}
 }

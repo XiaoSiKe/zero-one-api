@@ -28,9 +28,10 @@ var (
 )
 
 const (
-	redeemMaxErrorsPerHour  = 20
-	redeemRateLimitDuration = time.Hour
-	redeemLockDuration      = 10 * time.Second // 锁超时时间，防止死锁
+	redeemMaxErrorsPerHour = 20
+	redeemLockDuration     = 10 * time.Second // 锁超时时间，防止死锁
+	// RedeemRateLimitDuration is shared with the cache so error counts have one fixed window.
+	RedeemRateLimitDuration = time.Hour
 )
 
 type ctxKeySkipRedeemAffiliate struct{}
@@ -47,8 +48,8 @@ type RedeemCache interface {
 	GetRedeemAttemptCount(ctx context.Context, userID int64) (int, error)
 	IncrementRedeemAttemptCount(ctx context.Context, userID int64) error
 
-	AcquireRedeemLock(ctx context.Context, code string, ttl time.Duration) (bool, error)
-	ReleaseRedeemLock(ctx context.Context, code string) error
+	AcquireRedeemLock(ctx context.Context, code string, ttl time.Duration) (string, error)
+	ReleaseRedeemLock(ctx context.Context, code, owner string) error
 }
 
 type RedeemCodeRepository interface {
@@ -56,9 +57,13 @@ type RedeemCodeRepository interface {
 	CreateBatch(ctx context.Context, codes []RedeemCode) error
 	GetByID(ctx context.Context, id int64) (*RedeemCode, error)
 	GetByCode(ctx context.Context, code string) (*RedeemCode, error)
+	// GetByCodeForUpdate requires a transaction context and holds the code row until it ends.
+	GetByCodeForUpdate(ctx context.Context, code string) (*RedeemCode, error)
 	Update(ctx context.Context, code *RedeemCode) error
+	Expire(ctx context.Context, id int64) (*RedeemCode, error)
 	BatchUpdate(ctx context.Context, ids []int64, fields RedeemCodeBatchUpdateFields) (int64, error)
 	Delete(ctx context.Context, id int64) error
+	BatchDelete(ctx context.Context, ids []int64) (int64, error)
 	Use(ctx context.Context, id, userID int64) error
 
 	List(ctx context.Context, params pagination.PaginationParams) ([]RedeemCode, *pagination.PaginationResult, error)
@@ -359,27 +364,29 @@ func (s *RedeemService) incrementRedeemErrorCount(ctx context.Context, userID in
 }
 
 // acquireRedeemLock 尝试获取兑换码的分布式锁
-// 返回 true 表示获取成功，false 表示锁已被占用
-func (s *RedeemService) acquireRedeemLock(ctx context.Context, code string) bool {
+// Empty ownership with acquired=true is the cache-unavailable fallback; PostgreSQL
+// remains the authority and there is no Redis lock to release in that case.
+func (s *RedeemService) acquireRedeemLock(ctx context.Context, code string) (string, bool) {
 	if s.cache == nil {
-		return true // 无 Redis 时降级为不加锁
+		return "", true
 	}
 
-	ok, err := s.cache.AcquireRedeemLock(ctx, code, redeemLockDuration)
+	owner, err := s.cache.AcquireRedeemLock(ctx, code, redeemLockDuration)
 	if err != nil {
 		// Redis 出错时不阻止操作，依赖数据库层面的状态检查
-		return true
+		return "", true
 	}
-	return ok
+	return owner, owner != ""
 }
 
 // releaseRedeemLock 释放兑换码的分布式锁
-func (s *RedeemService) releaseRedeemLock(ctx context.Context, code string) {
-	if s.cache == nil {
+func (s *RedeemService) releaseRedeemLock(code, owner string) {
+	if s.cache == nil || owner == "" {
 		return
 	}
-
-	_ = s.cache.ReleaseRedeemLock(ctx, code)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_ = s.cache.ReleaseRedeemLock(ctx, code, owner)
 }
 
 func unsupportedRedeemTypeError(codeType string) error {
@@ -390,11 +397,16 @@ func unsupportedRedeemTypeError(codeType string) error {
 }
 
 func currencyCents(value float64) (int64, error) {
-	if math.IsNaN(value) || math.IsInf(value, 0) || value <= 0 || value > float64(math.MaxInt64)/100 {
+	if math.IsNaN(value) || math.IsInf(value, 0) || value <= 0 {
 		return 0, errors.New("amount must be a positive finite value")
 	}
+	// DECIMAL(20,8) has twelve integer digits. Restrict this reward-only path
+	// to positive whole cents without changing other balance accounting rules.
+	if value < 0.01 || value > 999999999999.99 {
+		return 0, errors.New("amount must be between 0.01 and 999999999999.99")
+	}
 	cents := math.Round(value * 100)
-	if math.Abs(value*100-cents) > 0.000001 {
+	if value != float64(int64(cents))/100 {
 		return 0, errors.New("amount must have at most two decimal places")
 	}
 	return int64(cents), nil
@@ -437,13 +449,21 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 	}
 
 	// 获取分布式锁，防止同一兑换码并发使用
-	if !s.acquireRedeemLock(ctx, code) {
+	owner, acquired := s.acquireRedeemLock(ctx, code)
+	if !acquired {
 		return nil, ErrRedeemCodeLocked
 	}
-	defer s.releaseRedeemLock(ctx, code)
+	defer s.releaseRedeemLock(code, owner)
 
-	// 查找兑换码
-	redeemCode, err := s.redeemRepo.GetByCode(ctx, code)
+	// Read and validate after acquiring the database row lock. In particular,
+	// a wait crossing expires_at must not redeem using a pre-lock snapshot.
+	tx, err := s.entClient.Tx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	txCtx := dbent.NewTxContext(ctx, tx)
+	redeemCode, err := s.redeemRepo.GetByCodeForUpdate(txCtx, code)
 	if err != nil {
 		if errors.Is(err, ErrRedeemCodeNotFound) {
 			s.incrementRedeemErrorCount(ctx, userID)
@@ -467,11 +487,12 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 	switch redeemCode.Type {
 	case RedeemTypeBalance, RedeemTypeConcurrency:
 	case RedeemTypeBenefit:
-		if redeemCode.BatchID == nil || redeemCode.Value <= 0 {
+		_, amountErr := currencyCents(redeemCode.Value)
+		if redeemCode.BatchID == nil || strings.TrimSpace(*redeemCode.BatchID) == "" || amountErr != nil {
 			return nil, infraerrors.BadRequest("REDEEM_CODE_INVALID", "invalid benefit redeem code")
 		}
 	case RedeemTypeMysteryBox:
-		if redeemCode.BatchID == nil {
+		if redeemCode.BatchID == nil || strings.TrimSpace(*redeemCode.BatchID) == "" {
 			return nil, infraerrors.BadRequest("REDEEM_CODE_INVALID", "invalid mystery box redeem code")
 		}
 		amount, randomErr := randomMysteryBoxAmount(redeemCode.MinValue, redeemCode.MaxValue)
@@ -488,26 +509,19 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 	}
 
 	// 获取用户信息
-	_, err = s.userRepo.GetByID(ctx, userID)
+	_, err = s.userRepo.GetByID(txCtx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("get user: %w", err)
 	}
-
-	// 使用数据库事务保证兑换码标记与权益发放的原子性
-	tx, err := s.entClient.Tx(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("begin transaction: %w", err)
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	// 将事务放入 context，使 repository 方法能够使用同一事务
-	txCtx := dbent.NewTxContext(ctx, tx)
 
 	// 【关键】先标记兑换码为已使用，确保并发安全
 	// 利用数据库乐观锁（WHERE status = 'unused'）保证原子性
 	if err := s.redeemRepo.Use(txCtx, redeemCode.ID, userID); err != nil {
 		if errors.Is(err, ErrRedeemBatchAlreadyClaimed) {
 			return nil, ErrRedeemBatchAlreadyClaimed
+		}
+		if errors.Is(err, ErrRedeemCodeExpired) {
+			return nil, ErrRedeemCodeExpired
 		}
 		if errors.Is(err, ErrRedeemCodeNotFound) || errors.Is(err, ErrRedeemCodeUsed) {
 			return nil, ErrRedeemCodeUsed
@@ -576,6 +590,13 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 		return nil, unsupportedRedeemTypeError(redeemCode.Type)
 	}
 
+	// Fetch the final result while failure can still roll back the award. There
+	// must not be a fallible read after a successful commit.
+	redeemCode, err = s.redeemRepo.GetByID(txCtx, redeemCode.ID)
+	if err != nil {
+		return nil, fmt.Errorf("get updated redeem code: %w", err)
+	}
+
 	// 提交事务
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit transaction: %w", err)
@@ -589,17 +610,15 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 		s.tryAccrueAffiliateRebateForRedeem(ctx, userID, redeemCode.Value)
 	}
 
-	// 重新获取更新后的兑换码
-	redeemCode, err = s.redeemRepo.GetByID(ctx, redeemCode.ID)
-	if err != nil {
-		return nil, fmt.Errorf("get updated redeem code: %w", err)
-	}
-
 	return redeemCode, nil
 }
 
 // invalidateRedeemCaches 失效兑换相关的缓存
 func (s *RedeemService) invalidateRedeemCaches(ctx context.Context, userID int64, redeemCode *RedeemCode) {
+	// The award is committed. A disconnected client must not cancel cache
+	// invalidation, and cache availability cannot change the redemption result.
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
 	switch redeemCode.Type {
 	case RedeemTypeBalance, RedeemTypeBenefit, RedeemTypeMysteryBox:
 		if s.authCacheInvalidator != nil {
