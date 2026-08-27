@@ -285,9 +285,9 @@ same HTTPS gate; a failed rollback is reported separately. Do not replace this
 entrypoint with a direct `docker compose up edge` during a release.
 
 The approved UI is a separate release boundary. The current protected snapshot
-is the `ui-approved-2026-08-27-r16` tag at commit
-`483a425fe978b163d0bd5d03093284d399e66ff4`. The
-`ui-approved-2026-08-26-r15` tag remains immutable as the previous accepted UI.
+is the `ui-approved-2026-08-27-r17` tag at commit
+`108d3d6865889416a00807d49d6567f88a2e777f`. The
+`ui-approved-2026-08-27-r16` tag remains immutable as the previous accepted UI.
 An upstream version update must not modify `landing/src`, the protected console
 source paths, or `deploy/zero-one/recovered-frontend`. This explicitly covers
 the landing page, login/register pages, the console shell, model-plaza pricing,
