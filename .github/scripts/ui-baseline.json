@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-08-26-r15",
-  "baseline_commit": "9dcaf261df26fbe056a25cf266634223816f2b32",
+  "baseline_ref": "ui-approved-2026-08-27-r16",
+  "baseline_commit": "483a425fe978b163d0bd5d03093284d399e66ff4",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -77,6 +77,13 @@
       "name": "header-navigation-entries",
       "routes": ["/dashboard", "/admin/settings"],
       "paths": [
+        "frontend/src/utils/navigation-order.ts",
+        "frontend/src/stores/adminSettings.ts",
+        "frontend/src/stores/__tests__/adminSettings.spec.ts",
+        "deploy/zero-one/recovered-frontend/console/assets/AppLayout.vue_vue_type_script_setup_true_lang-gmb2csy1.js",
+        "deploy/zero-one/recovered-frontend/console/assets/index-9xJBhx8B.js",
+        "deploy/zero-one/recovered-frontend/console/assets/navigation-loading-20260827",
+        "deploy/zero-one/recovered-frontend/console/assets/zero-one-navigation-reconciliation-v1.js",
         "frontend/src/api/admin/settings.ts",
         "frontend/src/components/common/NavigationIconPicker.vue",
         "frontend/src/components/common/__tests__/NavigationIconPicker.spec.ts",
@@ -173,6 +180,9 @@
       "name": "online-recharge-and-custom-pages",
       "routes": ["/dashboard", "/redeem", "/custom/{id}"],
       "paths": [
+        "deploy/zero-one/recovered-frontend/console/assets/CustomPageView-CDztmpKe.js",
+        "deploy/zero-one/recovered-frontend/console/assets/index-9xJBhx8B.js",
+        "deploy/zero-one/recovered-frontend/console/assets/navigation-loading-20260827",
         "frontend/src/components/user/dashboard/UserDashboardQuickActions.vue",
         "frontend/src/components/user/dashboard/__tests__/UserDashboardQuickActions.spec.ts",
         "frontend/src/i18n/locales/en/dashboard.ts",
