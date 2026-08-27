@@ -66,6 +66,8 @@ the affiliate workspace alias independently of locale. Settings and rendering
 use first-occurrence-wins order semantics; default custom ordering comes from
 current menu metadata, not a transient DOM captured before settings arrive.
 Visual and keyboard order must agree, and an idle navigation must not mutate.
+The inert sidebar continuity copy is not a live navigation section and must
+never be reordered as an administrator's personal section in simple mode.
 
 Custom-page frames are identified by menu ID, target URL and retry generation.
 A load event arriving before navigation metadata is retained, while obsolete

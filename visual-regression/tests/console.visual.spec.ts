@@ -126,9 +126,11 @@ test.describe('Console public auth contracts', () => {
     await page.getByRole('button', { name: '登录', exact: true }).click()
 
     await expect(page).toHaveURL('http://127.0.0.1:4173/admin/dashboard')
-    await expect(page.locator(
+    const dashboardLink = page.locator(
       'aside:not([data-zero-one-sidebar-continuity]) a.sidebar-link[href="/admin/dashboard"]',
-    )).toHaveClass(/sidebar-link-active/)
+    )
+    await expect(dashboardLink).toHaveCount(1)
+    await expect(dashboardLink).toHaveClass(/sidebar-link-active/)
   })
 
   test('regular user login selects the user dashboard with matching card motion', async ({ page }, testInfo) => {
@@ -1562,6 +1564,19 @@ test.describe('Console built-in sidebar navigation contracts', () => {
       .toEqual(['/admin/dashboard', '/keys', '/admin/settings'])
     await expect(sections.getByRole('button', { name: '渠道管理', exact: true })).toHaveCount(0)
     await expect(sections.locator('a[href="/admin/users"]')).toHaveCount(0)
+
+    const continuityFirstPath = await page.evaluate(async () => {
+      const settings = document.querySelector('aside:not([data-zero-one-sidebar-continuity]) a[href="/admin/settings"]')
+      if (!(settings instanceof HTMLAnchorElement)) throw new Error('missing settings link')
+      settings.click()
+      await new Promise((resolve) => requestAnimationFrame(resolve))
+      return document.querySelector('[data-zero-one-sidebar-continuity] nav .sidebar-section > a.sidebar-link')
+        ?.getAttribute('href')
+    })
+    expect(continuityFirstPath).toBe('/admin/dashboard')
+    await expect(page).toHaveURL('http://127.0.0.1:4173/admin/settings')
+    await expect.poll(async () => (await sidebarOrder(sections.first())).slice(0, 3))
+      .toEqual(['/admin/dashboard', '/keys', '/admin/settings'])
   })
 
   test('regular users get one Model Plaza row inside nav and hidden personal entries', async ({ page }) => {
@@ -2651,7 +2666,7 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=4')
     expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=10')
     expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=5')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=18')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=19')
     expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=7')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.js?v=1')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.css?v=1')

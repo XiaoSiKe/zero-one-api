@@ -725,12 +725,16 @@ function reorderSidebarSection(section, order, role, user) {
 function reconcileSidebarOrder(user) {
   if (!user) return
   const settings = runtimeNavigationSettings(user) || {}
-  const sections = [...document.querySelectorAll('aside nav .sidebar-section')]
-  if (user.role === 'admin') {
-    reorderSidebarSection(sections[0], normalizeSidebarOrder(settings.admin_sidebar_order), 'admin', user)
-    reorderSidebarSection(sections[1], normalizeSidebarOrder(settings.user_sidebar_order), 'user', user)
-  } else {
-    reorderSidebarSection(sections[0], normalizeSidebarOrder(settings.user_sidebar_order), 'user', user)
+  for (const aside of document.querySelectorAll('aside:not([data-zero-one-sidebar-continuity])')) {
+    const nav = aside.querySelector(':scope > nav.sidebar-nav')
+    if (!nav) continue
+    const sections = [...nav.querySelectorAll(':scope > .sidebar-section')]
+    if (user.role === 'admin') {
+      reorderSidebarSection(sections[0], normalizeSidebarOrder(settings.admin_sidebar_order), 'admin', user)
+      reorderSidebarSection(sections[1], normalizeSidebarOrder(settings.user_sidebar_order), 'user', user)
+    } else {
+      reorderSidebarSection(sections[0], normalizeSidebarOrder(settings.user_sidebar_order), 'user', user)
+    }
   }
 }
 

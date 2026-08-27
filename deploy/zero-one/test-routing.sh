@@ -87,7 +87,7 @@ require "$recovered_console_index" 'await import("/assets/zero-one-console-parit
 require "$recovered_console_index" 'href="/assets/zero-one-console-parity-v1.css?v=4"'
 require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=10")'
 require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=5"'
-require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=18")'
+require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=19")'
 require "$recovered_header_custom_menu" "style.setProperty('display', 'none', 'important')"
 require "$recovered_console_index" 'window.__ZERO_ONE_PUBLIC_SETTINGS__ = payload.data'
 require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=7"'
