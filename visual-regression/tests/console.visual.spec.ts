@@ -2659,7 +2659,7 @@ test.describe('Console visual contracts', () => {
     const response = await page.goto('http://127.0.0.1:4173/login')
     expect(response?.status()).toBe(200)
     const html = await response!.text()
-    expect(html).toContain('/assets/navigation-loading-20260827/index-9xJBhx8B.js')
+    expect(html).toContain('/assets/redeem-ttft-20260828/index-9xJBhx8B.js')
     expect(html).toContain('/assets/zero-one-local-preview-guard-v2.js')
     expect(html).toContain('/assets/zero-one-navigation-reconciliation-v1.js?v=3')
     expect(html).toContain('/assets/zero-one-console-parity-v1.js?v=4')

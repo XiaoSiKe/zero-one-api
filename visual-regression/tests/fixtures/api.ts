@@ -902,6 +902,13 @@ export async function seedConsole(
       return fulfill(route, { coverage, items: [{ category: 'timeout', count: 12, rate: 0.012 }] })
     }
     if (path.endsWith('/channel-monitor-v2/users')) return fulfill(route, { coverage, items: [] })
+    if (path === '/redeem' || path.startsWith('/redeem/') || path.startsWith('/admin/redeem-codes/')) {
+      return route.fulfill({
+        status: 501,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 501, message: `Missing explicit redeem fixture: ${route.request().method()} ${path}` }),
+      })
+    }
     return fulfill(route, {})
   })
 }

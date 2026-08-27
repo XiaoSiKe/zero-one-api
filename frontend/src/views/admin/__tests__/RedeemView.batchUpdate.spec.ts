@@ -3,10 +3,12 @@ import { flushPromises, mount } from '@vue/test-utils'
 
 import RedeemView from '../RedeemView.vue'
 
-const { listRedeemCodes, batchUpdateRedeemCodes, getAllGroups, showSuccess, showError, showInfo } =
+const { listRedeemCodes, batchUpdateRedeemCodes, generateRedeemCodes, stepUpRun, getAllGroups, showSuccess, showError, showInfo } =
   vi.hoisted(() => ({
     listRedeemCodes: vi.fn(),
     batchUpdateRedeemCodes: vi.fn(),
+    generateRedeemCodes: vi.fn(),
+    stepUpRun: vi.fn(),
     getAllGroups: vi.fn(),
     showSuccess: vi.fn(),
     showError: vi.fn(),
@@ -17,7 +19,7 @@ vi.mock('@/api/admin', () => ({
   adminAPI: {
     redeem: {
       list: listRedeemCodes,
-      generate: vi.fn(),
+      generate: generateRedeemCodes,
       delete: vi.fn(),
       batchDelete: vi.fn(),
       batchUpdate: batchUpdateRedeemCodes,
@@ -27,6 +29,13 @@ vi.mock('@/api/admin', () => ({
       getAll: getAllGroups
     }
   }
+}))
+
+vi.mock('@/composables/useStepUp', () => ({
+  useStepUp: () => ({ run: stepUpRun, visible: false }),
+  isStepUpCancelled: (error: { code?: string }) => error?.code === 'STEP_UP_CANCELLED',
+  isStepUpBlocked: (error: { code?: string }) => error?.code === 'STEP_UP_TOTP_NOT_ENABLED',
+  stepUpBlockReason: (error: { code?: string }) => error?.code,
 }))
 
 vi.mock('@/stores/app', () => ({
@@ -99,6 +108,17 @@ const SelectStub = {
   `
 }
 
+const mountView = () => mount(RedeemView, {
+  attachTo: document.body,
+  global: {
+    stubs: {
+      TablePageLayout: { template: '<div><slot name="filters" /><slot name="table" /><slot name="pagination" /></div>' },
+      DataTable: DataTableStub, Pagination: true, ConfirmDialog: true, Select: SelectStub,
+      GroupBadge: true, GroupOptionItem: true, Icon: true, Teleport: true, TotpStepUpDialog: true,
+    },
+  },
+})
+
 describe('admin RedeemView batch update', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -106,6 +126,8 @@ describe('admin RedeemView batch update', () => {
 
     listRedeemCodes.mockReset()
     batchUpdateRedeemCodes.mockReset()
+    generateRedeemCodes.mockReset().mockResolvedValue([{ id: 7, code: 'ONE-TIME-CODE' }])
+    stepUpRun.mockReset().mockImplementation((action: () => Promise<unknown>) => action())
     getAllGroups.mockReset()
     showSuccess.mockReset()
     showError.mockReset()
@@ -216,5 +238,73 @@ describe('admin RedeemView batch update', () => {
       'value',
       'mystery_box'
     )
+  })
+
+  it('validates benefit whole cents before sending a generation request', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.get('[data-test="generate-benefit"]').trigger('click')
+    await wrapper.get('input[type="number"][step="0.01"]').setValue('0.001')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(generateRedeemCodes).not.toHaveBeenCalled()
+    expect(showError).toHaveBeenCalledWith('admin.redeem.invalidAmount')
+    wrapper.unmount()
+  })
+
+  it('freezes generation parameters before step-up and ignores duplicate submissions', async () => {
+    let performAction!: () => Promise<unknown>
+    let release!: (value: unknown) => void
+    stepUpRun.mockImplementation((action: () => Promise<unknown>) => {
+      performAction = action
+      return new Promise((resolve) => { release = resolve })
+    })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.get('[data-test="generate-benefit"]').trigger('click')
+    const amount = wrapper.get('input[type="number"][step="0.01"]')
+    await amount.setValue('2.5')
+    const form = wrapper.get('form').element
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await amount.setValue('9')
+    expect(stepUpRun).toHaveBeenCalledTimes(1)
+    release(await performAction())
+    await flushPromises()
+    expect(generateRedeemCodes).toHaveBeenCalledWith(1, 'benefit', 2.5, undefined, undefined, undefined, undefined, undefined)
+    expect(wrapper.get('textarea[readonly]').element).toHaveProperty('value', 'ONE-TIME-CODE')
+    wrapper.unmount()
+  })
+
+  it('returns to the first page when changing the code type filter', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+    wrapper.getComponent({ name: 'Pagination' }).vm.$emit('update:page', 3)
+    await flushPromises()
+    expect(listRedeemCodes.mock.lastCall?.[0]).toBe(3)
+    await wrapper.findAll('select')[0].setValue('benefit')
+    await flushPromises()
+    expect(listRedeemCodes.mock.lastCall?.[0]).toBe(1)
+    expect(listRedeemCodes.mock.lastCall?.[2]).toMatchObject({ type: 'benefit' })
+    wrapper.unmount()
+  })
+
+  it.each([
+    ['STEP_UP_CANCELLED', undefined],
+    ['STEP_UP_TOTP_NOT_ENABLED', 'stepUp.notEnabled'],
+    ['INVALID_AMOUNT', '金额超出限制'],
+  ])('does not announce generation success for %s', async (code, message) => {
+    stepUpRun.mockRejectedValue({ code, message })
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.get('[data-test="generate-benefit"]').trigger('click')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.find('textarea[readonly]').exists()).toBe(false)
+    expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeUndefined()
+    if (message) expect(showError).toHaveBeenCalledWith(message)
+    else expect(showError).not.toHaveBeenCalled()
+    expect(generateRedeemCodes).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 })

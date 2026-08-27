@@ -102,6 +102,7 @@ assert_text "$asset_headers" 'Cache-Control: public, max-age=31536000, immutable
 console=$(curl -fsS -H "Host: $request_host" "$edge_url/login")
 assert_text "$console" '<title>零一 API - AI API Gateway</title>' 'primary login did not return the recovered console'
 assert_text "$console" 'fetch("/api/v1/settings/public"' 'recovered console did not bootstrap live public settings'
+assert_text "$console" 'await import("/assets/redeem-ttft-20260828/index-9xJBhx8B.js")' 'recovered console must use the cache-busted redeem release'
 assert_text "$console" 'await import("/assets/zero-one-local-preview-guard-v2.js")' 'recovered console local preview guard is missing'
 assert_text "$console" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=3")' 'recovered Console navigation reconciliation is missing'
 assert_text "$console" 'await import("/assets/zero-one-console-parity-v1.js?v=4")' 'recovered console parity overlay is missing'
@@ -114,6 +115,10 @@ console_asset_path=$(printf '%s' "$console" | grep -o '/assets/[^" ]*\.js' | hea
 [ -n "$console_asset_path" ] || fail 'console JavaScript asset was not discoverable'
 console_asset_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url$console_asset_path")
 assert_text "$console_asset_headers" 'Cache-Control: public, max-age=31536000, immutable' 'hashed console asset is not immutable'
+for redeem_asset in index-9xJBhx8B.js RedeemView-B-81-jXj.js RedeemView-Bn5PLb3-.js zero-one-redeem-contract-20260828.js; do
+	redeem_asset_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/redeem-ttft-20260828/$redeem_asset")
+	assert_text "$redeem_asset_headers" 'Cache-Control: public, max-age=31536000, immutable' 'versioned redeem asset is missing or not immutable'
+done
 floating_overlay_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-floating-panels-v1.js")
 assert_text "$floating_overlay_headers" 'Cache-Control: public, max-age=31536000, immutable' 'floating overlay asset is not immutable'
 local_guard_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-local-preview-guard-v2.js")

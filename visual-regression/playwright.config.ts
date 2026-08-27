@@ -55,14 +55,14 @@ export default defineConfig({
     },
   ],
   webServer: [
-    {
+    ...(process.env.ZERO_ONE_CONSOLE_ONLY === 'true' ? [] : [{
       command: 'npm run dev -- --host 127.0.0.1 --port 4174 --strictPort',
       cwd: `${root}landing`,
       env: { ...process.env, VITE_VISUAL_TEST: 'true' },
       url: 'http://127.0.0.1:4174',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
-    },
+    }]),
     {
       command: 'node serve-recovered-console.mjs --port 4173',
       cwd: `${root}visual-regression`,
