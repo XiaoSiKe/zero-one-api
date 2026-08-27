@@ -302,11 +302,14 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const contactInfo = computed(() => appStore.contactInfo)
 const docUrl = computed(() => sanitizeUrl(appStore.docUrl))
 const modelPlazaEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.modelPlaza))
+const navigationSettings = computed(() =>
+  (authStore.isAdmin ? adminSettingsStore.navigationSettings : null) ?? appStore.cachedPublicSettings
+)
 const modelPlazaPlacement = computed(() =>
-  appStore.cachedPublicSettings?.model_plaza_placement === 'sidebar' ? 'sidebar' : 'header'
+  navigationSettings.value?.model_plaza_placement === 'sidebar' ? 'sidebar' : 'header'
 )
 const subscriptionNavigationEnabled = computed(
-  () => appStore.cachedPublicSettings?.subscription_navigation_enabled !== false
+  () => navigationSettings.value?.subscription_navigation_enabled !== false
 )
 const visibleHeaderItems = computed(() => {
   const visibility = authStore.isAdmin ? 'admin' : 'user'
@@ -391,9 +394,8 @@ const pageTitle = computed(() => {
   // For custom pages, use the menu item's label instead of generic "自定义页面"
   if (route.name === 'CustomPage') {
     const id = route.params.id as string
-    const publicItems = appStore.cachedPublicSettings?.custom_menu_items ?? []
-    const menuItem = publicItems.find((item) => item.id === id)
-      ?? (authStore.isAdmin ? adminSettingsStore.customMenuItems.find((item) => item.id === id) : undefined)
+    const items = navigationSettings.value?.custom_menu_items ?? []
+    const menuItem = items.find((item) => item.id === id)
     if (menuItem?.label) return menuItem.label
   }
   if (affiliateHeaderKeys.value) return t(affiliateHeaderKeys.value.title)

@@ -8805,6 +8805,7 @@ import TotpStepUpDialog from "@/components/auth/TotpStepUpDialog.vue";
 import { extractApiErrorMessage, extractI18nErrorMessage } from "@/utils/apiError";
 import { useAppStore } from "@/stores";
 import { useAdminSettingsStore } from "@/stores/adminSettings";
+import { sortNavItems as orderSidebarItems } from "@/utils/navigation-order";
 import { normalizeVisibleMethod } from "@/components/payment/paymentFlow";
 import {
   isRegistrationEmailSuffixDomainValid,
@@ -9923,17 +9924,6 @@ const adminSidebarOrderCandidates = computed<SidebarOrderItem[]>(() => [
     )
     .map((item) => ({ path: `/custom/${item.id}`, label: item.label })),
 ]);
-
-function orderSidebarItems(items: SidebarOrderItem[], order: string[]): SidebarOrderItem[] {
-  const byPath = new Map(items.map((item) => [item.path, item]));
-  const ordered = order.flatMap((path) => {
-    const item = byPath.get(path);
-    if (!item) return [];
-    byPath.delete(path);
-    return [item];
-  });
-  return [...ordered, ...byPath.values()];
-}
 
 const userSidebarOrderItems = computed(() =>
   orderSidebarItems(userSidebarOrderCandidates.value, form.user_sidebar_order),

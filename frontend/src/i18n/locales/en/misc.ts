@@ -80,6 +80,8 @@ export default {
     title: 'Custom Page',
     openInNewTab: 'Open in new tab',
     loadingEmbedded: 'Loading at full speed. Please wait!',
+    loadingSlow: 'This page is taking longer to load. You can wait, retry, or open it in a new tab.',
+    retry: 'Retry',
     notFoundTitle: 'Page not found',
     notFoundDesc: 'This custom page does not exist or has been removed.',
     notConfiguredTitle: 'Page URL not configured',

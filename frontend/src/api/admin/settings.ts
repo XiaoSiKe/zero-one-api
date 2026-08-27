@@ -1071,6 +1071,27 @@ export async function getSettings(): Promise<SystemSettings> {
   return data;
 }
 
+export type NavigationSettings = Pick<SystemSettings,
+  | "user_sidebar_order"
+  | "admin_sidebar_order"
+  | "profile_navigation_enabled"
+  | "subscription_navigation_enabled"
+  | "model_plaza_placement"
+  | "ops_monitoring_enabled"
+  | "ops_realtime_monitoring_enabled"
+  | "ops_query_mode_default"
+> & {
+  custom_menu_items: Omit<CustomMenuItem, "qr_image">[];
+};
+
+/** Read navigation metadata without downloading the full settings form. */
+export async function getNavigationSettings(): Promise<NavigationSettings> {
+  const { data } = await apiClient.get<NavigationSettings>("/admin/settings", {
+    params: { scope: "navigation" },
+  });
+  return data;
+}
+
 /**
  * Update system settings
  * @param settings - Partial settings to update
@@ -1578,6 +1599,7 @@ export async function resetWebSearchUsage(payload: {
 
 export const settingsAPI = {
   getSettings,
+  getNavigationSettings,
   updateSettings,
   testSmtpConnection,
   sendTestEmail,

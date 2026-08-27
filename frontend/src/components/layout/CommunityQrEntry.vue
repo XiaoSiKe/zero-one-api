@@ -33,14 +33,17 @@
       >
         <img
           v-if="imageObjectUrl"
+          v-show="!imageLoading"
+          :key="imageObjectUrl"
           :src="imageObjectUrl"
           :alt="imageAlt"
           class="h-auto max-h-[min(62vh,34rem)] w-full rounded-xl object-contain"
           data-testid="community-qr-image"
+          @load="handleImageLoad"
           @error="handleImageError"
         />
         <div
-          v-else-if="imageLoading"
+          v-if="imageLoading"
           class="flex min-h-56 flex-col items-center justify-center gap-3 px-6 text-center text-sm text-gray-500 dark:text-dark-400"
           data-testid="community-qr-loading"
           role="status"
@@ -49,7 +52,7 @@
           <span>{{ t('communityQr.loading') }}</span>
         </div>
         <div
-          v-else
+          v-else-if="!imageObjectUrl"
           class="flex min-h-56 flex-col items-center justify-center gap-3 px-6 text-center text-sm text-gray-500 dark:text-dark-400"
           data-testid="community-qr-error"
           role="alert"
@@ -71,14 +74,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 import apiClient from '@/api/client'
 import { sanitizeSvg } from '@/utils/sanitize'
+import { useAuthStore } from '@/stores/auth'
 
 const { t } = useI18n()
+const authStore = useAuthStore()
 
 const props = withDefaults(defineProps<{
   title?: string
@@ -109,6 +114,12 @@ const imageObjectUrl = ref('')
 
 let activeRequest: AbortController | null = null
 let loadGeneration = 0
+let loadTimeout: ReturnType<typeof setTimeout> | null = null
+
+function clearLoadTimeout() {
+  if (loadTimeout !== null) clearTimeout(loadTimeout)
+  loadTimeout = null
+}
 
 function releaseImageObjectUrl() {
   if (!imageObjectUrl.value) return
@@ -117,13 +128,25 @@ function releaseImageObjectUrl() {
 }
 
 async function loadImage() {
+  if (!dialogOpen.value) return
   const generation = ++loadGeneration
   activeRequest?.abort()
+  clearLoadTimeout()
   releaseImageObjectUrl()
   imageLoading.value = true
 
   const controller = new AbortController()
   activeRequest = controller
+  // Bound both download and browser decoding; a timeout is always retryable.
+  loadTimeout = setTimeout(() => {
+    if (generation !== loadGeneration || !dialogOpen.value) return
+    ++loadGeneration
+    controller.abort()
+    activeRequest = null
+    clearLoadTimeout()
+    releaseImageObjectUrl()
+    imageLoading.value = false
+  }, 15000)
 
   try {
     const response = await apiClient.get<Blob>(props.imageEndpoint, {
@@ -145,20 +168,35 @@ async function loadImage() {
     }
     imageObjectUrl.value = objectUrl
   } catch {
-    // The template shows the retryable error state once a live request fails.
-  } finally {
     if (generation === loadGeneration) {
+      clearLoadTimeout()
       imageLoading.value = false
-      if (activeRequest === controller) activeRequest = null
     }
+  } finally {
+    if (activeRequest === controller) activeRequest = null
   }
 }
 
-function handleImageError() {
+function isCurrentImage(event: Event): boolean {
+  return event.currentTarget instanceof HTMLImageElement &&
+    event.currentTarget.getAttribute('src') === imageObjectUrl.value && dialogOpen.value
+}
+
+function handleImageLoad(event: Event) {
+  if (!isCurrentImage(event)) return
+  clearLoadTimeout()
+  imageLoading.value = false
+}
+
+function handleImageError(event: Event) {
+  if (!isCurrentImage(event)) return
+  clearLoadTimeout()
   releaseImageObjectUrl()
+  imageLoading.value = false
 }
 
 function openDialog() {
+  if (dialogOpen.value) return
   dialogOpen.value = true
   void loadImage()
 }
@@ -167,16 +205,21 @@ function closeDialog() {
   ++loadGeneration
   activeRequest?.abort()
   activeRequest = null
+  clearLoadTimeout()
   releaseImageObjectUrl()
   dialogOpen.value = false
   imageLoading.value = false
 }
 
-onBeforeUnmount(() => {
-  ++loadGeneration
-  activeRequest?.abort()
-  releaseImageObjectUrl()
-})
+watch(() => props.imageEndpoint, () => {
+  if (dialogOpen.value) void loadImage()
+}, { flush: 'sync' })
+watch(
+  () => authStore.token && authStore.user ? `${authStore.user.id}:${authStore.user.role}` : '',
+  closeDialog,
+  { flush: 'sync' }
+)
+onBeforeUnmount(closeDialog)
 </script>
 
 <style scoped>

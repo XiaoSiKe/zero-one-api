@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
-import { defineComponent } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
+import { defineComponent, reactive } from 'vue'
 import CommunityQrEntry from '../CommunityQrEntry.vue'
 
 const { getMock, createObjectURLMock, revokeObjectURLMock } = vi.hoisted(() => ({
@@ -12,6 +12,10 @@ const { getMock, createObjectURLMock, revokeObjectURLMock } = vi.hoisted(() => (
 vi.mock('@/api/client', () => ({
   default: { get: getMock },
 }))
+
+const authStore = reactive({ token: 'test-token', user: { id: 2, role: 'user' } as { id: number; role: string } | null })
+vi.mock('@/stores/auth', () => ({ useAuthStore: () => authStore }))
+enableAutoUnmount(afterEach)
 
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
@@ -67,6 +71,8 @@ function mountEntry(props: {
 
 describe('CommunityQrEntry', () => {
   beforeEach(() => {
+    authStore.token = 'test-token'
+    authStore.user = { id: 2, role: 'user' }
     getMock.mockReset()
     createObjectURLMock.mockClear()
     revokeObjectURLMock.mockClear()
@@ -78,6 +84,10 @@ describe('CommunityQrEntry', () => {
       configurable: true,
       value: revokeObjectURLMock,
     })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('loads the protected endpoint as a Blob only after the dialog opens', async () => {
@@ -192,5 +202,84 @@ describe('CommunityQrEntry', () => {
     resolveRequest({ data: new Blob(['qr'], { type: 'image/jpeg' }) })
     await flushPromises()
     expect(createObjectURLMock).not.toHaveBeenCalled()
+  })
+
+  it('times out a stalled download and ignores it after a successful retry', async () => {
+    vi.useFakeTimers()
+    let resolveStalled!: (value: { data: Blob }) => void
+    getMock.mockReturnValueOnce(new Promise((resolve) => { resolveStalled = resolve }))
+      .mockResolvedValueOnce({ data: new Blob(['fresh'], { type: 'image/png' }) })
+    const wrapper = mountEntry()
+    await wrapper.get('[data-testid="community-qr-button"]').trigger('click')
+    const firstSignal = getMock.mock.calls[0][1].signal as AbortSignal
+
+    await vi.advanceTimersByTimeAsync(15000)
+    expect(firstSignal.aborted).toBe(true)
+    expect(wrapper.find('[data-testid="community-qr-error"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="community-qr-retry"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="community-qr-image"]').exists()).toBe(true)
+
+    resolveStalled({ data: new Blob(['stale'], { type: 'image/png' }) })
+    await flushPromises()
+    expect(createObjectURLMock).toHaveBeenCalledTimes(1)
+    await wrapper.get('[data-testid="community-qr-image"]').trigger('load')
+    await vi.advanceTimersByTimeAsync(15000)
+    expect(wrapper.find('[data-testid="community-qr-error"]').exists()).toBe(false)
+  })
+
+  it('releases images that fail decoding and retries without retaining the failed Blob', async () => {
+    getMock.mockResolvedValue({ data: new Blob(['broken'], { type: 'image/png' }) })
+    const wrapper = mountEntry()
+    await wrapper.get('[data-testid="community-qr-button"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-testid="community-qr-image"]').trigger('error')
+    expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:community-qr')
+    expect(wrapper.find('[data-testid="community-qr-error"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="community-qr-retry"]').trigger('click')
+    await flushPromises()
+    expect(getMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('reloads an open entry when its endpoint changes and discards the previous response', async () => {
+    let resolvePrevious!: (value: { data: Blob }) => void
+    getMock.mockReturnValueOnce(new Promise((resolve) => { resolvePrevious = resolve }))
+      .mockResolvedValueOnce({ data: new Blob(['new'], { type: 'image/jpeg' }) })
+    const wrapper = mountEntry()
+    await wrapper.get('[data-testid="community-qr-button"]').trigger('click')
+    const previousSignal = getMock.mock.calls[0][1].signal as AbortSignal
+    await wrapper.setProps({ imageEndpoint: '/settings/header-navigation/replaced/qr' })
+    await flushPromises()
+
+    expect(previousSignal.aborted).toBe(true)
+    expect(getMock).toHaveBeenLastCalledWith('/settings/header-navigation/replaced/qr', expect.any(Object))
+    resolvePrevious({ data: new Blob(['old'], { type: 'image/png' }) })
+    await flushPromises()
+    expect(createObjectURLMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes and releases sensitive content when the session or role changes', async () => {
+    getMock.mockResolvedValue({ data: new Blob(['qr'], { type: 'image/png' }) })
+    const wrapper = mountEntry()
+    await wrapper.get('[data-testid="community-qr-button"]').trigger('click')
+    await flushPromises()
+    authStore.user = { id: 2, role: 'admin' }
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="community-qr-dialog"]').exists()).toBe(false)
+    expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:community-qr')
+    expect(getMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('aborts and releases the Blob on unmount and never prefetches on session changes', async () => {
+    getMock.mockResolvedValue({ data: new Blob(['qr'], { type: 'image/png' }) })
+    const wrapper = mountEntry()
+    authStore.token = 'refreshed-token'
+    await flushPromises()
+    expect(getMock).not.toHaveBeenCalled()
+    await wrapper.get('[data-testid="community-qr-button"]').trigger('click')
+    await flushPromises()
+    wrapper.unmount()
+    expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:community-qr')
   })
 })
