@@ -93,6 +93,16 @@ role-authorized per-entry request. The maintained Vue source and Approved UI
 Snapshot use the same settings contract and one recovered navigation
 reconciliation owner. See [ADR 0007](adr/0007-configurable-console-navigation.md).
 
+Redeem Code state transitions are owned by the existing Repository Interface and
+PostgreSQL Adapter; administrative operations cannot erase a claim or a stored
+Mystery Box reward. API Key last-used metadata is bounded asynchronous bookkeeping,
+not authorization or billing. HTTP usage records freeze request-level first-output
+timing separately from the scheduler's attempt timing, and enabled idle budgets
+bound cancelled upstream drains. The recovered Console carries the same redemption
+contracts as maintained Vue. These permanent product changes and their regression
+tests are protected under the existing exact-path registry; see
+[ADR 0008](adr/0008-redeem-and-http-stream-lifecycles.md).
+
 The Console keeps the server-provided site settings authoritative, but its compiled display fallback is also `零一 API` with the approved tagline. This prevents a settings timeout or first-paint race from exposing the upstream product name; it does not change the settings API or persistence behavior.
 
 Two presentation-only differences are intentional and reviewed. An unset local

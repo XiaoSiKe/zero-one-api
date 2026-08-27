@@ -25,7 +25,8 @@
     "visual-regression/tests/__screenshots__/chromium-desktop/console-user-redeem.png",
     "visual-regression/tests/__screenshots__/chromium-mobile/console-affiliate-customers.png",
     "visual-regression/tests/console.visual.spec.ts",
-    "visual-regression/tests/fixtures/api.ts"
+    "visual-regression/tests/fixtures/api.ts",
+    "visual-regression/tests/redeem.behavior.spec.ts"
   ],
   "compatibility_paths": [
     "frontend/src/api/",
@@ -228,10 +229,14 @@
       "routes": ["/redeem", "/admin/redeem", "/admin/promo-codes"],
       "paths": [
         "frontend/src/features/redeem/",
+        "frontend/src/api/redeem.ts",
         "frontend/src/views/user/RedeemView.vue",
+        "frontend/src/views/user/__tests__/RedeemView.spec.ts",
         "frontend/src/views/admin/RedeemView.vue",
+        "frontend/src/views/admin/__tests__/RedeemView.batchUpdate.spec.ts",
         "frontend/src/views/admin/PromoCodesView.vue",
-        "deploy/zero-one/recovered-frontend/console/"
+        "deploy/zero-one/recovered-frontend/console/",
+        "visual-regression/tests/redeem.behavior.spec.ts"
       ]
     }
   ],

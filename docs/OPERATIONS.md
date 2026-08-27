@@ -352,6 +352,47 @@ maintenance window.
 测试内明确选择跳过的外部探测应单独列出，不得把缺少凭据或环境的测试写成已执行通过。
 截图仅在审核实际差异后更新；先创建新的不可变 UI 批准标签，再更新基线清单，保留旧标签。
 
+## 兑换码与首 Token 加固验收（2026-08-28）
+
+本轮仅交付源码、恢复版 Console、测试与保护记录；没有自动发布镜像或修改生产配置。
+后续上线继续遵循同源码双镜像、Backend-first、备份与安全 Edge 切换流程。
+本轮无新增数据库迁移，不回填历史奖励或用量；领域约定见 ADR 0008。
+
+- 福利码与盲盒码每码一次、每用户每批一次；管理员不能通过启用、过期或删除
+  清除领取证明。核销与管理操作在真实 PostgreSQL 中并发回放，检查实际奖励、余额
+  和 used/by/at 不回退。批量删除按实际 affected rows 计数，数据库错误不得显示成功。
+- 正整分奖励范围为 0.01–999999999999.99，盲盒可使用等值上下限；普通余额码、订阅码、
+  邀请码与既有累计充值语义不变。福利与盲盒不参与邀请返利。
+- Redis 错误窗口从首次错误起一小时、最多 20 次，后续错误不延长窗口；旧 24 小时
+  或永久 TTL 收敛到一小时但保留计数。锁键不包含明文兑换码，过期旧请求不能释放新租约。
+- 兑换已成功而用户资料、历史或订阅读取失败时，显示成功并提供只读刷新。
+  请求结果不明时核对历史，不自动重新核销。测试初始慢历史请求不能覆盖兑换后的记录。
+- API Key 使用时间使用独立 1-worker、1024-Key 有界待办队列：排队期间合并最新时间，
+  执行中的新触达沿用本次写入的防抖窗口；成功 30 秒防抖、失败 5 秒退避、SQL 预算 10 秒。
+  队满不回退同步写库。鉴权、额度和账单仍按原规则执行。
+  相同 Linux ARM64 / Go 1.27 / 2 CPU 的离线 fixture，将元数据数据库延迟固定为 20 ms，
+  每轮 20 个新 Key、重复三轮：基线 `83495fcf7` 的请求路径为 21.426–22.439 ms/op，
+  异步实现的提交路径为 441.6–718.8 ns/op。后台写入仍需原来的 20 ms；这只证明
+  元数据 SQL 已离开关键路径，不代表真实模型或外网首 Token 提速同等幅度。
+- HTTP 访问日志新增 `gateway_timing_version=1`、`gateway_auth_ms`、`user_queue_ms`、
+  `account_queue_ms`、`account_selection_ms`、`upstream_headers_total_ms`、
+  `retry_backoff_ms`、`upstream_attempts`，有输出时才写 `gateway_first_output_ms`。
+  它们是阶段计时，不应将“整个流时长减响应头等待”称为本站开销。
+- 新用量的 `first_token_ms` 是鉴权前入口到首个有效完整事件写出并 flush 的时间；
+  `duration_ms` 使用同一请求起点。调度器仍使用原单次 attempt 指标。
+  此统计口径可能比旧值更大，不代表性能回退；上线时间必须记录，不能直接混合新旧分布。
+  WebSocket 保留逐 turn 指标；外网客户端到屏时延仍须客户端测量。
+- 对启用流闲置预算的 HTTP 路径，客户端断开及时释放用户槽位，账户槽位等到上游结束
+  或按原闲置配置回收后释放。配置显式为 0 时保留既有取消释放行为，不隐式增加阈值。
+  不修改并发额度、粘性、重试次数或 Caddy SSE flush 配置。
+- `benchmark-ttft.mjs` 使用完整 SSE 事件并单独统计失败；`success_rate` 为 0–1，
+  `ttft_ms` 仅含有效成功样本，包含 P50/P90/P95/P99。流内失败或无终止帧不得计为成功。
+  离线回归使用假上游；任何未来生产探针另行授权并使用专用限额密钥。
+
+恢复版 Console 使用 `redeem-ttft-20260828` 资源命名空间，旧 alias 保留。
+发布前必须运行新的桌面／移动兑换行为用例、source/recovered 一致性测试与原视觉门禁。
+不得以新截图覆盖差异、放宽阈值或把缺少外部条件的用例计为已执行通过。
+
 ## Required Smoke Tests
 
 - For releases based on v0.1.183, which adds no database migration beyond the v0.1.181 ledger, confirm `schema_migrations` contains both `226_channel_monitor_quota_mode.sql` and `226_add_usage_log_effective_model_indexes_notx.sql`, followed by `227_composite_routes_add_cn_providers.sql` and `228_channel_pricing_multipliers.sql`, in addition to the existing 221–225 Zero One migrations. Verify the two effective-model indexes are valid and ready, channel multiplier columns are nullable with positive-value constraints, `groups.long_context_pricing_enabled` remains non-null with default `true`, the group auth-cache trigger function still compares both pricing columns, and the Zero One group-and-account long-context billing gate is covered by the release tests.
