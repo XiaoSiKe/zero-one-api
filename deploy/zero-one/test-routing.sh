@@ -6,13 +6,13 @@ production_caddyfile="$repo_root/deploy/zero-one/Caddyfile"
 preview_caddyfile="$repo_root/deploy/zero-one/Caddyfile.preview"
 shared_caddyfile="$repo_root/deploy/zero-one/Caddyfile.shared"
 recovered_console_index="$repo_root/deploy/zero-one/recovered-frontend/console/index.html"
-recovered_console_entry='await import("/assets/v182-payment-refresh-20260825/index-9xJBhx8B.js")'
+recovered_console_entry='await import("/assets/navigation-loading-20260827/index-9xJBhx8B.js")'
 recovered_console_entry_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/index-9xJBhx8B.js"
 recovered_pricing_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/useKeyedDebouncedSearch-BrW9dWBu.js"
 recovered_console_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-B-81-jXj.js"
 recovered_console_admin_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-Bn5PLb3-.js"
 recovered_console_promo_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/PromoCodesView-D-9XRE_y.js"
-recovered_asset_alias="$repo_root/deploy/zero-one/recovered-frontend/console/assets/v182-payment-refresh-20260825"
+recovered_asset_alias="$repo_root/deploy/zero-one/recovered-frontend/console/assets/navigation-loading-20260827"
 recovered_payment_result="$repo_root/deploy/zero-one/recovered-frontend/console/assets/PaymentResultView-v182-balance-refresh.js"
 recovered_floating_overlay="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-floating-panels-v1.js"
 recovered_navigation_reconciliation="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-navigation-reconciliation-v1.js"
@@ -82,19 +82,19 @@ require "$shared_caddyfile" 'https://checkout-demo.airwallex.com https:; frame-a
 require "$recovered_console_index" 'fetch("/api/v1/settings/public"'
 require "$recovered_console_index" "$recovered_console_entry"
 require "$recovered_console_index" 'await import("/assets/zero-one-local-preview-guard-v2.js")'
-require "$recovered_console_index" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=2")'
+require "$recovered_console_index" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=3")'
 require "$recovered_console_index" 'await import("/assets/zero-one-console-parity-v1.js?v=4")'
 require "$recovered_console_index" 'href="/assets/zero-one-console-parity-v1.css?v=4"'
-require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=9")'
+require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=10")'
 require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=5"'
-require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=17")'
+require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=18")'
 require "$recovered_header_custom_menu" "style.setProperty('display', 'none', 'important')"
 require "$recovered_console_index" 'window.__ZERO_ONE_PUBLIC_SETTINGS__ = payload.data'
-require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=6"'
+require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=7"'
 require "$recovered_console_index" 'await import("/assets/zero-one-redeem-actions-v1.js?v=1")'
 require "$recovered_console_index" 'href="/assets/zero-one-redeem-actions-v1.css?v=1"'
 require "$recovered_console_index" 'await import("/assets/zero-one-ccswitch-launch-v1.js?v=1")'
-require "$recovered_console_index" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=4")'
+require "$recovered_console_index" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=5")'
 require "$recovered_console_index" 'href="/assets/zero-one-affiliate-admin-v1.css?v=3"'
 require "$recovered_console_index" 'await import("/assets/zero-one-floating-panels-v1.js?v=2")'
 require "$recovered_console_index" 'await import("/assets/zero-one-login-recovery-v2.js?v=3")'
@@ -152,11 +152,22 @@ require "$recovered_header_custom_menu" 'data-zero-one-header-menu-placement'
 require "$recovered_header_custom_menu" "nav a.sidebar-link[href=\"' + dashboardPath + '\"]"
 require "$recovered_header_custom_menu" 'publicNavigationSettings'
 require "$recovered_header_custom_menu" 'normalizeMenuItemsForSave(items)'
-require "$recovered_header_custom_menu" 'savedSettings?.custom_menu_items'
+require "$recovered_header_custom_menu" 'acceptSavedNavigation(savedSettings)'
+require "$recovered_header_custom_menu" 'navigationClientReady'
+require "$recovered_console_entry_asset" 'n.get("/admin/settings",{params:{scope:"navigation"},signal})'
+require "$recovered_console_entry_asset" 'window.__ZERO_ONE_ADMIN_NAVIGATION__'
+forbid "$recovered_console_entry_asset" 'Promise.all([gt.settings.getSettings(),gt.payment.getConfig()])'
+forbid "$recovered_console_index" '"site_logo":"data:'
 require "$recovered_header_custom_menu" 'reconcileCustomPageFrame(user)'
 require "$recovered_header_custom_menu" 'reconcileSidebarOrder'
-require "$recovered_header_custom_menu" 'previewSidebarSectionOrder'
-require "$recovered_header_custom_menu" 'if (normalizeSidebarOrder(savedOrder).length) return'
+require "$recovered_header_custom_menu" 'sidebarRowNodes(row)'
+require "$recovered_header_custom_menu" 'final: true'
+forbid "$recovered_header_custom_menu" 'previewSidebarSectionOrder'
+require "$recovered_header_custom_menu" 'await image.decode()'
+require "$recovered_header_custom_menu" 'state.loadSeen = true'
+require "$recovered_header_custom_menu" "retry.dataset.testid = 'custom-page-retry'"
+require "$recovered_header_navigation" 'defaultSidebarOrders'
+forbid "$recovered_header_custom_menu" 'previousLink.after(link)'
 require "$recovered_header_custom_menu" "link.classList.remove('router-link-active', 'router-link-exact-active', 'sidebar-link-active')"
 require "$recovered_header_custom_menu" 'zero-one-sidebar-navigation-icon'
 require "$recovered_header_custom_menu" 'window.__ZERO_ONE_BIND_INTERNAL_LINK__ = bind'

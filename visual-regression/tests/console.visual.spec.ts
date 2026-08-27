@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { communityQrPngBase64, regularUser, seedConsole } from './fixtures/api'
+import { adminUser, communityQrPngBase64, regularUser, seedConsole } from './fixtures/api'
 
 const affiliateConsoleOrigin =
   process.env.AFFILIATE_CONSOLE_ORIGIN || 'http://127.0.0.1:4173'
@@ -13,6 +13,22 @@ const eligibleConsoleCard = [
   ':not(.sticky)',
   ':not(:has(.card, iframe, table, .fixed, .sticky))',
 ].join('')
+
+async function sidebarOrder(section: Locator) {
+  return section.locator(':scope > .sidebar-link:visible').evaluateAll((items) => {
+    const groupPaths: Record<string, string> = {
+      渠道管理: '/admin/channels',
+      安全审计: '/admin/security-audit',
+      订单管理: '/admin/orders',
+    }
+    return items.map((item) => {
+      const path = item.getAttribute('data-navigation-path') || item.getAttribute('href') ||
+        groupPaths[item.getAttribute('aria-label') || '']
+      const pathname = path ? new URL(path, window.location.origin).pathname : ''
+      return pathname === '/admin/affiliates/invites' ? '/admin/affiliates' : pathname
+    })
+  })
+}
 
 async function expectConsoleCardMotion(
   page: Page,
@@ -1425,6 +1441,129 @@ test.describe('Console built-in sidebar navigation contracts', () => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
   })
 
+  test('sorts administrator groups as complete rows with the dashboard physically first', async ({ page }) => {
+    await seedConsole(page, 'v2', {
+      adminSidebarOrder: ['/admin/dashboard', '/admin/channels', '/admin/settings'],
+    })
+    await page.goto('http://127.0.0.1:4173/admin/dashboard')
+
+    const section = page.locator('aside:not([data-zero-one-sidebar-continuity]) nav .sidebar-section').first()
+    const controls = section.locator(':scope > .sidebar-link:visible')
+    await expect.poll(() => controls.evaluateAll((items) => items.slice(0, 3).map((item) =>
+      item.getAttribute('href') || item.getAttribute('aria-label'),
+    ))).toEqual(['/admin/dashboard', '渠道管理', '/admin/settings'])
+
+    const dashboard = section.locator('a[href="/admin/dashboard"]')
+    const channels = section.getByRole('button', { name: '渠道管理', exact: true })
+    await dashboard.focus()
+    await page.keyboard.press('Tab')
+    await expect(channels).toBeFocused()
+    await channels.click()
+    const pricing = section.locator('a[href="/admin/channels/pricing"]')
+    await expect(pricing).toBeVisible()
+    expect(await channels.evaluate((button) =>
+      button.nextElementSibling?.querySelector('a')?.getAttribute('href'),
+    )).toBe('/admin/channels/pricing')
+    await channels.focus()
+    await page.keyboard.press('Tab')
+    await expect(pricing).toBeFocused()
+  })
+
+  test('preserves saved group ordering through refresh, collapse and route changes without idle reordering', async ({ page }) => {
+    await seedConsole(page, 'v2', {
+      paymentEnabled: true,
+      riskControlEnabled: true,
+      modelPlazaPlacement: 'sidebar',
+      adminSidebarOrder: [
+        '/admin/settings', '/admin/channels', '/admin/dashboard', '/admin/orders',
+        '/admin/security-audit', '/model-plaza', '/custom/team-tool',
+        '/admin/dashboard', '/removed-page',
+      ],
+      customMenuItems: [{
+        id: 'team-tool', label: '团队工具', icon_svg: '',
+        url: 'https://embed.01yapi.test/team', visibility: 'admin', placement: 'sidebar', sort_order: 0,
+      }],
+    })
+    await page.goto('http://127.0.0.1:4173/admin/settings')
+    await page.getByTestId('admin-sidebar-order-section').locator('summary').click()
+    const orderList = page.getByTestId('admin-sidebar-order-list')
+    const dashboardRow = orderList.locator('[data-sidebar-path="/admin/dashboard"]')
+    await dashboardRow.getByRole('button', { name: '上移' }).click()
+    await dashboardRow.getByRole('button', { name: '上移' }).click()
+    await expect(orderList.locator('[data-sidebar-path]').first())
+      .toHaveAttribute('data-sidebar-path', '/admin/dashboard')
+    const settingsResponse = page.waitForResponse((response) =>
+      response.request().method() === 'PUT' &&
+      new URL(response.url()).pathname === '/api/v1/admin/settings',
+    )
+    await page.getByTestId('header-navigation-save').click()
+    await settingsResponse
+    await page.reload()
+    await expect(orderList.locator('[data-sidebar-path]').first())
+      .toHaveAttribute('data-sidebar-path', '/admin/dashboard')
+
+    const section = page.locator('aside:not([data-zero-one-sidebar-continuity]) nav .sidebar-section').first()
+    await expect.poll(() => sidebarOrder(section)).toEqual(expect.arrayContaining([
+      '/admin/dashboard', '/admin/channels', '/admin/orders', '/admin/security-audit',
+      '/model-plaza', '/custom/team-tool',
+    ]))
+    const configuredOrder = await orderList.locator('[data-sidebar-path]').evaluateAll((items) =>
+      items.map((item) => item.getAttribute('data-sidebar-path') || ''),
+    )
+    const renderedOrder = await sidebarOrder(section)
+    expect(renderedOrder).toEqual(configuredOrder.filter((path) => renderedOrder.includes(path)))
+    expect(new Set(renderedOrder).size).toBe(renderedOrder.length)
+    expect(renderedOrder[0]).toBe('/admin/dashboard')
+
+    for (const name of ['渠道管理', '订单管理', '安全审计']) {
+      const group = section.getByRole('button', { name, exact: true })
+      await group.click()
+      await expect(group).toHaveAttribute('aria-expanded', 'true')
+      expect(await group.evaluate((button) =>
+        button.nextElementSibling?.querySelectorAll('a.sidebar-link').length,
+      )).toBeGreaterThan(0)
+      expect(await sidebarOrder(section)).toEqual(renderedOrder)
+      await group.click()
+      await expect(group).toHaveAttribute('aria-expanded', 'false')
+    }
+    await page.getByRole('button', { name: '收起', exact: true }).click()
+    expect(await sidebarOrder(section)).toEqual(renderedOrder)
+    await page.getByRole('button', { name: '展开', exact: true }).click()
+    for (const path of ['/admin/users', '/admin/dashboard']) {
+      await section.locator(`a[href="${path}"]`).click()
+      await expect(page).toHaveURL(`http://127.0.0.1:4173${path}`)
+      await expect.poll(() => sidebarOrder(section)).toEqual(renderedOrder)
+    }
+    const rowPositions = await section.locator(':scope > .sidebar-link:visible').evaluateAll((items) =>
+      items.map((item) => item.getBoundingClientRect().top),
+    )
+    expect(rowPositions).toEqual([...rowPositions].sort((left, right) => left - right))
+    const idleReorders = await section.evaluate(async (element) => {
+      let mutations = 0
+      const observer = new MutationObserver((records) => { mutations += records.length })
+      observer.observe(element, { childList: true })
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      observer.disconnect()
+      return mutations
+    })
+    expect(idleReorders).toBe(0)
+  })
+
+  test('keeps simple-mode administrator ordering separate from personal navigation', async ({ page }) => {
+    await seedConsole(page, 'v2', {
+      user: { ...adminUser, run_mode: 'simple' },
+      adminSidebarOrder: ['/admin/dashboard', '/keys', '/admin/settings', '/admin/channels'],
+      userSidebarOrder: ['/usage', '/keys', '/dashboard'],
+    })
+    await page.goto('http://127.0.0.1:4173/admin/dashboard')
+    const sections = page.locator('aside:not([data-zero-one-sidebar-continuity]) nav .sidebar-section')
+    await expect(sections).toHaveCount(1)
+    await expect.poll(async () => (await sidebarOrder(sections.first())).slice(0, 3))
+      .toEqual(['/admin/dashboard', '/keys', '/admin/settings'])
+    await expect(sections.getByRole('button', { name: '渠道管理', exact: true })).toHaveCount(0)
+    await expect(sections.locator('a[href="/admin/users"]')).toHaveCount(0)
+  })
+
   test('regular users get one Model Plaza row inside nav and hidden personal entries', async ({ page }) => {
     await seedConsole(page, 'v2', {
       user: regularUser,
@@ -1484,10 +1623,12 @@ test.describe('Console built-in sidebar navigation contracts', () => {
 
   test('administrator business Subscriptions stays visible while My Subscriptions hides', async ({ page }) => {
     await seedConsole(page, 'v2', {
+      paymentEnabled: true,
       profileNavigationEnabled: false,
       subscriptionNavigationEnabled: false,
       modelPlazaPlacement: 'sidebar',
       adminSidebarOrder: ['/admin/settings', '/admin/dashboard', '/model-plaza'],
+      userSidebarOrder: ['/usage', '/keys', '/redeem'],
     })
     await page.goto('http://127.0.0.1:4173/admin/dashboard')
 
@@ -1495,6 +1636,7 @@ test.describe('Console built-in sidebar navigation contracts', () => {
     await expect(page.locator('aside nav a[href="/profile"]')).toBeHidden()
     await expect(page.locator('aside nav a[href="/subscriptions"]')).toBeHidden()
     await expect(page.locator('aside nav a[href="/admin/subscriptions"]')).toBeVisible()
+    await expect(page.locator('aside nav').getByRole('button', { name: '订单管理', exact: true })).toBeVisible()
     await expect.poll(() => page.locator('header a[href^="/model-plaza"]').evaluate((element) =>
       getComputedStyle(element).display,
     )).toBe('none')
@@ -1507,6 +1649,189 @@ test.describe('Console built-in sidebar navigation contracts', () => {
     await expect(dashboard).toHaveAttribute('aria-current', 'page')
     await expect(modelPlaza).not.toHaveClass(/(?:router-link-(?:exact-)?active|sidebar-link-active)/)
     await expect(modelPlaza).not.toHaveAttribute('aria-current', 'page')
+    const personal = page.locator('aside:not([data-zero-one-sidebar-continuity]) nav .sidebar-section').nth(1)
+    await expect.poll(async () => (await sidebarOrder(personal)).slice(0, 3))
+      .toEqual(['/usage', '/keys', '/redeem'])
+  })
+})
+
+test.describe('Console protected QR loading contracts', () => {
+  const supportItem = {
+    id: 'support-group', label: '零一售后交流群', icon_svg: '', url: '',
+    visibility: 'all' as const, placement: 'header' as const, navigation_type: 'qr' as const,
+    qr_description: '扫码加入售后群', qr_image: `data:image/png;base64,${communityQrPngBase64}`,
+    sort_order: 0,
+  }
+  const qrPath = '/api/v1/settings/header-navigation/support-group/qr'
+
+  test('does not expose QR controls or download protected images while signed out', async ({ page }) => {
+    let qrRequests = 0
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname === qrPath) qrRequests += 1
+    })
+    await seedConsole(page, 'v2', { authenticated: false, customMenuItems: [supportItem] })
+    await page.goto('http://127.0.0.1:4173/login')
+    await expect(page.getByRole('button', { name: '登录', exact: true })).toBeVisible()
+    await expect(page.getByTestId('header-qr-support-group')).toHaveCount(0)
+    await expect(page.locator('[data-zero-one-header-qr-dialog]')).toHaveCount(0)
+    expect(qrRequests).toBe(0)
+  })
+
+  test('keeps the existing mobile QR entry hidden without preloading its image', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-mobile', 'The existing header breakpoint is a mobile contract.')
+    let qrRequests = 0
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname === qrPath) qrRequests += 1
+    })
+    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [supportItem] })
+    await page.goto('http://127.0.0.1:4173/dashboard')
+    await expect(page.getByTestId('header-qr-support-group')).toHaveCount(1)
+    await expect(page.getByTestId('header-qr-support-group')).toBeHidden()
+    expect(qrRequests).toBe(0)
+  })
+
+  test('cancels a closed QR request, reopens cleanly and releases its image URL', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'Header QR controls are intentionally hidden below 640px.')
+    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [supportItem] })
+    await page.addInitScript(() => {
+      const state = { aborted: 0, created: [] as string[], revoked: [] as string[] }
+      ;(window as Window & { __qrRequestLifecycle?: typeof state }).__qrRequestLifecycle = state
+      const nativeFetch = window.fetch.bind(window)
+      window.fetch = (input, init) => {
+        const url = input instanceof Request ? input.url : String(input)
+        if (url.includes('/settings/header-navigation/') && init?.signal) {
+          init.signal.addEventListener('abort', () => { state.aborted += 1 }, { once: true })
+        }
+        return nativeFetch(input, init)
+      }
+      const createURL = URL.createObjectURL.bind(URL)
+      URL.createObjectURL = (blob) => {
+        const url = createURL(blob)
+        state.created.push(url)
+        return url
+      }
+      const revokeURL = URL.revokeObjectURL.bind(URL)
+      URL.revokeObjectURL = (url) => {
+        state.revoked.push(url)
+        revokeURL(url)
+      }
+    })
+    let releaseFirstRequest!: () => void
+    const firstRequestGate = new Promise<void>((resolve) => { releaseFirstRequest = resolve })
+    let qrRequests = 0
+    await page.route(`**${qrPath}`, async (route) => {
+      qrRequests += 1
+      expect(route.request().headers().authorization).toBe('Bearer visual-fixture-token')
+      if (qrRequests === 1) await firstRequestGate
+      await route.fallback()
+    })
+    await page.goto('http://127.0.0.1:4173/dashboard')
+    const openQr = page.getByTestId('header-qr-support-group')
+    await expect(openQr).toBeVisible()
+    expect(qrRequests).toBe(0)
+    await openQr.click()
+    const dialog = page.getByRole('dialog', { name: supportItem.label })
+    await expect(dialog.getByTestId('community-qr-loading')).toBeVisible()
+    await expect.poll(() => qrRequests).toBe(1)
+    await dialog.getByRole('button', { name: /关闭|Close/ }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect.poll(() => page.evaluate(() =>
+      (window as Window & { __qrRequestLifecycle?: { aborted: number } }).__qrRequestLifecycle?.aborted,
+    )).toBe(1)
+
+    releaseFirstRequest()
+    await openQr.click()
+    const image = dialog.getByTestId('community-qr-image')
+    await expect(image).toBeVisible()
+    await expect.poll(() => image.evaluate((node) => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+    expect(qrRequests).toBe(2)
+    await expect(dialog.getByTestId('community-qr-loading')).toHaveCount(0)
+    await dialog.getByRole('button', { name: /关闭|Close/ }).click()
+    const urls = await page.evaluate(() =>
+      (window as Window & {
+        __qrRequestLifecycle?: { created: string[]; revoked: string[] }
+      }).__qrRequestLifecycle,
+    )
+    expect(urls?.created).toHaveLength(1)
+    expect(urls?.revoked).toEqual(urls?.created)
+  })
+
+  test('retries server and image decode failures without leaving a permanent loading state', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'Header QR controls are intentionally hidden below 640px.')
+    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [supportItem] })
+    let attempt = 0
+    await page.route(`**${qrPath}`, async (route) => {
+      attempt += 1
+      if (attempt === 1) {
+        await route.fulfill({ status: 503, contentType: 'application/json', body: '{"message":"unavailable"}' })
+      } else if (attempt === 2) {
+        await route.fulfill({ status: 200, contentType: 'image/png', body: 'not a decodable PNG' })
+      } else {
+        await route.fallback()
+      }
+    })
+    await page.goto('http://127.0.0.1:4173/dashboard')
+    await page.getByTestId('header-qr-support-group').click()
+    const dialog = page.getByRole('dialog', { name: supportItem.label })
+    for (const expectedAttempt of [1, 2]) {
+      await expect(dialog.getByTestId('community-qr-error')).toBeVisible()
+      await expect(dialog.getByTestId('community-qr-loading')).toHaveCount(0)
+      expect(attempt).toBe(expectedAttempt)
+      await dialog.getByTestId('community-qr-retry').click()
+    }
+    await expect(dialog.getByTestId('community-qr-image')).toBeVisible()
+    await expect(dialog.getByTestId('community-qr-error')).toHaveCount(0)
+    expect(attempt).toBe(3)
+  })
+
+  test('times out stalled QR requests and image decodes without accepting their late results', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'Header QR controls are intentionally hidden below 640px.')
+    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [supportItem] })
+    await page.addInitScript(() => {
+      const nativeDecode = HTMLImageElement.prototype.decode
+      let delayed = false
+      HTMLImageElement.prototype.decode = function () {
+        const decoded = nativeDecode.call(this)
+        if (!this.src.startsWith('blob:') || delayed) return decoded
+        delayed = true
+        return decoded.then(() => new Promise<void>((resolve) => {
+          ;(window as Window & { __releaseQrDecode?: () => void }).__releaseQrDecode = resolve
+        }))
+      }
+    })
+    let releaseStalledRequest!: () => void
+    const stalledRequestGate = new Promise<void>((resolve) => { releaseStalledRequest = resolve })
+    let attempt = 0
+    await page.route(`**${qrPath}`, async (route) => {
+      attempt += 1
+      if (attempt === 1) await stalledRequestGate
+      await route.fallback()
+    })
+    await page.goto('http://127.0.0.1:4173/dashboard')
+    await expect(page.getByTestId('header-qr-support-group')).toBeVisible()
+    await page.clock.install()
+    await page.getByTestId('header-qr-support-group').click()
+    const dialog = page.getByRole('dialog', { name: supportItem.label })
+    await expect(dialog.getByTestId('community-qr-loading')).toBeVisible()
+    await page.clock.fastForward(15_100)
+    await expect(dialog.getByTestId('community-qr-error')).toBeVisible()
+    await expect(dialog.getByTestId('community-qr-loading')).toHaveCount(0)
+    await dialog.getByTestId('community-qr-retry').click()
+    await expect.poll(() => page.evaluate(() =>
+      typeof (window as Window & { __releaseQrDecode?: () => void }).__releaseQrDecode,
+    )).toBe('function')
+    await expect(dialog.getByTestId('community-qr-loading')).toBeVisible()
+    await page.clock.fastForward(15_100)
+    await expect(dialog.getByTestId('community-qr-error')).toBeVisible()
+    await dialog.getByTestId('community-qr-retry').click()
+    await expect(dialog.getByTestId('community-qr-image')).toBeVisible()
+    const imageURL = await dialog.getByTestId('community-qr-image').getAttribute('src')
+    releaseStalledRequest()
+    await page.evaluate(() =>
+      (window as Window & { __releaseQrDecode?: () => void }).__releaseQrDecode?.(),
+    )
+    await expect(dialog.getByTestId('community-qr-image')).toHaveAttribute('src', imageURL!)
+    expect(attempt).toBe(3)
   })
 })
 
@@ -1525,6 +1850,237 @@ test.describe('Console header custom iframe menu contracts', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
     await page.clock.setFixedTime(new Date('2026-08-16T12:00:00+08:00'))
+  })
+
+  test('refreshes an expired access token through the existing API client before showing private navigation', async ({ page }) => {
+    const item = {
+      id: 'refresh-private', label: '刷新后的管理入口', icon_svg: '',
+      url: 'https://embed.01yapi.test/refresh-private',
+      visibility: 'admin' as const, placement: 'both' as const, sort_order: 0,
+    }
+    await seedConsole(page, 'v2', { customMenuItems: [item] })
+    await page.addInitScript(() => localStorage.setItem('refresh_token', 'navigation-test-refresh'))
+    let navigationRequests = 0
+    let refreshRequests = 0
+    await page.route('**/api/v1/auth/refresh', async (route) => {
+      refreshRequests += 1
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 0, data: {
+          access_token: 'navigation-test-renewed',
+          refresh_token: 'navigation-test-refresh-renewed',
+          expires_in: 3600,
+        } }),
+      })
+    })
+    await page.route('**/api/v1/admin/settings*', async (route) => {
+      if (new URL(route.request().url()).searchParams.get('scope') !== 'navigation') {
+        await route.fallback()
+        return
+      }
+      navigationRequests += 1
+      if (route.request().headers().authorization !== 'Bearer navigation-test-renewed') {
+        await route.fulfill({ status: 401, contentType: 'application/json', body: '{"code":401,"message":"Token expired"}' })
+        return
+      }
+      await route.fallback()
+    })
+    await page.goto('http://127.0.0.1:4173/admin/dashboard')
+    await expect(page.getByTestId('header-custom-menu-refresh-private')).toBeVisible()
+    expect(navigationRequests).toBe(2)
+    expect(refreshRequests).toBe(1)
+  })
+
+  test('retains an iframe load that completes before administrator navigation metadata', async ({ page }) => {
+    const item = {
+      id: 'early-loaded', label: '提前加载页面', icon_svg: '',
+      url: 'https://embed.01yapi.test/early-loaded',
+      visibility: 'all' as const, placement: 'both' as const, sort_order: 0,
+    }
+    await seedConsole(page, 'v2', { customMenuItems: [item] })
+    let releaseMetadata!: () => void
+    const metadataGate = new Promise<void>((resolve) => { releaseMetadata = resolve })
+    let heldMetadataRequests = 0
+    await page.route('**/api/v1/admin/settings*', async (route) => {
+      if (route.request().method() === 'GET' && (
+        new URL(route.request().url()).searchParams.get('scope') === 'navigation' ||
+        route.request().resourceType() === 'fetch'
+      )) {
+        heldMetadataRequests += 1
+        await metadataGate
+      }
+      await route.fallback()
+    })
+    await page.route('https://embed.01yapi.test/early-loaded*', (route) => route.fulfill({
+      contentType: 'text/html',
+      body: '<!doctype html><html><body>early-loaded-content</body></html>',
+    }))
+    await page.goto('http://127.0.0.1:4173/custom/early-loaded')
+    const frame = page.locator('main iframe.custom-embed-frame')
+    await expect(page.frameLocator('main iframe.custom-embed-frame').getByText('early-loaded-content'))
+      .toBeAttached()
+    expect(heldMetadataRequests).toBeGreaterThan(0)
+
+    releaseMetadata()
+    await expect(page.getByTestId('header-custom-menu-early-loaded')).toBeVisible()
+    await expect(page.getByTestId('custom-page-loading')).toHaveCount(0)
+    await expect(frame).toHaveCSS('visibility', 'visible')
+  })
+
+  test('loads administrator menus with one narrow settings request even when payment config is stalled', async ({ page }) => {
+    const privatePage = {
+      id: 'private-tool', label: '专用管理工具', icon_svg: '',
+      url: 'https://embed.01yapi.test/private-tool',
+      visibility: 'admin' as const, placement: 'both' as const, sort_order: 0,
+    }
+    await seedConsole(page, 'v2', {
+      siteLogo: `data:image/png;base64,${communityQrPngBase64}`,
+      communityQrImage: `data:image/png;base64,${communityQrPngBase64}`,
+      customMenuItems: [privatePage],
+    })
+    let releasePayment!: () => void
+    const paymentGate = new Promise<void>((resolve) => { releasePayment = resolve })
+    let releaseNavigation!: () => void
+    const navigationGate = new Promise<void>((resolve) => { releaseNavigation = resolve })
+    await page.route('**/api/v1/admin/settings*', async (route) => {
+      if (new URL(route.request().url()).searchParams.get('scope') === 'navigation') {
+        await navigationGate
+      }
+      await route.fallback()
+    })
+    let paymentRequests = 0
+    await page.route('**/api/v1/admin/payment/config*', async (route) => {
+      paymentRequests += 1
+      await paymentGate
+      await route.fulfill({ status: 503, contentType: 'application/json', body: '{"message":"unavailable"}' })
+    })
+    await page.route('https://embed.01yapi.test/private-tool*', (route) => route.fulfill({
+      contentType: 'text/html', body: '<!doctype html><html><body>private tool ready</body></html>',
+    }))
+    const settingsReads: URL[] = []
+    page.on('request', (request) => {
+      const url = new URL(request.url())
+      if (url.pathname === '/api/v1/admin/settings' && request.method() === 'GET') {
+        settingsReads.push(url)
+      }
+    })
+    await page.goto('http://127.0.0.1:4173/admin/dashboard')
+    const opsLink = page.locator('aside:not([data-zero-one-sidebar-continuity]) nav a[href="/admin/ops"]')
+    await expect(opsLink).toBeVisible()
+    await page.evaluate(() => window.dispatchEvent(new Event('ops-monitoring-disabled')))
+    await expect(opsLink).toBeHidden()
+    releaseNavigation()
+    await expect(page.getByTestId('header-custom-menu-private-tool')).toBeVisible()
+    await page.getByTestId('header-custom-menu-private-tool').click()
+    await expect(page.frameLocator('main iframe.custom-embed-frame').getByText('private tool ready'))
+      .toBeVisible()
+    await expect.poll(() => paymentRequests).toBe(1)
+    await expect(opsLink).toBeHidden()
+    expect(settingsReads.map((url) => url.searchParams.get('scope'))).toEqual(['navigation'])
+
+    releasePayment()
+    await expect(page.locator('main iframe.custom-embed-frame')).toHaveCSS('visibility', 'visible')
+    const fullSettings = page.waitForResponse((response) => {
+      const url = new URL(response.url())
+      return response.request().method() === 'GET' && url.pathname === '/api/v1/admin/settings' &&
+        !url.searchParams.has('scope')
+    })
+    await page.locator('aside a[href="/admin/settings"]').click()
+    const fullPayload = await (await fullSettings).json()
+    expect(fullPayload.data.site_logo).toBe(`data:image/png;base64,${communityQrPngBase64}`)
+    expect(fullPayload.data.community_qr_image).toBe(`data:image/png;base64,${communityQrPngBase64}`)
+    await expect(page.getByTestId('header-navigation-settings')).toBeVisible()
+  })
+
+  test('ignores a stale frame load after a fast menu switch and never preloads external pages', async ({ page }) => {
+    const items = ['first', 'second'].map((id, sort_order) => ({
+      id, label: `页面${id}`, icon_svg: '', url: `https://embed.01yapi.test/${id}`,
+      visibility: 'all' as const, placement: 'both' as const, sort_order,
+    }))
+    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: items })
+    let releaseFirst!: () => void
+    let releaseSecond!: () => void
+    const gates = {
+      '/first': new Promise<void>((resolve) => { releaseFirst = resolve }),
+      '/second': new Promise<void>((resolve) => { releaseSecond = resolve }),
+    }
+    const loadedPaths: string[] = []
+    await page.route('https://embed.01yapi.test/**', async (route) => {
+      const path = new URL(route.request().url()).pathname as keyof typeof gates
+      loadedPaths.push(path)
+      await gates[path]
+      await route.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>${path} ready</body></html>` })
+    })
+    await page.goto('http://127.0.0.1:4173/dashboard')
+    await expect(page.getByTestId('header-custom-menu-first')).toBeVisible()
+    expect(loadedPaths).toEqual([])
+    await page.getByTestId('header-custom-menu-first').click()
+    const frame = page.locator('main iframe.custom-embed-frame')
+    await expect(frame).toHaveAttribute('src', /\/first\?/)
+    await expect.poll(() => loadedPaths).toEqual(['/first'])
+    const oldFrame = await frame.elementHandle()
+    await page.getByTestId('header-custom-menu-second').click()
+    await expect(frame).toHaveAttribute('src', /\/second\?/)
+    await expect.poll(() => loadedPaths).toEqual(['/first', '/second'])
+    await oldFrame!.evaluate((element) => element.dispatchEvent(new Event('load')))
+    releaseFirst()
+    await expect(page.getByTestId('custom-page-loading')).toBeVisible()
+    await expect(frame).toHaveCSS('visibility', 'hidden')
+
+    releaseSecond()
+    await expect(page.frameLocator('main iframe.custom-embed-frame').getByText('/second ready')).toBeVisible()
+    await expect(page.getByTestId('custom-page-loading')).toHaveCount(0)
+    await page.getByTestId('header-custom-menu-second').click()
+    await expect(frame).toHaveCSS('visibility', 'visible')
+    expect(loadedPaths).toEqual(['/first', '/second'])
+  })
+
+  test('offers a slow-page retry after fifteen seconds and accepts a later successful load', async ({ page }) => {
+    const item = {
+      id: 'slow-page', label: '缓慢页面', icon_svg: '', url: 'https://embed.01yapi.test/slow-page',
+      visibility: 'all' as const, placement: 'both' as const, sort_order: 0,
+    }
+    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [item] })
+    let releaseFirst!: () => void
+    let releaseRetry!: () => void
+    const firstGate = new Promise<void>((resolve) => { releaseFirst = resolve })
+    const retryGate = new Promise<void>((resolve) => { releaseRetry = resolve })
+    let attempts = 0
+    await page.route('https://embed.01yapi.test/slow-page*', async (route) => {
+      attempts += 1
+      await (attempts === 1 ? firstGate : retryGate)
+      await route.fulfill({
+        contentType: 'text/html', body: '<!doctype html><html><body>slow page eventually ready</body></html>',
+      })
+    })
+    await page.goto('http://127.0.0.1:4173/dashboard')
+    await expect(page.getByTestId('header-custom-menu-slow-page')).toBeVisible()
+    await page.clock.install()
+    await page.getByTestId('header-custom-menu-slow-page').click()
+    const frame = page.locator('main iframe.custom-embed-frame')
+    const loading = page.getByTestId('custom-page-loading')
+    const slow = page.getByTestId('custom-page-slow')
+    await expect(loading).toBeVisible()
+    await expect.poll(() => attempts).toBe(1)
+    await page.clock.fastForward(15_100)
+    await expect(slow).toContainText('加载较慢')
+    await expect(frame).toHaveCSS('visibility', 'hidden')
+    await expect(page.locator('main .custom-open-fab'))
+      .toHaveAttribute('href', /https:\/\/embed\.01yapi\.test\/slow-page\?/)
+    await page.getByTestId('custom-page-retry').click()
+    await expect.poll(() => attempts).toBe(2)
+    await expect(slow).toHaveCount(0)
+    releaseFirst()
+    await expect(loading).toBeVisible()
+    await page.clock.fastForward(15_100)
+    await expect(slow).toContainText('加载较慢')
+    releaseRetry()
+    await expect(page.frameLocator('main iframe.custom-embed-frame').getByText('slow page eventually ready'))
+      .toBeVisible()
+    await expect(loading).toHaveCount(0)
+    await expect(slow).toHaveCount(0)
+    await expect(frame).toHaveCSS('visibility', 'visible')
+    expect(attempts).toBe(2)
   })
 
   test('regular users see only regular-user header pages', async ({ page }) => {
@@ -1612,23 +2168,47 @@ test.describe('Console header custom iframe menu contracts', () => {
     }
   })
 
-  test('ignores an administrator settings GET that started before a successful save', async ({ page }) => {
+  test('keeps a saved menu label and URL when an older administrator settings GET returns', async ({ page }) => {
     const initialItems = [{
       id: 'saved-menu',
       label: '旧入口',
       icon_svg: '',
-      url: 'https://example.com/saved-menu',
+      url: 'https://embed.01yapi.test/original-menu',
       visibility: 'all' as const,
       placement: 'both' as const,
       sort_order: 0,
     }]
     await seedConsole(page, 'v2', { customMenuItems: initialItems })
+    const embeddedRequests: string[] = []
+    await page.route('https://embed.01yapi.test/**', async (route) => {
+      const path = new URL(route.request().url()).pathname
+      embeddedRequests.push(path)
+      await route.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body>${path}</body></html>` })
+    })
     let releaseStaleSettings!: () => void
     const staleSettingsGate = new Promise<void>((resolve) => {
       releaseStaleSettings = resolve
     })
-    await page.route('**/api/v1/admin/settings', async (route) => {
-      if (route.request().method() === 'GET' && route.request().resourceType() === 'fetch') {
+    let releaseFreshSettings!: () => void
+    const freshSettingsGate = new Promise<void>((resolve) => { releaseFreshSettings = resolve })
+    let saveStarted = false
+    let staleReads = 0
+    await page.route('**/api/v1/admin/settings*', async (route) => {
+      if (route.request().method() === 'PUT') {
+        saveStarted = true
+        await route.fallback()
+        return
+      }
+      if (route.request().method() === 'GET' && (
+        new URL(route.request().url()).searchParams.get('scope') === 'navigation' ||
+        route.request().resourceType() === 'fetch'
+      )) {
+        if (saveStarted) {
+          await freshSettingsGate
+          await route.fallback()
+          return
+        }
+        staleReads += 1
         await staleSettingsGate
         await route.fulfill({
           status: 200,
@@ -1646,19 +2226,35 @@ test.describe('Console header custom iframe menu contracts', () => {
 
     await page.goto('http://127.0.0.1:4173/admin/settings')
     await page.getByPlaceholder('如：帮助中心').first().fill('新入口')
+    await page.getByPlaceholder('https://example.com/page').first().fill('https://embed.01yapi.test/updated-menu')
+    await expect.poll(() => staleReads).toBeGreaterThan(0)
     const settingsResponse = page.waitForResponse((response) =>
       response.request().method() === 'PUT' &&
       new URL(response.url()).pathname === '/api/v1/admin/settings',
     )
     await page.getByRole('button', { name: '保存设置', exact: true }).click()
-    await settingsResponse
+    const savedResponse = await settingsResponse
+    const savedPayload = await savedResponse.json()
+    expect(savedPayload.data.custom_menu_items).toContainEqual(expect.objectContaining({
+      id: 'saved-menu', label: '新入口', url: 'https://embed.01yapi.test/updated-menu', placement: 'both',
+    }))
     const menuLink = page.locator('aside a[href="/custom/saved-menu"]:visible')
-    await expect(menuLink).toContainText('新入口')
+    await test.step('successful save updates the current menu before the old GET returns', async () => {
+      await expect(menuLink).toContainText('新入口')
+    })
 
     releaseStaleSettings()
     await page.waitForTimeout(100)
-    await expect(menuLink).toContainText('新入口')
+    await test.step('the old GET cannot overwrite the saved menu', async () => {
+      await expect(menuLink).toContainText('新入口')
+    })
     await expect(menuLink).not.toContainText('旧入口')
+    releaseFreshSettings()
+    await menuLink.click()
+    await expect(page.locator('main iframe.custom-embed-frame')).toHaveAttribute('src', /\/updated-menu\?/)
+    await expect(page.frameLocator('main iframe.custom-embed-frame').getByText('/updated-menu')).toBeVisible()
+    await expect(page.locator('header').getByRole('heading', { name: '新入口', exact: true })).toBeVisible()
+    expect(embeddedRequests).toEqual(['/updated-menu'])
   })
 
   test('keeps injected shared sidebar rows visible during administrator navigation', async ({ page }) => {
@@ -2048,22 +2644,23 @@ test.describe('Console visual contracts', () => {
     const response = await page.goto('http://127.0.0.1:4173/login')
     expect(response?.status()).toBe(200)
     const html = await response!.text()
-    expect(html).toContain('/assets/v182-payment-refresh-20260825/index-9xJBhx8B.js')
+    expect(html).toContain('/assets/navigation-loading-20260827/index-9xJBhx8B.js')
     expect(html).toContain('/assets/zero-one-local-preview-guard-v2.js')
-    expect(html).toContain('/assets/zero-one-navigation-reconciliation-v1.js?v=2')
+    expect(html).toContain('/assets/zero-one-navigation-reconciliation-v1.js?v=3')
     expect(html).toContain('/assets/zero-one-console-parity-v1.js?v=4')
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=4')
-    expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=9')
+    expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=10')
     expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=5')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=17')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=6')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=18')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=7')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.js?v=1')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.css?v=1')
     expect(html).toContain('/assets/zero-one-ccswitch-launch-v1.js?v=1')
-    expect(html).toContain('/assets/zero-one-affiliate-admin-v1.js?v=4')
+    expect(html).toContain('/assets/zero-one-affiliate-admin-v1.js?v=5')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.css?v=3')
     expect(html).toContain('/assets/zero-one-floating-panels-v1.js?v=2')
     expect(html).not.toContain('/src/main.ts')
+    expect(html).not.toMatch(/"site_logo"\s*:\s*"data:/)
     expect(
       await page.evaluate(
         () =>
