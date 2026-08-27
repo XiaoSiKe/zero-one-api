@@ -5,12 +5,21 @@ package service
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"hash/crc32"
+	"image"
+	"image/color"
+	"image/png"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"testing/synctest"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
@@ -227,4 +236,222 @@ func TestSettingService_InitializeDefaultSettingsIncludesCommunityQR(t *testing.
 	require.Empty(t, repo.values[SettingKeyCommunityQRImage])
 	require.Equal(t, DefaultCommunityQRTitle, repo.values[SettingKeyCommunityQRTitle])
 	require.Equal(t, DefaultCommunityQRDescription, repo.values[SettingKeyCommunityQRDescription])
+}
+
+func TestSettingService_HeaderNavigationQRReturnsValidatedBytes(t *testing.T) {
+	rawImage := validCommunityQRPNG()
+	images, err := json.Marshal(map[string]string{"support": rawImage})
+	require.NoError(t, err)
+	repo := &settingPublicRepoStub{values: map[string]string{
+		SettingKeyCustomMenuItems:   `[{"id":"support","placement":"header","navigation_type":"qr","visibility":"all"}]`,
+		SettingKeyHeaderNavQRImages: string(images),
+	}}
+	svc := NewSettingService(repo, &config.Config{})
+	validated, enabled, err := svc.GetHeaderNavigationQRImage(context.Background(), "support", RoleUser)
+	require.NoError(t, err)
+	require.True(t, enabled)
+	require.Equal(t, CommunityQRImage{MIMEType: "image/png", Content: communityQRTestImageBytes(t, rawImage)}, validated,
+		"the handler must receive validated bytes without decoding the same image again")
+}
+
+func TestSettingService_HeaderNavigationQRAlwaysChecksCurrentConfiguration(t *testing.T) {
+	rawImage := validCommunityQRPNG()
+	images, err := json.Marshal(map[string]string{"support": rawImage})
+	require.NoError(t, err)
+	menu := `[{"id":"support","placement":"header","navigation_type":"qr","visibility":"all"}]`
+	repo := &settingPublicRepoStub{values: map[string]string{
+		SettingKeyCustomMenuItems: menu, SettingKeyHeaderNavQRImages: string(images),
+	}}
+	svc := NewSettingService(repo, &config.Config{})
+	_, available, err := svc.GetHeaderNavigationQRImage(context.Background(), "support", RoleUser)
+	require.NoError(t, err)
+	require.True(t, available)
+
+	for name, changed := range map[string]string{
+		"removed":         `[]`,
+		"role restricted": strings.Replace(menu, `"all"`, `"admin"`, 1),
+		"not header":      strings.Replace(menu, `"header"`, `"sidebar"`, 1),
+		"not QR":          strings.Replace(menu, `"qr"`, `"link"`, 1),
+		"malformed":       `{`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			repo.values[SettingKeyCustomMenuItems] = changed
+			result, enabled, err := svc.GetHeaderNavigationQRImage(context.Background(), "support", RoleUser)
+			require.NoError(t, err)
+			require.False(t, enabled)
+			require.Empty(t, result)
+		})
+	}
+	repo.values[SettingKeyCustomMenuItems] = strings.Replace(menu, `"all"`, `"admin"`, 1)
+	_, available, err = svc.GetHeaderNavigationQRImage(context.Background(), "support", RoleAdmin)
+	require.NoError(t, err)
+	require.True(t, available)
+	repo.values[SettingKeyCustomMenuItems] = menu
+
+	for _, changed := range []string{`{}`, `{`, `{"support":"data:image/png;base64,%%%"}`} {
+		repo.values[SettingKeyHeaderNavQRImages] = changed
+		result, enabled, err := svc.GetHeaderNavigationQRImage(context.Background(), "support", RoleUser)
+		require.NoError(t, err)
+		require.False(t, enabled)
+		require.Empty(t, result)
+	}
+	newImage := "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGNkYPjPwMDAxAAGAAsfAQMU4wsAAAAAAElFTkSuQmCC"
+	newImages, err := json.Marshal(map[string]string{"support": newImage})
+	require.NoError(t, err)
+	repo.values[SettingKeyHeaderNavQRImages] = string(newImages)
+	result, enabled, err := svc.GetHeaderNavigationQRImage(context.Background(), "support", RoleUser)
+	require.NoError(t, err)
+	require.True(t, enabled)
+	require.Equal(t, CommunityQRImage{MIMEType: "image/png", Content: communityQRTestImageBytes(t, newImage)}, result)
+
+	repo.err = errors.New("settings unavailable")
+	result, enabled, err = svc.GetHeaderNavigationQRImage(context.Background(), "support", RoleUser)
+	require.Error(t, err)
+	require.False(t, enabled)
+	require.Empty(t, result, "a prior successful request cannot authorize an image after a read failure")
+}
+
+func TestSettingService_CommunityQRReturnsValidatedBytesAndHonorsDisable(t *testing.T) {
+	rawImage := validCommunityQRPNG()
+	repo := &settingPublicRepoStub{values: map[string]string{
+		SettingKeyCommunityQREnabled: "true", SettingKeyCommunityQRImage: rawImage,
+	}}
+	svc := NewSettingService(repo, &config.Config{})
+	result, enabled, err := svc.GetCommunityQRImage(context.Background())
+	require.NoError(t, err)
+	require.True(t, enabled)
+	require.Equal(t, CommunityQRImage{MIMEType: "image/png", Content: communityQRTestImageBytes(t, rawImage)}, result)
+	repo.values[SettingKeyCommunityQREnabled] = "false"
+	result, enabled, err = svc.GetCommunityQRImage(context.Background())
+	require.NoError(t, err)
+	require.False(t, enabled)
+	require.Empty(t, result)
+}
+
+func TestCommunityQRImageCacheCoalescesConcurrentValidation(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		var cache communityQRImageCache
+		var validations atomic.Int32
+		release := make(chan struct{})
+		decode := func(raw string) (CommunityQRImage, bool) {
+			validations.Add(1)
+			<-release
+			return DecodeCommunityQRImage(raw)
+		}
+		const callers = 20
+		results := make(chan CommunityQRImage, callers)
+		var wg sync.WaitGroup
+		for range callers {
+			wg.Go(func() {
+				image, _ := cache.getOrDecode(validCommunityQRPNG(), decode)
+				results <- image
+			})
+		}
+		synctest.Wait()
+		require.Equal(t, int32(1), validations.Load(), "concurrent misses must share one complete validation")
+		close(release)
+		wg.Wait()
+		close(results)
+		for image := range results {
+			require.Equal(t, "image/png", image.MIMEType)
+			require.Equal(t, communityQRTestImageBytes(t, validCommunityQRPNG()), image.Content)
+		}
+		_, ok := cache.getOrDecode(validCommunityQRPNG(), decode)
+		require.True(t, ok)
+		require.Equal(t, int32(1), validations.Load(), "a warm hit must not revalidate pixels")
+	})
+}
+
+func TestCommunityQRImageCacheDoesNotRememberInvalidContent(t *testing.T) {
+	var cache communityQRImageCache
+	validations := 0
+	decode := func(raw string) (CommunityQRImage, bool) {
+		validations++
+		return DecodeCommunityQRImage(raw)
+	}
+	for range 3 {
+		image, ok := cache.getOrDecode("data:image/png;base64,%%%", decode)
+		require.False(t, ok)
+		require.Empty(t, image)
+	}
+	require.Equal(t, 3, validations)
+	require.Empty(t, cache.entries)
+	require.Zero(t, cache.bytes)
+}
+
+func TestCommunityQRImageCacheEvictsLeastRecentlyUsedContent(t *testing.T) {
+	var cache communityQRImageCache
+	fingerprint := func(i int) [sha256.Size]byte { return sha256.Sum256([]byte(fmt.Sprint(i))) }
+	for i := range maxCommunityQRCacheEntries {
+		cache.remember(fingerprint(i), CommunityQRImage{MIMEType: "image/png", Content: []byte{byte(i)}})
+	}
+	_, ok := cache.get(fingerprint(0))
+	require.True(t, ok)
+	cache.remember(fingerprint(maxCommunityQRCacheEntries), CommunityQRImage{MIMEType: "image/png", Content: []byte{42}})
+	_, retained := cache.get(fingerprint(0))
+	_, evicted := cache.get(fingerprint(1))
+	require.True(t, retained, "recent reads must update eviction order")
+	require.False(t, evicted)
+	require.Len(t, cache.entries, maxCommunityQRCacheEntries)
+	require.Equal(t, maxCommunityQRCacheEntries, cache.bytes)
+}
+
+func TestCommunityQRImageCacheEnforcesTotalByteBudget(t *testing.T) {
+	var cache communityQRImageCache
+	for i := range 6 {
+		cache.remember(sha256.Sum256([]byte(fmt.Sprint(i))), CommunityQRImage{MIMEType: "image/png", Content: make([]byte, 1024*1024)})
+	}
+	require.Len(t, cache.entries, 5)
+	require.Equal(t, maxCommunityQRCacheBytes, cache.bytes)
+	_, evicted := cache.get(sha256.Sum256([]byte("0")))
+	require.False(t, evicted)
+	oversized := sha256.Sum256([]byte("oversized"))
+	cache.remember(oversized, CommunityQRImage{MIMEType: "image/png", Content: make([]byte, maxCommunityQRCacheBytes+1)})
+	_, exists := cache.get(oversized)
+	require.False(t, exists)
+	require.Equal(t, maxCommunityQRCacheBytes, cache.bytes)
+}
+
+func benchmarkHeaderNavigationQRService(b *testing.B) *SettingService {
+	b.Helper()
+	raster := image.NewGray(image.Rect(0, 0, 1024, 1024))
+	for y := range 1024 {
+		for x := range 1024 {
+			if (x/16+y/16)%2 == 0 {
+				raster.SetGray(x, y, color.Gray{Y: 255})
+			}
+		}
+	}
+	var pngBytes bytes.Buffer
+	require.NoError(b, png.Encode(&pngBytes, raster))
+	rawImage := communityQRDataURI("image/png", pngBytes.Bytes())
+	images, err := json.Marshal(map[string]string{"support": rawImage})
+	require.NoError(b, err)
+	return NewSettingService(&settingPublicRepoStub{values: map[string]string{
+		SettingKeyCustomMenuItems:   `[{"id":"support","placement":"header","navigation_type":"qr","visibility":"all"}]`,
+		SettingKeyHeaderNavQRImages: string(images),
+	}}, &config.Config{})
+}
+
+func BenchmarkSettingService_HeaderNavigationQRImage(b *testing.B) {
+	svc := benchmarkHeaderNavigationQRService(b)
+	b.ReportAllocs()
+	for b.Loop() {
+		_, enabled, err := svc.GetHeaderNavigationQRImage(context.Background(), "support", RoleUser)
+		if err != nil || !enabled {
+			b.Fatal("QR image unavailable", err)
+		}
+	}
+}
+
+func BenchmarkSettingService_HeaderNavigationQRImageCold(b *testing.B) {
+	svc := benchmarkHeaderNavigationQRService(b)
+	b.ReportAllocs()
+	for b.Loop() {
+		svc.communityQRImages = communityQRImageCache{}
+		_, enabled, err := svc.GetHeaderNavigationQRImage(context.Background(), "support", RoleUser)
+		if err != nil || !enabled {
+			b.Fatal("QR image unavailable", err)
+		}
+	}
 }

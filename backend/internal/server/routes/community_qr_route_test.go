@@ -22,6 +22,7 @@ type communityQRRouteSettingRepo struct {
 	values        map[string]string
 	requestedKeys []string
 }
+
 func (r *communityQRRouteSettingRepo) Get(context.Context, string) (*service.Setting, error) {
 	return nil, service.ErrSettingNotFound
 }
@@ -73,6 +74,8 @@ func TestCommunityQRImageRouteRequiresJWTAndPublicScopeCannotServeImage(t *testi
 	repo := &communityQRRouteSettingRepo{values: map[string]string{
 		service.SettingKeyCommunityQREnabled: "true",
 		service.SettingKeyCommunityQRImage:   rawImage,
+		service.SettingKeyCustomMenuItems:    `[{"id":"support","placement":"header","navigation_type":"qr","visibility":"all"}]`,
+		service.SettingKeyHeaderNavQRImages:  `{"support":"` + rawImage + `"}`,
 	}}
 	settingService := service.NewSettingService(repo, &config.Config{})
 
@@ -131,5 +134,27 @@ func TestCommunityQRImageRouteRequiresJWTAndPublicScopeCannotServeImage(t *testi
 		require.Equal(t, "image/png", recorder.Header().Get("Content-Type"))
 		require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"))
 		require.Equal(t, "nosniff", recorder.Header().Get("X-Content-Type-Options"))
+	})
+
+	t.Run("header QR cache never bypasses JWT or a changed entry", func(t *testing.T) {
+		request := func(authenticated bool) *httptest.ResponseRecorder {
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodGet, "/api/v1/settings/header-navigation/support/qr", nil)
+			if authenticated {
+				request.Header.Set("Authorization", "Bearer test-user-token")
+			}
+			router.ServeHTTP(recorder, request)
+			return recorder
+		}
+		for range 2 {
+			recorder := request(true)
+			require.Equal(t, http.StatusOK, recorder.Code)
+			require.Equal(t, content, recorder.Body.Bytes())
+			require.Equal(t, "no-store", recorder.Header().Get("Cache-Control"))
+			require.Equal(t, "nosniff", recorder.Header().Get("X-Content-Type-Options"))
+		}
+		require.Equal(t, http.StatusUnauthorized, request(false).Code)
+		repo.values[service.SettingKeyCustomMenuItems] = `[{"id":"support","placement":"header","navigation_type":"qr","visibility":"admin"}]`
+		require.Equal(t, http.StatusNotFound, request(true).Code)
 	})
 }

@@ -424,23 +424,30 @@ func (s *SettingService) GetPublicSiteLogo(ctx context.Context) (string, error) 
 // GetCommunityQRImage reads only the entry switch and image setting so the
 // authenticated binary endpoint does not load the complete settings record or
 // expose a retained image while the administrator has disabled the entry.
-func (s *SettingService) GetCommunityQRImage(ctx context.Context) (string, bool, error) {
+func (s *SettingService) GetCommunityQRImage(ctx context.Context) (CommunityQRImage, bool, error) {
 	settings, err := s.settingRepo.GetMultiple(ctx, []string{SettingKeyCommunityQREnabled, SettingKeyCommunityQRImage})
 	if err != nil {
-		return "", false, fmt.Errorf("get community QR image: %w", err)
+		return CommunityQRImage{}, false, fmt.Errorf("get community QR image: %w", err)
 	}
-	return settings[SettingKeyCommunityQRImage], settings[SettingKeyCommunityQREnabled] == "true", nil
+	if settings[SettingKeyCommunityQREnabled] != "true" {
+		return CommunityQRImage{}, false, nil
+	}
+	image, ok := s.communityQRImages.getOrDecode(settings[SettingKeyCommunityQRImage], DecodeCommunityQRImage)
+	return image, ok, nil
 }
 
 // GetHeaderNavigationQRImage returns one configured header QR image without
 // exposing image data through the public settings projection.
-func (s *SettingService) GetHeaderNavigationQRImage(ctx context.Context, id, role string) (string, bool, error) {
+func (s *SettingService) GetHeaderNavigationQRImage(ctx context.Context, id, role string) (CommunityQRImage, bool, error) {
+	if id == "" || (role != RoleUser && role != RoleAdmin) {
+		return CommunityQRImage{}, false, nil
+	}
 	settings, err := s.settingRepo.GetMultiple(ctx, []string{
 		SettingKeyCustomMenuItems,
 		SettingKeyHeaderNavQRImages,
 	})
 	if err != nil {
-		return "", false, err
+		return CommunityQRImage{}, false, err
 	}
 	var items []struct {
 		ID         string `json:"id"`
@@ -449,23 +456,20 @@ func (s *SettingService) GetHeaderNavigationQRImage(ctx context.Context, id, rol
 		Visibility string `json:"visibility"`
 	}
 	if err := json.Unmarshal([]byte(settings[SettingKeyCustomMenuItems]), &items); err != nil {
-		return "", false, nil
-	}
-	images := make(map[string]string)
-	if err := json.Unmarshal([]byte(settings[SettingKeyHeaderNavQRImages]), &images); err != nil {
-		return "", false, nil
+		return CommunityQRImage{}, false, nil
 	}
 	for _, item := range items {
 		visible := item.Visibility == "all" || item.Visibility == role
 		if item.ID == id && item.Placement == "header" && item.NavType == "qr" && visible {
-			rawImage := images[item.ID]
-			if _, ok := DecodeCommunityQRImage(rawImage); ok {
-				return rawImage, true, nil
+			images := make(map[string]string)
+			if err := json.Unmarshal([]byte(settings[SettingKeyHeaderNavQRImages]), &images); err != nil {
+				return CommunityQRImage{}, false, nil
 			}
-			return "", false, nil
+			image, ok := s.communityQRImages.getOrDecode(images[item.ID], DecodeCommunityQRImage)
+			return image, ok, nil
 		}
 	}
-	return "", false, nil
+	return CommunityQRImage{}, false, nil
 }
 
 // channelMonitorIntervalMin / channelMonitorIntervalMax bound the default interval
@@ -801,7 +805,7 @@ func (s *SettingService) GetPublicSettingsProjection(ctx context.Context) (*Publ
 		AliyunCaptchaPrefix:                 settings.AliyunCaptchaPrefix,
 		AliyunCaptchaRegion:                 settings.AliyunCaptchaRegion,
 		SiteName:                            settings.SiteName,
-		SiteLogo:                            settings.SiteLogo,
+		SiteLogo:                            ConsoleSiteLogoURL(settings.SiteLogo),
 		CommunityQREnabled:                  settings.CommunityQREnabled,
 		CommunityQRTitle:                    settings.CommunityQRTitle,
 		CommunityQRDescription:              settings.CommunityQRDescription,
@@ -868,25 +872,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 }
 
 func parsePublicCustomMenuItems(raw string) []PublicCustomMenuItem {
-	raw = strings.TrimSpace(raw)
-	if raw == "" || raw == "[]" {
-		return []PublicCustomMenuItem{}
-	}
-	var items []struct {
-		ID         string `json:"id"`
-		Label      string `json:"label"`
-		IconSVG    string `json:"icon_svg"`
-		URL        string `json:"url"`
-		PageSlug   string `json:"page_slug,omitempty"`
-		Visibility string `json:"visibility"`
-		Placement  string `json:"placement,omitempty"`
-		NavType    string `json:"navigation_type,omitempty"`
-		QRDesc     string `json:"qr_description,omitempty"`
-		SortOrder  int    `json:"sort_order"`
-	}
-	if err := json.Unmarshal([]byte(raw), &items); err != nil {
-		return []PublicCustomMenuItem{}
-	}
+	items := parseNavigationCustomMenuItems(raw)
 	filtered := make([]PublicCustomMenuItem, 0, len(items))
 	for _, item := range items {
 		if item.Visibility != "user" && item.Visibility != "all" {
@@ -897,12 +883,7 @@ func parsePublicCustomMenuItems(raw string) []PublicCustomMenuItem {
 				continue
 			}
 		}
-		filtered = append(filtered, PublicCustomMenuItem{
-			ID: item.ID, Label: item.Label, IconSVG: item.IconSVG, URL: item.URL,
-			PageSlug: item.PageSlug, Visibility: item.Visibility, Placement: item.Placement,
-			NavType: item.NavType, QRDesc: item.QRDesc,
-			SortOrder: item.SortOrder,
-		})
+		filtered = append(filtered, item)
 	}
 	return filtered
 }

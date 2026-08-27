@@ -5,16 +5,117 @@ package admin
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
+
+type navigationSettingsRepoStub struct {
+	*settingHandlerRepoStub
+	requestedKeys [][]string
+	err           error
+}
+
+func (s *navigationSettingsRepoStub) GetMultiple(ctx context.Context, keys []string) (map[string]string, error) {
+	s.requestedKeys = append(s.requestedKeys, append([]string(nil), keys...))
+	if s.err != nil {
+		return nil, s.err
+	}
+	return s.settingHandlerRepoStub.GetMultiple(ctx, keys)
+}
+
+func (s *navigationSettingsRepoStub) GetAll(context.Context) (map[string]string, error) {
+	return nil, errors.New("navigation must not load full settings")
+}
+
+func TestGetSettingsNavigationScopeReadsOnlyNavigationMetadata(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repo := &navigationSettingsRepoStub{settingHandlerRepoStub: &settingHandlerRepoStub{values: map[string]string{
+		service.SettingKeyCustomMenuItems:              `[{"id":"admin-docs","label":"运维文档","url":"https://example.com","visibility":"admin","sort_order":0},{"id":"support","label":"售后群","placement":"header","navigation_type":"qr","visibility":"all","qr_description":"扫码加入","qr_image":"must-not-leak","sort_order":1}]`,
+		service.SettingKeyHeaderNavQRImages:            "must-not-read-image-map",
+		service.SettingKeyCommunityQRImage:             "must-not-read-legacy-image",
+		service.SettingKeySiteLogo:                     "must-not-read-logo",
+		service.SettingKeySMTPPassword:                 "must-not-read-secret",
+		service.SettingKeyUserSidebarOrder:             `["/dashboard","/profile","/dashboard","bad"]`,
+		service.SettingKeyAdminSidebarOrder:            `["/admin/dashboard","/admin/users"]`,
+		service.SettingKeyProfileNavEnabled:            "false",
+		service.SettingKeySubscriptionNavEnabled:       "true",
+		service.SettingKeyModelPlazaNavPlacement:       "sidebar",
+		service.SettingKeyOpsMonitoringEnabled:         "true",
+		service.SettingKeyOpsRealtimeMonitoringEnabled: "false",
+		service.SettingKeyOpsQueryModeDefault:          "raw",
+	}}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), nil, nil, &service.OpsService{}, service.NewPaymentConfigService(nil, repo, nil), nil, nil)
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/admin/settings?scope=navigation", nil)
+	h.GetSettings(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Len(t, repo.requestedKeys, 1, "navigation must not wait for auth-source or payment configuration")
+	require.ElementsMatch(t, []string{
+		service.SettingKeyCustomMenuItems, service.SettingKeyUserSidebarOrder, service.SettingKeyAdminSidebarOrder,
+		service.SettingKeyProfileNavEnabled, service.SettingKeySubscriptionNavEnabled, service.SettingKeyModelPlazaNavPlacement,
+		service.SettingKeyOpsMonitoringEnabled, service.SettingKeyOpsRealtimeMonitoringEnabled, service.SettingKeyOpsQueryModeDefault,
+	}, repo.requestedKeys[0])
+	var response struct {
+		Data map[string]json.RawMessage `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+	require.Len(t, response.Data, 9)
+	require.JSONEq(t, `["/dashboard","/profile"]`, string(response.Data["user_sidebar_order"]))
+	require.JSONEq(t, `["/admin/dashboard","/admin/users"]`, string(response.Data["admin_sidebar_order"]))
+	require.Equal(t, "false", string(response.Data["profile_navigation_enabled"]))
+	require.Equal(t, "true", string(response.Data["subscription_navigation_enabled"]))
+	require.Equal(t, `"sidebar"`, string(response.Data["model_plaza_placement"]))
+	require.Equal(t, "true", string(response.Data["ops_monitoring_enabled"]))
+	require.Equal(t, "false", string(response.Data["ops_realtime_monitoring_enabled"]))
+	require.Equal(t, `"raw"`, string(response.Data["ops_query_mode_default"]))
+	require.Contains(t, string(response.Data["custom_menu_items"]), "admin-docs")
+	require.Contains(t, string(response.Data["custom_menu_items"]), "support")
+	require.NotContains(t, recorder.Body.String(), "qr_image")
+	require.NotContains(t, recorder.Body.String(), "must-not-")
+	t.Logf("navigation response: %d bytes; settings reads: %d", recorder.Body.Len(), len(repo.requestedKeys))
+}
+
+func TestGetSettingsNavigationScopeDefaultsAndErrors(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repo := &navigationSettingsRepoStub{settingHandlerRepoStub: &settingHandlerRepoStub{values: map[string]string{}}}
+	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), nil, nil, nil, nil, nil, nil)
+	request := func() *httptest.ResponseRecorder {
+		recorder := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(recorder)
+		c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/admin/settings?scope=navigation", nil)
+		h.GetSettings(c)
+		return recorder
+	}
+	recorder := request()
+	require.Equal(t, http.StatusOK, recorder.Code)
+	var response struct {
+		Data map[string]json.RawMessage `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+	require.Equal(t, "[]", string(response.Data["custom_menu_items"]))
+	require.Equal(t, "[]", string(response.Data["user_sidebar_order"]))
+	require.Equal(t, "[]", string(response.Data["admin_sidebar_order"]))
+	require.Equal(t, "true", string(response.Data["profile_navigation_enabled"]))
+	require.Equal(t, "true", string(response.Data["subscription_navigation_enabled"]))
+	require.Equal(t, `"header"`, string(response.Data["model_plaza_placement"]))
+	require.Equal(t, "false", string(response.Data["ops_monitoring_enabled"]), "a missing ops service must remain unavailable")
+	require.Equal(t, "true", string(response.Data["ops_realtime_monitoring_enabled"]))
+	require.Equal(t, `"auto"`, string(response.Data["ops_query_mode_default"]))
+	repo.err = errors.New("settings unavailable")
+	require.Equal(t, http.StatusInternalServerError, request().Code)
+}
 
 func validCommunityQRImageForAdminTest(suffix string) string {
 	if strings.Contains(suffix, "new") {
@@ -111,11 +212,13 @@ func TestUpdateSettingsLandingNoticePartialUpdateKeepsUnsentFields(t *testing.T)
 }
 
 func TestUpdateSettingsRepresentativeValuesSurviveSubsequentGet(t *testing.T) {
+	rawLogo := validCommunityQRImageForAdminTest("logo")
 	h, repo := newStepUpSwitchTestHandler(t, map[string]string{
 		service.SettingKeySiteName:           "Old Gateway",
+		service.SettingKeySiteLogo:           rawLogo,
 		service.SettingKeyCompactHomeEnabled: "false",
-		service.SettingKeyChannelMonitorMode:  service.ChannelMonitorModeV1,
-		service.SettingKeyCustomMenuItems:     "[]",
+		service.SettingKeyChannelMonitorMode: service.ChannelMonitorModeV1,
+		service.SettingKeyCustomMenuItems:    "[]",
 	})
 
 	menuItems := []map[string]any{{
@@ -137,6 +240,7 @@ func TestUpdateSettingsRepresentativeValuesSurviveSubsequentGet(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, getRecorder.Code)
 	require.Contains(t, getRecorder.Body.String(), `"site_name":"Latest Gateway"`)
+	require.Contains(t, getRecorder.Body.String(), `"site_logo":"`+rawLogo+`"`, "editing must retain the original logo, not the public image URL")
 	require.Contains(t, getRecorder.Body.String(), `"compact_home_enabled":true`)
 	require.Contains(t, getRecorder.Body.String(), `"channel_monitor_mode":"v2"`)
 	require.Contains(t, getRecorder.Body.String(), `"label":"最新帮助"`)
