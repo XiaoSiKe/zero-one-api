@@ -616,6 +616,17 @@ export async function seedConsole(
     if (path === '/admin/payment/config') {
       return fulfill(route, { enabled: options.paymentEnabled ?? false })
     }
+    // Keys and Usage consume these read models as a page and an array.
+    // Falling through to the generic {} response can crash rendering after navigation.
+    if (route.request().method() === 'GET' && path === '/keys') {
+      return fulfill(route, {
+        items: [], total: 0,
+        page: Number(requestUrl.searchParams.get('page') || 1),
+        page_size: Number(requestUrl.searchParams.get('page_size') || 20),
+        pages: 1,
+      })
+    }
+    if (route.request().method() === 'GET' && path === '/groups/available') return fulfill(route, [])
     if (path === '/admin/groups/all') return fulfill(route, [])
     if (path === '/usage/dashboard/stats') return fulfill(route, dashboardStats)
     if (path === '/usage/dashboard/trend') {
