@@ -11,7 +11,23 @@ function nonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-export function isSemanticSSEPayload(payload) {
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function hasOutput(value) {
+  return typeof value === 'string' && value.length > 0
+}
+
+function itemHasOutput(item) {
+  if (!isRecord(item)) return false
+  if (hasOutput(item.arguments) || hasOutput(item.input) || hasOutput(item.result)) return true
+  if (isRecord(item.input) && Object.keys(item.input).length > 0) return true
+  return ['content', 'summary'].some((field) => Array.isArray(item[field]) &&
+    item[field].some((part) => isRecord(part) && (hasOutput(part.text) || hasOutput(part.transcript) || hasOutput(part.refusal))))
+}
+
+export function isSemanticSSEPayload(payload, eventType = '') {
   const trimmed = payload.trim()
   if (!trimmed || trimmed === '[DONE]') return false
 
@@ -21,26 +37,40 @@ export function isSemanticSSEPayload(payload) {
   } catch {
     return false
   }
+  if (!isRecord(value)) return false
+  if (!nonEmptyString(value.type) && eventType) value.type = eventType
 
   if (Array.isArray(value.choices)) {
-    return value.choices.some(({ delta } = {}) => {
-      if (!delta || typeof delta !== 'object') return false
-      if (nonEmptyString(delta.content)) return true
-      if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) return true
-      return delta.function_call && typeof delta.function_call === 'object'
+    return value.choices.some((choice) => {
+      const delta = choice?.delta
+      if (!isRecord(delta)) return false
+      if (hasOutput(delta.content) || hasOutput(delta.reasoning_content) || hasOutput(delta.reasoning) || hasOutput(delta.refusal)) return true
+      if (Array.isArray(delta.tool_calls) && delta.tool_calls.some((call) =>
+        hasOutput(call?.function?.arguments) || hasOutput(call?.custom?.input))) return true
+      return hasOutput(delta.function_call?.arguments)
     })
   }
 
-  if (value.type === 'response.output_text.delta') return nonEmptyString(value.delta)
-  if (value.type === 'response.function_call_arguments.delta') return nonEmptyString(value.delta)
-  if (value.type === 'response.output_item.added') {
-    const type = value.item?.type
-    return typeof type === 'string' && (type === 'function_call' || type.endsWith('_call'))
+  if (typeof value.type === 'string' && value.type.startsWith('response.')) {
+    if (value.type.endsWith('.delta')) return hasOutput(value.delta)
+    if (['response.output_item.added', 'response.output_item.done'].includes(value.type)) return itemHasOutput(value.item)
+    if (['response.completed', 'response.done'].includes(value.type)) {
+      return Array.isArray(value.response?.output) && value.response.output.some(itemHasOutput)
+    }
+    if (['response.content_part.added', 'response.content_part.done',
+      'response.reasoning_summary_part.added', 'response.reasoning_summary_part.done'].includes(value.type)) {
+      return hasOutput(value.part?.text) || hasOutput(value.part?.transcript) || hasOutput(value.part?.refusal)
+    }
+    if (value.type === 'response.refusal.done') return hasOutput(value.refusal)
+    if (value.type.endsWith('.done')) return hasOutput(value.text) || hasOutput(value.arguments) || hasOutput(value.input)
+    if (value.type === 'response.image_generation_call.partial_image') return hasOutput(value.partial_image_b64)
   }
   if (value.type === 'content_block_delta') {
-    return nonEmptyString(value.delta?.text) || nonEmptyString(value.delta?.partial_json)
+    return hasOutput(value.delta?.text) || hasOutput(value.delta?.partial_json) || hasOutput(value.delta?.thinking)
   }
-  if (value.type === 'content_block_start') return value.content_block?.type === 'tool_use'
+  if (value.type === 'content_block_start') {
+    return itemHasOutput(value.content_block) || hasOutput(value.content_block?.text) || hasOutput(value.content_block?.thinking)
+  }
   return false
 }
 
@@ -57,22 +87,32 @@ export class SSESemanticParser {
     this.decoder = new TextDecoder()
     this.buffer = ''
     this.semanticFound = false
+    this.terminalFound = false
+    this.streamError = false
+    this.previousCR = false
   }
 
   push(chunk) {
-    this.buffer += this.decoder.decode(chunk, { stream: true })
-    this.buffer = this.buffer.replace(/\r\n?/gu, '\n')
+    this.#append(this.decoder.decode(chunk, { stream: true }))
     this.#consumeCompleteEvents()
     return this.semanticFound
   }
 
   finish() {
-    this.buffer += this.decoder.decode()
-    this.buffer = this.buffer.replace(/\r\n?/gu, '\n')
+    this.#append(this.decoder.decode())
     this.#consumeCompleteEvents()
-    if (this.buffer.trim()) this.#consumeEvent(this.buffer)
+    // EOF is not an SSE event delimiter. A truncated frame cannot start TTFT.
     this.buffer = ''
     return this.semanticFound
+  }
+
+  #append(decoded) {
+    if (!decoded) return
+    // A CR already supplies the newline; a subsequent LF may arrive in another
+    // network chunk and must not invent a blank line / event boundary.
+    if (this.previousCR && decoded.startsWith('\n')) decoded = decoded.slice(1)
+    this.previousCR = decoded.endsWith('\r')
+    this.buffer += decoded.replace(/\r\n?/gu, '\n')
   }
 
   #consumeCompleteEvents() {
@@ -87,7 +127,21 @@ export class SSESemanticParser {
 
   #consumeEvent(event) {
     const payload = eventPayload(event)
-    if (payload !== null && isSemanticSSEPayload(payload)) this.semanticFound = true
+    const eventType = event.split('\n').filter((line) => line.startsWith('event:')).at(-1)?.slice(6).trim()
+    if (['error', 'response.failed', 'response.incomplete', 'response.cancelled'].includes(eventType)) this.streamError = true
+    if (payload === null) return
+    if (payload.trim() === '[DONE]') {
+      this.terminalFound = true
+      return
+    }
+    let value
+    try { value = JSON.parse(payload) } catch { return }
+    if (!isRecord(value)) return
+    if (!nonEmptyString(value.type) && eventType) value.type = eventType
+    if (value.error || ['error', 'response.failed', 'response.incomplete', 'response.cancelled'].includes(value.type) ||
+      ['failed', 'incomplete', 'cancelled'].includes(value.response?.status)) this.streamError = true
+    if (['response.completed', 'response.done', 'message_stop'].includes(value.type)) this.terminalFound = true
+    if (isSemanticSSEPayload(payload, eventType)) this.semanticFound = true
   }
 }
 
@@ -237,15 +291,25 @@ async function runRequest(options, apiKey) {
       const { done, value } = await reader.read()
       if (done) break
       if (parser.push(value) && ttftMs === null) ttftMs = performance.now() - started
+      if (parser.streamError || parser.terminalFound) {
+        // Terminal protocol events finish the sample even if a provider leaves
+        // the HTTP stream open. Release the connection without reading forever.
+        try { await reader.cancel() } catch { /* Preserve the protocol outcome. */ }
+        break
+      }
     }
     if (parser.finish() && ttftMs === null) ttftMs = performance.now() - started
   } catch (error) {
     return { ok: false, error: errorKind(error), status: String(response.status) }
+  } finally {
+    reader.releaseLock()
   }
 
+  if (parser.streamError) return { ok: false, error: 'upstream_stream_error', status: String(response.status) }
   if (ttftMs === null) {
     return { ok: false, error: 'semantic_event_not_found', status: String(response.status) }
   }
+  if (!parser.terminalFound) return { ok: false, error: 'incomplete_stream', status: String(response.status) }
   return { ok: true, status: String(response.status), ttftMs }
 }
 
@@ -278,6 +342,7 @@ export async function runBenchmark(options, apiKey) {
     requested_samples: options.requests,
     successful_samples: durations.length,
     failed_samples: options.requests - durations.length,
+    success_rate: durations.length / options.requests,
     warmup_samples: options.warmup,
     max_output_tokens: options.maxOutputTokens,
     window_started_at: windowStartedAt,
@@ -286,6 +351,7 @@ export async function runBenchmark(options, apiKey) {
       p50: percentile(durations, 0.5),
       p90: percentile(durations, 0.9),
       p95: percentile(durations, 0.95),
+      p99: percentile(durations, 0.99),
     },
     status_counts: statuses,
     error_counts: errors,

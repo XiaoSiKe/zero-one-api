@@ -12,6 +12,38 @@ import {
   upstreamComparisonArgs,
 } from './verify-upgrade-readiness.mjs'
 
+test('redeem, TTFT, and metadata changes require permanent retention rather than UI or legacy fallback', () => {
+  const baseline = JSON.parse(readFileSync(new URL('../upstream-baseline.json', import.meta.url), 'utf8'))
+  const uiManifest = JSON.parse(readFileSync(new URL('./ui-baseline.json', import.meta.url), 'utf8'))
+  const paths = [
+    'backend/internal/handler/gateway_handler.go',
+    'backend/internal/pkg/gatewaytiming/timing.go',
+    'backend/internal/repository/redeem_code_repo.go',
+    'backend/internal/repository/redeem_code_lifecycle_integration_test.go',
+    'backend/internal/repository/api_key_last_used_monotonic_integration_test.go',
+    'backend/internal/service/api_key_last_used_writer.go',
+    'backend/internal/service/gateway_http_timing.go',
+    'backend/internal/service/openai_http_drain.go',
+    'deploy/zero-one/recovered-frontend/console/assets/redeem-ttft-20260828',
+    'docs/adr/0008-redeem-and-http-stream-lifecycles.md',
+    'frontend/src/api/redeem.ts',
+    'frontend/src/features/redeem/generation.ts',
+    'visual-regression/tests/redeem.behavior.spec.ts',
+  ].sort()
+  assert.deepEqual(evaluateProductChangeProtection(paths, baseline, uiManifest), {
+    preserved: paths, approved_ui: [], legacy_hotfix: [], approved_backport: [], unprotected: [],
+  })
+  for (const path of paths) {
+    const incomplete = structuredClone(baseline)
+    incomplete.preserve_on_upstream_sync = incomplete.preserve_on_upstream_sync.filter((item) => item !== path)
+    const protection = evaluateProductChangeProtection([path], incomplete, uiManifest)
+    assert.deepEqual(protection.preserved, [], `${path} must not receive implicit permanent protection`)
+    if (path.startsWith('backend/') || path === 'frontend/src/api/redeem.ts') {
+      assert.deepEqual(protection.unprotected, [path], `${path} must fail preflight when omitted`)
+    }
+  }
+})
+
 test('requires every product difference to have one retention policy', () => {
   const baseline = {
     preserve_on_upstream_sync: ['backend/preserved.go', 'frontend/src/api/preserved.ts'],

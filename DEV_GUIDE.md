@@ -283,6 +283,11 @@ Approved UI Snapshot；普通上游同步只能更新后端及明确列出的 AP
 
 1. 在独立功能分支开发；不得修改 `.github/upstream-baseline.json` 的
    `release`/`commit`，也不得在功能分支合并新的 upstream Tag。
+   四套常规验证只自动响应面向 `main` 的 PR 和 `main` 推送；功能分支推送和
+   `ui-approved-*` 标签本身不再重复启动验证。PR 前先完成本地检查，PR 后等待
+   该提交的完整门禁；同一 PR 的新提交会取消其过时验证，但不会放宽测试要求。
+   无 PR 的专项复核只使用已有手动入口，不推空提交触发检查。资源预算、事件
+   边界及账号受限时的处理见 [`CI Resource Policy`](docs/OPERATIONS.md#ci-resource-policy)。
 2. 新增或变更的二开路径必须登记到 `.github/upstream-baseline.json` 中已有的
    owner。所有不由 Approved UI Snapshot、带退出条件的 `legacy_hotfixes` 或精确
    `approved_backports` 保留的产品差异，还必须逐文件登记到

@@ -267,6 +267,7 @@ func (s *AntigravityGatewayService) handleAntigravityCompatStream(
 	}
 
 	writer := newAntigravityClientWriter(c.Writer, flusher, prefix)
+	writer.httpContext = c
 	writer.beforeFirstWrite = func() {
 		c.Header("Content-Type", "text/event-stream")
 		c.Header("Cache-Control", "no-cache")

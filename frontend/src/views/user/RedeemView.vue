@@ -36,7 +36,7 @@
                   type="text"
                   required
                   :placeholder="t('redeem.redeemCodePlaceholder')"
-                  :disabled="submitting"
+                  :disabled="submitting || refreshing"
                   class="input py-3 pl-12 text-lg"
                 />
               </div>
@@ -48,7 +48,7 @@
             <div class="space-y-3">
               <button
                 type="submit"
-                :disabled="!redeemCode || submitting"
+                :disabled="!redeemCode.trim() || submitting || refreshing"
                 class="btn btn-primary btn-specular redeem-home-action w-full py-3"
               >
                 <svg
@@ -104,7 +104,6 @@
                   {{ t('redeem.redeemSuccess') }}
                 </h3>
                 <div class="mt-2 text-sm text-zo-signal-700 dark:text-zo-signal-400">
-                  <p>{{ redeemResult.message }}</p>
                   <div class="mt-3 space-y-1">
                     <p v-if="isBalanceType(redeemResult.type)" class="font-medium">
                       {{ t('redeem.added') }}: ${{ redeemResult.value.toFixed(2) }}
@@ -115,21 +114,11 @@
                     </p>
                     <p v-else-if="redeemResult.type === 'subscription'" class="font-medium">
                       {{ t('redeem.subscriptionAssigned') }}
-                      <span v-if="redeemResult.group_name"> - {{ redeemResult.group_name }}</span>
+                      <span v-if="redeemResult.group?.name"> - {{ redeemResult.group.name }}</span>
                       <span v-if="redeemResult.validity_days">
                         ({{
                           t('redeem.subscriptionDays', { days: redeemResult.validity_days })
                         }})</span
-                      >
-                    </p>
-                    <p v-if="redeemResult.new_balance !== undefined">
-                      {{ t('redeem.newBalance') }}:
-                      <span class="font-semibold">${{ redeemResult.new_balance.toFixed(2) }}</span>
-                    </p>
-                    <p v-if="redeemResult.new_concurrency !== undefined">
-                      {{ t('redeem.newConcurrency') }}:
-                      <span class="font-semibold"
-                        >{{ redeemResult.new_concurrency }} {{ t('redeem.requests') }}</span
                       >
                     </p>
                   </div>
@@ -139,6 +128,19 @@
           </div>
         </div>
       </transition>
+
+      <div v-if="refreshWarning" class="card p-6" role="status">
+        <p class="text-sm text-gray-700 dark:text-gray-200">{{ refreshWarning }}</p>
+        <button
+          data-test="redeem-refresh"
+          type="button"
+          class="btn btn-secondary mt-3"
+          :disabled="refreshing"
+          @click="refreshRedeemState"
+        >
+          {{ refreshing ? t('common.loading') : t('redeem.retryRefresh') }}
+        </button>
+      </div>
 
       <!-- Error Message -->
       <transition name="fade">
@@ -341,9 +343,11 @@ import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { useSubscriptionStore } from '@/stores/subscriptions'
 import { redeemAPI, type RedeemHistoryItem } from '@/api'
+import type { RedeemResult } from '@/api/redeem'
 import Icon from '@/components/icons/Icon.vue'
 import { formatDateTime } from '@/utils/format'
 import { resolveOnlineRechargePath } from '@/utils/online-recharge'
+import { extractApiErrorMessage } from '@/utils/apiError'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -354,16 +358,11 @@ const user = computed(() => authStore.user)
 
 const redeemCode = ref('')
 const submitting = ref(false)
-const redeemResult = ref<{
-  message: string
-  type: string
-  value: number
-  new_balance?: number
-  new_concurrency?: number
-  group_name?: string
-  validity_days?: number
-} | null>(null)
+const redeemResult = ref<RedeemResult | null>(null)
 const errorMessage = ref('')
+const refreshing = ref(false)
+const refreshWarning = ref('')
+const redemptionUncertain = ref(false)
 const onlineRechargePath = computed(() =>
   resolveOnlineRechargePath(appStore.cachedPublicSettings?.custom_menu_items)
 )
@@ -425,18 +424,45 @@ const formatHistoryValue = (item: RedeemHistoryItem) => {
   }
 }
 
+let historyRequest = 0
 const fetchHistory = async () => {
+  const request = ++historyRequest
   loadingHistory.value = true
   try {
-    history.value = await redeemAPI.getHistory()
+    const items = await redeemAPI.getHistory()
+    if (request === historyRequest) history.value = items
+    return true
   } catch (error) {
     console.error('Failed to fetch history:', error)
+    return false
   } finally {
-    loadingHistory.value = false
+    if (request === historyRequest) loadingHistory.value = false
+  }
+}
+
+const refreshRedeemState = async () => {
+  if (refreshing.value) return
+  refreshing.value = true
+  try {
+    const reads: Promise<unknown>[] = [authStore.refreshUser(), fetchHistory()]
+    if (redeemResult.value?.type === 'subscription') {
+      reads.push(subscriptionStore.fetchActiveSubscriptions(true))
+    }
+    const results = await Promise.allSettled(reads)
+    const refreshFailed = results.some((result) =>
+      result.status === 'rejected' || result.value === false
+    )
+    refreshWarning.value = redemptionUncertain.value
+      ? t(refreshFailed ? 'redeem.resultUncertainRefreshFailed' : 'redeem.resultUncertainAfterRefresh')
+      : refreshFailed ? t('redeem.refreshFailed') : ''
+    if (refreshWarning.value) appStore.showWarning(refreshWarning.value)
+  } finally {
+    refreshing.value = false
   }
 }
 
 const handleRedeem = async () => {
+  if (submitting.value || refreshing.value) return
   if (!redeemCode.value.trim()) {
     appStore.showError(t('redeem.pleaseEnterCode'))
     return
@@ -444,6 +470,8 @@ const handleRedeem = async () => {
 
   submitting.value = true
   errorMessage.value = ''
+  refreshWarning.value = ''
+  redemptionUncertain.value = false
   redeemResult.value = null
 
   try {
@@ -451,38 +479,30 @@ const handleRedeem = async () => {
 
     redeemResult.value = result
 
-    // Refresh user data to get updated balance/concurrency
-    await authStore.refreshUser()
-
-    // If subscription type, immediately refresh subscription status
-    if (result.type === 'subscription') {
-      try {
-        await subscriptionStore.fetchActiveSubscriptions(true) // force refresh
-      } catch (error) {
-        console.error('Failed to refresh subscriptions after redeem:', error)
-        appStore.showWarning(t('redeem.subscriptionRefreshFailed'))
-      }
-    }
-
-    // Clear the input
+    // A committed redemption stays successful even if subsequent reads fail.
     redeemCode.value = ''
-
-    // Refresh history
-    await fetchHistory()
-
-    // Show success toast
+    refreshWarning.value = ''
     appStore.showSuccess(t('redeem.codeRedeemSuccess'))
   } catch (error: any) {
-    const errorCode = error.response?.data?.reason || error.response?.data?.code
-    errorMessage.value =
-      errorCode === 'REDEEM_BATCH_ALREADY_CLAIMED'
-        ? t('redeem.batchAlreadyClaimed')
-        : error.response?.data?.detail || t('redeem.failedToRedeem')
+    const status = error?.status ?? error?.response?.status
+    // A missing acknowledgement does not prove that the transaction failed.
+    if (status == null || status === 0 || status === 408 || (status >= 500 && status < 600)) {
+      redemptionUncertain.value = true
+      refreshWarning.value = t('redeem.resultUncertain')
+      appStore.showWarning(refreshWarning.value)
+      return
+    }
+    errorMessage.value = extractApiErrorMessage(error, t('redeem.failedToRedeem'), {
+      REDEEM_BATCH_ALREADY_CLAIMED: t('redeem.batchAlreadyClaimed'),
+    })
 
     appStore.showError(t('redeem.redeemFailed'))
+    return
   } finally {
     submitting.value = false
   }
+
+  await refreshRedeemState()
 }
 
 onMounted(async () => {

@@ -2,14 +2,17 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
+	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/lib/pq"
 
 	entsql "entgo.io/ent/dialect/sql"
 )
@@ -96,7 +99,7 @@ func persistedRedeemCode(code *service.RedeemCode) string {
 }
 
 func (r *redeemCodeRepository) GetByID(ctx context.Context, id int64) (*service.RedeemCode, error) {
-	m, err := r.client.RedeemCode.Query().
+	m, err := clientFromContext(ctx, r.client).RedeemCode.Query().
 		Where(redeemcode.IDEQ(id)).
 		Only(ctx)
 	if err != nil {
@@ -109,14 +112,28 @@ func (r *redeemCodeRepository) GetByID(ctx context.Context, id int64) (*service.
 }
 
 func (r *redeemCodeRepository) GetByCode(ctx context.Context, code string) (*service.RedeemCode, error) {
+	return r.getByCode(ctx, code, false)
+}
+
+func (r *redeemCodeRepository) GetByCodeForUpdate(ctx context.Context, code string) (*service.RedeemCode, error) {
+	if dbent.TxFromContext(ctx) == nil {
+		return nil, errors.New("locked redeem code lookup requires a transaction")
+	}
+	return r.getByCode(ctx, code, true)
+}
+
+func (r *redeemCodeRepository) getByCode(ctx context.Context, code string, lock bool) (*service.RedeemCode, error) {
 	code = strings.TrimSpace(code)
 	hash := service.RedeemCodeHash(code)
-	m, err := r.client.RedeemCode.Query().
+	query := clientFromContext(ctx, r.client).RedeemCode.Query().
 		Where(redeemcode.Or(
 			redeemcode.And(redeemcode.CodeEQ(code), redeemcode.CodeHashIsNil()),
 			redeemcode.CodeHashEQ(hash),
-		)).
-		Only(ctx)
+		))
+	if lock {
+		query = query.ForUpdate()
+	}
+	m, err := query.Only(ctx)
 	if err != nil {
 		if dbent.IsNotFound(err) {
 			return nil, service.ErrRedeemCodeNotFound
@@ -126,25 +143,60 @@ func (r *redeemCodeRepository) GetByCode(ctx context.Context, code string) (*ser
 	return redeemCodeEntityToService(m), nil
 }
 
+// Claim markers are durable evidence even if an old writer damaged status.
+func unclaimedRedeemCode() predicate.RedeemCode {
+	return redeemcode.And(redeemcode.StatusNEQ(service.StatusUsed), redeemcode.UsedByIsNil(), redeemcode.UsedAtIsNil())
+}
+
 func (r *redeemCodeRepository) Delete(ctx context.Context, id int64) error {
-	affected, err := r.client.RedeemCode.Delete().Where(
+	client := clientFromContext(ctx, r.client)
+	affected, err := client.RedeemCode.Delete().Where(
 		redeemcode.IDEQ(id),
-		redeemcode.StatusNEQ(service.StatusUsed),
+		unclaimedRedeemCode(),
 	).Exec(ctx)
 	if err != nil || affected > 0 {
 		return err
 	}
-	existing, err := r.client.RedeemCode.Query().Where(redeemcode.IDEQ(id)).Only(ctx)
+	existing, err := client.RedeemCode.Query().Where(redeemcode.IDEQ(id)).Only(ctx)
 	if dbent.IsNotFound(err) {
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-	if existing.Status == service.StatusUsed {
+	if redeemCodeEntityToService(existing).IsUsed() {
 		return service.ErrRedeemCodeUsed
 	}
 	return nil
+}
+
+func (r *redeemCodeRepository) Expire(ctx context.Context, id int64) (*service.RedeemCode, error) {
+	updated, err := clientFromContext(ctx, r.client).RedeemCode.UpdateOneID(id).
+		Where(unclaimedRedeemCode()).SetStatus(service.StatusExpired).Save(ctx)
+	if err == nil {
+		return redeemCodeEntityToService(updated), nil
+	}
+	if !dbent.IsNotFound(err) {
+		return nil, err
+	}
+	if _, readErr := r.GetByID(ctx, id); readErr != nil {
+		return nil, readErr
+	}
+	return nil, service.ErrRedeemCodeUsed
+}
+
+// BatchDelete counts only rows removed by this atomic statement. Duplicate or
+// missing IDs and claimed codes cannot create fictitious deletion progress.
+func (r *redeemCodeRepository) BatchDelete(ctx context.Context, ids []int64) (int64, error) {
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	affected, err := clientFromContext(ctx, r.client).RedeemCode.Delete().
+		Where(redeemcode.IDIn(ids...), unclaimedRedeemCode()).Exec(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return int64(affected), nil
 }
 
 func (r *redeemCodeRepository) List(ctx context.Context, params pagination.PaginationParams) ([]service.RedeemCode, *pagination.PaginationResult, error) {
@@ -245,7 +297,7 @@ func redeemCodeListOrder(params pagination.PaginationParams) []func(*entsql.Sele
 }
 
 func (r *redeemCodeRepository) Update(ctx context.Context, code *service.RedeemCode) error {
-	up := r.client.RedeemCode.UpdateOneID(code.ID).
+	up := clientFromContext(ctx, r.client).RedeemCode.UpdateOneID(code.ID).
 		SetCode(code.Code).
 		SetNillableCodeHash(code.CodeHash).
 		SetNillableBatchID(code.BatchID).
@@ -256,6 +308,11 @@ func (r *redeemCodeRepository) Update(ctx context.Context, code *service.RedeemC
 		SetStatus(code.Status).
 		SetNotes(code.Notes).
 		SetValidityDays(code.ValidityDays)
+	// Keep the legacy invitation rollback path, but never let a full snapshot
+	// update erase the claim or reward of a benefit/mystery-box batch.
+	if code.BatchID != nil || code.Type == service.RedeemTypeBenefit || code.Type == service.RedeemTypeMysteryBox {
+		up.Where(unclaimedRedeemCode())
+	}
 
 	if code.UsedBy != nil {
 		up.SetUsedBy(*code.UsedBy)
@@ -281,6 +338,9 @@ func (r *redeemCodeRepository) Update(ctx context.Context, code *service.RedeemC
 	updated, err := up.Save(ctx)
 	if err != nil {
 		if dbent.IsNotFound(err) {
+			if existing, readErr := r.GetByID(ctx, code.ID); readErr == nil && existing.IsUsed() {
+				return service.ErrRedeemCodeUsed
+			}
 			return service.ErrRedeemCodeNotFound
 		}
 		return err
@@ -327,6 +387,8 @@ func (r *redeemCodeRepository) BatchUpdate(ctx context.Context, ids []int64, fie
 func (r *redeemCodeRepository) batchUpdate(ctx context.Context, client *dbent.Client, ids []int64, fields service.RedeemCodeBatchUpdateFields) (int64, error) {
 	existing, err := client.RedeemCode.Query().
 		Where(redeemcode.IDIn(ids...)).
+		Order(dbent.Asc(redeemcode.FieldID)).
+		ForUpdate().
 		All(ctx)
 	if err != nil {
 		return 0, err
@@ -336,7 +398,7 @@ func (r *redeemCodeRepository) batchUpdate(ctx context.Context, client *dbent.Cl
 	}
 	if fields.TouchesUsedSensitiveFields() {
 		for _, code := range existing {
-			if code.Status == service.StatusUsed {
+			if redeemCodeEntityToService(code).IsUsed() {
 				return 0, service.ErrRedeemCodeUsed
 			}
 		}
@@ -378,18 +440,27 @@ func (r *redeemCodeRepository) Use(ctx context.Context, id, userID int64) error 
 	now := time.Now()
 	client := clientFromContext(ctx, r.client)
 	affected, err := client.RedeemCode.Update().
-		Where(redeemcode.IDEQ(id), redeemcode.StatusEQ(service.StatusUnused)).
+		Where(redeemcode.IDEQ(id), redeemcode.StatusEQ(service.StatusUnused), unclaimedRedeemCode(),
+			redeemcode.Or(redeemcode.ExpiresAtIsNil(), redeemcode.ExpiresAtGT(now))).
 		SetStatus(service.StatusUsed).
 		SetUsedBy(userID).
 		SetUsedAt(now).
 		Save(ctx)
 	if err != nil {
-		if dbent.IsConstraintError(err) {
+		var pgErr *pq.Error
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.Constraint == "idx_redeem_codes_batch_user" {
 			return service.ErrRedeemBatchAlreadyClaimed
 		}
 		return err
 	}
 	if affected == 0 {
+		code, readErr := r.GetByID(ctx, id)
+		if readErr != nil && !errors.Is(readErr, service.ErrRedeemCodeNotFound) {
+			return readErr
+		}
+		if code != nil && !code.IsUsed() && code.IsExpired() {
+			return service.ErrRedeemCodeExpired
+		}
 		return service.ErrRedeemCodeUsed
 	}
 	return nil

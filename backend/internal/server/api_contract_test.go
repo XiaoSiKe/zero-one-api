@@ -2228,6 +2228,14 @@ func (stubRedeemCodeRepo) GetByCode(ctx context.Context, code string) (*service.
 	return nil, service.ErrRedeemCodeNotFound
 }
 
+func (r stubRedeemCodeRepo) GetByCodeForUpdate(ctx context.Context, code string) (*service.RedeemCode, error) {
+	return r.GetByCode(ctx, code)
+}
+
+func (stubRedeemCodeRepo) Expire(context.Context, int64) (*service.RedeemCode, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (stubRedeemCodeRepo) Update(ctx context.Context, code *service.RedeemCode) error {
 	return errors.New("not implemented")
 }
@@ -2238,6 +2246,10 @@ func (stubRedeemCodeRepo) BatchUpdate(ctx context.Context, ids []int64, fields s
 
 func (stubRedeemCodeRepo) Delete(ctx context.Context, id int64) error {
 	return errors.New("not implemented")
+}
+
+func (stubRedeemCodeRepo) BatchDelete(context.Context, []int64) (int64, error) {
+	return 0, errors.New("not implemented")
 }
 
 func (stubRedeemCodeRepo) Use(ctx context.Context, id, userID int64) error {

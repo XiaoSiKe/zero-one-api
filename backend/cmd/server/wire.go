@@ -170,6 +170,12 @@ func provideCleanup(
 				}
 				return nil
 			}},
+			{"APIKeyLastUsedWriter", func() error {
+				if apiKeyService != nil {
+					return apiKeyService.StopLastUsedWorker(ctx)
+				}
+				return nil
+			}},
 			{"OpsRuntimeSettingsRefresh", func() error {
 				if opsService != nil {
 					opsService.StopRuntimeSettingsRefresh()

@@ -179,6 +179,7 @@ func (s *OpenAIGatewayService) streamChatCompletionsAsAnthropic(
 
 	anthropicState := apicompat.NewChatCompletionsToAnthropicStreamState(originalModel)
 	clientDisconnected := false
+	visibleOutputWritten := false
 
 	// 与 responses 兄弟不同：客户端断开后仍继续做事件转换（喂 anthropicState），
 	// 仅跳过写出，保证 finalize 阶段的 usage 汇总不受断开影响。
@@ -198,9 +199,12 @@ func (s *OpenAIGatewayService) streamChatCompletionsAsAnthropic(
 				clientDisconnected = true
 				break
 			}
+			visibleOutputWritten = visibleOutputWritten || httpSSEFrameHasVisibleOutput(sse)
 		}
 		if !clientDisconnected && len(anthropicEvents) > 0 {
-			c.Writer.Flush()
+			if err := flushHTTPStream(c, visibleOutputWritten); err != nil {
+				clientDisconnected = true
+			}
 		}
 	}
 

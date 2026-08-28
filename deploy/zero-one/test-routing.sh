@@ -6,13 +6,13 @@ production_caddyfile="$repo_root/deploy/zero-one/Caddyfile"
 preview_caddyfile="$repo_root/deploy/zero-one/Caddyfile.preview"
 shared_caddyfile="$repo_root/deploy/zero-one/Caddyfile.shared"
 recovered_console_index="$repo_root/deploy/zero-one/recovered-frontend/console/index.html"
-recovered_console_entry='await import("/assets/navigation-loading-20260827/index-9xJBhx8B.js")'
+recovered_console_entry='await import("/assets/github-migration-20260828/index-9xJBhx8B.js")'
 recovered_console_entry_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/index-9xJBhx8B.js"
 recovered_pricing_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/useKeyedDebouncedSearch-BrW9dWBu.js"
 recovered_console_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-B-81-jXj.js"
 recovered_console_admin_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-Bn5PLb3-.js"
 recovered_console_promo_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/PromoCodesView-D-9XRE_y.js"
-recovered_asset_alias="$repo_root/deploy/zero-one/recovered-frontend/console/assets/navigation-loading-20260827"
+recovered_asset_alias="$repo_root/deploy/zero-one/recovered-frontend/console/assets/github-migration-20260828"
 recovered_payment_result="$repo_root/deploy/zero-one/recovered-frontend/console/assets/PaymentResultView-v182-balance-refresh.js"
 recovered_floating_overlay="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-floating-panels-v1.js"
 recovered_navigation_reconciliation="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-navigation-reconciliation-v1.js"
@@ -101,6 +101,10 @@ require "$recovered_console_index" 'await import("/assets/zero-one-login-recover
 forbid "$recovered_pricing_chunk" 'getModelDefaultPricing('
 require "$recovered_console_redeem_chunk" 'redeem'
 require "$recovered_console_admin_redeem_chunk" 'box'
+require "$recovered_console_redeem_chunk" 'refreshRedeemState'
+require "$recovered_console_redeem_chunk" 'redeemError'
+require "$recovered_console_admin_redeem_chunk" 'validateRedeemGeneration'
+require "$recovered_console_admin_redeem_chunk" 'deleteAllUnusedRedeemCodes'
 require "$recovered_console_entry_asset" 'i.min_value=l,i.max_value=d'
 require "$recovered_console_entry_asset" 'ModelPlaza'
 require "$recovered_console_entry_asset" 'assets/PaymentResultView-v182-balance-refresh.js'

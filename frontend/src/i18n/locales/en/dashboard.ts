@@ -707,6 +707,11 @@ export default {
     codeRedeemSuccess: 'Code redeemed successfully!',
     failedToRedeem: 'Failed to redeem code. Please check the code and try again.',
     subscriptionRefreshFailed: 'Redeemed successfully, but failed to refresh subscription status.',
+    refreshFailed: 'Redemption succeeded, but balance or history could not be refreshed. Refresh the status instead of redeeming again.',
+    resultUncertain: 'The redemption result is unconfirmed. Refresh your balance and redemption history to check before submitting again.',
+    resultUncertainAfterRefresh: 'Balance and history have been refreshed. Check for this redemption in your history; its result is still unconfirmed. Do not submit again.',
+    resultUncertainRefreshFailed: 'The redemption result is still unconfirmed, and balance or history could not be refreshed. Try refreshing later before submitting again.',
+    retryRefresh: 'Refresh status',
     pleaseEnterCode: 'Please enter a redeem code'
   },
 

@@ -12,13 +12,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func lastUsedTestService(t *testing.T, repo APIKeyRepository) *APIKeyService {
+	t.Helper()
+	svc := &APIKeyService{apiKeyRepo: repo}
+	svc.StartLastUsedWorker()
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		require.NoError(t, svc.StopLastUsedWorker(ctx))
+	})
+	return svc
+}
+
+func waitLastUsedWrites(t *testing.T, svc *APIKeyService, successful, failed uint64) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		return svc.lastUsedWriter.written.Load() == successful && svc.lastUsedWriter.failed.Load() == failed
+	}, time.Second, time.Millisecond)
+}
+
 func TestAPIKeyService_TouchLastUsed_InvalidKeyID(t *testing.T) {
 	repo := &apiKeyRepoStub{
 		updateLastUsed: func(ctx context.Context, id int64, usedAt time.Time) error {
 			return errors.New("should not be called")
 		},
 	}
-	svc := &APIKeyService{apiKeyRepo: repo}
+	svc := lastUsedTestService(t, repo)
 
 	require.NoError(t, svc.TouchLastUsed(context.Background(), 0))
 	require.NoError(t, svc.TouchLastUsed(context.Background(), -1))
@@ -27,10 +46,11 @@ func TestAPIKeyService_TouchLastUsed_InvalidKeyID(t *testing.T) {
 
 func TestAPIKeyService_TouchLastUsed_FirstTouchSucceeds(t *testing.T) {
 	repo := &apiKeyRepoStub{}
-	svc := &APIKeyService{apiKeyRepo: repo}
+	svc := lastUsedTestService(t, repo)
 
 	err := svc.TouchLastUsed(context.Background(), 123)
 	require.NoError(t, err)
+	waitLastUsedWrites(t, svc, 1, 0)
 	require.Equal(t, []int64{123}, repo.touchedIDs)
 	require.Len(t, repo.touchedUsedAts, 1)
 	require.False(t, repo.touchedUsedAts[0].IsZero())
@@ -43,24 +63,27 @@ func TestAPIKeyService_TouchLastUsed_FirstTouchSucceeds(t *testing.T) {
 
 func TestAPIKeyService_TouchLastUsed_DebouncedWithinWindow(t *testing.T) {
 	repo := &apiKeyRepoStub{}
-	svc := &APIKeyService{apiKeyRepo: repo}
+	svc := lastUsedTestService(t, repo)
 
 	require.NoError(t, svc.TouchLastUsed(context.Background(), 123))
 	require.NoError(t, svc.TouchLastUsed(context.Background(), 123))
+	waitLastUsedWrites(t, svc, 1, 0)
 
 	require.Equal(t, []int64{123}, repo.touchedIDs, "second touch within debounce window should not hit repository")
 }
 
 func TestAPIKeyService_TouchLastUsed_ExpiredDebounceTouchesAgain(t *testing.T) {
 	repo := &apiKeyRepoStub{}
-	svc := &APIKeyService{apiKeyRepo: repo}
+	svc := lastUsedTestService(t, repo)
 
 	require.NoError(t, svc.TouchLastUsed(context.Background(), 123))
+	waitLastUsedWrites(t, svc, 1, 0)
 
 	// 强制将 debounce 时间回拨到窗口之外，触发第二次写库。
 	svc.lastUsedTouchL1.Store(int64(123), time.Now().Add(-apiKeyLastUsedMinTouch-time.Second))
 
 	require.NoError(t, svc.TouchLastUsed(context.Background(), 123))
+	waitLastUsedWrites(t, svc, 2, 0)
 	require.Len(t, repo.touchedIDs, 2)
 	require.Equal(t, int64(123), repo.touchedIDs[0])
 	require.Equal(t, int64(123), repo.touchedIDs[1])
@@ -72,11 +95,11 @@ func TestAPIKeyService_TouchLastUsed_RepoError(t *testing.T) {
 			return errors.New("db write failed")
 		},
 	}
-	svc := &APIKeyService{apiKeyRepo: repo}
+	svc := lastUsedTestService(t, repo)
 
 	err := svc.TouchLastUsed(context.Background(), 123)
-	require.Error(t, err)
-	require.ErrorContains(t, err, "touch api key last used")
+	require.NoError(t, err, "best-effort metadata failure must not fail the model request")
+	waitLastUsedWrites(t, svc, 0, 1)
 	require.Equal(t, []int64{123}, repo.touchedIDs)
 
 	cached, ok := svc.lastUsedTouchL1.Load(int64(123))
@@ -91,11 +114,11 @@ func TestAPIKeyService_TouchLastUsed_RepoErrorDebounced(t *testing.T) {
 			return errors.New("db write failed")
 		},
 	}
-	svc := &APIKeyService{apiKeyRepo: repo}
+	svc := lastUsedTestService(t, repo)
 
 	firstErr := svc.TouchLastUsed(context.Background(), 456)
-	require.Error(t, firstErr)
-	require.ErrorContains(t, firstErr, "touch api key last used")
+	require.NoError(t, firstErr)
+	waitLastUsedWrites(t, svc, 0, 1)
 
 	secondErr := svc.TouchLastUsed(context.Background(), 456)
 	require.NoError(t, secondErr, "failed touch should be debounced and skip immediate retry")
@@ -122,7 +145,7 @@ func TestAPIKeyService_TouchLastUsed_ConcurrentFirstTouchDeduplicated(t *testing
 		apiKeyRepoStub: &apiKeyRepoStub{},
 		blockCh:        make(chan struct{}),
 	}
-	svc := &APIKeyService{apiKeyRepo: repo}
+	svc := lastUsedTestService(t, repo)
 
 	const workers = 20
 	startCh := make(chan struct{})

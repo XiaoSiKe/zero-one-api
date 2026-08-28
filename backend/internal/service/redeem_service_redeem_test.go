@@ -3,7 +3,12 @@ package service
 import (
 	"context"
 	"testing"
+	"time"
 
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
+	"github.com/DATA-DOG/go-sqlmock"
+	dbent "github.com/Wei-Shaw/sub2api/ent"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
@@ -38,6 +43,14 @@ func (r *redeemRejectRepo) GetByCode(ctx context.Context, code string) (*RedeemC
 	return &clone, nil
 }
 
+func (r *redeemRejectRepo) GetByCodeForUpdate(ctx context.Context, code string) (*RedeemCode, error) {
+	return r.GetByCode(ctx, code)
+}
+
+func (r *redeemRejectRepo) Expire(context.Context, int64) (*RedeemCode, error) {
+	panic("unexpected Expire call")
+}
+
 func (r *redeemRejectRepo) Update(ctx context.Context, code *RedeemCode) error {
 	panic("unexpected Update call")
 }
@@ -48,6 +61,10 @@ func (r *redeemRejectRepo) BatchUpdate(ctx context.Context, ids []int64, fields 
 
 func (r *redeemRejectRepo) Delete(ctx context.Context, id int64) error {
 	panic("unexpected Delete call")
+}
+
+func (r *redeemRejectRepo) BatchDelete(context.Context, []int64) (int64, error) {
+	panic("unexpected BatchDelete call")
 }
 
 func (r *redeemRejectRepo) Use(ctx context.Context, id, userID int64) error {
@@ -77,8 +94,14 @@ func (r *redeemRejectRepo) SumPositiveBalanceByUser(ctx context.Context, userID 
 	panic("unexpected SumPositiveBalanceByUser call")
 }
 
-func TestRedeemRejectsInvitationCodeBeforeTransaction(t *testing.T) {
+func TestRedeemRejectsInvitationCodeBeforeUse(t *testing.T) {
 	ctx := context.Background()
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+	client := dbent.NewClient(dbent.Driver(entsql.OpenDB(dialect.Postgres, db)))
 	redeemRepo := &redeemRejectRepo{
 		code: RedeemCode{
 			ID:     1,
@@ -87,7 +110,7 @@ func TestRedeemRejectsInvitationCodeBeforeTransaction(t *testing.T) {
 			Status: StatusUnused,
 		},
 	}
-	redeemService := NewRedeemService(redeemRepo, nil, nil, nil, nil, nil, nil, nil)
+	redeemService := NewRedeemService(redeemRepo, nil, nil, nil, nil, client, nil, nil)
 
 	got, err := redeemService.Redeem(ctx, 2, redeemRepo.code.Code)
 
@@ -99,4 +122,35 @@ func TestRedeemRejectsInvitationCodeBeforeTransaction(t *testing.T) {
 	require.False(t, redeemRepo.useCalled)
 	require.Equal(t, StatusUnused, redeemRepo.code.Status)
 	require.Nil(t, redeemRepo.code.UsedBy)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+type redeemContextInvalidator struct {
+	APIKeyAuthCacheInvalidator
+	ctx     context.Context
+	callErr error
+}
+
+func (r *redeemContextInvalidator) InvalidateAuthCacheByUserID(ctx context.Context, _ int64) {
+	r.ctx = ctx
+	r.callErr = ctx.Err()
+}
+
+func TestRedeemCacheInvalidationSurvivesRequestCancellation(t *testing.T) {
+	for _, codeType := range []string{RedeemTypeBalance, RedeemTypeBenefit, RedeemTypeMysteryBox} {
+		t.Run(codeType, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			invalidator := &redeemContextInvalidator{}
+			svc := &RedeemService{authCacheInvalidator: invalidator}
+			svc.invalidateRedeemCaches(ctx, 1, &RedeemCode{Type: codeType})
+			require.NotNil(t, invalidator.ctx)
+			require.NoError(t, invalidator.callErr)
+			// The bounded invalidation context is canceled on return, so inspect
+			// its deadline rather than retaining request cancellation semantics.
+			deadline, ok := invalidator.ctx.Deadline()
+			require.True(t, ok)
+			require.WithinDuration(t, time.Now().Add(5*time.Second), deadline, time.Second)
+		})
+	}
 }

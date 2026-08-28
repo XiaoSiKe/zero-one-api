@@ -24,6 +24,56 @@ const baseline = validateBaseline(
 )
 const repositoryRoot = new URL('../../', import.meta.url)
 
+const redeemAndHTTPLifecyclePaths = [
+  'CONTEXT.md',
+  'backend/cmd/server/wire.go',
+  'backend/cmd/server/wire_gen.go',
+  'backend/internal/handler/admin/redeem_export_handler_test.go',
+  'backend/internal/handler/gateway_handler.go',
+  'backend/internal/handler/gateway_helper.go',
+  'backend/internal/handler/openai_gateway_handler.go',
+  'backend/internal/handler/openai_http_drain_slot_test.go',
+  'backend/internal/handler/ops_flush_error_test.go',
+  'backend/internal/pkg/gatewaytiming/timing.go',
+  'backend/internal/pkg/gatewaytiming/timing_test.go',
+  'backend/internal/repository/api_key_repo.go',
+  'backend/internal/repository/api_key_last_used_monotonic_integration_test.go',
+  'backend/internal/repository/redeem_cache.go',
+  'backend/internal/repository/redeem_code_repo.go',
+  'backend/internal/repository/redeem_code_repo_test.go',
+  'backend/internal/repository/redeem_code_lifecycle_integration_test.go',
+  'backend/internal/server/middleware/api_key_auth_last_used_async_test.go',
+  'backend/internal/server/middleware/api_key_auth_google_test.go',
+  'backend/internal/server/middleware/gateway_timing.go',
+  'backend/internal/server/routes/gateway_timing_test.go',
+  'backend/internal/service/api_key_last_used_writer.go',
+  'backend/internal/service/api_key_last_used_benchmark_test.go',
+  'backend/internal/service/api_key_service_touch_async_test.go',
+  'backend/internal/service/gateway_http_timing.go',
+  'backend/internal/service/gateway_http_timing_protocol_test.go',
+  'backend/internal/service/gateway_http_timing_test.go',
+  'backend/internal/service/openai_gateway_cc_pipeline.go',
+  'backend/internal/service/openai_gateway_cc_lifecycle_test.go',
+  'backend/internal/service/openai_http_drain.go',
+  'backend/internal/service/openai_http_drain_test.go',
+  'backend/internal/service/redeem_service.go',
+  'backend/internal/service/redeem_mystery_box_test.go',
+  'deploy/zero-one/benchmark-ttft.mjs',
+  'deploy/zero-one/benchmark-ttft.test.mjs',
+  'deploy/zero-one/recovered-frontend/console/assets/RedeemView-B-81-jXj.js',
+  'deploy/zero-one/recovered-frontend/console/assets/RedeemView-Bn5PLb3-.js',
+  'deploy/zero-one/recovered-frontend/console/assets/redeem-ttft-20260828',
+  'deploy/zero-one/recovered-frontend/console/assets/zero-one-redeem-contract-20260828.js',
+  'docs/adr/0008-redeem-and-http-stream-lifecycles.md',
+  'frontend/src/api/redeem.ts',
+  'frontend/src/features/redeem/cleanup.ts',
+  'frontend/src/features/redeem/generation.ts',
+  'frontend/src/features/redeem/__tests__/cleanup.spec.ts',
+  'frontend/src/features/redeem/__tests__/generation.spec.ts',
+  'frontend/src/features/redeem/__tests__/recoveredContract.spec.ts',
+  'visual-regression/tests/redeem.behavior.spec.ts',
+].sort()
+
 function gitIn(cwd, args) {
   return execFileSync('git', args, {
     cwd,
@@ -34,10 +84,15 @@ function gitIn(cwd, args) {
 
 function createRecordedSyncRepository(
   overwriteProtected,
-  { currentPreserved = true, postMergeProtectedChange = false, productPreserved = false } = {},
+  {
+    currentPreserved = true,
+    postMergeProtectedChange = false,
+    productPreserved = false,
+    preservedPath = 'backend/internal/service/affiliate_service.go',
+  } = {},
 ) {
   const repository = mkdtempSync(resolve(tmpdir(), 'zero-one-recorded-sync-'))
-  const affiliatePath = 'backend/internal/service/affiliate_service.go'
+  const affiliatePath = preservedPath
   const oldCommit = '1'.repeat(40)
   gitIn(repository, ['init', '--quiet', '--initial-branch=product'])
   gitIn(repository, ['config', 'user.name', 'Upgrade Guard Test'])
@@ -140,7 +195,6 @@ const approvedLegacyHotfixPaths = [
   'backend/go.mod',
   'backend/go.sum',
   'backend/internal/handler/auth_current_user_test.go',
-  'backend/internal/handler/gateway_handler.go',
   'backend/internal/handler/admin/admin_basic_handlers_test.go',
   'backend/internal/handler/admin/admin_service_stub_test.go',
   'backend/internal/handler/admin/group_handler.go',
@@ -194,6 +248,69 @@ test('assigns additive surfaces to the five named overlays', () => {
     ),
     [],
   )
+})
+
+test('permanently retains redeem, HTTP timing, and asynchronous metadata lifecycles', () => {
+  assert.deepEqual(evaluateChangedPaths(redeemAndHTTPLifecyclePaths, baseline), [])
+  for (const path of redeemAndHTTPLifecyclePaths) {
+    assert.ok(baseline.preserve_on_upstream_sync.includes(path), `${path} must be permanently retained`)
+    const owners = baseline.overlays.filter(({ paths }) => paths.some((rule) =>
+      rule.endsWith('/') ? path.startsWith(rule) : path === rule))
+    const expectedOwner = path.startsWith('deploy/') ? 'Supported Preview'
+      : path.startsWith('visual-regression/') ? 'Visual Regression'
+      : path.startsWith('frontend/src/features/') ? 'Console Skin' : 'Public Capabilities'
+    assert.deepEqual(owners.map(({ owner }) => owner), [expectedOwner], `${path} must have one owner`)
+    if (path.startsWith('backend/') || path === 'frontend/src/api/redeem.ts') {
+      assert.ok(owners[0].paths.includes(path), `${path} needs an exact owner entry, not a directory exemption`)
+    }
+  }
+  assert.deepEqual(
+    evaluatePreservedPaths(redeemAndHTTPLifecyclePaths, baseline),
+    redeemAndHTTPLifecyclePaths.map((path) =>
+      `${path} differs from the pre-upgrade product ref; restore it and port upstream changes separately`),
+    'an upstream sync must reject overwriting every registered lifecycle file',
+  )
+})
+
+test('rejects recorded upstream merges that overwrite redeem, TTFT, or metadata implementations', (context) => {
+  for (const path of [
+    'backend/internal/service/redeem_service.go',
+    'backend/internal/service/gateway_http_timing.go',
+    'backend/internal/service/api_key_last_used_writer.go',
+  ]) {
+    const fixture = createRecordedSyncRepository(true, { productPreserved: true, preservedPath: path })
+    context.after(() => rmSync(fixture.repository, { recursive: true, force: true }))
+    assert.deepEqual(inspectRecordedUpstreamSync(fixture.baseline, fixture.headCommit, fixture.repository), [
+      `${path} differs from the pre-upgrade product ref; restore it and port upstream changes separately`,
+    ], path)
+  }
+})
+
+test('promotes only the gateway handler hotfix while preserving the remaining exit condition', () => {
+  const hotfix = baseline.legacy_hotfixes.find(({ name }) =>
+    name === 'approved-v0.1.179-remove-unconditional-sticky-debug-logs')
+  assert.deepEqual(hotfix.paths, ['backend/internal/service/gateway_scheduling.go'])
+  assert.equal(hotfix.exit_condition,
+    'Remove this hotfix when the first stable upstream release removes or explicitly gates the equivalent per-request sticky-session debug logs.')
+  assert.ok(baseline.preserve_on_upstream_sync.includes('backend/internal/handler/gateway_handler.go'))
+  assert.equal(baseline.legacy_hotfixes.some(({ paths }) =>
+    paths.includes('backend/internal/handler/gateway_handler.go')), false)
+})
+
+test('keeps the user redeem API exception exact and rejects neighboring backend/API paths', () => {
+  assert.deepEqual(baseline.immutable_exceptions.find(({ path }) => path === 'frontend/src/api/redeem.ts'), {
+    name: 'public-capabilities-user-redeem-api',
+    owner: 'Public Capabilities',
+    path: 'frontend/src/api/redeem.ts',
+    immutable_path: 'frontend/src/api/',
+  })
+  assert.deepEqual(evaluateChangedPaths([
+    'backend/internal/service/openai_http_drain_unreviewed.go',
+    'frontend/src/api/redeem-unreviewed.ts',
+  ], baseline), [
+    'backend/internal/service/openai_http_drain_unreviewed.go is outside the approved overlay registry',
+    'frontend/src/api/redeem-unreviewed.ts modifies immutable upstream path frontend/src/api/',
+  ])
 })
 
 test('retains critical affiliate attribution and upgrade-guard files across upstream syncs', () => {
@@ -689,6 +806,12 @@ test('allows named immutable exceptions while adjacent seam files still fail', (
         name: 'supported-preview-v179-channel-pricing-api-compatibility',
         owner: 'Supported Preview',
         path: 'frontend/src/api/admin/channels.ts',
+        immutable_path: 'frontend/src/api/',
+      },
+      {
+        name: 'public-capabilities-user-redeem-api',
+        owner: 'Public Capabilities',
+        path: 'frontend/src/api/redeem.ts',
         immutable_path: 'frontend/src/api/',
       },
     ],

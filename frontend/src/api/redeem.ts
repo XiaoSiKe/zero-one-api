@@ -12,8 +12,14 @@ export interface RedeemHistoryItem {
   type: string
   value: number
   status: string
-  used_at: string
+  used_by?: number | null
+  used_at: string | null
   created_at: string
+  expires_at?: string | null
+  code_redacted?: boolean
+  batch_id?: string | null
+  min_value?: number
+  max_value?: number
   // Notes from admin for admin_balance/admin_concurrency types
   notes?: string
   // Subscription-specific fields
@@ -25,27 +31,18 @@ export interface RedeemHistoryItem {
   }
 }
 
+// POST /redeem returns the redeemed-code DTO, not a balance snapshot.
+export type RedeemResult = RedeemHistoryItem
+
 /**
  * Redeem a code
  * @param code - Redeem code string
- * @returns Redemption result with updated balance or concurrency
+ * @returns The committed redemption record; refresh the user separately
  */
-export async function redeem(code: string): Promise<{
-  message: string
-  type: string
-  value: number
-  new_balance?: number
-  new_concurrency?: number
-}> {
+export async function redeem(code: string): Promise<RedeemResult> {
   const payload: RedeemCodeRequest = { code }
 
-  const { data } = await apiClient.post<{
-    message: string
-    type: string
-    value: number
-    new_balance?: number
-    new_concurrency?: number
-  }>('/redeem', payload)
+  const { data } = await apiClient.post<RedeemResult>('/redeem', payload)
 
   return data
 }

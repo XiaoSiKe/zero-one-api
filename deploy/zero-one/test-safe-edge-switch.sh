@@ -5,7 +5,7 @@ repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 script="$repo_root/deploy/zero-one/safe-edge-switch.sh"
 test_root=$(mktemp -d)
 old_image='ghcr.io/01-yang/zero-one-edge@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-new_image='ghcr.io/01-yang/zero-one-edge@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+new_image='ghcr.io/xiaosike/zero-one-edge@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
 
 cleanup() {
 	rm -rf "$test_root"
@@ -197,7 +197,7 @@ fi
 
 invalid_dir=$(make_fixture invalid)
 install_fakes "$invalid_dir"
-if PATH="$invalid_dir/bin:$PATH" sh "$script" "$invalid_dir/.env" 'ghcr.io/01-yang/zero-one-edge:latest' >"$invalid_dir/output" 2>&1; then
+if PATH="$invalid_dir/bin:$PATH" sh "$script" "$invalid_dir/.env" 'ghcr.io/xiaosike/zero-one-edge:latest' >"$invalid_dir/output" 2>&1; then
 	fail 'mutable image tag unexpectedly passed validation'
 fi
 [ ! -s "$invalid_dir/docker.log" ] || fail 'invalid image invoked Docker'

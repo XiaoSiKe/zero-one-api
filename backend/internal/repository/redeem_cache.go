@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -12,8 +14,33 @@ import (
 const (
 	redeemRateLimitKeyPrefix = "redeem:ratelimit:"
 	redeemLockKeyPrefix      = "redeem:lock:"
-	redeemRateLimitDuration  = 24 * time.Hour
+	redeemRateLimitDuration  = service.RedeemRateLimitDuration
 )
+
+// Read and increment both repair legacy 24-hour/no-expiry keys while preserving
+// their count. Subsequent failures cannot extend a live one-hour window.
+var redeemAttemptScript = redis.NewScript(`
+local count
+if ARGV[2] == '1' then
+  count = redis.call('INCR', KEYS[1])
+else
+  count = redis.call('GET', KEYS[1])
+end
+if not count then return 0 end
+local ttl = redis.call('PTTL', KEYS[1])
+local window = tonumber(ARGV[1])
+if ttl == -1 or ttl > window then
+  redis.call('PEXPIRE', KEYS[1], window)
+end
+return tonumber(count)
+`)
+
+var redeemLockReleaseScript = redis.NewScript(`
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+  return redis.call('DEL', KEYS[1])
+end
+return 0
+`)
 
 // redeemRateLimitKey generates the Redis key for redeem attempt rate limiting.
 func redeemRateLimitKey(userID int64) string {
@@ -22,7 +49,7 @@ func redeemRateLimitKey(userID int64) string {
 
 // redeemLockKey generates the Redis key for redeem code locking.
 func redeemLockKey(code string) string {
-	return redeemLockKeyPrefix + code
+	return redeemLockKeyPrefix + service.RedeemCodeHash(code)
 }
 
 type redeemCache struct {
@@ -35,28 +62,32 @@ func NewRedeemCache(rdb *redis.Client) service.RedeemCache {
 
 func (c *redeemCache) GetRedeemAttemptCount(ctx context.Context, userID int64) (int, error) {
 	key := redeemRateLimitKey(userID)
-	count, err := c.rdb.Get(ctx, key).Int()
-	if err == redis.Nil {
-		return 0, nil
-	}
-	return count, err
+	return redeemAttemptScript.Run(ctx, c.rdb, []string{key}, redeemRateLimitDuration.Milliseconds(), 0).Int()
 }
 
 func (c *redeemCache) IncrementRedeemAttemptCount(ctx context.Context, userID int64) error {
 	key := redeemRateLimitKey(userID)
-	pipe := c.rdb.Pipeline()
-	pipe.Incr(ctx, key)
-	pipe.Expire(ctx, key, redeemRateLimitDuration)
-	_, err := pipe.Exec(ctx)
-	return err
+	return redeemAttemptScript.Run(ctx, c.rdb, []string{key}, redeemRateLimitDuration.Milliseconds(), 1).Err()
 }
 
-func (c *redeemCache) AcquireRedeemLock(ctx context.Context, code string, ttl time.Duration) (bool, error) {
+func (c *redeemCache) AcquireRedeemLock(ctx context.Context, code string, ttl time.Duration) (string, error) {
+	var token [16]byte
+	if _, err := rand.Read(token[:]); err != nil {
+		return "", err
+	}
+	owner := hex.EncodeToString(token[:])
 	key := redeemLockKey(code)
-	return c.rdb.SetNX(ctx, key, 1, ttl).Result()
+	acquired, err := c.rdb.SetNX(ctx, key, owner, ttl).Result()
+	if err != nil || !acquired {
+		return "", err
+	}
+	return owner, nil
 }
 
-func (c *redeemCache) ReleaseRedeemLock(ctx context.Context, code string) error {
+func (c *redeemCache) ReleaseRedeemLock(ctx context.Context, code, owner string) error {
+	if owner == "" {
+		return nil
+	}
 	key := redeemLockKey(code)
-	return c.rdb.Del(ctx, key).Err()
+	return redeemLockReleaseScript.Run(ctx, c.rdb, []string{key}, owner).Err()
 }

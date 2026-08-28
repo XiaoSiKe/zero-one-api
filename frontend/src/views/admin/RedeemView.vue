@@ -16,13 +16,13 @@
             v-model="filters.type"
             :options="filterTypeOptions"
             class="w-36"
-            @change="loadCodes"
+            @change="handleFilterChange"
           />
           <Select
             v-model="filters.status"
             :options="filterStatusOptions"
             class="w-36"
-            @change="loadCodes"
+            @change="handleFilterChange"
           />
 
           <!-- Right: Action buttons -->
@@ -271,7 +271,7 @@
 
         <!-- Batch Actions -->
         <div v-if="filters.status === 'unused'" class="flex justify-end">
-          <button @click="showDeleteUnusedDialog = true" class="btn btn-danger">
+          <button @click="showDeleteUnusedDialog = true" :disabled="deletingUnused" class="btn btn-danger">
             {{ t('admin.redeem.deleteAllUnused') }}
           </button>
         </div>
@@ -345,6 +345,7 @@
                 :min="
                   generateForm.type === 'balance' || generateForm.type === 'benefit' ? '0.01' : '1'
                 "
+                :max="generateForm.type === 'benefit' ? MAX_REDEEM_AMOUNT : undefined"
                 required
                 class="input"
               />
@@ -365,6 +366,7 @@
                     v-model.number="generateForm.min_value"
                     type="number"
                     min="0.01"
+                    :max="MAX_REDEEM_AMOUNT"
                     step="0.01"
                     required
                     class="input"
@@ -376,6 +378,7 @@
                     v-model.number="generateForm.max_value"
                     type="number"
                     min="0.01"
+                    :max="MAX_REDEEM_AMOUNT"
                     step="0.01"
                     required
                     class="input"
@@ -708,6 +711,9 @@ import {
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import { adminAPI } from '@/api/admin'
 import { formatDateTime } from '@/utils/format'
+import { extractApiErrorMessage } from '@/utils/apiError'
+import { MAX_REDEEM_AMOUNT, validateRedeemGeneration } from '@/features/redeem/generation'
+import { deleteAllUnusedRedeemCodes } from '@/features/redeem/cleanup'
 import type {
   RedeemCode,
   RedeemCodeType,
@@ -872,6 +878,7 @@ const batchExpiryModeOptions = computed(() => [
 const codes = ref<RedeemCode[]>([])
 const loading = ref(false)
 const generating = ref(false)
+const deletingUnused = ref(false)
 const batchUpdating = ref(false)
 const searchQuery = ref('')
 const filters = reactive({
@@ -1023,6 +1030,11 @@ const handlePageChange = (page: number) => {
   loadCodes()
 }
 
+const handleFilterChange = () => {
+  pagination.page = 1
+  loadCodes()
+}
+
 const handlePageSizeChange = (pageSize: number) => {
   pagination.page_size = pageSize
   pagination.page = 1
@@ -1130,20 +1142,18 @@ const buildBatchUpdateFields = (): BatchUpdateRedeemCodeFields | null => {
 }
 
 const handleGenerateCodes = async () => {
+  if (generating.value) return
+  // Step-up may pause and retry the action. Both attempts must use this snapshot.
+  const request = { ...generateForm }
   // 订阅类型必须选择分组
-  if (generateForm.type === 'subscription' && !generateForm.group_id) {
+  if (request.type === 'subscription' && !request.group_id) {
     appStore.showError(t('admin.redeem.groupRequired'))
     return
   }
 
-  if (
-    generateForm.type === 'mystery_box' &&
-    (!Number.isFinite(generateForm.min_value) ||
-      !Number.isFinite(generateForm.max_value) ||
-      generateForm.min_value <= 0 ||
-      generateForm.max_value < generateForm.min_value)
-  ) {
-    appStore.showError(t('admin.redeem.invalidMysteryBoxRange'))
+  const validationError = validateRedeemGeneration(request)
+  if (validationError) {
+    appStore.showError(t(`admin.redeem.${validationError}`))
     return
   }
 
@@ -1157,14 +1167,14 @@ const handleGenerateCodes = async () => {
   try {
     const result = await stepUp.run(() =>
       adminAPI.redeem.generate(
-        generateForm.count,
-        generateForm.type,
-        generateForm.value,
-        generateForm.type === 'subscription' ? generateForm.group_id : undefined,
-        generateForm.type === 'subscription' ? generateForm.validity_days : undefined,
+        request.count,
+        request.type,
+        request.value,
+        request.type === 'subscription' ? request.group_id : undefined,
+        request.type === 'subscription' ? request.validity_days : undefined,
         expiresInDays,
-        generateForm.type === 'mystery_box' ? generateForm.min_value : undefined,
-        generateForm.type === 'mystery_box' ? generateForm.max_value : undefined
+        request.type === 'mystery_box' ? request.min_value : undefined,
+        request.type === 'mystery_box' ? request.max_value : undefined
       )
     )
     showGenerateDialog.value = false
@@ -1182,7 +1192,7 @@ const handleGenerateCodes = async () => {
       showStepUpError(error)
       return
     }
-    appStore.showError(error.response?.data?.detail || t('admin.redeem.failedToGenerate'))
+    appStore.showError(extractApiErrorMessage(error, t('admin.redeem.failedToGenerate')))
     console.error('Error generating codes:', error)
   } finally {
     generating.value = false
@@ -1220,7 +1230,7 @@ const handleExportCodes = async () => {
       showStepUpError(error)
       return
     }
-    appStore.showError(error.response?.data?.detail || t('admin.redeem.failedToExport'))
+    appStore.showError(extractApiErrorMessage(error, t('admin.redeem.failedToExport')))
     console.error('Error exporting codes:', error)
   }
 }
@@ -1240,34 +1250,36 @@ const confirmDelete = async () => {
     deletingCode.value = null
     loadCodes()
   } catch (error: any) {
-    appStore.showError(error.response?.data?.detail || t('admin.redeem.failedToDelete'))
+    appStore.showError(extractApiErrorMessage(error, t('admin.redeem.failedToDelete')))
     console.error('Error deleting code:', error)
   }
 }
 
 const confirmDeleteUnused = async () => {
+  if (deletingUnused.value) return
+  deletingUnused.value = true
   try {
-    // Get all unused codes and delete them
-    const unusedCodesResponse = await adminAPI.redeem.list(1, 1000, { status: 'unused' })
-    const unusedCodeIds = unusedCodesResponse.items.map((code) => code.id)
-
-    if (unusedCodeIds.length === 0) {
+    // Preserve the existing all-types scope, not the current type/search filter.
+    const result = await deleteAllUnusedRedeemCodes(adminAPI.redeem)
+    if (!result.complete) {
+      const detail = result.error ? extractApiErrorMessage(result.error, '') : ''
+      appStore.showError(`${t('admin.redeem.deleteUnusedIncomplete', { count: result.deleted })}${detail ? ` ${detail}` : ''}`)
+    } else if (result.deleted === 0) {
       appStore.showInfo(t('admin.redeem.noUnusedCodes'))
-      showDeleteUnusedDialog.value = false
-      return
+    } else {
+      appStore.showSuccess(t('admin.redeem.codesDeleted', { count: result.deleted }))
     }
-
-    const result = await adminAPI.redeem.batchDelete(unusedCodeIds)
-    appStore.showSuccess(t('admin.redeem.codesDeleted', { count: result.deleted }))
     showDeleteUnusedDialog.value = false
+    clearSelectedCodes()
+    pagination.page = 1
     loadCodes()
-  } catch (error: any) {
-    appStore.showError(error.response?.data?.detail || t('admin.redeem.failedToDeleteUnused'))
-    console.error('Error deleting unused codes:', error)
+  } finally {
+    deletingUnused.value = false
   }
 }
 
 const handleBatchUpdate = async () => {
+  if (batchUpdating.value) return
   const ids = Array.from(selectedCodeIds.value)
   if (ids.length === 0) {
     appStore.showInfo(t('admin.redeem.selectCodesFirst'))
@@ -1297,7 +1309,7 @@ const handleBatchUpdate = async () => {
     clearSelectedCodes()
     loadCodes()
   } catch (error: any) {
-    appStore.showError(error.response?.data?.detail || t('admin.redeem.failedToBatchUpdate'))
+    appStore.showError(extractApiErrorMessage(error, t('admin.redeem.failedToBatchUpdate')))
     console.error('Error batch updating codes:', error)
   } finally {
     batchUpdating.value = false

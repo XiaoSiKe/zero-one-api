@@ -2978,8 +2978,20 @@ func (r *oauthPendingFlowRedeemCodeRepo) BatchUpdate(context.Context, []int64, s
 	panic("unexpected BatchUpdate call")
 }
 
+func (r *oauthPendingFlowRedeemCodeRepo) GetByCodeForUpdate(ctx context.Context, code string) (*service.RedeemCode, error) {
+	return r.GetByCode(ctx, code)
+}
+
+func (r *oauthPendingFlowRedeemCodeRepo) Expire(context.Context, int64) (*service.RedeemCode, error) {
+	panic("unexpected Expire call")
+}
+
 func (r *oauthPendingFlowRedeemCodeRepo) Delete(context.Context, int64) error {
 	panic("unexpected Delete call")
+}
+
+func (r *oauthPendingFlowRedeemCodeRepo) BatchDelete(context.Context, []int64) (int64, error) {
+	panic("unexpected BatchDelete call")
 }
 
 func (r *oauthPendingFlowRedeemCodeRepo) Use(ctx context.Context, id, userID int64) error {

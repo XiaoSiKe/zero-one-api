@@ -712,6 +712,11 @@ export default {
     codeRedeemSuccess: '兑换成功！',
     failedToRedeem: '兑换失败，请检查兑换码后重试。',
     subscriptionRefreshFailed: '兑换成功，但订阅状态刷新失败。',
+    refreshFailed: '兑换已成功，余额或兑换记录暂未刷新。请刷新状态，不要重复兑换。',
+    resultUncertain: '兑换结果待确认，请先刷新余额和兑换记录核对，请勿重复提交。',
+    resultUncertainAfterRefresh: '余额和兑换记录已刷新，请核对是否存在本次兑换记录；兑换结果仍待确认，请勿重复提交。',
+    resultUncertainRefreshFailed: '兑换结果仍待确认，余额或兑换记录暂未刷新。请稍后刷新核对，请勿重复提交。',
+    retryRefresh: '刷新状态',
     pleaseEnterCode: '请输入兑换码'
   },
 

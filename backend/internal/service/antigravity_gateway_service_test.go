@@ -1223,7 +1223,12 @@ func TestStreamUpstreamResponse_UsageAndFirstToken(t *testing.T) {
 	go func() {
 		defer func() { _ = pw.Close() }()
 		fmt.Fprintln(pw, `data: {"usage":{"input_tokens":1,"output_tokens":2,"cache_read_input_tokens":3,"cache_creation_input_tokens":4}}`)
+		fmt.Fprintln(pw)
+		fmt.Fprintln(pw, `event: content_block_delta`)
+		fmt.Fprintln(pw, `data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"ready"}}`)
+		fmt.Fprintln(pw)
 		fmt.Fprintln(pw, `data: {"usage":{"output_tokens":5}}`)
+		fmt.Fprintln(pw)
 	}()
 
 	start := time.Now().Add(-10 * time.Millisecond)
@@ -1238,9 +1243,45 @@ func TestStreamUpstreamResponse_UsageAndFirstToken(t *testing.T) {
 	require.Equal(t, 3, result.usage.CacheReadInputTokens)
 	require.Equal(t, 4, result.usage.CacheCreationInputTokens)
 	require.NotNil(t, result.firstTokenMs)
+	require.GreaterOrEqual(t, *result.firstTokenMs, 10)
 
 	// 确保有透传输出
-	require.Contains(t, rec.Body.String(), "data:")
+	require.Contains(t, rec.Body.String(), `"text":"ready"`)
+}
+
+func TestStreamUpstreamResponse_UsageOnlyDoesNotStartFirstToken(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	for _, tc := range []struct {
+		name      string
+		separator string
+	}{
+		{name: "complete metadata events", separator: "\n\n"},
+		{name: "legacy undelimited usage lines", separator: "\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			svc := newAntigravityTestService(&config.Config{
+				Gateway: config.GatewayConfig{MaxLineSize: defaultMaxLineSize},
+			})
+			rec := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(rec)
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+			payload := `data: {"usage":{"input_tokens":1,"output_tokens":2,"cache_read_input_tokens":3,"cache_creation_input_tokens":4}}` + tc.separator +
+				`data: {"usage":{"output_tokens":5}}` + tc.separator
+			resp := &http.Response{StatusCode: http.StatusOK, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(payload))}
+			defer func() { require.NoError(t, resp.Body.Close()) }()
+
+			result := svc.streamUpstreamResponse(c, resp, time.Now().Add(-10*time.Millisecond))
+
+			require.NotNil(t, result)
+			require.NotNil(t, result.usage)
+			require.Equal(t, 1, result.usage.InputTokens)
+			require.Equal(t, 5, result.usage.OutputTokens)
+			require.Equal(t, 3, result.usage.CacheReadInputTokens)
+			require.Equal(t, 4, result.usage.CacheCreationInputTokens)
+			require.Nil(t, result.firstTokenMs, "usage is accounting metadata, not visible model output")
+			require.Contains(t, rec.Body.String(), `"usage"`)
+		})
+	}
 }
 
 // --- 流式 happy path 测试 ---

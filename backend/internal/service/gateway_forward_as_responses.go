@@ -511,7 +511,6 @@ func (s *GatewayService) handleResponsesStreamingResponse(
 	clientToolRestorer := apicompat.NewResponsesClientToolStreamRestorer(clientToolMapping)
 	var usage ClaudeUsage
 	var firstTokenMs *int
-	firstChunk := true
 
 	scanner := bufio.NewScanner(resp.Body)
 	maxLineSize := defaultMaxLineSize
@@ -535,12 +534,6 @@ func (s *GatewayService) handleResponsesStreamingResponse(
 
 	// processEvent handles a single parsed Anthropic SSE event.
 	processEvent := func(event *apicompat.AnthropicStreamEvent) bool {
-		if firstChunk {
-			firstChunk = false
-			ms := int(time.Since(startTime).Milliseconds())
-			firstTokenMs = &ms
-		}
-
 		// Extract usage from message_delta
 		if event.Type == "message_delta" && event.Usage != nil {
 			mergeAnthropicUsage(&usage, *event.Usage)
@@ -578,10 +571,14 @@ func (s *GatewayService) handleResponsesStreamingResponse(
 					)
 					return true // client disconnected
 				}
+				if firstTokenMs == nil && openAIStreamDataStartsVisibleOutput(string(restored), eventType) {
+					ms := int(time.Since(startTime).Milliseconds())
+					firstTokenMs = &ms
+				}
 			}
 		}
 		if len(events) > 0 {
-			c.Writer.Flush()
+			return flushHTTPStream(c, firstTokenMs != nil) != nil
 		}
 		return false
 	}

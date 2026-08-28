@@ -59,6 +59,23 @@ docker compose \
 
 升级只允许重建容器，不允许执行 `docker compose down -v`、`docker volume prune`、`docker system prune --volumes`，也不允许删除或覆盖上述目录。生产仓库中已有 `.release-backups/`、`.release-builds/` 和历史 `.env.before-*` 文件；它们是发布恢复材料，不得使用 `git clean` 清理。
 
+## GitHub 托管迁移（2026-08-28）
+
+产品源码托管目标为 [`XiaoSiKe/zero-one-api`](https://github.com/XiaoSiKe/zero-one-api)，
+`XiaoSiKe` 为登录名，`01-Yang` 为显示名。导入、权限与 CI 的实际验收记录见
+[`OPERATIONS.md`](OPERATIONS.md#repository-hosting-migration-2026-08-28)。
+
+未来获授权发布的包名为 `ghcr.io/xiaosike/zero-one-sub2api` 与
+`ghcr.io/xiaosike/zero-one-edge`；这不表示新包已发布或生产已迁移。
+本次源码托管迁移未操作生产服务器，以下真实部署与回滚记录继续保留旧包名和摘要，
+不得只替换 registry owner 就声称得到同一镜像。
+
+下一次独立授权的生产维护时，先核验服务器源码 `origin`、只读拉取凭据以及目标
+GHCR 包的访问权限，再决定所需变更；不要把旧凭据复制进新仓库。保持生产
+`JWT_SECRET`、`TOTP_ENCRYPTION_KEY`、数据库密码、持久化目录和运行中的镜像不变，
+源码托管变更不构成轮换业务密钥或重建容器的理由。发布仍须满足同源码双镜像、
+不可变 digest、备份、Backend-first 和安全 Edge 切换要求。
+
 ## 当前生产基线
 
 2026-08-26 已按 Backend-first 原地部署 v0.1.183，运行源码和不可变镜像为：

@@ -259,6 +259,133 @@ Document the backup encryption key owner and restore permissions separately;
 do not place encryption keys, dumps, `.env`, or Provider Account secrets in
 this repository.
 
+## CI Resource Policy
+
+GitHub Actions is used only to build, test, audit and validate this repository.
+The [Actions product terms](https://docs.github.com/en/site-policy/github-terms/github-terms-for-additional-products-and-features#actions)
+also prohibit unrelated computation and disproportionate resource consumption.
+A count of workflow runs is not a compliance certificate or a published safe
+usage threshold; review the purpose, execution time and actual runner usage.
+
+The four validation workflows (`CI`, `Security Scan`, `Zero One CI` and
+`Zero One Visual Calibration`) use the following event boundary:
+
+| Event | Automatic validation |
+| --- | --- |
+| Pull request targeting `main`, including a new commit on that PR | One run of each validation workflow |
+| Push to `main`, including a merged PR | One run of each validation workflow |
+| Push to a feature branch without a PR | None; run local checks and open a PR for hosted validation |
+| Push of an `ui-approved-*` or other tag | None of these four workflows |
+| Existing manual dispatch | Only the explicitly selected workflow |
+| Weekly security schedule | `Security Scan` only, with the existing schedule |
+
+The separate version-release and image-publish workflows retain their existing
+entry points and approvals. UI approval tags do not publish production images.
+The inherited CLA workflow may report skipped checks on this fork; a skipped
+check is not a running worker.
+
+Each validation workflow groups concurrency by workflow name, event and PR
+number (or ref). A new commit on a PR cancels the superseded run of the same PR
+and workflow. Push, scheduled and manual runs are not cancelled by a different
+event. For non-PR events, an in-progress run is allowed to finish; GitHub's
+default single-pending-slot behavior may replace an older queued run in the
+same group. Every job has an explicit time budget: shell and security checks up to
+15 minutes, Go suites 30, frontend jobs 15 (the full Console job 20), lint 40,
+deployment validation 45 and visual calibration 30. A timeout is a failed
+validation, not permission to remove a test or relax a screenshot threshold.
+
+All existing job names, test suites and security/visual gates remain present.
+This policy removes duplicate **event triggers**; the backend coverage shared
+by `CI` and `Zero One CI` is still retained. Consolidating that coverage later
+requires a separate review of required checks and equivalent test execution.
+Do not claim that all cross-workflow duplication has already been removed.
+
+Run the offline policy regression together with the existing protection tests:
+
+```bash
+node --test .github/scripts/*.test.mjs
+```
+
+Use `gh run list/view/watch` and `gh pr checks --watch` to inspect an existing
+run. Polling output, jobs and test cases are not additional workflow runs.
+Record the workflow run ID and, when available, `run_attempt`; diagnose failures
+before an explicit rerun. Do not loop reruns until a check becomes green, push
+empty commits to obtain new runners, or run production traffic on CI workers.
+Routing tests must retain temporary containers, loopback bindings and cleanup;
+TTFT parser tests use fake streams, not a production upstream account pool.
+
+## Repository Access Incidents
+
+If GitHub reports an account suspension, stop remote pushes, repository
+creation, image publication and Actions dispatches. Preserve local commits,
+tags and diagnostic records, and use the official
+[appeal and reinstatement process](https://docs.github.com/en/site-policy/acceptable-use-policies/github-appeal-and-reinstatement)
+to clarify access or an authorized migration. Successful login to another
+account is not evidence that the restriction has been lifted.
+
+Account changes must not rewrite upstream authorship, licenses, historical
+commit authors or old CI evidence links. Existing production image digests
+describe what is actually deployed; do not replace their registry owner with
+an unverified destination or imply that images have been published there.
+Repository identity changes and their credentials remain separate from
+production deployment and require an explicit, verified destination.
+
+## Repository Hosting Migration (2026-08-28)
+
+本次经仓库所有者确认已获 GitHub 允许后，迁移目标为
+[`XiaoSiKe/zero-one-api`](https://github.com/XiaoSiKe/zero-one-api)。
+`XiaoSiKe` 是登录名，`01-Yang` 只是显示名，不能用显示名推导 API、remote 或 GHCR 路径。
+
+| 配置 | 迁移目标或边界 |
+| --- | --- |
+| 产品 `origin` | `https://github.com/XiaoSiKe/zero-one-api.git` |
+| 上游 `upstream` | 保持 `Wei-Shaw/sub2api`，仅允许读取 |
+| 后续 Sub2API / Edge 发布 | `ghcr.io/xiaosike/zero-one-sub2api` / `ghcr.io/xiaosike/zero-one-edge`，须独立发布授权 |
+| 历史证据 | 旧 PR、Actions run、提交作者、许可证及已部署镜像摘要保留原归属 |
+| 生产环境 | 本次不发布镜像、不部署服务器、不替换线上 `.env` 或业务密钥 |
+
+迁移按以下顺序验收，不把导入已有标签当作新版本发布：
+
+1. 核验 CLI 的实际登录名和目标仓库；Git 提交身份单独核验，不按仓库名重写
+   历史作者，也不批量覆盖其他项目的全局凭据。
+2. 在首次导入分支与历史标签前，临时禁用目标仓库 Actions，避免已有 `v*` 标签
+   触发继承的版本发布工作流。逐项比对产品提交、上游基线、受保护 UI 标签及祖先关系，
+   不强推或移动旧标签。
+3. 核验目标仓库 Actions 权限、默认分支、分支保护/规则集、必需检查、Environment、
+   Secrets/Variables、deploy key、webhook 和 GHCR 包权限。新建仓库不会自动继承这些
+   元数据；只配置实际需要且已授权的项目，密钥值不写入 Git、日志或迁移报告。
+4. 导入核对完成后恢复验证工作流，以 PR 运行完整门禁。临时停用仅用于历史导入，
+   不能替代 CI，也不得通过跳过测试、降低截图阈值或关闭保护来合并。
+5. 所有必需检查通过后使用 merge commit 合入 `main`，核验合并后的 CI、
+   本地/远端提交和保留标签一致；不自动启动 `Zero One Publish` 或生产部署。
+
+本地已补齐完整 Git 历史，连通性和缺失对象检查通过。首次原子导入的 5 个分支、
+65 个标签已逐项核对一致，导入期间目标 Actions 运行数为 0；导入后已恢复验证。
+`origin` 与本项目的 gh 默认仓库均为 `XiaoSiKe/zero-one-api`，GitHub CLI 与 Git
+提交身份已核对为新账号，`upstream` 仍禁止推送。
+
+目标仓库默认分支为 `main`，只使用 merge commit；`main` 已要求 12 项原有检查、
+PR 和会话解决，管理员同样受保护，禁止强推/删除。规则集
+`Zero One immutable UI approvals`（ID `21721172`）禁止更新/删除 `ui-approved-*`，
+不配置绕过者。Actions 默认令牌为只读且不能批准 PR；Secrets、Variables、
+Environment、deploy key 和 webhook 均未从旧账号复制，也没有为迁移添加私密值。
+
+迁移候选 `6962df85d86c4719ebc97abc8610cebb77b9618f` 已在新仓库通过
+[原生 Linux x86 视觉验收 33159665998](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33159665998)：
+145 项通过、65 项既有平台排除，账号链接 2 项与兑换行为 44 项实际执行。
+新快照为 `ui-approved-2026-08-28-r2`，旧标签均保留。合并与合并后 `main` 检查的
+最终执行记录集中在[迁移 PR #1](https://github.com/XiaoSiKe/zero-one-api/pull/1)，
+以该 PR 的实际 merge commit 和必需检查结论为准；候选视觉通过不等于 PR 已合并。
+
+历史导入提示上游早期提交曾包含 59.23 MB 的 `backend/repository.test`；该文件
+已在上游历史中删除，当前版本未跟踪。本次没有为消除提示改写历史或移动标签。
+本机 Backend 构建曾被 Docker Hub 认证 POST 的 EOF 阻断，不能记为本地构建通过；
+完整双镜像构建仍由原始 CI 门禁验证，不通过删除构建步骤或循环重试取得绿灯。
+
+Codex/ChatGPT 的 GitHub 插件 OAuth 与本机 gh 凭据相互独立。每次切换账号都要
+分别核验身份；插件身份不匹配时不经该插件写入。仓库或 Git 配置不能替代插件的
+重新授权，不在文档或 Git 中复制个人令牌。
+
 ## Release And Rollback
 
 Before release, record the deployed Sub2API and edge image digests and take a database backup. Deploy immutable images, run the routing and smoke checks, then announce completion.
@@ -271,7 +398,7 @@ repository-owned gate:
 ```bash
 sh deploy/zero-one/safe-edge-switch.sh \
   deploy/zero-one/.env \
-  ghcr.io/01-yang/zero-one-edge@sha256:<64-lowercase-hex-digest>
+  ghcr.io/xiaosike/zero-one-edge@sha256:<64-lowercase-hex-digest>
 ```
 
 The script accepts only an immutable digest, locks concurrent releases, saves a
@@ -285,9 +412,14 @@ same HTTPS gate; a failed rollback is reported separately. Do not replace this
 entrypoint with a direct `docker compose up edge` during a release.
 
 The approved UI is a separate release boundary. The current protected snapshot
-is the `ui-approved-2026-08-27-r17` tag at commit
-`108d3d6865889416a00807d49d6567f88a2e777f`. The
-`ui-approved-2026-08-27-r16` tag remains immutable as the previous accepted UI.
+is the `ui-approved-2026-08-28-r2` tag at commit
+`6962df85d86c4719ebc97abc8610cebb77b9618f`. The
+`ui-approved-2026-08-28-r1` and `ui-approved-2026-08-27-r17` tags remain immutable;
+all older approval tags also remain unchanged. The new snapshot passed native
+Linux x86 visual and interaction verification (145 passed, 65 existing viewport
+exclusions) in [GitHub Actions run 33159665998](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33159665998).
+The previous r1 snapshot and its 143-pass result remain historical evidence in
+[GitHub Actions run 33104422137](https://github.com/01-Yang/zero-one-api/actions/runs/33104422137).
 An upstream version update must not modify `landing/src`, the protected console
 source paths, or `deploy/zero-one/recovered-frontend`. This explicitly covers
 the landing page, login/register pages, the console shell, model-plaza pricing,
@@ -351,6 +483,47 @@ maintenance window.
 固定 Playwright 1.55.1 镜像的全部视觉与交互用例、保护清单、资源闭包、Compose 和双镜像路由测试。
 测试内明确选择跳过的外部探测应单独列出，不得把缺少凭据或环境的测试写成已执行通过。
 截图仅在审核实际差异后更新；先创建新的不可变 UI 批准标签，再更新基线清单，保留旧标签。
+
+## 兑换码与首 Token 加固验收（2026-08-28）
+
+本轮仅交付源码、恢复版 Console、测试与保护记录；没有自动发布镜像或修改生产配置。
+后续上线继续遵循同源码双镜像、Backend-first、备份与安全 Edge 切换流程。
+本轮无新增数据库迁移，不回填历史奖励或用量；领域约定见 ADR 0008。
+
+- 福利码与盲盒码每码一次、每用户每批一次；管理员不能通过启用、过期或删除
+  清除领取证明。核销与管理操作在真实 PostgreSQL 中并发回放，检查实际奖励、余额
+  和 used/by/at 不回退。批量删除按实际 affected rows 计数，数据库错误不得显示成功。
+- 正整分奖励范围为 0.01–999999999999.99，盲盒可使用等值上下限；普通余额码、订阅码、
+  邀请码与既有累计充值语义不变。福利与盲盒不参与邀请返利。
+- Redis 错误窗口从首次错误起一小时、最多 20 次，后续错误不延长窗口；旧 24 小时
+  或永久 TTL 收敛到一小时但保留计数。锁键不包含明文兑换码，过期旧请求不能释放新租约。
+- 兑换已成功而用户资料、历史或订阅读取失败时，显示成功并提供只读刷新。
+  请求结果不明时核对历史，不自动重新核销。测试初始慢历史请求不能覆盖兑换后的记录。
+- API Key 使用时间使用独立 1-worker、1024-Key 有界待办队列：排队期间合并最新时间，
+  执行中的新触达沿用本次写入的防抖窗口；成功 30 秒防抖、失败 5 秒退避、SQL 预算 10 秒。
+  队满不回退同步写库。鉴权、额度和账单仍按原规则执行。
+  相同 Linux ARM64 / Go 1.27 / 2 CPU 的离线 fixture，将元数据数据库延迟固定为 20 ms，
+  每轮 20 个新 Key、重复三轮：基线 `83495fcf7` 的请求路径为 21.426–22.439 ms/op，
+  异步实现的提交路径为 441.6–718.8 ns/op。后台写入仍需原来的 20 ms；这只证明
+  元数据 SQL 已离开关键路径，不代表真实模型或外网首 Token 提速同等幅度。
+- HTTP 访问日志新增 `gateway_timing_version=1`、`gateway_auth_ms`、`user_queue_ms`、
+  `account_queue_ms`、`account_selection_ms`、`upstream_headers_total_ms`、
+  `retry_backoff_ms`、`upstream_attempts`，有输出时才写 `gateway_first_output_ms`。
+  它们是阶段计时，不应将“整个流时长减响应头等待”称为本站开销。
+- 新用量的 `first_token_ms` 是鉴权前入口到首个有效完整事件写出并 flush 的时间；
+  `duration_ms` 使用同一请求起点。调度器仍使用原单次 attempt 指标。
+  此统计口径可能比旧值更大，不代表性能回退；上线时间必须记录，不能直接混合新旧分布。
+  WebSocket 保留逐 turn 指标；外网客户端到屏时延仍须客户端测量。
+- 对启用流闲置预算的 HTTP 路径，客户端断开及时释放用户槽位，账户槽位等到上游结束
+  或按原闲置配置回收后释放。配置显式为 0 时保留既有取消释放行为，不隐式增加阈值。
+  不修改并发额度、粘性、重试次数或 Caddy SSE flush 配置。
+- `benchmark-ttft.mjs` 使用完整 SSE 事件并单独统计失败；`success_rate` 为 0–1，
+  `ttft_ms` 仅含有效成功样本，包含 P50/P90/P95/P99。流内失败或无终止帧不得计为成功。
+  离线回归使用假上游；任何未来生产探针另行授权并使用专用限额密钥。
+
+恢复版 Console 使用 `redeem-ttft-20260828` 资源命名空间，旧 alias 保留。
+发布前必须运行新的桌面／移动兑换行为用例、source/recovered 一致性测试与原视觉门禁。
+不得以新截图覆盖差异、放宽阈值或把缺少外部条件的用例计为已执行通过。
 
 ## Required Smoke Tests
 

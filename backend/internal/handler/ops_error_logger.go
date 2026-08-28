@@ -19,6 +19,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/gatewaytiming"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -772,13 +773,16 @@ func (w *opsCaptureWriter) Written() bool {
 	return rw.Written()
 }
 func (w *opsCaptureWriter) Flush() {
+	_ = w.FlushError()
+}
+func (w *opsCaptureWriter) FlushError() error {
 	state, rw := w.beginDelegatedCall()
 	if state == nil {
-		return
+		return errors.New("response writer released")
 	}
 	state.mu.Unlock()
 	defer finishDelegatedCall(state)
-	rw.Flush()
+	return service.FlushGatewayResponseWriter(rw)
 }
 func (w *opsCaptureWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	state, rw := w.beginDelegatedCall()
@@ -1090,6 +1094,11 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 		c.Writer = w
 		c.Next()
 		w.finalizeCapture()
+		// Request-scoped HTTP timing also covers partial-output failures. Do not
+		// substitute a scheduler's per-attempt latency into this user-facing field.
+		if c.Request != nil && gatewaytiming.FromContext(c.Request.Context()) != nil {
+			service.SetOpsLatencyMs(c, service.OpsTimeToFirstTokenMsKey, 0)
+		}
 
 		if _, rejected := middleware2.GetIngressRejectReason(c); rejected {
 			return

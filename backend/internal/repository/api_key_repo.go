@@ -791,11 +791,18 @@ func (r *apiKeyRepository) IncrementQuotaUsedAndGetState(ctx context.Context, id
 }
 
 func (r *apiKeyRepository) UpdateLastUsed(ctx context.Context, id int64, usedAt time.Time) error {
-	affected, err := r.client.APIKey.Update().
-		Where(apikey.IDEQ(id), apikey.DeletedAtIsNil()).
-		SetLastUsedAt(usedAt).
-		SetUpdatedAt(usedAt).
-		Save(ctx)
+	// Deferred writes can arrive after a newer request or administrator edit,
+	// including writes from another process. Compare inside the atomic UPDATE.
+	result, err := r.sql.ExecContext(ctx, `
+		UPDATE api_keys
+		SET last_used_at = CASE WHEN last_used_at IS NULL OR last_used_at < $1 THEN $1 ELSE last_used_at END,
+		    updated_at = CASE WHEN updated_at < $1 THEN $1 ELSE updated_at END
+		WHERE id = $2 AND deleted_at IS NULL
+	`, usedAt, id)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}

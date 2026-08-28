@@ -60,6 +60,30 @@ _Avoid_: 在线支付、购买促销码、优惠券
 在线购买流程中调整订单价格的营销凭证。
 _Avoid_: Redeem Code
 
+**Benefit Redeem Code（福利码）**:
+一种按批次发放固定余额的 Redeem Code；每码核销一次，每个 User 每批次只领取一次。奖励是存储范围内不少于 0.01 的整分金额，不产生邀请返利。
+_Avoid_: Promo Code、支付优惠、可重复领取余额
+
+**Mystery Box Redeem Code（盲盒码）**:
+一种按批次发放随机余额的 Redeem Code；在正整分闭区间使用安全随机抽取，允许上下限相等。实际奖励、领取记录和余额在同一事务提交；每用户每批次一次，管理操作不能重新抽奖或改变已发奖励。
+_Avoid_: 概率营销策略、重复开箱、兑换前固定面值
+
+**Redeem Claim（领取证明）**:
+兑换码的 used 状态、used_by 或 used_at 中任一领取标记。管理操作不能通过重启、过期、修改权益或删除清除此证明；核销和管理转换必须基于数据库内的最新状态。邀请码注册流程内部既有失败回滚仍是独立合同。
+_Avoid_: 可重置状态、删除后重新领取资格
+
+**Site First Token（站点首 Token）**:
+从 HTTP 模型网关入口（鉴权前）到首个真正有内容的完整流事件写出并 flush 的耗时，包含本站处理、排队、之前失败尝试与退避；心跳、开始事件、空增量不计入。它不是用户设备到屏时延，WebSocket 仍逐 turn 计时。此口径启用前的历史用量不回填。
+_Avoid_: 首个网络字节、首个 SSE metadata、纯上游耗时、客户端端到端时延
+
+**Attempt First Token（单次尝试首 Token）**:
+一次转发 Implementation 开始到首个有效输出的耗时，继续供 Provider Account 调度使用；不得把整个请求的排队和之前尝试累加到这个值。请求级用量使用独立冻结副本。
+_Avoid_: Site First Token、全请求耗时、仅模型推理耗时
+
+**API Key Last-used Bookkeeping（密钥使用时间记录）**:
+API Key 已鉴权后的尽力而为元数据维护，不参与权限、额度或计费决策。独立有界 worker 按 Key ID 合并排队中的到达时间；队满不阻塞请求，迟到写入不得令时间倒退或复活已删除密钥。
+_Avoid_: 计费账单、异步鉴权、无限后台任务
+
 **Affiliate Attribution（邀请归属关系）**:
 一个 Invitee 最多归属一个 Inviter。Administrator 只能为从未绑定过邀请人的现有 User 做一次人工补绑；绑定时间是不可覆盖的墓碑，即使邀请人账号删除后 `inviter_id` 被清空，也不能再绑。禁止自绑、循环关系、覆盖、改绑或解绑。补绑只影响绑定时间之后完成付款的交易，不追溯订单、余额或既有返利流水；返利有效期仍从 Invitee 的 Affiliate 档案创建时间计算，不因补绑而重新起算。人工补绑仅接受人类操作者的 JWT Administrator，不接受 Admin API Key，并受既有敏感操作 step-up 策略保护；该策略启用时必须完成近期 TOTP step-up。关系记录必须持久保存绑定时间；操作者 ID 是不随 Administrator 账号删除而清空的审计快照。
 _Avoid_: 邀请码补发、历史返利重算、可编辑客户分组、Admin API Key 批量归属

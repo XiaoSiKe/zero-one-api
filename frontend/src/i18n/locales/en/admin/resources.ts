@@ -257,7 +257,9 @@ export default {
       mysteryBoxHint: 'The first successful redemption awards a random credit in this range. Each user can redeem only one code from this batch.',
       minAmount: 'Minimum Credit ($)',
       maxAmount: 'Maximum Credit ($)',
-      invalidMysteryBoxRange: 'Invalid mystery-box range. The maximum must be greater than or equal to the minimum.',
+      invalidMysteryBoxRange: 'Amounts must be between 0.01 and 999999999999.99 with at most two decimals, and the maximum must not be below the minimum.',
+      invalidAmount: 'Benefit amounts must be between 0.01 and 999999999999.99 with at most two decimals.',
+      invalidCount: 'The number of codes must be an integer from 1 to 100.',
       oneTimeCodeWarning: 'Plaintext codes are shown only once. After closing, the admin panel keeps only non-redeemable redacted identifiers. Copy or download them now.',
       unused: 'Unused',
       used: 'Used',
@@ -291,6 +293,7 @@ export default {
       batchNotesPlaceholder: 'Enter the new note, or leave blank to clear it',
       clearGroup: 'Clear group',
       deleteAllUnused: 'Delete All Unused Codes',
+      deleteUnusedIncomplete: 'Deleted {count} unused codes, but cleanup is incomplete. Refresh the list before retrying.',
       deleteCode: 'Delete Redeem Code',
       deleteCodeConfirm:
         'Are you sure you want to delete this redeem code? This action cannot be undone.',

@@ -33,6 +33,7 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 	promptCacheKey string,
 	defaultMappedModel string,
 ) (*OpenAIForwardResult, error) {
+	ctx = withHTTPUpstreamClientContext(ctx, c)
 	beginUpstreamResponseModelObservation(c)
 	setCodexToolNameReverse(c, nil)
 	if _, err := s.prepareCodexAccountIdentitySource(ctx, c, account); err != nil {
@@ -907,7 +908,7 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 	var usage OpenAIUsage
 	responseID := ""
 	var firstTokenMs *int
-	firstChunk := true
+	visibleOutputWritten := false
 	clientDisconnected := false
 	clientOutputStarted := false
 	var streamFailoverErr error
@@ -963,8 +964,7 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 	// processDataLine handles a single "data: ..." SSE line from upstream.
 	processDataLine := func(payload string) bool {
 		payload = string(restoreCodexToolNamesFromContext(c, []byte(payload)))
-		if firstChunk {
-			firstChunk = false
+		if firstTokenMs == nil && openAIStreamDataStartsVisibleOutput(payload, "") {
 			ms := int(time.Since(startTime).Milliseconds())
 			firstTokenMs = &ms
 		}
@@ -1087,10 +1087,13 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 					break
 				}
 				clientOutputStarted = true
+				visibleOutputWritten = visibleOutputWritten || httpSSEFrameHasVisibleOutput(sse)
 			}
 		}
 		if len(events) > 0 && !clientDisconnected {
-			c.Writer.Flush()
+			if err := flushHTTPStream(c, visibleOutputWritten); err != nil {
+				clientDisconnected = true
+			}
 		}
 		return isTerminalEvent
 	}
@@ -1118,9 +1121,12 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 					break
 				}
 				clientOutputStarted = true
+				visibleOutputWritten = visibleOutputWritten || httpSSEFrameHasVisibleOutput(sse)
 			}
 			if !clientDisconnected {
-				c.Writer.Flush()
+				if err := flushHTTPStream(c, visibleOutputWritten); err != nil {
+					clientDisconnected = true
+				}
 			}
 		}
 		logOpenAISuccessMissingUsage(c.Request.Context(), c, account, resp, &usage, terminalEventType, clientDisconnected)

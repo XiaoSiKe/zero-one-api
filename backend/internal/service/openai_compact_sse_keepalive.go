@@ -247,11 +247,15 @@ func (w *openAICompactKeepaliveWriter) WriteHeaderNow() {
 }
 
 func (w *openAICompactKeepaliveWriter) Flush() {
+	_ = w.FlushError()
+}
+
+func (w *openAICompactKeepaliveWriter) FlushError() error {
 	w.suspend()
 	if w.ResponseWriter == nil {
-		return
+		return errors.New("response writer released")
 	}
-	w.ResponseWriter.Flush()
+	return FlushGatewayResponseWriter(w.ResponseWriter)
 }
 
 func (w *openAICompactKeepaliveWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {

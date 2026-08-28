@@ -12,9 +12,13 @@ const manifest = validateManifest(
 )
 
 test('validates the approved UI baseline manifest', () => {
-  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-27-r17')
-  assert.equal(manifest.baseline_commit, '108d3d6865889416a00807d49d6567f88a2e777f')
+  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-28-r2')
+  assert.equal(manifest.baseline_commit, '6962df85d86c4719ebc97abc8610cebb77b9618f')
   assert.equal(manifest.edge_build.console_source, 'deploy/zero-one/recovered-frontend/console')
+  assert.ok(manifest.protected_paths.includes('visual-regression/tests/redeem.behavior.spec.ts'))
+  const redeem = manifest.protected_surfaces.find(({ name }) => name === 'redeem-benefits-mystery-box')
+  assert.ok(redeem.paths.includes('frontend/src/api/redeem.ts'))
+  assert.ok(redeem.paths.includes('visual-regression/tests/redeem.behavior.spec.ts'))
   assert.deepEqual(
     manifest.protected_surfaces.map(({ name }) => name),
     [

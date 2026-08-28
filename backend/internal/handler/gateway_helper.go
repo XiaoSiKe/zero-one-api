@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/gatewaytiming"
 	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
@@ -197,6 +198,35 @@ func wrapReleaseOnDone(ctx context.Context, releaseFunc func()) func() {
 	}
 }
 
+// HTTP upstreams outlive a disconnected client while draining terminal usage.
+// Their account slot belongs to that attempt, not to the client socket. The
+// forwarding caller defers this once-only release; user/WS leases are unchanged.
+func (h *OpenAIGatewayHandler) wrapHTTPAccountRelease(c *gin.Context, ctx context.Context, release func()) func() {
+	if release == nil {
+		return nil
+	}
+	boundedDrain := h != nil && h.cfg != nil && h.cfg.Gateway.StreamDataIntervalTimeout > 0
+	if boundedDrain && c != nil && c.Request != nil && c.Request.Method == http.MethodPost && service.GetOpenAIClientTransport(c) != service.OpenAIClientTransportWS {
+		return sync.OnceFunc(release)
+	}
+	// Explicit idle=0 disables the reclamation budget. Preserve the old
+	// cancellation release in that mode instead of introducing an unbounded lease.
+	return wrapReleaseOnDone(ctx, release)
+}
+
+func waitGatewayRetry(ctx context.Context, delay time.Duration) bool {
+	finish := gatewaytiming.Observe(ctx, gatewaytiming.RetryBackoff)
+	defer finish()
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
+	}
+}
+
 // IncrementWaitCount increments the wait count for a user
 func (h *ConcurrencyHelper) IncrementWaitCount(ctx context.Context, userID int64, maxWait int) (bool, error) {
 	return h.concurrencyService.IncrementWaitCount(ctx, userID, maxWait)
@@ -376,6 +406,12 @@ func (h *ConcurrencyHelper) waitForSlotWithPingTimeout(c *gin.Context, slotType 
 	}
 
 	// Determine if ping is needed (streaming + ping format defined)
+	stage := gatewaytiming.AccountQueue
+	if slotType == "user" {
+		stage = gatewaytiming.UserQueue
+	}
+	finishWait := gatewaytiming.Observe(ctx, stage)
+	defer finishWait()
 	needPing := isStream && h.pingFormat != ""
 
 	var flusher http.Flusher
