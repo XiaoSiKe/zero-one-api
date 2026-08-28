@@ -328,6 +328,43 @@ test.describe('Console card motion parity', () => {
     expect(documentNavigations).toBe(0)
   })
 
+  test('serves valid key and group read models to Console pages without render errors', async ({ page }) => {
+    await seedConsole(page, 'v2')
+    const renderErrors: string[] = []
+    page.on('pageerror', (error) => renderErrors.push(error.message))
+    page.on('console', (message) => {
+      if (message.type() === 'error') renderErrors.push(message.text())
+    })
+
+    for (const path of ['/keys', '/usage']) {
+      const keysResponse = page.waitForResponse((response) =>
+        response.request().method() === 'GET' &&
+        new URL(response.url()).pathname === '/api/v1/keys',
+      )
+      const groupsResponse = page.waitForResponse((response) =>
+        response.request().method() === 'GET' &&
+        new URL(response.url()).pathname === '/api/v1/groups/available',
+      )
+      await page.goto(`${affiliateConsoleOrigin}${path}`)
+      const [keys, groups] = await Promise.all([keysResponse, groupsResponse])
+      expect(keys.status()).toBe(200)
+      expect(groups.status()).toBe(200)
+      const keyQuery = new URL(keys.url()).searchParams
+      expect(await keys.json()).toMatchObject({
+        code: 0,
+        data: {
+          items: [], total: 0, pages: 1,
+          page: Number(keyQuery.get('page') || 1),
+          page_size: Number(keyQuery.get('page_size') || 20),
+        },
+      })
+      expect(await groups.json()).toMatchObject({ code: 0, data: [] })
+      await expect(page.locator('.app-shell main')).toBeVisible()
+    }
+
+    expect(renderErrors).toEqual([])
+  })
+
   test('keeps Administrator My Account navigation rows visually settled while switching keys and usage', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
     await page.addInitScript(() => {

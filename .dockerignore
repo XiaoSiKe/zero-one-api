@@ -52,9 +52,11 @@ coverage/
 .nyc_output/
 
 # Environment files
-.env
-.env.*
+**/.env
+**/.env.*
 !.env.example
+!deploy/.env.example
+!deploy/zero-one/.env.example
 
 # Local config
 config.yaml
@@ -76,6 +78,11 @@ deploy/sub2api-sudoers
 deploy/data/
 deploy/postgres_data/
 deploy/redis_data/
+deploy/zero-one/state/
+
+# Local release recovery points and disposable build checkouts are never inputs.
+.release-backups/
+.release-builds/
 
 # GoReleaser
 .goreleaser.yaml

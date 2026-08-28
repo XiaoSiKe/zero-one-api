@@ -64,7 +64,7 @@ docker compose \
 	config --format json >"$production_baseline_preview_config"
 
 jq -e '
-  .services.sub2api.image == "ghcr.io/01-yang/zero-one-sub2api@sha256:7205c4879cc1e57c5939f3763f14d5e11fc0955f4fc9e5385f0b0e76a3221c77" and
+  .services.sub2api.image == "ghcr.io/xiaosike/zero-one-sub2api@sha256:7c008a49a58b26a4ebc4caf842d6f1251b4b0f11d8993d202b2b9c23caea3a58" and
   (.services.sub2api | has("build") | not) and
   .services.sub2api.ports[0].host_ip == "127.0.0.1" and
   .services.sub2api.ports[0].target == 8025 and

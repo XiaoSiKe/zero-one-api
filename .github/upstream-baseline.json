@@ -324,6 +324,7 @@
     "deploy/zero-one/compose.yml",
     "deploy/zero-one/restore-drill.sh",
     "deploy/zero-one/test-compose.sh",
+    "deploy/zero-one/test-build-context.sh",
     "deploy/zero-one/test-direct-upstream.sh",
     "deploy/zero-one/test-upstream.mjs",
     "deploy/zero-one/verify-console-asset-closure.mjs",
