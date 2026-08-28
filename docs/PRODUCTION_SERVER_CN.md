@@ -65,18 +65,94 @@ docker compose \
 `XiaoSiKe` 为登录名，`01-Yang` 为显示名。导入、权限与 CI 的实际验收记录见
 [`OPERATIONS.md`](OPERATIONS.md#repository-hosting-migration-2026-08-28)。
 
-未来获授权发布的包名为 `ghcr.io/xiaosike/zero-one-sub2api` 与
-`ghcr.io/xiaosike/zero-one-edge`；这不表示新包已发布或生产已迁移。
-本次源码托管迁移未操作生产服务器，以下真实部署与回滚记录继续保留旧包名和摘要，
-不得只替换 registry owner 就声称得到同一镜像。
+源码托管迁移阶段没有操作生产；随后经所有者授权，已完成下述独立的镜像发布与
+生产维护。服务器 `origin` 现为新仓库地址，`upstream` 为
+`https://github.com/Wei-Shaw/sub2api.git`，其 push URL 为 `DISABLED`。
+所有者选择保持独立仓库，不再申请 GitHub 原生 fork 关联。
 
-下一次独立授权的生产维护时，先核验服务器源码 `origin`、只读拉取凭据以及目标
-GHCR 包的访问权限，再决定所需变更；不要把旧凭据复制进新仓库。保持生产
-`JWT_SECRET`、`TOTP_ENCRYPTION_KEY`、数据库密码、持久化目录和运行中的镜像不变，
-源码托管变更不构成轮换业务密钥或重建容器的理由。发布仍须满足同源码双镜像、
-不可变 digest、备份、Backend-first 和安全 Edge 切换要求。
+新 GHCR 包已实际发布且可匿名拉取，生产机没有为此保存个人 PAT 或创建 Docker
+登录配置。旧部署与回滚记录继续保留真实包名和摘要；不能仅替换 registry owner
+就声称得到同一镜像。只修改本项目需要的配置，不复制旧账号凭据、不改历史作者，
+也不因托管迁移而轮换 JWT、TOTP、数据库或其他业务密钥。
 
-## 当前生产基线
+## 当前生产基线（2026-08-28）
+
+同一源码的双镜像由
+[Zero One Publish 33172188926](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33172188926)
+在 attempt 1 发布成功；没有重复 dispatch 或自动重跑：
+
+```text
+源码    e245f86c19eca2c8820f29b7b5167409f9f47ea2
+Sub2API ghcr.io/xiaosike/zero-one-sub2api@sha256:7c008a49a58b26a4ebc4caf842d6f1251b4b0f11d8993d202b2b9c23caea3a58
+Edge    ghcr.io/xiaosike/zero-one-edge@sha256:6ca66c891d78466ce2e4f653cbe751cbd1b2aa01ec9579c48ee85a90db19a9aa
+```
+
+以上是 OCI **index digest**，不是 config 或 layer digest。两个包的 amd64/arm64
+manifest、实际 config 标签、SBOM/provenance 已匿名校验；生产 x86_64 主机实际拉取并
+运行 amd64。没有把 arm64 元数据校验写成 arm64 运行测试。
+可选的 `compose.production-baseline-preview.yml` 也已固定到该 Backend digest，
+替换了已过时的旧账号 v0.1.179 引用；这不表示启动了本机预览或改写了历史回滚记录。
+
+后端容器于 `2026-08-28T13:31:45.039332802Z` 启动、`13:31:50Z` 通过健康与 HTTPS
+检查；随后仅通过 `safe-edge-switch.sh` 切换 Edge，其启动时间为
+`2026-08-28T13:34:31.368148287Z`，真实 HTTPS readiness 通过。
+两者版本仍是 v0.1.183，没有升级上游、改变上游号池、回填数据或新增 SQL 迁移。
+PostgreSQL/Redis 容器 ID、挂载和镜像未变；`.env` 排除两个镜像字段后的 SHA-256
+保持一致。Edge 未配置 Docker healthcheck，其就绪结论来自 HTTPS，不能写成
+四个容器均有 Docker `healthy` 状态。
+
+`13:41:06Z` 只读复核：100 张表、274 条迁移、176 个用户、190 个 API Key、
+1,177 个兑换码、172 条邀请关系、80,935 条 usage log、0 条支付订单；迁移账本
+整体摘要与恢复点一致、无无效索引。日志和用量中观察到新后端成功请求及新的首 Token
+分段字段；这不是主动扣费探针，也不能据此推算上游延迟改善百分比。
+新请求级 `first_token_ms` 口径自上述后端启动时间生效，历史值不回填、不直接混合比较。
+
+本次恢复点：
+
+```text
+服务器 /srv/zero-one/.release-backups/20260828T130305Z-pre-xiaosike-3e0298cb9.nS6fkX
+维护机 /Users/yangzi/Documents/个人项目/零一中转站-production-backups/20260828T130305Z-pre-xiaosike-3e0298cb9.nS6fkX
+```
+
+五份 age 密文分别保存 PostgreSQL dump、部署配置/证书/应用状态、Redis RDB、四份
+旧镜像和旧源码。密文及解密后 SHA-256 均通过；数据库 dump 与 `SNAPSHOT.json`
+使用同一个只读 MVCC snapshot。维护机已实际执行 PostgreSQL 18 `--network none`、
+无对外端口、独立卷的恢复，100 张表、274 条账本及六项计数
+`176/190/1,177/172/80,801/0` 完全一致。Redis 与文件状态是分别采集的恢复点，
+不声明跨存储原子性。旧镜像的四条 index→amd64 manifest→config/layers 链共
+48 个独立 blob 校验通过；未执行 `docker load` 覆盖维护机现有标签。
+
+恢复私钥仅在维护机受限的 `.recovery-keys/zero-one.agekey`，没有上传生产机或 GitHub。
+验证后已删除此次服务器明文 staging 和本机临时恢复容器/卷/解密副本；加密异机备份、
+旧镜像缓存、全部历史 `.release-*` 与 `.env.before-*` 均保留。归档应继续保留原始
+校验和、`RESTORE_RESULT.json`、`BACKEND_DEPLOYMENT.json`、`FINAL_CONTAINERS.jsonl`、
+`LIVE_DB_CHECK.json`、`PLAINTEXT_CLEANUP` 和匿名验收记录，不上传私有备份到 Actions。
+
+20 项匿名线上检查已核验：HTML/版本化兑换资源哈希、通知路由、公开设置、无 Key
+JSON 401、兼容域名 GET/HEAD/POST 的不可缓存 308 与完整 URI，以及 apex 308。
+这不代替真实登录、核销、扣费模型请求、真实 SSE 流或 WebSocket 101 升级的受控生产探针。
+相关离线/集成/浏览器门禁由精确源码 CI 覆盖；专用限额探针密钥未提供，不借用客户 Key。
+
+**尚需独立配置的运维事项：** `/mnt/offsite/zero-one` 尚未挂载，日备份任务未安装。
+本次加密异机恢复点不等于自动日备份已启用；需要所有者提供/批准异机存储目标后，
+再配置挂载、sentinel、公钥及受限定时任务，不能伪造挂载条件绕过 `backup-postgres.sh`。
+
+### 本次直接回滚基线
+
+切换前实际运行的是下述 v0.1.183 加固版，而不是更早文档中的首次部署：
+
+```text
+源码    3e0298cb9376587fde282352b06d9dcc86c024fa
+Sub2API ghcr.io/01-yang/zero-one-sub2api@sha256:7b985fb94ff45577b5ef7bc1c2b013c83b7ddc114695acda0fb178459c27957e
+Edge    ghcr.io/01-yang/zero-one-edge@sha256:78eefb0a9a998355b7eba61e8dc700e4bcfa241298d766db11f2df9bdfa64135
+```
+
+该旧账号远程包的可用性不能保证，因此保留生产缓存和加密离线镜像归档；不要清理它们，
+也不要把旧 digest 改写到新命名空间。两版迁移目录完全相同，常规应用回滚不恢复数据库。
+旧镜像归档只保存本机已有架构；灾难恢复时先核对 index/平台/config 的关系，不能把
+Docker containerd image store 的 Image ID 误当成 config digest 或声称已经验证过加载。
+
+## 历史 v0.1.183 首次部署
 
 2026-08-26 已按 Backend-first 原地部署 v0.1.183，运行源码和不可变镜像为：
 
@@ -138,11 +214,17 @@ PostgreSQL。
 
 发布顺序固定为 Backend-first：
 
-1. `git fetch origin`，核对目标 SHA，然后 `git switch --detach <TARGET_SHA>`。
-2. 仅更新 `.env` 中 `SUB2API_IMAGE` 与 `EDGE_IMAGE` 的完整 digest；不改任何 secret 或持久化路径。
-3. `docker compose ... pull sub2api edge`。
-4. `docker compose ... up -d --no-build sub2api`，等待健康并核对迁移账本。
-5. 验证公开设置、登录、API 鉴权和一条低成本探针请求。
+1. 核对恢复点、旧 source/digest 和无 tracked 修改；`git fetch origin` 后核对目标 SHA，
+   此时尚不切换源码或修改 `.env`。
+2. 拉取并验证同源码双镜像，受限备份 `.env`，在源码/环境变更前启用分阶段回滚：
+   尚未重建 Backend 时，失败只恢复 source/env；
+   已重建时必须恢复旧镜像、检查真实 `Config.Image` 与健康状态，再恢复旧 source。
+3. 使用 `git switch --no-overwrite-ignore --detach <TARGET_SHA>`，不得覆盖 ignored 恢复材料。
+   只更新 `SUB2API_IMAGE`，`EDGE_IMAGE` 留给第 6 步。始终核对业务字段哈希，不改 secret 或挂载。
+4. `docker compose ... up -d --no-deps --no-build --pull never --force-recreate --timeout 30 sub2api`，
+   等待健康、HTTPS 和账本检查；证明 PostgreSQL/Redis/Edge 的容器身份未变。
+5. 验证公开设置、登录、API 鉴权和独立授权的专用限额探针；缺少凭据时明确记录未执行项，
+   不借用客户 Key、不把匿名 401 或正常流量观察写成受控业务探针。
 6. 按 [`OPERATIONS.md` 的 Safe Edge switch](OPERATIONS.md#safe-edge-switch)
    唯一流程切换 Edge，随后再做兼容 308、SSE 与 WebSocket smoke test。
 
@@ -170,8 +252,8 @@ curl -sS -o /dev/null -D - https://app.01yapi.com/dashboard
 
 ## 回滚
 
-应用回滚只切换回上一组 Sub2API/Edge 镜像摘要并重建对应容器，默认不回滚
-数据库。v0.1.183 没有新增迁移，回滚到 v0.1.182 时必须保持当前 `274` 条迁移
+应用回滚优先使用上文记录的直接上一组 Sub2API/Edge 镜像摘要并重建对应容器，默认不回滚
+数据库。本次两个 v0.1.183 版本之间没有 SQL 变化；若另行授权回到更早 v0.1.182，仍必须保持当前 `274` 条迁移
 账本不变。只有在隔离验证证明数据库本身损坏、且已进入维护窗口时，才允许从
 已验证备份恢复数据库。
 

@@ -430,6 +430,9 @@ Codex/ChatGPT 的 GitHub 插件 OAuth 与本机 gh 凭据相互独立。每次�
 `upstream` 指向原仓库并设置 push URL 为 `DISABLED`；这不改变上游许可证或作者。
 
 2026-08-28 的 GitHub 元数据为 `fork: false`、`parent: null`、`source: null`。
+仓库所有者已明确选择保持独立仓库；这是已确认的托管方式，不再列为迁移遗留项。
+不请求原生 fork 关联、不删除重建仓库。上游更新继续通过只读 `upstream`、固定基线
+和二开保护门禁处理，许可、署名与对应源码义务不因平台 fork 标识而改变。
 “来源于上游的下游发行版”与 GitHub 页面上的 “forked from” 是不同概念。
 [创建 fork API](https://docs.github.com/en/rest/repos/forks#create-a-fork) 创建新仓库，
 [更新仓库 API](https://docs.github.com/en/rest/repos/repos#update-a-repository) 没有
@@ -445,21 +448,18 @@ git merge-base --is-ancestor e8cb019fabf8b55199436229044cbf9aa7a82564 main
 git rev-parse --is-shallow-repository
 ```
 
-若确实需要平台原生关联，应先向 [GitHub Support](https://support.github.com/request/fork)
-确认是否存在无损操作；不能保证 Support 可以转换。可供仓库所有者自行提交的草稿：
-
-> Please confirm whether the existing XiaoSiKe/zero-one-api repository can be
-> attached to the fork network of Wei-Shaw/sub2api without deleting or recreating
-> it. It preserves upstream history, including e8cb019fabf8b55199436229044cbf9aa7a82564,
-> and has its own PRs, branches, immutable tags and protection rules. Please
-> explain any supported procedure and metadata implications before making
-> changes. This request does not authorize deletion, recreation, history
-> rewriting or loss of repository metadata.
+只有日后所有者明确改变上述决定，才向
+[GitHub Support](https://support.github.com/request/fork) 询问无损关联的可行性；
+不能保证平台可转换，也不得把旧咨询草稿当成待自动提交的工单。
 
 GitHub 插件重连应从当前 ChatGPT/Codex 的插件管理界面发起，GitHub 授权页必须显示
 `XiaoSiKe`，仓库权限优先仅选择 `zero-one-api`。完成后重新调用插件的 profile/身份
 读取接口并确认真实 login，而不是只看 gh 或网页显示名；未核验前禁止插件写入。
 不要把个人令牌、OAuth 回调参数、密码或验证码复制到聊天、仓库或运维日志。
+此次插件重连已核验实际登录名为 `XiaoSiKe`，仓库与 PR 读取通过；没有为了验证
+写权限而制造空提交或测试 PR。现有 GitHub App 安装选择的是 **All repositories**，
+覆盖当前三个项目及未来仓库；由于同一安装还服务其他项目，本次保留该范围，不能
+写成“只授权了 zero-one-api”。如果日后收窄，应由所有者先确认其他项目的依赖。
 
 ## License Delivery And Use Boundaries
 
@@ -510,6 +510,83 @@ Compose/路由/资源闭包通过；Backend 与 Edge 实际构建成功，镜像
 本次未改变 Backend 业务代码；新的自动产品 CI 还必须分别执行 Go ordinary、unit、
 integration 配置，安全扫描独立运行，不把以前的通过记录计为本次已执行。
 
+随后[加固 PR #2](https://github.com/XiaoSiKe/zero-one-api/pull/2) 已使用 merge commit
+合并为 `e245f86c19eca2c8820f29b7b5167409f9f47ea2`。该 SHA 的自动 main push
+[Zero One CI 33166064227](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33166064227)
+与 [Security 33166064241](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33166064241)
+均在 attempt 1 成功，全部 12 项必需检查实际通过，且要求检查绑定 GitHub Actions
+App `15368`。ordinary/unit/integration 的包级结果不能换算成实际测试用例或跳过数。
+
+### Docker build-context isolation
+
+正式镜像继续只从经过门禁的干净 Git checkout 构建。额外的 `.dockerignore` 防线
+递归排除 `.env` 与 `.env.*`，仅具名保留根、`deploy/` 和 `deploy/zero-one/` 下的
+`.env.example`；生产 `deploy/zero-one/state/`、`.release-backups/` 与
+`.release-builds/` 也不能成为构建输入。不要以 `.gitignore` 的匹配语义推断 Docker
+会递归排除同名文件，也不要把密钥、数据库或私有备份发送给远程 builder。
+
+`sh deploy/zero-one/test-build-context.sh` 使用纯合成上下文、`FROM scratch`、无 RUN、
+无网络和本地导出，验证 19 个排除路径及 15 个必需输入；不读取实际环境文件或状态。
+旧规则下 13 个合成敏感路径暴露于上下文，修补后全部排除，许可证、法律文档、模板
+和恢复 UI 资源仍保留。该测试加入现有 `deployment` job，不新增工作流或触发入口。
+新脚本已精确登记永久保留，清单增加至 441 项，Overlay 仍为五类。
+这次发现是未来工作目录构建的风险，不能据此声称此前干净 CI 构建已泄露信息。
+
+可选 `compose.production-baseline-preview.yml` 原先仍固定旧账号 v0.1.179。
+当前已更新为下面这次实际发布/部署的 v0.1.183 Backend digest，并同步精确 Compose
+断言；仍由最后一层 overlay 清除开发 `build`，保留回环绑定，不使用浮动 tag。
+该变更没有启动本机预览，也不连接生产数据库；旧 v0.1.179 的源码/镜像记录仍属于
+历史证据，不把不可访问的旧 registry 地址机械改成新 owner。
+
+### Authorized production namespace cutover (2026-08-28)
+
+所有者选择保持独立仓库，并授权继续完成新账号镜像与生产迁移；这属于源码迁移
+完成之后的独立运维阶段，不改写前述“当时未发布/部署”的历史事实。
+[发布 33172188926](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33172188926)
+仅 dispatch 一次、attempt 1 成功，源码固定为已通过 main 自动门禁的
+`e245f86c19eca2c8820f29b7b5167409f9f47ea2`，没有因本次文档和构建上下文修补重复发布。
+两包在 GitHub 页面实际为 Public；匿名 index/amd64+arm64 manifest/config、SBOM 与
+provenance 的内容校验以及生产 amd64 全层 pull 均通过，没有在生产保存个人 PAT。
+这些校验不是独立签名认证或 arm64 运行测试；本次只读取到包已为 Public，未执行可见性修改。
+
+已部署的不可变 index digest：
+
+```text
+ghcr.io/xiaosike/zero-one-sub2api@sha256:7c008a49a58b26a4ebc4caf842d6f1251b4b0f11d8993d202b2b9c23caea3a58
+ghcr.io/xiaosike/zero-one-edge@sha256:6ca66c891d78466ce2e4f653cbe751cbd1b2aa01ec9579c48ee85a90db19a9aa
+```
+
+先创建加密异机恢复点，再在维护机无网络、无端口、独立卷的 PostgreSQL 18 中实际
+恢复。100 张表、274 条账本与六项业务表计数逐项一致；候选 SQL 的 274 个 checksum
+也全部精确匹配，未使用兼容例外。四份旧镜像的 amd64 OCI 摘要链验证了 48 个 blob，
+保留旧缓存和加密归档，不假设旧账号 registry 可继续访问。首次临时检查器曾混淆
+index Image ID 与 config digest，修正为完整链校验后才继续；没有跳过失败或加载
+镜像覆盖本机标签。Redis RDB 和文件状态各有采集时点，不声明跨存储原子快照。
+
+Backend 于 `2026-08-28T13:31:45.039332802Z` 启动、`13:31:50Z` 健康；随后通过
+仓库 `safe-edge-switch.sh` 完成 Edge 切换（启动于 `13:34:31.368148287Z`），HTTPS
+readiness 通过。仍为 v0.1.183，数据服务容器/镜像/挂载不变，只修改两个产品镜像
+字段与本项目 Git remotes/source；业务 `.env` 哈希不变，无 SQL/业务密钥/号池配置变更。
+新请求级 TTFT 统计口径从该 Backend 启动时间起生效，不能与旧 attempt 口径混合比较。
+
+线上 20 项匿名检查共发出 20 个请求，没有重试或跟随重定向，核对了公开设置、
+HTML/新兑换资源/通知文件哈希、缓存边界、无 Key JSON 401 和兼容跳转。临时检查器
+最初误用管理 API 的数字错误码；实际网关 `middleware.ErrorResponse` 使用字符串
+`API_KEY_REQUIRED`。保留原失败记录，并用源码产生的完整错误体 SHA-256 与原响应
+匹配后纠正结论，只续做未执行的十项检查，不重放先前请求。匿名 401 不证明真正的
+SSE/WebSocket upgrade；生产登录/核销/扣费探针未执行，不能计入本次主动验收。
+只读日志/用量另观察到新后端的一条成功可见输出请求及新阶段字段，没有读取客户 Key。
+
+两份实际运行镜像中 LGPL/GPL/NOTICE 的 SHA-256 与源码一致；桥接服务保持 active，
+容器内健康可达。`18181` 仅监听 Docker host-gateway，UFW 仅放行网关子网，
+没有该端口的公网 NAT 映射，服务器连接自身公网地址被拒绝。维护机的公网 HTTP
+探测未收到响应；其路由经过 TUN 代理，因此毫秒级 TCP connect 成功不能当成
+服务端公网开放的证据，也不把该测试写成独立直连网络的端到端验证。
+完整恢复点、容器时间、上一组真实摘要及剩余边界见
+[`PRODUCTION_SERVER_CN.md`](PRODUCTION_SERVER_CN.md#当前生产基线2026-08-28)。
+当前没有配置 off-host 日备份挂载/定时任务；本次已验证的一次性加密异机备份不能
+替代它。恢复私钥留在维护机，临时明文 staging 已清理，历史恢复材料不动。
+
 ## Release And Rollback
 
 Before release, record the deployed Sub2API and edge image digests and take a database backup. Deploy immutable images, run the routing and smoke checks, then announce completion.
@@ -536,12 +613,13 @@ same HTTPS gate; a failed rollback is reported separately. Do not replace this
 entrypoint with a direct `docker compose up edge` during a release.
 
 The approved UI is a separate release boundary. The current protected snapshot
-is the `ui-approved-2026-08-28-r2` tag at commit
-`6962df85d86c4719ebc97abc8610cebb77b9618f`. The
-`ui-approved-2026-08-28-r1` and `ui-approved-2026-08-27-r17` tags remain immutable;
+is the `ui-approved-2026-08-28-r3` tag at commit
+`5c442ee1fb8cf1d7c92f0ff4c25da9fe139cb463`. The
+`ui-approved-2026-08-28-r2`, `ui-approved-2026-08-28-r1` and
+`ui-approved-2026-08-27-r17` tags remain immutable;
 all older approval tags also remain unchanged. The new snapshot passed native
 Linux x86 visual and interaction verification (145 passed, 65 existing viewport
-exclusions) in [GitHub Actions run 33159665998](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33159665998).
+exclusions) in [GitHub Actions run 33164525502](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33164525502).
 The previous r1 snapshot and its 143-pass result remain historical evidence in
 [GitHub Actions run 33104422137](https://github.com/01-Yang/zero-one-api/actions/runs/33104422137).
 An upstream version update must not modify `landing/src`, the protected console
