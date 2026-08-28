@@ -330,6 +330,39 @@ an unverified destination or imply that images have been published there.
 Repository identity changes and their credentials remain separate from
 production deployment and require an explicit, verified destination.
 
+## Repository Hosting Migration (2026-08-28)
+
+本次经仓库所有者确认已获 GitHub 允许后，迁移目标为
+[`XiaoSiKe/zero-one-api`](https://github.com/XiaoSiKe/zero-one-api)。
+`XiaoSiKe` 是登录名，`01-Yang` 只是显示名，不能用显示名推导 API、remote 或 GHCR 路径。
+
+| 配置 | 迁移目标或边界 |
+| --- | --- |
+| 产品 `origin` | `https://github.com/XiaoSiKe/zero-one-api.git` |
+| 上游 `upstream` | 保持 `Wei-Shaw/sub2api`，仅允许读取 |
+| 后续 Sub2API / Edge 发布 | `ghcr.io/xiaosike/zero-one-sub2api` / `ghcr.io/xiaosike/zero-one-edge`，须独立发布授权 |
+| 历史证据 | 旧 PR、Actions run、提交作者、许可证及已部署镜像摘要保留原归属 |
+| 生产环境 | 本次不发布镜像、不部署服务器、不替换线上 `.env` 或业务密钥 |
+
+迁移按以下顺序验收，不把导入已有标签当作新版本发布：
+
+1. 核验 CLI 的实际登录名和目标仓库；Git 提交身份单独核验，不按仓库名重写
+   历史作者，也不批量覆盖其他项目的全局凭据。
+2. 在首次导入分支与历史标签前，临时禁用目标仓库 Actions，避免已有 `v*` 标签
+   触发继承的版本发布工作流。逐项比对产品提交、上游基线、受保护 UI 标签及祖先关系，
+   不强推或移动旧标签。
+3. 核验目标仓库 Actions 权限、默认分支、分支保护/规则集、必需检查、Environment、
+   Secrets/Variables、deploy key、webhook 和 GHCR 包权限。新建仓库不会自动继承这些
+   元数据；只配置实际需要且已授权的项目，密钥值不写入 Git、日志或迁移报告。
+4. 导入核对完成后恢复验证工作流，以 PR 运行完整门禁。临时停用仅用于历史导入，
+   不能替代 CI，也不得通过跳过测试、降低截图阈值或关闭保护来合并。
+5. 所有必需检查通过后使用 merge commit 合入 `main`，核验合并后的 CI、
+   本地/远端提交和保留标签一致；不自动启动 `Zero One Publish` 或生产部署。
+
+迁移验收状态：**待补充目标仓库实际导入、权限核验、PR/merge commit 及 main CI 证据**。
+本节列出的目标与流程不代表上述远端步骤已全部成功。旧仓库的成功运行可以保留为
+历史记录，不能冒充新仓库对迁移提交的验收。
+
 ## Release And Rollback
 
 Before release, record the deployed Sub2API and edge image digests and take a database backup. Deploy immutable images, run the routing and smoke checks, then announce completion.
@@ -342,7 +375,7 @@ repository-owned gate:
 ```bash
 sh deploy/zero-one/safe-edge-switch.sh \
   deploy/zero-one/.env \
-  ghcr.io/01-yang/zero-one-edge@sha256:<64-lowercase-hex-digest>
+  ghcr.io/xiaosike/zero-one-edge@sha256:<64-lowercase-hex-digest>
 ```
 
 The script accepts only an immutable digest, locks concurrent releases, saves a

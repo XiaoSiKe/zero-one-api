@@ -1,8 +1,11 @@
 > [!NOTE]
 > **零一 API** is the branded distribution maintained at
-> [01-Yang/zero-one-api](https://github.com/01-Yang/zero-one-api). Its technical
+> [XiaoSiKe/zero-one-api](https://github.com/XiaoSiKe/zero-one-api). `XiaoSiKe`
+> is the GitHub login; `01-Yang` is its display name. Hosting migration does not
+> rewrite upstream authorship or historical release evidence; see the
+> [migration checklist](docs/OPERATIONS.md#repository-hosting-migration-2026-08-28). Its technical
 > baseline is the stable upstream release
-> [Wei-Shaw/sub2api v0.1.179@75f88be5f75c27771836b586f7de1503afa0e3bc](https://github.com/Wei-Shaw/sub2api/tree/75f88be5f75c27771836b586f7de1503afa0e3bc).
+> [Wei-Shaw/sub2api v0.1.183@e8cb019fabf8b55199436229044cbf9aa7a82564](https://github.com/Wei-Shaw/sub2api/tree/e8cb019fabf8b55199436229044cbf9aa7a82564).
 > Only stable upstream tags are synchronized. The original Sub2API documentation,
 > license, and disclaimer continue below unchanged. For Zero One, do not deploy
 > from `upstream/main`, a generic `latest` image, the Admin one-click updater, or

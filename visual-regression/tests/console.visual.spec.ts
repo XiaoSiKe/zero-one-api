@@ -2643,6 +2643,21 @@ test.describe('Console CC-Switch launch compatibility', () => {
   })
 })
 
+test.describe('Console repository identity', () => {
+  test('administrator menu links to the current GitHub owner', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-08-16T12:00:00+08:00'))
+    await seedConsole(page)
+    await page.goto('http://127.0.0.1:4173/admin/dashboard')
+    await page.getByRole('button', { name: '用户菜单' }).click()
+
+    const repositoryLink = page.getByRole('link', { name: 'GitHub', exact: true })
+    await expect(repositoryLink).toBeVisible()
+    await expect(repositoryLink).toHaveAttribute('href', 'https://github.com/XiaoSiKe/zero-one-api')
+    await expect(repositoryLink).toHaveAttribute('target', '_blank')
+    await expect(repositoryLink).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+})
+
 test.describe('Console visual contracts', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
@@ -2659,7 +2674,7 @@ test.describe('Console visual contracts', () => {
     const response = await page.goto('http://127.0.0.1:4173/login')
     expect(response?.status()).toBe(200)
     const html = await response!.text()
-    expect(html).toContain('/assets/redeem-ttft-20260828/index-9xJBhx8B.js')
+    expect(html).toContain('/assets/github-migration-20260828/index-9xJBhx8B.js')
     expect(html).toContain('/assets/zero-one-local-preview-guard-v2.js')
     expect(html).toContain('/assets/zero-one-navigation-reconciliation-v1.js?v=3')
     expect(html).toContain('/assets/zero-one-console-parity-v1.js?v=4')

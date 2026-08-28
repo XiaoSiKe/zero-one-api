@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { updateFavicon } from '@/utils/branding'
+import { PRODUCT_GITHUB_URL, updateFavicon } from '@/utils/branding'
+
+describe('product repository', () => {
+  it('links to the authorized current GitHub owner', () => {
+    expect(PRODUCT_GITHUB_URL).toBe('https://github.com/XiaoSiKe/zero-one-api')
+  })
+})
 
 describe('updateFavicon', () => {
   beforeEach(() => {

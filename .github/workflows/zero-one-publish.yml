@@ -23,8 +23,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SUB2API_IMAGE: ghcr.io/01-yang/zero-one-sub2api
-  EDGE_IMAGE: ghcr.io/01-yang/zero-one-edge
+  SUB2API_IMAGE: ghcr.io/xiaosike/zero-one-sub2api
+  EDGE_IMAGE: ghcr.io/xiaosike/zero-one-edge
 
 jobs:
   publish:
