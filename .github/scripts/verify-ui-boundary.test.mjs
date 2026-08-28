@@ -12,8 +12,8 @@ const manifest = validateManifest(
 )
 
 test('validates the approved UI baseline manifest', () => {
-  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-28-r1')
-  assert.equal(manifest.baseline_commit, '80dd4fbf94b4d6a5c20681f5607735f6decff90c')
+  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-28-r2')
+  assert.equal(manifest.baseline_commit, '6962df85d86c4719ebc97abc8610cebb77b9618f')
   assert.equal(manifest.edge_build.console_source, 'deploy/zero-one/recovered-frontend/console')
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/redeem.behavior.spec.ts'))
   const redeem = manifest.protected_surfaces.find(({ name }) => name === 'redeem-benefits-mystery-box')

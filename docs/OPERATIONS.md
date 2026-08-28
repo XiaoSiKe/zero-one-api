@@ -359,9 +359,32 @@ production deployment and require an explicit, verified destination.
 5. 所有必需检查通过后使用 merge commit 合入 `main`，核验合并后的 CI、
    本地/远端提交和保留标签一致；不自动启动 `Zero One Publish` 或生产部署。
 
-迁移验收状态：**待补充目标仓库实际导入、权限核验、PR/merge commit 及 main CI 证据**。
-本节列出的目标与流程不代表上述远端步骤已全部成功。旧仓库的成功运行可以保留为
-历史记录，不能冒充新仓库对迁移提交的验收。
+本地已补齐完整 Git 历史，连通性和缺失对象检查通过。首次原子导入的 5 个分支、
+65 个标签已逐项核对一致，导入期间目标 Actions 运行数为 0；导入后已恢复验证。
+`origin` 与本项目的 gh 默认仓库均为 `XiaoSiKe/zero-one-api`，GitHub CLI 与 Git
+提交身份已核对为新账号，`upstream` 仍禁止推送。
+
+目标仓库默认分支为 `main`，只使用 merge commit；`main` 已要求 12 项原有检查、
+PR 和会话解决，管理员同样受保护，禁止强推/删除。规则集
+`Zero One immutable UI approvals`（ID `21721172`）禁止更新/删除 `ui-approved-*`，
+不配置绕过者。Actions 默认令牌为只读且不能批准 PR；Secrets、Variables、
+Environment、deploy key 和 webhook 均未从旧账号复制，也没有为迁移添加私密值。
+
+迁移候选 `6962df85d86c4719ebc97abc8610cebb77b9618f` 已在新仓库通过
+[原生 Linux x86 视觉验收 33159665998](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33159665998)：
+145 项通过、65 项既有平台排除，账号链接 2 项与兑换行为 44 项实际执行。
+新快照为 `ui-approved-2026-08-28-r2`，旧标签均保留。合并与合并后 `main` 检查的
+最终执行记录集中在[迁移 PR #1](https://github.com/XiaoSiKe/zero-one-api/pull/1)，
+以该 PR 的实际 merge commit 和必需检查结论为准；候选视觉通过不等于 PR 已合并。
+
+历史导入提示上游早期提交曾包含 59.23 MB 的 `backend/repository.test`；该文件
+已在上游历史中删除，当前版本未跟踪。本次没有为消除提示改写历史或移动标签。
+本机 Backend 构建曾被 Docker Hub 认证 POST 的 EOF 阻断，不能记为本地构建通过；
+完整双镜像构建仍由原始 CI 门禁验证，不通过删除构建步骤或循环重试取得绿灯。
+
+Codex/ChatGPT 的 GitHub 插件 OAuth 与本机 gh 凭据相互独立。每次切换账号都要
+分别核验身份；插件身份不匹配时不经该插件写入。仓库或 Git 配置不能替代插件的
+重新授权，不在文档或 Git 中复制个人令牌。
 
 ## Release And Rollback
 
@@ -389,12 +412,14 @@ same HTTPS gate; a failed rollback is reported separately. Do not replace this
 entrypoint with a direct `docker compose up edge` during a release.
 
 The approved UI is a separate release boundary. The current protected snapshot
-is the `ui-approved-2026-08-28-r1` tag at commit
-`80dd4fbf94b4d6a5c20681f5607735f6decff90c`. The
-`ui-approved-2026-08-27-r17` tag remains immutable as the previous accepted UI;
+is the `ui-approved-2026-08-28-r2` tag at commit
+`6962df85d86c4719ebc97abc8610cebb77b9618f`. The
+`ui-approved-2026-08-28-r1` and `ui-approved-2026-08-27-r17` tags remain immutable;
 all older approval tags also remain unchanged. The new snapshot passed native
-Linux x86 visual and interaction verification (143 passed, 65 existing viewport
-exclusions) in [GitHub Actions run 33104422137](https://github.com/01-Yang/zero-one-api/actions/runs/33104422137).
+Linux x86 visual and interaction verification (145 passed, 65 existing viewport
+exclusions) in [GitHub Actions run 33159665998](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33159665998).
+The previous r1 snapshot and its 143-pass result remain historical evidence in
+[GitHub Actions run 33104422137](https://github.com/01-Yang/zero-one-api/actions/runs/33104422137).
 An upstream version update must not modify `landing/src`, the protected console
 source paths, or `deploy/zero-one/recovered-frontend`. This explicitly covers
 the landing page, login/register pages, the console shell, model-plaza pricing,
