@@ -12,6 +12,18 @@ _Avoid_: 官网、React 后台
 由正式稳定标签及其解引用后的完整提交共同固定的 Sub2API 源码边界；升级和差异归属均以该提交为准。
 _Avoid_: upstream/main、latest、浮动版本
 
+**Upstream Provenance（上游来源证明）**:
+由完整 Git 历史、固定 Upstream Baseline 的祖先关系和只读 upstream remote 共同保留的来源记录；不同于 GitHub 原生 fork/parent 元数据，独立托管不抹去来源，也不能伪称平台已关联。
+_Avoid_: 改作者即迁移、改 remote 即原生 fork、删除重建保留全部元数据
+
+**Publish Source Evidence（发布源验证证明）**:
+精确产品仓库和源码 SHA 在 main push 上对应的最新产品/安全工作流及当前 attempt 的实际成功 job 集合；缺失、跳过、失败、待运行和手动诊断不能替代。证明通过仍不代表获准发布或部署。
+_Avoid_: 任意一次绿灯、只看 workflow 名称、用旧成功掩盖新失败、无条件成功汇总
+
+**License Delivery（许可材料交付）**:
+对象码交付时随附未改写的 LGPLv3、配套 GPLv3 与适用的第三方通知，并保留对应源码和组件自身的许可边界；不是项目改为 GPL-only，也不是对商业用途或上游账号使用的授权。
+_Avoid_: 删除原作者、统一标成 MIT、附许可证即全项目合规认证
+
 **Approved UI Snapshot（已批准 UI 快照）**:
 完成桌面与移动端视觉审核后，以不可移动标签固定的 Landing、Console 与恢复版静态资源集合；普通上游升级不得改变它。
 _Avoid_: 最新前端、自动构建产物、临时截图

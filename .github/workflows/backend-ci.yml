@@ -1,12 +1,7 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
@@ -17,6 +12,7 @@ permissions:
 
 jobs:
   shell:
+    name: Diagnostic shell checks
     runs-on: macos-15
     timeout-minutes: 15
     steps:
@@ -31,6 +27,7 @@ jobs:
           /bin/sh deploy/test-caddyfile-cache.sh
 
   test:
+    name: Diagnostic backend tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -52,6 +49,7 @@ jobs:
         run: make test-integration
 
   frontend:
+    name: Diagnostic critical frontend tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -73,6 +71,7 @@ jobs:
         run: make test-frontend
 
   golangci-lint:
+    name: Diagnostic golangci-lint
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:

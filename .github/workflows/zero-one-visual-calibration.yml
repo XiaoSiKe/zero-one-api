@@ -1,12 +1,6 @@
 name: Zero One Visual Calibration
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 concurrency:
@@ -18,7 +12,7 @@ permissions:
 
 jobs:
   chromium-calibration:
-    name: Chromium visual regression
+    name: Diagnostic Chromium visual regression
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     container:

@@ -267,38 +267,74 @@ also prohibit unrelated computation and disproportionate resource consumption.
 A count of workflow runs is not a compliance certificate or a published safe
 usage threshold; review the purpose, execution time and actual runner usage.
 
-The four validation workflows (`CI`, `Security Scan`, `Zero One CI` and
-`Zero One Visual Calibration`) use the following event boundary:
+The two automatic validation workflows (`Zero One CI` and `Security Scan`)
+use the following event boundary:
 
 | Event | Automatic validation |
 | --- | --- |
 | Pull request targeting `main`, including a new commit on that PR | One run of each validation workflow |
 | Push to `main`, including a merged PR | One run of each validation workflow |
 | Push to a feature branch without a PR | None; run local checks and open a PR for hosted validation |
-| Push of an `ui-approved-*` or other tag | None of these four workflows |
-| Existing manual dispatch | Only the explicitly selected workflow |
+| Push of an `ui-approved-*` or other tag | Neither automatic validation workflow |
+| Existing manual dispatch | Only the explicitly selected diagnostic or product workflow; not publish evidence |
 | Weekly security schedule | `Security Scan` only, with the existing schedule |
 
-The separate version-release and image-publish workflows retain their existing
-entry points and approvals. UI approval tags do not publish production images.
-The inherited CLA workflow may report skipped checks on this fork; a skipped
-check is not a running worker.
+`Zero One CI` is the single owner of the product verification work. `backend`
+runs the ordinary, unit and integration Go build configurations once each;
+`console` runs the full Console suite, including the previous critical subset.
+Shell, lint and fixed Playwright 1.55.1 visual validation run in this same
+workflow. `Security Scan` independently owns vulnerability checks.
+
+All 12 required check names remain: `shell`, `test`, `frontend`,
+`golangci-lint`, `backend-security`, `frontend-security`, `upstream-boundary`,
+`landing`, `console`, `backend`, `deployment`, `Chromium visual regression`.
+The lightweight `test` and `frontend` jobs explicitly fail unless `backend`
+and `console`, respectively, completed successfully. Missing, skipped, failed
+or cancelled dependencies must not produce a green compatibility check.
+The old `CI` and `Zero One Visual Calibration` workflows are manual-only
+diagnostics with distinct `Diagnostic …` job names; they cannot satisfy the
+automatic required checks or replace release evidence.
+
+The inherited `Release` and `CLA Assistant` workflows are disabled at the
+GitHub workflow level in this product repository. Their source jobs also
+require the exact upstream identity `Wei-Shaw/sub2api`, with job-scoped write
+permissions and explicit timeouts. Keeping them disabled additionally prevents
+an old `v*` tag from executing the historical, less-restricted Release source.
+Do not re-enable either workflow as a shortcut. CLA text and historical CLA
+records remain unchanged; the two historical skipped runs did not allocate
+runner jobs. UI approval tags do not publish images. Product publication is
+only through the separately authorized `Zero One Publish` entry point.
 
 Each validation workflow groups concurrency by workflow name, event and PR
 number (or ref). A new commit on a PR cancels the superseded run of the same PR
 and workflow. Push, scheduled and manual runs are not cancelled by a different
 event. For non-PR events, an in-progress run is allowed to finish; GitHub's
 default single-pending-slot behavior may replace an older queued run in the
-same group. Every job has an explicit time budget: shell and security checks up to
-15 minutes, Go suites 30, frontend jobs 15 (the full Console job 20), lint 40,
-deployment validation 45 and visual calibration 30. A timeout is a failed
+same group. Every job has an explicit time budget. Consult the job's
+`timeout-minutes` for its enforced limit; full Go verification, image builds
+and visual checks have separate bounded budgets. A timeout is a failed
 validation, not permission to remove a test or relax a screenshot threshold.
 
-All existing job names, test suites and security/visual gates remain present.
-This policy removes duplicate **event triggers**; the backend coverage shared
-by `CI` and `Zero One CI` is still retained. Consolidating that coverage later
-requires a separate review of required checks and equivalent test execution.
-Do not claim that all cross-workflow duplication has already been removed.
+This consolidation removes both duplicate event triggers and the repeated
+backend/critical-frontend computation. PR and post-merge main validation remain
+separate because they verify different commits. Do not reduce coverage or
+claim a measured runner-minute improvement based only on workflow counts.
+All external contributors' fork PR workflows require maintainer approval;
+default tokens remain read-only and cannot approve PRs. Review workflow changes
+before granting that approval, especially new network access or write scopes.
+
+Publication requires the latest matching automatic **main push** execution of
+both product and security workflows for the exact source SHA and repository,
+and all expected jobs in their current attempts must have actually completed
+successfully. A manual run, a missing/skipped job or a newer failed/pending
+execution cannot be replaced by an older green result. The security workflow
+is also part of the trusted publish-policy comparison. No workflow success
+alone is authorization to publish or deploy.
+An incomplete partial-rerun attempt is rejected rather than assembled from
+older job attempts; a maintainer must diagnose it before deciding whether
+complete verification is warranted. The bounded final reread verifies the
+observed state, not an atomic lock against future GitHub reruns. Never start
+automatic full reruns or push empty commits merely to satisfy this gate.
 
 Run the offline policy regression together with the existing protection tests:
 
@@ -373,7 +409,7 @@ Environment、deploy key 和 webhook 均未从旧账号复制，也没有为迁�
 迁移候选 `6962df85d86c4719ebc97abc8610cebb77b9618f` 已在新仓库通过
 [原生 Linux x86 视觉验收 33159665998](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33159665998)：
 145 项通过、65 项既有平台排除，账号链接 2 项与兑换行为 44 项实际执行。
-新快照为 `ui-approved-2026-08-28-r2`，旧标签均保留。合并与合并后 `main` 检查的
+迁移快照为 `ui-approved-2026-08-28-r2`，旧标签均保留。合并与合并后 `main` 检查的
 最终执行记录集中在[迁移 PR #1](https://github.com/XiaoSiKe/zero-one-api/pull/1)，
 以该 PR 的实际 merge commit 和必需检查结论为准；候选视觉通过不等于 PR 已合并。
 
@@ -385,6 +421,94 @@ Environment、deploy key 和 webhook 均未从旧账号复制，也没有为迁�
 Codex/ChatGPT 的 GitHub 插件 OAuth 与本机 gh 凭据相互独立。每次切换账号都要
 分别核验身份；插件身份不匹配时不经该插件写入。仓库或 Git 配置不能替代插件的
 重新授权，不在文档或 Git 中复制个人令牌。
+
+## Upstream Provenance And GitHub Fork Metadata
+
+本产品来源于 `Wei-Shaw/sub2api`，固定基线仍为
+`v0.1.183@e8cb019fabf8b55199436229044cbf9aa7a82564`。托管迁移保留了完整 Git
+历史，且基线是产品 `main` 的祖先。`origin` 指向 `XiaoSiKe/zero-one-api`，
+`upstream` 指向原仓库并设置 push URL 为 `DISABLED`；这不改变上游许可证或作者。
+
+2026-08-28 的 GitHub 元数据为 `fork: false`、`parent: null`、`source: null`。
+“来源于上游的下游发行版”与 GitHub 页面上的 “forked from” 是不同概念。
+[创建 fork API](https://docs.github.com/en/rest/repos/forks#create-a-fork) 创建新仓库，
+[更新仓库 API](https://docs.github.com/en/rest/repos/repos#update-a-repository) 没有
+可写的 `fork` / `parent` / `source` 字段。不能通过改 remote、README 或提交作者
+声称已完成原生 fork 关联，也不删除重建当前仓库来换取该标识。
+
+只读复核：
+
+```bash
+gh api repos/XiaoSiKe/zero-one-api --jq '{full_name,fork,parent:.parent.full_name,source:.source.full_name}'
+git remote -v
+git merge-base --is-ancestor e8cb019fabf8b55199436229044cbf9aa7a82564 main
+git rev-parse --is-shallow-repository
+```
+
+若确实需要平台原生关联，应先向 [GitHub Support](https://support.github.com/request/fork)
+确认是否存在无损操作；不能保证 Support 可以转换。可供仓库所有者自行提交的草稿：
+
+> Please confirm whether the existing XiaoSiKe/zero-one-api repository can be
+> attached to the fork network of Wei-Shaw/sub2api without deleting or recreating
+> it. It preserves upstream history, including e8cb019fabf8b55199436229044cbf9aa7a82564,
+> and has its own PRs, branches, immutable tags and protection rules. Please
+> explain any supported procedure and metadata implications before making
+> changes. This request does not authorize deletion, recreation, history
+> rewriting or loss of repository metadata.
+
+GitHub 插件重连应从当前 ChatGPT/Codex 的插件管理界面发起，GitHub 授权页必须显示
+`XiaoSiKe`，仓库权限优先仅选择 `zero-one-api`。完成后重新调用插件的 profile/身份
+读取接口并确认真实 login，而不是只看 gh 或网页显示名；未核验前禁止插件写入。
+不要把个人令牌、OAuth 回调参数、密码或验证码复制到聊天、仓库或运维日志。
+
+## License Delivery And Use Boundaries
+
+根 `LICENSE` 保留上游 LGPLv3 原文。`COPYING.GPLv3` 是 LGPLv3 的配套 GPL 正文，
+不是把产品改为 GPL-only；随相关对象码交付两份许可文本，依据
+[GNU 的许可文件说明](https://www.gnu.org/licenses/gpl-howto.en.html#license-files)。
+`THIRD_PARTY_NOTICES.md` 和两个一致的公开 Landing NOTICE 保留 React Bits 的
+MIT + Commons Clause，并补上实际恢复版使用的 React/ReactDOM/Scheduler MIT、
+Lucide 的 ISC 与 Feather MIT 部分，以及 OGL 的 Unlicense。
+
+根 Dockerfile、`deploy/Dockerfile`、GoReleaser runtime 镜像、Edge 镜像和
+GoReleaser archives 均声明携带这三份根级材料。镜像文件位于
+`/usr/share/licenses/zero-one-api/`，Landing 的通知继续通过已有
+`/_landing/THIRD_PARTY_NOTICES.txt` 每次重验证（`Cache-Control: no-cache`）路由提供，
+不改变批准基包的脚本、样式和布局。
+根 `.dockerignore` 只为 `THIRD_PARTY_NOTICES.md` 增加具名例外。
+以 `backend/` 为独立构建上下文的开发 Dockerfile 不属于本产品发布路径，不能据此
+开发镜像冒充上述正式交付。修改许可附件同样遵循 UI 路径门禁和永久保留规则。
+
+发布前还需提供与对象码相匹配、可重建的对应源码和修改记录，保留适用的替换/重链接
+权利及第三方通知；公开仓库或附带许可证本身不是完成全部许可义务的证明。
+本次只修复已确认的文本与打包缺口，不是 Console/Go 全部传递依赖的穷尽许可审计，
+也不是商业用途的法律意见。若把 React Bits 组件或其价值作为收费产品交付，应另行
+核对 Commons Clause 的适用边界或取得许可，不能将其简写成“不受限制的 MIT”。
+
+开源许可不等于上游模型服务的转售、账号共享或规避风控授权。使用 Provider Account
+前，应保留来源、API 使用及转售范围的授权证明，并按实际供应商当前协议核对；没有
+授权的资源不应接入。不要利用 Actions 承载线上中转流量、持续号池探测、挖矿、刷量
+或规避平台限制。账号封禁原因只能以平台通知/申诉结果确认，代码检查不能作出保证。
+
+### 2026-08-28 hardening validation
+
+许可交付候选 `5c442ee1fb8cf1d7c92f0ff4c25da9fe139cb463` 通过
+[原生 Linux x64 视觉执行 33164525502](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33164525502)，
+attempt 1：145 项通过、65 项既有平台排除、0 失败/flaky/retry；兑换行为 44 项与
+仓库链接 2 项全部实际执行。Playwright 固定 1.55.1，配置、PNG、测试与 r2 无差异，
+没有放宽全局或既有具名用例阈值。成功用例配置为 only-on-failure 截图，因此该次
+artifact 是 HTML 报告，不能把现有批准基准 PNG 冒称为新下载的实际截图。
+
+完成桌面/移动基准复核后新增不可移动 `ui-approved-2026-08-28-r3`，指向该候选；
+r17、r1、r2 及旧标签不移动。新增/修改文件进入永久清单后为 440 项，Overlay 仍为
+五类。正式 PR 与合并后 main 仍须通过全部 12 项必需检查，候选视觉通过不代替它们。
+
+本地 Console 1801 项、Landing 114 项全量通过（均 0 fail/skip），类型检查、构建及
+Landing audit 通过。104 项脚本策略测试、18 项 TTFT 工具测试、actionlint 1.7.12、
+Compose/路由/资源闭包通过；Backend 与 Edge 实际构建成功，镜像内许可文件哈希
+一致。上次迁移中的 Docker Hub 认证失败仍作为历史记录保留，不改写成当时通过。
+本次未改变 Backend 业务代码；新的自动产品 CI 还必须分别执行 Go ordinary、unit、
+integration 配置，安全扫描独立运行，不把以前的通过记录计为本次已执行。
 
 ## Release And Rollback
 

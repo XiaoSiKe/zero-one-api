@@ -4,6 +4,13 @@ import { pathToFileURL } from 'node:url'
 import { validateBaseline } from './verify-upstream-boundary.mjs'
 
 const RELEASE_REF = 'refs/remotes/origin/main'
+const REQUIRED_JOBS = {
+  'zero-one-ci.yml': [
+    'upstream-boundary', 'landing', 'console', 'backend', 'deployment', 'shell',
+    'golangci-lint', 'Chromium visual regression', 'test', 'frontend',
+  ],
+  'security-scan.yml': ['backend-security', 'frontend-security'],
+}
 
 export function validateCommitSha(value) {
   if (typeof value !== 'string' || !/^[0-9a-f]{40}$/.test(value)) {
@@ -19,11 +26,17 @@ export function stableReleaseVersion(value) {
   return match[1]
 }
 
-export function findSuccessfulRun(payload, commitSha) {
+export function findSuccessfulRun(payload, commitSha, repository, workflowFile) {
   const runs = Array.isArray(payload?.workflow_runs) ? payload.workflow_runs : []
-  return runs
-    .filter((run) => run?.head_sha === commitSha && run?.status === 'completed' && run?.conclusion === 'success')
-    .sort((left, right) => String(right.updated_at).localeCompare(String(left.updated_at)))[0]
+  const candidates = runs.filter((run) => run?.head_sha === commitSha
+    && run?.head_branch === 'main' && run?.event === 'push')
+  if (candidates.some((run) => !Number.isSafeInteger(run.id) || run.id < 1)) return undefined
+  const latest = candidates.sort((left, right) => right.id - left.id)[0]
+  if (!latest || latest.status !== 'completed' || latest.conclusion !== 'success'
+    || latest.path !== `.github/workflows/${workflowFile}`
+    || latest.repository?.full_name !== repository || latest.head_repository?.full_name !== repository
+    || !Number.isSafeInteger(latest.run_attempt) || latest.run_attempt < 1) return undefined
+  return latest
 }
 
 function git(args) {
@@ -43,42 +56,73 @@ function requireCommitOnReleaseBranch(commitSha) {
   return stableReleaseVersion(baseline)
 }
 
-async function fetchSuccessfulRun(repository, token, commitSha) {
+export async function verifySuccessfulChecks(repository, token, commitSha, fetchImpl = fetch) {
   if (!repository || !token) throw new Error('GITHUB_REPOSITORY and GITHUB_TOKEN are required')
-  const url = new URL(
-    `https://api.github.com/repos/${repository}/actions/workflows/zero-one-ci.yml/runs`,
-  )
-  url.searchParams.set('head_sha', commitSha)
-  url.searchParams.set('status', 'completed')
-  url.searchParams.set('per_page', '100')
+  async function readActions(url) {
+    const response = await fetchImpl(url, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${token}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+      signal: AbortSignal.timeout(15_000),
+      redirect: 'error',
+    })
+    if (!response.ok) throw new Error(`GitHub Actions lookup failed with HTTP ${response.status}`)
+    return response.json()
+  }
 
-  const response = await fetch(url, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${token}`,
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-    signal: AbortSignal.timeout(15_000),
-  })
-  if (!response.ok) throw new Error(`GitHub Actions lookup failed with HTTP ${response.status}`)
+  const verified = []
+  for (const [workflowFile, requiredJobs] of Object.entries(REQUIRED_JOBS)) {
+    const url = new URL(`https://api.github.com/repos/${repository}/actions/workflows/${workflowFile}/runs`)
+    url.searchParams.set('head_sha', commitSha)
+    url.searchParams.set('branch', 'main')
+    url.searchParams.set('event', 'push')
+    url.searchParams.set('per_page', '100')
+    const run = findSuccessfulRun(await readActions(url), commitSha, repository, workflowFile)
+    if (!run) throw new Error(`${workflowFile}: latest main push is not a successful completed run for ${commitSha}`)
 
-  const run = findSuccessfulRun(await response.json(), commitSha)
-  if (!run) throw new Error(`Zero One CI has no successful completed run for ${commitSha}`)
-  return run
+    const jobsUrl = new URL(
+      `https://api.github.com/repos/${repository}/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs`,
+    )
+    jobsUrl.searchParams.set('per_page', '100')
+    const payload = await readActions(jobsUrl)
+    if (!Array.isArray(payload?.jobs) || payload.jobs.length !== requiredJobs.length
+      || payload.total_count !== payload.jobs.length) {
+      throw new Error(`${workflowFile}: incomplete job evidence for run ${run.id} attempt ${run.run_attempt}`)
+    }
+    for (const name of requiredJobs) {
+      const matching = payload.jobs.filter((job) => job?.name === name)
+      const job = matching[0]
+      if (matching.length !== 1 || job.status !== 'completed' || job.conclusion !== 'success'
+        || job.run_id !== run.id || job.run_attempt !== run.run_attempt || job.head_sha !== commitSha) {
+        throw new Error(`${workflowFile}: required job "${name}" is missing, unsuccessful or from another run/attempt`)
+      }
+    }
+    verified.push({ workflowFile, url, run })
+  }
+  // Recheck once after job inspection; never authorize with a stale attempt.
+  for (const { workflowFile, url, run } of verified) {
+    const latest = findSuccessfulRun(await readActions(url), commitSha, repository, workflowFile)
+    if (!latest || latest.id !== run.id || latest.run_attempt !== run.run_attempt) {
+      throw new Error(`${workflowFile}: latest main push changed while verifying release evidence`)
+    }
+  }
+  return verified.map(({ run }) => run)
 }
 
 export async function main(env = process.env) {
   const commitSha = validateCommitSha(env.COMMIT_SHA)
   const sourceVersion = requireCommitOnReleaseBranch(commitSha)
-  const run = await fetchSuccessfulRun(env.GITHUB_REPOSITORY, env.GITHUB_TOKEN, commitSha)
+  const [ciRun, securityRun] = await verifySuccessfulChecks(env.GITHUB_REPOSITORY, env.GITHUB_TOKEN, commitSha)
 
   if (env.GITHUB_OUTPUT) {
     appendFileSync(
       env.GITHUB_OUTPUT,
-      `source_sha=${commitSha}\nsource_version=${sourceVersion}\nci_run_url=${run.html_url}\n`,
+      `source_sha=${commitSha}\nsource_version=${sourceVersion}\nci_run_url=${ciRun.html_url}\nsecurity_run_url=${securityRun.html_url}\n`,
     )
   }
-  console.log(`publish source OK: ${commitSha} (${sourceVersion}), Zero One CI ${run.html_url}`)
+  console.log(`publish source OK: ${commitSha} (${sourceVersion}), CI ${ciRun.html_url}, Security ${securityRun.html_url}`)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
