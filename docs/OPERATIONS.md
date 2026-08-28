@@ -259,6 +259,77 @@ Document the backup encryption key owner and restore permissions separately;
 do not place encryption keys, dumps, `.env`, or Provider Account secrets in
 this repository.
 
+## CI Resource Policy
+
+GitHub Actions is used only to build, test, audit and validate this repository.
+The [Actions product terms](https://docs.github.com/en/site-policy/github-terms/github-terms-for-additional-products-and-features#actions)
+also prohibit unrelated computation and disproportionate resource consumption.
+A count of workflow runs is not a compliance certificate or a published safe
+usage threshold; review the purpose, execution time and actual runner usage.
+
+The four validation workflows (`CI`, `Security Scan`, `Zero One CI` and
+`Zero One Visual Calibration`) use the following event boundary:
+
+| Event | Automatic validation |
+| --- | --- |
+| Pull request targeting `main`, including a new commit on that PR | One run of each validation workflow |
+| Push to `main`, including a merged PR | One run of each validation workflow |
+| Push to a feature branch without a PR | None; run local checks and open a PR for hosted validation |
+| Push of an `ui-approved-*` or other tag | None of these four workflows |
+| Existing manual dispatch | Only the explicitly selected workflow |
+| Weekly security schedule | `Security Scan` only, with the existing schedule |
+
+The separate version-release and image-publish workflows retain their existing
+entry points and approvals. UI approval tags do not publish production images.
+The inherited CLA workflow may report skipped checks on this fork; a skipped
+check is not a running worker.
+
+Each validation workflow groups concurrency by workflow name, event and PR
+number (or ref). A new commit on a PR cancels the superseded run of the same PR
+and workflow. Push, scheduled and manual runs are not cancelled by a different
+event. For non-PR events, an in-progress run is allowed to finish; GitHub's
+default single-pending-slot behavior may replace an older queued run in the
+same group. Every job has an explicit time budget: shell and security checks up to
+15 minutes, Go suites 30, frontend jobs 15 (the full Console job 20), lint 40,
+deployment validation 45 and visual calibration 30. A timeout is a failed
+validation, not permission to remove a test or relax a screenshot threshold.
+
+All existing job names, test suites and security/visual gates remain present.
+This policy removes duplicate **event triggers**; the backend coverage shared
+by `CI` and `Zero One CI` is still retained. Consolidating that coverage later
+requires a separate review of required checks and equivalent test execution.
+Do not claim that all cross-workflow duplication has already been removed.
+
+Run the offline policy regression together with the existing protection tests:
+
+```bash
+node --test .github/scripts/*.test.mjs
+```
+
+Use `gh run list/view/watch` and `gh pr checks --watch` to inspect an existing
+run. Polling output, jobs and test cases are not additional workflow runs.
+Record the workflow run ID and, when available, `run_attempt`; diagnose failures
+before an explicit rerun. Do not loop reruns until a check becomes green, push
+empty commits to obtain new runners, or run production traffic on CI workers.
+Routing tests must retain temporary containers, loopback bindings and cleanup;
+TTFT parser tests use fake streams, not a production upstream account pool.
+
+## Repository Access Incidents
+
+If GitHub reports an account suspension, stop remote pushes, repository
+creation, image publication and Actions dispatches. Preserve local commits,
+tags and diagnostic records, and use the official
+[appeal and reinstatement process](https://docs.github.com/en/site-policy/acceptable-use-policies/github-appeal-and-reinstatement)
+to clarify access or an authorized migration. Successful login to another
+account is not evidence that the restriction has been lifted.
+
+Account changes must not rewrite upstream authorship, licenses, historical
+commit authors or old CI evidence links. Existing production image digests
+describe what is actually deployed; do not replace their registry owner with
+an unverified destination or imply that images have been published there.
+Repository identity changes and their credentials remain separate from
+production deployment and require an explicit, verified destination.
+
 ## Release And Rollback
 
 Before release, record the deployed Sub2API and edge image digests and take a database backup. Deploy immutable images, run the routing and smoke checks, then announce completion.

@@ -12,6 +12,7 @@
   "approved_backports": [],
   "preserve_on_upstream_sync": [
     ".github/audit-exceptions.yml",
+    ".github/scripts/ci-resource-policy.test.mjs",
     ".github/scripts/ui-baseline.json",
     ".github/scripts/verify-publish-source.mjs",
     ".github/scripts/verify-publish-source.test.mjs",
