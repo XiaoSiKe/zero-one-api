@@ -106,6 +106,7 @@ WORKDIR /app
 # Copy binary and runtime fallback resources from builder
 COPY --from=backend-builder /app/sub2api /app/sub2api
 COPY --from=backend-builder --chown=sub2api:sub2api /app/backend/resources /app/resources
+COPY LICENSE COPYING.GPLv3 THIRD_PARTY_NOTICES.md /usr/share/licenses/zero-one-api/
 
 # Create data directory
 RUN mkdir -p /app/data && chown -R sub2api:sub2api /app

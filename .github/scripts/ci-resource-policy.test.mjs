@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
@@ -10,10 +11,10 @@ const mainEvents = `  push:
       - main`
 
 const workflows = [
-  ['backend-ci.yml', '', 'CI'],
-  ['security-scan.yml', "\n  schedule:\n    - cron: '0 3 * * 1'", 'Security Scan'],
-  ['zero-one-ci.yml', '\n  workflow_dispatch:', 'Zero One CI'],
-  ['zero-one-visual-calibration.yml', '\n  workflow_dispatch:', 'Zero One Visual Calibration'],
+  ['backend-ci.yml', '  workflow_dispatch:', 'CI'],
+  ['security-scan.yml', mainEvents + "\n  schedule:\n    - cron: '0 3 * * 1'", 'Security Scan'],
+  ['zero-one-ci.yml', mainEvents + '\n  workflow_dispatch:', 'Zero One CI'],
+  ['zero-one-visual-calibration.yml', '  workflow_dispatch:', 'Zero One Visual Calibration'],
 ]
 
 const jobPolicies = {
@@ -55,7 +56,7 @@ const jobPolicies = {
       'run: pnpm run lint:check', 'run: pnpm run typecheck',
       'run: pnpm run test:run', 'run: pnpm run build',
     ]],
-    backend: [30, ['run: make test-unit', 'run: make test-integration']],
+    backend: [30, ['run: go test ./...', 'run: make test-unit', 'run: make test-integration']],
     deployment: [45, [
       'sh -n deploy/zero-one/backup-postgres.sh',
       'sh -n deploy/zero-one/restore-drill.sh',
@@ -90,7 +91,7 @@ const jobPolicies = {
   },
   'zero-one-visual-calibration.yml': {
     'chromium-calibration': [30, [
-      'name: Chromium visual regression', 'runs-on: ubuntu-24.04',
+      'name: Diagnostic Chromium visual regression', 'runs-on: ubuntu-24.04',
       'image: mcr.microsoft.com/playwright:v1.55.1-noble',
       'run: npm audit --prefix visual-regression --audit-level=high',
       'run: npm run typecheck --prefix visual-regression',
@@ -100,6 +101,18 @@ const jobPolicies = {
   },
 }
 
+Object.assign(jobPolicies['zero-one-ci.yml'], {
+  shell: jobPolicies['backend-ci.yml'].shell,
+  'golangci-lint': jobPolicies['backend-ci.yml']['golangci-lint'],
+  'chromium-calibration': [30, [
+    'name: Chromium visual regression',
+    ...jobPolicies['zero-one-visual-calibration.yml']['chromium-calibration'][1]
+      .filter((command) => !command.startsWith('name:')),
+  ]],
+  test: [5, ['run: test "$REQUIRED_RESULT" = success']],
+  frontend: [5, ['run: test "$REQUIRED_RESULT" = success']],
+})
+
 // These workflows deliberately use indented mapping blocks; no YAML dependency is needed.
 function topLevelBlock(source, key) {
   const match = source.match(new RegExp(`^${key}:\\n((?: +.*\\n|\\n)*)`, 'm'))
@@ -107,15 +120,96 @@ function topLevelBlock(source, key) {
   return match[1].trimEnd()
 }
 
-for (const [file, otherEvents, name] of workflows) {
-  const source = readFileSync(new URL(`../workflows/${file}`, import.meta.url), 'utf8')
-  const jobs = Object.fromEntries(
+function workflowJobs(source) {
+  return Object.fromEntries(
     [...topLevelBlock(source, 'jobs').matchAll(/^  ([\w-]+):\n((?: {4}.*(?:\n|$)|\n)*)/gm)]
       .map(([, id, body]) => [id, body]),
   )
+}
 
-  test(`${file}: validate main pushes and PRs without duplicate branch or tag runs`, () => {
-    assert.equal(topLevelBlock(source, 'on'), mainEvents + otherEvents)
+test('legacy CI and visual calibration run only when explicitly requested', () => {
+  for (const file of ['backend-ci.yml', 'zero-one-visual-calibration.yml']) {
+    const source = readFileSync(new URL(`../workflows/${file}`, import.meta.url), 'utf8')
+    assert.equal(topLevelBlock(source, 'on'), '  workflow_dispatch:')
+  }
+})
+
+test('the automatic product pipeline retains shell, lint and native visual responsibilities', () => {
+  const source = readFileSync(new URL('../workflows/zero-one-ci.yml', import.meta.url), 'utf8')
+  const jobs = workflowJobs(source)
+  for (const [file, id] of [
+    ['backend-ci.yml', 'shell'],
+    ['backend-ci.yml', 'golangci-lint'],
+    ['zero-one-visual-calibration.yml', 'chromium-calibration'],
+  ]) {
+    assert.ok(jobs[id], `the automatic product pipeline must own ${id}`)
+    for (const command of jobPolicies[file][id][1].filter((command) => !command.startsWith('name:'))) {
+      assert.ok(jobs[id].includes(command), `${id} must still execute ${command}`)
+    }
+  }
+})
+
+test('compatibility checks propagate backend and Console failure, cancellation and skipped execution', () => {
+  const source = readFileSync(new URL('../workflows/zero-one-ci.yml', import.meta.url), 'utf8')
+  const jobs = workflowJobs(source)
+  for (const [id, dependency] of [['test', 'backend'], ['frontend', 'console']]) {
+    assert.ok(jobs[id], `missing required compatibility check ${id}`)
+    assert.match(jobs[id], /^    if: always\(\)$/m)
+    assert.ok(jobs[id].includes(`    needs: [${dependency}]`))
+    assert.ok(jobs[id].includes(`REQUIRED_RESULT: \${{ needs.${dependency}.result }}`))
+    const command = jobs[id].match(/^        run: (.+)$/m)?.[1]
+    assert.ok(command, 'the compatibility check must execute its result assertion')
+    assert.ok(!jobs[id].includes('uses:'), 'compatibility checks must not rebuild or retest')
+    for (const result of ['success', 'failure', 'cancelled', 'skipped', '']) {
+      const execution = spawnSync('/bin/sh', ['-eu', '-c', command], {
+        env: { ...process.env, REQUIRED_RESULT: result },
+      })
+      assert.equal(execution.status === 0, result === 'success', `${id}: ${result || 'missing'} result`)
+    }
+  }
+})
+
+test('manual diagnostic checks cannot impersonate any of the twelve required checks', () => {
+  const requiredNames = [
+    'upstream-boundary', 'landing', 'console', 'backend', 'deployment',
+    'shell', 'golangci-lint', 'Chromium visual regression', 'test', 'frontend',
+    'backend-security', 'frontend-security',
+  ]
+  const checkNames = (file) => Object.entries(workflowJobs(
+    readFileSync(new URL(`../workflows/${file}`, import.meta.url), 'utf8'),
+  )).map(([id, body]) => body.match(/^    name: (.+)$/m)?.[1] ?? id)
+  assert.deepEqual(
+    [...checkNames('zero-one-ci.yml'), ...checkNames('security-scan.yml')].sort(),
+    [...requiredNames].sort(),
+  )
+  for (const name of [...checkNames('backend-ci.yml'), ...checkNames('zero-one-visual-calibration.yml')]) {
+    assert.match(name, /^Diagnostic /)
+    assert.ok(!requiredNames.includes(name))
+  }
+})
+
+test('automatic validation executes ordinary, unit, integration and full Console suites exactly once', () => {
+  const source = ['zero-one-ci.yml', 'security-scan.yml']
+    .map((file) => readFileSync(new URL(`../workflows/${file}`, import.meta.url), 'utf8'))
+    .join('\n')
+  const commands = source.split('\n').map((line) => line.trim())
+  for (const command of [
+    'run: go test ./...', 'run: make test-unit', 'run: make test-integration',
+    'run: pnpm run lint:check', 'run: pnpm run typecheck', 'run: pnpm run test:run',
+  ]) {
+    assert.equal(commands.filter((line) => line === command).length, 1, command)
+  }
+  assert.ok(!commands.includes('run: make test-frontend'), 'the full Console suite includes the critical subset')
+  assert.ok(!commands.includes('run: make test'), 'Go lint runs only in its dedicated job')
+  assert.ok(!source.includes('continue-on-error:'), 'automatic gates must not hide failures')
+})
+
+for (const [file, events, name] of workflows) {
+  const source = readFileSync(new URL(`../workflows/${file}`, import.meta.url), 'utf8')
+  const jobs = workflowJobs(source)
+
+  test(`${file}: use only the declared automatic or manual event boundary`, () => {
+    assert.equal(topLevelBlock(source, 'on'), events)
   })
 
   test(`${file}: cancel only superseded PR runs, isolating workflows and other events`, () => {

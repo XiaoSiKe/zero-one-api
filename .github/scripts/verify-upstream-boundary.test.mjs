@@ -169,7 +169,9 @@ function readRepositoryPath(path) {
 function baselineWithApprovedBackport() {
   const value = structuredClone(baseline)
   const files = {}
-  for (const path of ['Dockerfile', 'backend/Dockerfile', 'deploy/Dockerfile']) {
+  // Product runtime Dockerfiles now have permanent ownership. Keep the fixture
+  // on three untouched upstream files without weakening that ownership.
+  for (const path of ['backend/.golangci.yml', 'backend/Dockerfile', 'backend/Makefile']) {
     const file = readRepositoryPath(path)
     files[path] = {
       sha256: createHash('sha256').update(file.content).digest('hex'),
@@ -900,23 +902,23 @@ test('rejects changed, missing, and non-regular approved backport files', () => 
   assert.match(changed[0], /backend\/Dockerfile content mismatch/)
 
   const missing = evaluateApprovedBackportContents(approvedBaseline, (path) => {
-    if (path === 'deploy/Dockerfile') throw new Error('missing')
+    if (path === 'backend/Makefile') throw new Error('missing')
     return readRepositoryPath(path)
   })
-  assert.deepEqual(missing, ['approved backport deploy/Dockerfile is missing'])
+  assert.deepEqual(missing, ['approved backport backend/Makefile is missing'])
 
   const nonRegular = evaluateApprovedBackportContents(approvedBaseline, (path) => {
     const file = readRepositoryPath(path)
-    return path === 'Dockerfile' ? { ...file, isRegularFile: false } : file
+    return path === 'backend/.golangci.yml' ? { ...file, isRegularFile: false } : file
   })
-  assert.deepEqual(nonRegular, ['approved backport Dockerfile is not a regular file'])
+  assert.deepEqual(nonRegular, ['approved backport backend/.golangci.yml is not a regular file'])
 
   const executable = evaluateApprovedBackportContents(approvedBaseline, (path) => {
     const file = readRepositoryPath(path)
-    return path === 'Dockerfile' ? { ...file, mode: '100755' } : file
+    return path === 'backend/.golangci.yml' ? { ...file, mode: '100755' } : file
   })
   assert.deepEqual(executable, [
-    'approved backport Dockerfile mode mismatch: expected 100644, got 100755',
+    'approved backport backend/.golangci.yml mode mismatch: expected 100644, got 100755',
   ])
 })
 
@@ -959,10 +961,12 @@ test('rejects stale or malformed approved backport metadata', () => {
   }
   assert.throws(() => validateBaseline(traversal), /approved backport path is invalid/)
 
-  const alreadyAllowed = clone()
-  alreadyAllowed.approved_backports[0].files['README.md'] = {
-    sha256: '0'.repeat(64),
-    mode: '100644',
+  for (const path of ['README.md', 'Dockerfile', 'deploy/Dockerfile']) {
+    const alreadyAllowed = clone()
+    alreadyAllowed.approved_backports[0].files[path] = {
+      sha256: '0'.repeat(64),
+      mode: '100644',
+    }
+    assert.throws(() => validateBaseline(alreadyAllowed), /already owned by another registry block/)
   }
-  assert.throws(() => validateBaseline(alreadyAllowed), /already owned by another registry block/)
 })

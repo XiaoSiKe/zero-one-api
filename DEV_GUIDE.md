@@ -7,7 +7,7 @@
 | 项目 | 说明 |
 |------|------|
 | **上游仓库** | Wei-Shaw/sub2api |
-| **Fork 仓库** | bayma888/sub2api-bmai |
+| **产品仓库** | XiaoSiKe/zero-one-api；独立托管的 Sub2API 下游发行版，保留完整上游历史，非 GitHub 原生 fork |
 | **技术栈** | Go 后端 (Ent ORM + Gin) + Vue3 前端 (pnpm) |
 | **数据库** | PostgreSQL 16 + Redis |
 | **包管理** | 后端: go modules, 前端: **pnpm**（不是 npm） |
@@ -42,11 +42,11 @@ Sub2API，但不能覆盖 Zero One 的 Overlay Registry、双镜像或迁移发�
 ### 开发工具
 
 ```bash
-# golangci-lint（CI 用 v2.9，本地建议装同一版以免版本差异带来的噪音）
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.9
+# golangci-lint（与产品 CI 固定版本一致）
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.0
 
 # pnpm (前端包管理)
-npm install -g pnpm
+npm install -g pnpm@9.15.9
 ```
 
 ## 三、CI/CD 流水线
@@ -55,19 +55,26 @@ npm install -g pnpm
 
 | Workflow | 触发条件 | 检查内容 |
 |----------|----------|----------|
-| **backend-ci.yml** | push, pull_request | 单元测试 + 集成测试 + golangci-lint v2.9 |
-| **security-scan.yml** | push, pull_request, 每周一 | govulncheck + gosec + pnpm audit |
-| **release.yml** | tag `v*` | 构建发布（PR 不触发） |
+| **zero-one-ci.yml** | 面向 main 的 PR、main push、手动 | 保护门禁、Shell、Go ordinary/unit/integration、golangci-lint v2.13.0、Landing/Console 全量、双镜像/路由、Playwright 1.55.1 视觉 |
+| **security-scan.yml** | 面向 main 的 PR、main push、每周一 | govulncheck + pnpm audit；没有另跑独立 gosec 命令 |
+| **backend-ci.yml** | 仅手动诊断 | 显式 `Diagnostic …` 检查名，不参与发布证明或冒充必需检查 |
+| **zero-one-visual-calibration.yml** | 仅手动视觉审核 | 原生 Linux x86 视觉候选验收，诊断名与自动检查隔离 |
+| **zero-one-publish.yml** | 手动且输入 PUBLISH | 仅允许受信 main 提交、两条自动流水线及其全部实际 job 成功后发布同提交双镜像 |
+| **release.yml / cla.yml** | 本产品仓库工作流级停用 | 源码中各 job 也只允许 Wei-Shaw/sub2api；保留上游历史和 CLA 文本，不重新启用旧发布通道 |
 
 ### CI 要求
 
 - Go 版本必须是 **1.27.0**：相关 workflow 都用 `go-version-file: backend/go.mod` 取版本，随后硬断言 `go version | grep -q 'go1.27.0'`。升级 Go 时要同时改 `backend/go.mod`、`backend-ci.yml`（两处）、`release.yml`、`security-scan.yml` 和 `zero-one-ci.yml` 里的断言，**以及三个 Dockerfile 里的 Go 构建镜像**（`Dockerfile` / `deploy/Dockerfile` 的 `ARG GOLANG_IMAGE`、`backend/Dockerfile` 的 `FROM golang:`）。前者漏了 CI 会在版本校验步骤直接失败；后者漏了会在 Docker 构建时失败（`go.mod requires go >= X (running Y; GOTOOLCHAIN=local)`）。
 - 前端使用 `pnpm install --frozen-lockfile`，必须提交 `pnpm-lock.yaml`
 - Zero One CI 必须同时校验提交态 Overlay Registry 与 `--worktree` 模式；本地回放未提交内容时也要运行后者。
+- `test` / `frontend` 是 `backend` / `console` 的失败封闭结果汇总，不重复执行套件；依赖失败、跳过或取消时汇总必须失败。12 个必需检查仍全部保留，手动诊断结果不能替代自动门禁。
 
 ### 本地测试命令
 
 ```bash
+# 后端普通构建配置（不能用带 tags 的结果替代）
+cd backend && go test ./...
+
 # 后端单元测试
 cd backend && go test -tags=unit ./...
 
@@ -283,7 +290,7 @@ Approved UI Snapshot；普通上游同步只能更新后端及明确列出的 AP
 
 1. 在独立功能分支开发；不得修改 `.github/upstream-baseline.json` 的
    `release`/`commit`，也不得在功能分支合并新的 upstream Tag。
-   四套常规验证只自动响应面向 `main` 的 PR 和 `main` 推送；功能分支推送和
+   产品验证与独立安全扫描只自动响应面向 `main` 的 PR 和 `main` 推送；功能分支推送和
    `ui-approved-*` 标签本身不再重复启动验证。PR 前先完成本地检查，PR 后等待
    该提交的完整门禁；同一 PR 的新提交会取消其过时验证，但不会放宽测试要求。
    无 PR 的专项复核只使用已有手动入口，不推空提交触发检查。资源预算、事件

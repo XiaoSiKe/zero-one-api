@@ -78,6 +78,7 @@ jobs:
             .github/upstream-baseline.json
             .github/scripts
             .github/workflows/zero-one-ci.yml
+            .github/workflows/security-scan.yml
             .github/workflows/zero-one-publish.yml
           )
           if ! git diff --quiet "$GITHUB_SHA" "$SOURCE_SHA" -- "${trusted_paths[@]}"; then
@@ -160,6 +161,7 @@ jobs:
       - name: Verify published digests and write release summary
         env:
           CI_RUN_URL: ${{ steps.source.outputs.ci_run_url }}
+          SECURITY_RUN_URL: ${{ steps.source.outputs.security_run_url }}
           EDGE_DIGEST: ${{ steps.edge.outputs.digest }}
           SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
           SOURCE_VERSION: ${{ steps.source.outputs.source_version }}
@@ -184,6 +186,7 @@ jobs:
             echo "- Source: \`$SOURCE_SHA\`"
             echo "- Version: \`$SOURCE_VERSION\`"
             echo "- Verified CI: $CI_RUN_URL"
+            echo "- Verified Security: $SECURITY_RUN_URL"
             echo "- Sub2API: \`$SUB2API_IMAGE@$SUB2API_DIGEST\`"
             echo "- Edge: \`$EDGE_IMAGE@$EDGE_DIGEST\`"
             echo

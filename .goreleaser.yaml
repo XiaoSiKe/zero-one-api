@@ -41,6 +41,8 @@ archives:
         format: zip
     files:
       - LICENSE*
+      - COPYING.GPLv3
+      - THIRD_PARTY_NOTICES.md
       - README*
       - deploy/*
 
@@ -64,6 +66,9 @@ dockers:
     dockerfile: Dockerfile.goreleaser
     use: buildx
     extra_files:
+      - LICENSE
+      - COPYING.GPLv3
+      - THIRD_PARTY_NOTICES.md
       - deploy/docker-entrypoint.sh
       - backend/resources
     build_flag_templates:
@@ -80,6 +85,9 @@ dockers:
     dockerfile: Dockerfile.goreleaser
     use: buildx
     extra_files:
+      - LICENSE
+      - COPYING.GPLv3
+      - THIRD_PARTY_NOTICES.md
       - deploy/docker-entrypoint.sh
       - backend/resources
     build_flag_templates:
@@ -96,6 +104,9 @@ dockers:
     dockerfile: Dockerfile.goreleaser
     use: buildx
     extra_files:
+      - LICENSE
+      - COPYING.GPLv3
+      - THIRD_PARTY_NOTICES.md
       - deploy/docker-entrypoint.sh
       - backend/resources
     build_flag_templates:
@@ -112,6 +123,9 @@ dockers:
     dockerfile: Dockerfile.goreleaser
     use: buildx
     extra_files:
+      - LICENSE
+      - COPYING.GPLv3
+      - THIRD_PARTY_NOTICES.md
       - deploy/docker-entrypoint.sh
       - backend/resources
     build_flag_templates:

@@ -115,6 +115,9 @@ jobs:
           cache-dependency-path: backend/go.sum
       - name: Verify Go version
         run: go version | grep -q 'go1.27.0'
+      - name: Test backend ordinary suite
+        working-directory: backend
+        run: go test ./...
       - name: Test backend unit suite
         working-directory: backend
         run: make test-unit
@@ -191,3 +194,97 @@ jobs:
         run: sh deploy/zero-one/test-live-routing.sh zero-one-edge:sha-${{ github.sha }}
       - name: Test live preview Caddy routing contract
         run: sh deploy/zero-one/test-live-routing.sh zero-one-edge:sha-${{ github.sha }} preview
+
+  shell:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check deployment scripts
+        run: |
+          /bin/bash -n deploy/apple-container.sh
+          /bin/bash deploy/tests/apple-container-test.sh
+          /bin/sh deploy/tests/docker-compose-security-test.sh
+          /bin/sh deploy/tests/docker-compose-gateway-env-test.sh
+          /bin/sh deploy/tests/docker-runtime-resources-test.sh
+          /bin/sh deploy/test-caddyfile-cache.sh
+
+  golangci-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: backend/go.mod
+          check-latest: false
+          cache: true
+          cache-dependency-path: backend/go.sum
+      - name: Verify Go version
+        run: go version | grep -q 'go1.27.0'
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.13
+          args: --timeout=30m
+          working-directory: backend
+
+  chromium-calibration:
+    name: Chromium visual regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.1-noble
+    env:
+      CI: "true"
+      TZ: Asia/Shanghai
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - name: Install visual test dependencies
+        run: npm ci --prefix visual-regression
+      - name: Audit visual test dependencies
+        run: npm audit --prefix visual-regression --audit-level=high
+      - name: Install Landing dependencies
+        run: npm ci --prefix landing
+      - name: Typecheck visual contracts
+        run: npm run typecheck --prefix visual-regression
+      - name: List visual contracts
+        run: npm run test:list --prefix visual-regression
+      - name: Run snapshot calibration without baseline updates
+        run: npm test --prefix visual-regression
+      - name: Upload visual calibration artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zero-one-visual-calibration-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            visual-regression/playwright-report/
+            visual-regression/test-results/
+
+  # Preserve required check names without executing the same suites twice.
+  test:
+    needs: [backend]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      REQUIRED_RESULT: ${{ needs.backend.result }}
+    steps:
+      - name: Require the complete backend suite
+        run: test "$REQUIRED_RESULT" = success
+
+  frontend:
+    needs: [console]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      REQUIRED_RESULT: ${{ needs.console.result }}
+    steps:
+      - name: Require the complete Console suite
+        run: test "$REQUIRED_RESULT" = success
