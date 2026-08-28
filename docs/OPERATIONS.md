@@ -587,6 +587,44 @@ SSE/WebSocket upgrade；生产登录/核销/扣费探针未执行，不能计入
 当前没有配置 off-host 日备份挂载/定时任务；本次已验证的一次性加密异机备份不能
 替代它。恢复私钥留在维护机，临时明文 staging 已清理，历史恢复材料不动。
 
+### Visual fixture diagnosis during migration acceptance
+
+PR #3 首轮 head `356ef1abe3e43fee714be935f0305dcfcbd071d7` 的
+[产品 CI 33177554336](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33177554336)
+与 [Security 33177554324](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33177554324)
+均为 attempt 1、12 项必需 job 绿色，但逐项视觉报告实际为 **144 passed、1 flaky、
+65 skipped**。原导航用例经既有 Playwright `retries: 1` 后通过，不等于测试全部
+首次通过；44 个兑换用例实际均首次通过、0 skip/retry。原日志、trace、截图及失败
+结论均保留，没有将它们改写成干净的 145-pass 记录。
+
+按先复现后修复的诊断流程，捕获到白屏前 Keys/Usage/DataTable 的 `.map`、`.length`
+类型错误。两个 GET `/keys`、`/groups/available` 在测试中缺少显式 fixture，落入
+成功的 `data: {}`；真实后端分别返回分页对象和数组。只补这些只读空 DTO：
+keys 的 `items: []、total: 0、pages: 1`，以及 groups 的 `[]`，不改生产 API 或 UI。
+原 160ms 帧测试、全部断言、PNG、阈值及 retry 配置均不变。
+
+隔离的 Playwright 1.55.1 Linux ARM64 反馈环中，旧 fixture 三次运行有一次失败，
+且三份 trace 全部含 4–6 条类型错误；仅修改两个 DTO 后六次均通过，六份 trace
+均无运行错误。新增真实页面请求的 DTO/零渲染错误回归先在桌面、移动端各失败一次，
+再在修复后各通过一次，0 skip/retry。本机结果用于因果复现，不代替原生 Linux x86
+的完整像素验收。两处测试文件本来就在永久清单和受保护快照中，必须经新的候选
+视觉验收与不可移动批准标签更新，不能添加目录豁免来绕过保护。
+
+修复候选 `d5e4b4cc70e733ede2d1dab61fecdab510b1be19` 已通过
+[原生 Linux x64 验收 33180357784](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33180357784)，
+attempt 1：147 passed、65 原有 skipped、0 flaky/unexpected/global error；147 个实际
+执行案例均只有一条 `retry=0` 的 passed 结果。新增桌面/移动 DTO 回归、原导航用例及
+44 个兑换案例全部首过，65 个排除项与旧报告逐项一致，没有删除旧用例。
+据此新增不可移动 `ui-approved-2026-08-28-r4`，r3、r2、r1、r17 和其他旧标签不动。
+R4 与 r3 的 Frontend、Landing、恢复版 UI 资产逐文件一致，变化仅为测试契约与回归，
+不需要为此重新发布镜像。两个改动文件均在原永久清单中，仍为 441 项；正式 PR 与
+合并后 main 必须再通过精确提交的完整门禁，候选校准不是最终合并许可。
+
+运行镜像源码与运维 checkout 应分别记录。仅包含测试、文档、构建上下文及预览
+防护的后续 main，可在核对应用源码/运行资源无差异后同步到生产工作目录，以便
+新的 `.dockerignore` 和操作手册实际生效；这不授权重建容器、修改 `.env` 或把
+新 checkout SHA 冒称为已发布镜像的构建 SHA。运行镜像仍以 OCI revision/digest 为准。
+
 ## Release And Rollback
 
 Before release, record the deployed Sub2API and edge image digests and take a database backup. Deploy immutable images, run the routing and smoke checks, then announce completion.
@@ -613,13 +651,15 @@ same HTTPS gate; a failed rollback is reported separately. Do not replace this
 entrypoint with a direct `docker compose up edge` during a release.
 
 The approved UI is a separate release boundary. The current protected snapshot
-is the `ui-approved-2026-08-28-r3` tag at commit
-`5c442ee1fb8cf1d7c92f0ff4c25da9fe139cb463`. The
-`ui-approved-2026-08-28-r2`, `ui-approved-2026-08-28-r1` and
+is the `ui-approved-2026-08-28-r4` tag at commit
+`d5e4b4cc70e733ede2d1dab61fecdab510b1be19`. The
+`ui-approved-2026-08-28-r3`, `ui-approved-2026-08-28-r2`, `ui-approved-2026-08-28-r1` and
 `ui-approved-2026-08-27-r17` tags remain immutable;
 all older approval tags also remain unchanged. The new snapshot passed native
-Linux x86 visual and interaction verification (145 passed, 65 existing viewport
-exclusions) in [GitHub Actions run 33164525502](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33164525502).
+Linux x86 visual and interaction verification (147 passed, 65 unchanged viewport
+exclusions, zero flaky/retry) in [GitHub Actions run 33180357784](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33180357784).
+This approval corrects test read-model fixtures; production UI assets are
+byte-for-byte unchanged from r3.
 The previous r1 snapshot and its 143-pass result remain historical evidence in
 [GitHub Actions run 33104422137](https://github.com/01-Yang/zero-one-api/actions/runs/33104422137).
 An upstream version update must not modify `landing/src`, the protected console

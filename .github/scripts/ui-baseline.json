@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-08-28-r3",
-  "baseline_commit": "5c442ee1fb8cf1d7c92f0ff4c25da9fe139cb463",
+  "baseline_ref": "ui-approved-2026-08-28-r4",
+  "baseline_commit": "d5e4b4cc70e733ede2d1dab61fecdab510b1be19",
   "protected_paths": [
     "landing/",
     "frontend/",

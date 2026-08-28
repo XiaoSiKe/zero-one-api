@@ -82,7 +82,7 @@ docker compose \
 在 attempt 1 发布成功；没有重复 dispatch 或自动重跑：
 
 ```text
-源码    e245f86c19eca2c8820f29b7b5167409f9f47ea2
+镜像源码 e245f86c19eca2c8820f29b7b5167409f9f47ea2
 Sub2API ghcr.io/xiaosike/zero-one-sub2api@sha256:7c008a49a58b26a4ebc4caf842d6f1251b4b0f11d8993d202b2b9c23caea3a58
 Edge    ghcr.io/xiaosike/zero-one-edge@sha256:6ca66c891d78466ce2e4f653cbe751cbd1b2aa01ec9579c48ee85a90db19a9aa
 ```
@@ -92,6 +92,9 @@ manifest、实际 config 标签、SBOM/provenance 已匿名校验；生产 x86_6
 运行 amd64。没有把 arm64 元数据校验写成 arm64 运行测试。
 可选的 `compose.production-baseline-preview.yml` 也已固定到该 Backend digest，
 替换了已过时的旧账号 v0.1.179 引用；这不表示启动了本机预览或改写了历史回滚记录。
+当前批准标签为 `ui-approved-2026-08-28-r4@d5e4b4cc70e733ede2d1dab61fecdab510b1be19`；
+r4 只修正两个测试文件，生产 UI 资产与 r3 完全一致，运行镜像不因此重发。
+其原生 Linux 验收为 147 passed、65 既有排除、0 flaky/retry，详见运维记录。
 
 后端容器于 `2026-08-28T13:31:45.039332802Z` 启动、`13:31:50Z` 通过健康与 HTTPS
 检查；随后仅通过 `safe-edge-switch.sh` 切换 Edge，其启动时间为
@@ -211,6 +214,12 @@ PostgreSQL。
 ## 原地升级
 
 生产必须部署同一源码提交构建的 Sub2API 与 Edge 不可变镜像摘要，不使用 `latest`。源码目录可以保持 detached HEAD；切换提交前先确认没有 tracked 修改，并保留全部 untracked 恢复材料。
+
+记录中“镜像源码”指 OCI revision 对应的构建提交，不以运维工作目录的 HEAD 替代。
+后续若只是同步已验收 main 的构建防护、预览配置、测试和文档，应先证明 Backend、
+Frontend、Landing、恢复资源及生产 Compose/Caddy/Dockerfile 等运行输入没有改变；
+使用 `--no-overwrite-ignore` 切换 checkout，并复核四个容器 ID 和业务环境哈希不变。
+此操作不重建容器，最后同时记录 checkout SHA 与仍在运行的镜像 SHA。
 
 发布顺序固定为 Backend-first：
 
