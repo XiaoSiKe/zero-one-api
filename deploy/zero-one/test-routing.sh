@@ -6,8 +6,8 @@ production_caddyfile="$repo_root/deploy/zero-one/Caddyfile"
 preview_caddyfile="$repo_root/deploy/zero-one/Caddyfile.preview"
 shared_caddyfile="$repo_root/deploy/zero-one/Caddyfile.shared"
 recovered_console_index="$repo_root/deploy/zero-one/recovered-frontend/console/index.html"
-recovered_console_entry='await import("/assets/github-migration-20260828/index-9xJBhx8B.js")'
-recovered_console_entry_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/index-9xJBhx8B.js"
+recovered_console_entry='await import("/assets/cn-provider-shell-v1/index-9xJBhx8B.js")'
+recovered_console_entry_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v1/index-9xJBhx8B.js"
 recovered_pricing_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/useKeyedDebouncedSearch-BrW9dWBu.js"
 recovered_console_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-B-81-jXj.js"
 recovered_console_admin_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-Bn5PLb3-.js"
@@ -217,6 +217,8 @@ if [ "$(readlink "$recovered_asset_alias")" != '.' ]; then
 fi
 
 node "$repo_root/deploy/zero-one/verify-console-asset-closure.mjs" \
+	"$repo_root/deploy/zero-one/recovered-frontend/console"
+node "$repo_root/deploy/zero-one/verify-cn-provider-console.mjs" \
 	"$repo_root/deploy/zero-one/recovered-frontend/console"
 
 for shell_caddyfile in "$production_caddyfile" "$preview_caddyfile"; do

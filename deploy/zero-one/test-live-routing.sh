@@ -87,6 +87,11 @@ docker run --rm \
 	-v "$repo_root/deploy/zero-one/verify-console-asset-closure.mjs:/verify-console-asset-closure.mjs:ro" \
 	-v "$test_dir/console:/srv/console:ro" \
 	node:24-alpine node /verify-console-asset-closure.mjs /srv/console || fail 'Console asset closure is incomplete'
+docker run --rm \
+	-v "$repo_root/deploy/zero-one/build-cn-provider-shell.mjs:/build-cn-provider-shell.mjs:ro" \
+	-v "$repo_root/deploy/zero-one/verify-cn-provider-console.mjs:/verify-cn-provider-console.mjs:ro" \
+	-v "$test_dir/console:/srv/console:ro" \
+	node:24-alpine node /verify-cn-provider-console.mjs /srv/console || fail 'CN Provider Console contract is incomplete'
 
 landing=$(cat "$test_dir/landing.html")
 assert_text "$landing" '<title>零一 API</title>' 'primary root did not return the React page'
@@ -102,7 +107,8 @@ assert_text "$asset_headers" 'Cache-Control: public, max-age=31536000, immutable
 console=$(curl -fsS -H "Host: $request_host" "$edge_url/login")
 assert_text "$console" '<title>零一 API - AI API Gateway</title>' 'primary login did not return the recovered console'
 assert_text "$console" 'fetch("/api/v1/settings/public"' 'recovered console did not bootstrap live public settings'
-assert_text "$console" 'await import("/assets/github-migration-20260828/index-9xJBhx8B.js")' 'recovered console must use the cache-busted GitHub migration release'
+assert_text "$console" 'await import("/assets/cn-provider-admin-v1/cn-provider-admin.js")' 'recovered console CN Provider route adapter is missing'
+assert_text "$console" 'await import("/assets/cn-provider-shell-v1/index-9xJBhx8B.js")' 'recovered console approved shell seam is missing'
 assert_text "$console" 'await import("/assets/zero-one-local-preview-guard-v2.js")' 'recovered console local preview guard is missing'
 assert_text "$console" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=3")' 'recovered Console navigation reconciliation is missing'
 assert_text "$console" 'await import("/assets/zero-one-console-parity-v1.js?v=4")' 'recovered console parity overlay is missing'
@@ -118,6 +124,16 @@ assert_text "$console_asset_headers" 'Cache-Control: public, max-age=31536000, i
 for redeem_asset in index-9xJBhx8B.js RedeemView-B-81-jXj.js RedeemView-Bn5PLb3-.js zero-one-redeem-contract-20260828.js; do
 	redeem_asset_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/github-migration-20260828/$redeem_asset")
 	assert_text "$redeem_asset_headers" 'Cache-Control: public, max-age=31536000, immutable' 'versioned redeem asset is missing or not immutable'
+done
+cn_provider_shell_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/cn-provider-shell-v1/index-9xJBhx8B.js")
+assert_text "$cn_provider_shell_headers" 'Cache-Control: public, max-age=31536000, immutable' 'CN Provider approved shell seam is not immutable'
+cn_provider_placeholder_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/cn-provider-shell-v1/zero-one-cn-provider-route-placeholder-v1.js")
+assert_text "$cn_provider_placeholder_headers" 'Cache-Control: public, max-age=31536000, immutable' 'CN Provider route placeholder is not immutable'
+for cn_provider_asset_path in "$test_dir"/console/assets/cn-provider-admin-v1/*; do
+	[ -f "$cn_provider_asset_path" ] || continue
+	cn_provider_asset=$(basename "$cn_provider_asset_path")
+	cn_provider_asset_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/cn-provider-admin-v1/$cn_provider_asset")
+	assert_text "$cn_provider_asset_headers" 'Cache-Control: public, max-age=31536000, immutable' 'versioned CN Provider route asset is missing or not immutable'
 done
 floating_overlay_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-floating-panels-v1.js")
 assert_text "$floating_overlay_headers" 'Cache-Control: public, max-age=31536000, immutable' 'floating overlay asset is not immutable'

@@ -627,7 +627,32 @@ export async function seedConsole(
       })
     }
     if (route.request().method() === 'GET' && path === '/groups/available') return fulfill(route, [])
+    if (path === '/admin/groups' && route.request().method() === 'GET') {
+      return fulfill(route, { items: [], total: 0, page: 1, page_size: 20, pages: 0 })
+    }
+    if (path === '/admin/groups' && route.request().method() === 'POST') {
+      const submitted = route.request().postDataJSON() as Record<string, unknown>
+      return fulfill(route, { id: 901, status: 'active', ...submitted })
+    }
+    if (path === '/admin/groups/live-capability') return fulfill(route, { supported: false })
+    if (path === '/admin/groups/usage-summary') return fulfill(route, [])
+    if (path === '/admin/groups/capacity-summary') return fulfill(route, [])
     if (path === '/admin/groups/all') return fulfill(route, [])
+    if (path === '/admin/accounts' && route.request().method() === 'GET') {
+      return fulfill(route, { items: [], total: 0, page: 1, page_size: 20, pages: 0 })
+    }
+    if (path === '/admin/accounts' && route.request().method() === 'POST') {
+      const submitted = route.request().postDataJSON() as Record<string, unknown>
+      return fulfill(route, { id: 902, status: 'active', ...submitted })
+    }
+    if (/^\/admin\/accounts\/\d+\/upstream-billing-probe$/.test(path)) {
+      return fulfill(route, { account_id: Number(path.split('/')[3]) })
+    }
+    if (path === '/admin/accounts/upstream-billing-probe/settings') {
+      return fulfill(route, { enabled: true, interval_minutes: 60 })
+    }
+    if (path === '/admin/proxies/all') return fulfill(route, [])
+    if (path === '/admin/tls-fingerprint-profiles') return fulfill(route, [])
     if (path === '/usage/dashboard/stats') return fulfill(route, dashboardStats)
     if (path === '/usage/dashboard/trend') {
       return fulfill(route, {

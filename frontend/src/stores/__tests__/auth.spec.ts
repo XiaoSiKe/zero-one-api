@@ -236,6 +236,32 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('hydrateAuthSnapshot', () => {
+    it('restores simple mode without starting a user refresh', () => {
+      localStorage.setItem('auth_token', 'saved-token')
+      localStorage.setItem('auth_user', JSON.stringify({ ...fakeAdminUser, run_mode: 'simple' }))
+
+      const store = useAuthStore()
+      expect(store.hydrateAuthSnapshot()).toBe(true)
+
+      expect(store.user).toEqual(fakeAdminUser)
+      expect(store.isSimpleMode).toBe(true)
+      expect(mockGetCurrentUser).not.toHaveBeenCalled()
+    })
+
+    it('accepts the approved shell run mode as the authoritative snapshot', () => {
+      localStorage.setItem('auth_token', 'saved-token')
+      localStorage.setItem('auth_user', JSON.stringify(fakeAdminUser))
+
+      const store = useAuthStore()
+      expect(store.hydrateAuthSnapshot('simple')).toBe(true)
+      expect(store.isSimpleMode).toBe(true)
+
+      store.setRunModeSnapshot('standard')
+      expect(store.isSimpleMode).toBe(false)
+    })
+  })
+
   describe('pending auth session', () => {
     it('persists and clears pending auth session state', () => {
       const store = useAuthStore()

@@ -28,10 +28,29 @@ test('validates the approved UI baseline manifest', () => {
       'header-navigation-entries',
       'affiliate-attribution',
       'online-recharge-and-custom-pages',
+      'cn-provider-management',
       'model-plaza-pricing',
       'redeem-benefits-mystery-box',
     ],
   )
+
+  const cnProviderManagement = manifest.protected_surfaces.find(
+    ({ name }) => name === 'cn-provider-management',
+  )
+  assert.ok(cnProviderManagement)
+  assert.deepEqual(cnProviderManagement.routes, ['/admin/groups', '/admin/accounts'])
+  assert.ok(cnProviderManagement.paths.includes('frontend/src/entries/cnProviderAdmin.ts'))
+  assert.ok(
+    cnProviderManagement.paths.includes(
+      'deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v1/',
+    ),
+  )
+  assert.ok(
+    cnProviderManagement.paths.includes(
+      'deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v1/',
+    ),
+  )
+  assert.ok(cnProviderManagement.paths.includes('visual-regression/tests/console.cn-platforms.spec.ts'))
 
   const onlineRecharge = manifest.protected_surfaces.find(
     ({ name }) => name === 'online-recharge-and-custom-pages',

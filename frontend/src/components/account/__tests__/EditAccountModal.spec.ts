@@ -1160,6 +1160,60 @@ describe('EditAccountModal', () => {
     )
   })
 
+  it('preserves adaptive GLM endpoints on submit', async () => {
+    const account = buildAccount()
+    account.platform = 'zhipu'
+    account.credentials = {
+      api_key: 'sk-glm',
+      account_mode: 'coding',
+      api_protocol: 'adaptive',
+      base_url: 'https://open.bigmodel.cn/api/coding/paas/v4',
+      api_base_urls: {
+        chat_completions: 'https://open.bigmodel.cn/api/coding/paas/v4',
+        anthropic: 'https://open.bigmodel.cn/api/anthropic'
+      }
+    }
+    updateAccountMock.mockReset().mockResolvedValue(account)
+    checkMixedChannelRiskMock.mockReset().mockResolvedValue({ has_risk: false })
+
+    const wrapper = mountModal(account)
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+
+    expect(updateAccountMock).toHaveBeenCalledTimes(1)
+    expect(updateAccountMock.mock.calls[0]?.[1]?.credentials).toMatchObject({
+      account_mode: 'coding',
+      api_protocol: 'adaptive',
+      base_url: 'https://open.bigmodel.cn/api/coding/paas/v4',
+      api_base_urls: {
+        chat_completions: 'https://open.bigmodel.cn/api/coding/paas/v4',
+        anthropic: 'https://open.bigmodel.cn/api/anthropic'
+      }
+    })
+  })
+
+  it('preserves a legacy CN relay when api_protocol is missing', async () => {
+    const account = buildAccount()
+    account.platform = 'zhipu'
+    account.credentials = {
+      api_key: 'sk-glm',
+      account_mode: 'payg',
+      base_url: 'https://relay.example.com/v1'
+    }
+    updateAccountMock.mockReset().mockResolvedValue(account)
+    checkMixedChannelRiskMock.mockReset().mockResolvedValue({ has_risk: false })
+
+    const wrapper = mountModal(account)
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+
+    const submittedCredentials = updateAccountMock.mock.calls[0]?.[1]?.credentials
+    expect(submittedCredentials).toMatchObject({
+      account_mode: 'payg',
+      api_protocol: 'chat_completions',
+      base_url: 'https://relay.example.com/v1'
+    })
+    expect(submittedCredentials).not.toHaveProperty('api_base_urls')
+  })
+
   it('clears Antigravity configured project fallback when input is empty', async () => {
     const account = buildAntigravityAccount('configured-project')
     updateAccountMock.mockReset()

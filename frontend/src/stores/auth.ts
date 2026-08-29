@@ -101,12 +101,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   // ==================== Actions ====================
 
-  /**
-   * Initialize auth state from localStorage
-   * Call this on app startup to restore session
-   * Also starts auto-refresh and immediately fetches latest user data
-   */
-  function checkAuth(): void {
+  /** Restore a read-only session snapshot without network requests or timers. */
+  function hydrateAuthSnapshot(runModeOverride?: 'standard' | 'simple'): boolean {
     const savedToken = localStorage.getItem(AUTH_TOKEN_KEY)
     const savedUser = localStorage.getItem(AUTH_USER_KEY)
     const savedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
@@ -115,28 +111,42 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (savedToken && savedUser) {
       try {
+        const parsedUser = JSON.parse(savedUser) as User & { run_mode?: 'standard' | 'simple' }
+        const { run_mode: persistedRunMode, ...userData } = parsedUser
         token.value = savedToken
-        user.value = JSON.parse(savedUser)
+        user.value = userData as User
+        runMode.value = runModeOverride ?? persistedRunMode ?? 'standard'
         refreshTokenValue.value = savedRefreshToken
         tokenExpiresAt.value = savedExpiresAt ? parseInt(savedExpiresAt, 10) : null
-
-        // Immediately refresh user data from backend (async, don't block)
-        refreshUser().catch((error) => {
-          console.error('Failed to refresh user on init:', error)
-        })
-
-        // Start auto-refresh interval for user data
-        startAutoRefresh()
-
-        // Start proactive token refresh if we have refresh token and expiry info
-        // Note: use !== null to handle case when tokenExpiresAt.value is 0 (expired)
-        if (savedRefreshToken && tokenExpiresAt.value !== null) {
-          scheduleTokenRefreshAt(tokenExpiresAt.value)
-        }
+        return true
       } catch (error) {
         console.error('Failed to parse saved user data:', error)
         clearAuth({ preservePendingAuthSession: true })
       }
+    }
+    return false
+  }
+
+  function setRunModeSnapshot(mode: 'standard' | 'simple'): void {
+    runMode.value = mode
+  }
+
+  /** Restore the session, refresh the user, and start the normal auth timers. */
+  function checkAuth(): void {
+    if (!hydrateAuthSnapshot()) return
+
+    // Immediately refresh user data from backend (async, don't block)
+    refreshUser().catch((error) => {
+      console.error('Failed to refresh user on init:', error)
+    })
+
+    // Start auto-refresh interval for user data
+    startAutoRefresh()
+
+    // Start proactive token refresh if we have refresh token and expiry info
+    // Note: use !== null to handle case when tokenExpiresAt.value is 0 (expired)
+    if (refreshTokenValue.value && tokenExpiresAt.value !== null) {
+      scheduleTokenRefreshAt(tokenExpiresAt.value)
     }
   }
 
@@ -509,6 +519,8 @@ export const useAuthStore = defineStore('auth', () => {
     setToken,
     logout,
     checkAuth,
+    hydrateAuthSnapshot,
+    setRunModeSnapshot,
     refreshUser,
     setPendingAuthSession,
     clearPendingAuthSession

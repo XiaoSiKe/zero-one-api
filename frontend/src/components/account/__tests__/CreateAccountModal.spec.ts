@@ -214,6 +214,95 @@ describe('CreateAccountModal OpenAI long-context billing', () => {
     expect(probeUpstreamBillingMock).not.toHaveBeenCalled()
   })
 
+  it('submits complete adaptive Kimi credentials', async () => {
+    const wrapper = mountModal()
+    await selectButtonByText(wrapper, 'Kimi')
+    await wrapper.get('form#create-account-form input[type="text"]').setValue('Kimi adaptive')
+    await wrapper.get('form#create-account-form input[type="password"]').setValue('sk-kimi')
+
+    await wrapper.get('form#create-account-form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(createAccountMock).toHaveBeenCalledTimes(1)
+    expect(createAccountMock.mock.calls[0]?.[0]).toMatchObject({
+      platform: 'kimi',
+      type: 'apikey',
+      credentials: {
+        account_mode: 'payg',
+        api_protocol: 'adaptive',
+        base_url: 'https://api.moonshot.cn/v1',
+        api_base_urls: {
+          chat_completions: 'https://api.moonshot.cn/v1',
+          anthropic: 'https://api.moonshot.cn/anthropic'
+        }
+      }
+    })
+  })
+
+  it('persists CN header overrides and quota controls through the common create path', async () => {
+    const wrapper = mountModal()
+    await selectButtonByText(wrapper, 'Kimi')
+    await wrapper.get('form#create-account-form input[type="text"]').setValue('Kimi controlled')
+    await wrapper.get('form#create-account-form input[type="password"]').setValue('sk-kimi')
+
+    const quota = wrapper.findComponent({ name: 'QuotaLimitCard' })
+    expect(quota.exists()).toBe(true)
+    quota.vm.$emit('update:totalLimit', 100)
+    quota.vm.$emit('update:dailyLimit', 10)
+    quota.vm.$emit('update:weeklyLimit', 50)
+    quota.vm.$emit('update:dailyResetMode', 'fixed')
+    quota.vm.$emit('update:dailyResetHour', 6)
+    quota.vm.$emit('update:weeklyResetMode', 'fixed')
+    quota.vm.$emit('update:weeklyResetDay', 2)
+    quota.vm.$emit('update:weeklyResetHour', 7)
+    quota.vm.$emit('update:resetTimezone', 'Asia/Shanghai')
+    quota.vm.$emit('update:quotaNotifyDailyEnabled', true)
+    quota.vm.$emit('update:quotaNotifyDailyThreshold', 80)
+    await wrapper.vm.$nextTick()
+
+    await wrapper.get('[data-testid="header-override-toggle"]').trigger('click')
+    await selectButtonByText(wrapper, 'admin.accounts.headerOverride.addRow')
+    const headerEditor = wrapper.findComponent({ name: 'HeaderOverrideEditor' })
+    const headerInputs = headerEditor.findAll('input')
+    await headerInputs[0].setValue('X-Trace-Mode')
+    await headerInputs[1].setValue('cn-provider')
+
+    await wrapper.get('form#create-account-form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(createAccountMock.mock.calls[0]?.[0]).toMatchObject({
+      platform: 'kimi',
+      credentials: {
+        header_override_enabled: true,
+        header_overrides: { 'x-trace-mode': 'cn-provider' }
+      },
+      extra: {
+        quota_limit: 100,
+        quota_daily_limit: 10,
+        quota_weekly_limit: 50,
+        quota_daily_reset_mode: 'fixed',
+        quota_daily_reset_hour: 6,
+        quota_weekly_reset_mode: 'fixed',
+        quota_weekly_reset_day: 2,
+        quota_weekly_reset_hour: 7,
+        quota_reset_timezone: 'Asia/Shanghai',
+        quota_notify_daily_enabled: true,
+        quota_notify_daily_threshold: 80,
+        quota_notify_daily_threshold_type: 'fixed'
+      }
+    })
+  })
+
+  it('keeps native Responses available only for DeepSeek', async () => {
+    const wrapper = mountModal()
+    await selectButtonByText(wrapper, 'Kimi')
+    expect(wrapper.text()).not.toContain('admin.accounts.cnProviders.apiProtocol.responsesDesc')
+
+    await selectButtonByText(wrapper, 'DeepSeek')
+    expect(wrapper.text()).toContain('admin.accounts.cnProviders.apiProtocol.responsesDesc')
+    expect(wrapper.text()).not.toContain('admin.accounts.cnProviders.accountMode.codingDesc')
+  })
+
   it('exposes Agent Identity in the OpenAI authorization methods', async () => {
     const wrapper = mountModal()
     await selectButtonByText(wrapper, 'OpenAI')
