@@ -763,6 +763,12 @@ test('allows named immutable exceptions while adjacent seam files still fail', (
         immutable_path: 'frontend/src/router/index.ts',
       },
       {
+        name: 'public-capabilities-cn-provider-auth-snapshot',
+        owner: 'Public Capabilities',
+        path: 'frontend/src/stores/auth.ts',
+        immutable_path: 'frontend/src/stores/auth.ts',
+      },
+      {
         name: 'public-capabilities-admin-settings-api',
         owner: 'Public Capabilities',
         path: 'frontend/src/api/admin/settings.ts',

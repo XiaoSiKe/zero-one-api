@@ -12,8 +12,8 @@ const manifest = validateManifest(
 )
 
 test('validates the approved UI baseline manifest', () => {
-  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-28-r4')
-  assert.equal(manifest.baseline_commit, 'd5e4b4cc70e733ede2d1dab61fecdab510b1be19')
+  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-29-r1')
+  assert.equal(manifest.baseline_commit, '862dc1b4793387570ef5c4626ee29a95227cd41c')
   assert.equal(manifest.edge_build.console_source, 'deploy/zero-one/recovered-frontend/console')
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/redeem.behavior.spec.ts'))
   const redeem = manifest.protected_surfaces.find(({ name }) => name === 'redeem-benefits-mystery-box')
@@ -28,10 +28,29 @@ test('validates the approved UI baseline manifest', () => {
       'header-navigation-entries',
       'affiliate-attribution',
       'online-recharge-and-custom-pages',
+      'cn-provider-management',
       'model-plaza-pricing',
       'redeem-benefits-mystery-box',
     ],
   )
+
+  const cnProviderManagement = manifest.protected_surfaces.find(
+    ({ name }) => name === 'cn-provider-management',
+  )
+  assert.ok(cnProviderManagement)
+  assert.deepEqual(cnProviderManagement.routes, ['/admin/groups', '/admin/accounts'])
+  assert.ok(cnProviderManagement.paths.includes('frontend/src/entries/cnProviderAdmin.ts'))
+  assert.ok(
+    cnProviderManagement.paths.includes(
+      'deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v1/',
+    ),
+  )
+  assert.ok(
+    cnProviderManagement.paths.includes(
+      'deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v1/',
+    ),
+  )
+  assert.ok(cnProviderManagement.paths.includes('visual-regression/tests/console.cn-platforms.spec.ts'))
 
   const onlineRecharge = manifest.protected_surfaces.find(
     ({ name }) => name === 'online-recharge-and-custom-pages',

@@ -60,6 +60,10 @@ _Avoid_: 普通用户、站长账号
 向零一 API 提供模型调用能力和额度的已授权账号资源。
 _Avoid_: User、客户账号
 
+**Provider Platform Catalog（供应商平台目录）**:
+Provider Account、分组筛选与 Composite 路由目标共同使用的有序一等平台集合；新增平台必须在一个目录中同时进入这些管理入口。它不同于模型白名单，Qwen、Mistral 等模型名称不自动成为 Provider Account 平台。
+_Avoid_: 模型白名单、各页面复制的平台数组、任意 OpenAI 兼容模型列表
+
 **API Key（密钥）**:
 User 创建并用于鉴权模型 API 请求的凭证。
 _Avoid_: Provider Account 凭证、管理员密码

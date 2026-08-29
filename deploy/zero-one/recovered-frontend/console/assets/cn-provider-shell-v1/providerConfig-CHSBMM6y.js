@@ -1,0 +1,1 @@
+../providerConfig-CHSBMM6y.js

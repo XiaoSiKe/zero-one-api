@@ -54,6 +54,18 @@ describe('useModelWhitelist', () => {
     expect(models).toContain('grok-imagine-video-1.5-preview')
   })
 
+  it('国产 Provider Account 平台映射到各自模型目录', () => {
+    expect(getModelsByPlatform('kimi')).toEqual(
+      expect.arrayContaining(['kimi-latest', 'kimi-for-coding', 'kimi-k2'])
+    )
+    expect(getModelsByPlatform('zhipu')).toEqual(
+      expect.arrayContaining(['glm-4', 'glm-4.5', 'glm-4.6'])
+    )
+    expect(getModelsByPlatform('deepseek')).toEqual(
+      expect.arrayContaining(['deepseek-chat', 'deepseek-reasoner', 'deepseek-r1'])
+    )
+  })
+
   it('combined 模式支持 Grok 4.5 官方别名映射', () => {
     const mapping = buildModelMappingObject(
       'combined',

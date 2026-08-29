@@ -55,6 +55,9 @@ const jobPolicies = {
     console: [20, [
       'run: pnpm run lint:check', 'run: pnpm run typecheck',
       'run: pnpm run test:run', 'run: pnpm run build',
+      'run: pnpm run build:cn-provider-admin',
+      'run: pnpm run build:cn-provider-shell',
+      'run: test -z "$(git status --porcelain --untracked-files=all -- deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v1)"',
     ]],
     backend: [30, ['run: go test ./...', 'run: make test-unit', 'run: make test-integration']],
     deployment: [45, [

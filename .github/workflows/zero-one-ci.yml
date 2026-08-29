@@ -102,6 +102,14 @@ jobs:
       - name: Build console
         working-directory: frontend
         run: pnpm run build
+      - name: Build CN Provider administration adapter
+        working-directory: frontend
+        run: pnpm run build:cn-provider-admin
+      - name: Build approved Console router seam
+        working-directory: frontend
+        run: pnpm run build:cn-provider-shell
+      - name: Verify checked-in CN Provider administration assets
+        run: test -z "$(git status --porcelain --untracked-files=all -- deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v1)"
 
   backend:
     runs-on: ubuntu-latest

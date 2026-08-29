@@ -1413,7 +1413,8 @@
         <div id="bulk-edit-groups" :class="!enableGroups && 'pointer-events-none opacity-50'">
           <GroupSelector
             v-model="groupIds"
-            :groups="groups"
+            :groups="bulkGroupOptions"
+            :platform="targetSelectedPlatforms.length === 1 ? targetSelectedPlatforms[0] : undefined"
             aria-labelledby="bulk-edit-groups-label"
           />
         </div>
@@ -1545,6 +1546,13 @@ const targetMode = computed(() => props.target?.mode ?? 'selected')
 const targetPreviewCount = computed(() => props.target?.previewCount ?? props.accountIds.length)
 const targetSelectedPlatforms = computed(() => props.target?.selectedPlatforms ?? props.selectedPlatforms)
 const targetSelectedTypes = computed(() => props.target?.selectedTypes ?? props.selectedTypes)
+// One concrete platform can bind to same-platform or Composite groups. A mixed
+// selection can only bind to Composite groups; otherwise some accounts would
+// be persisted into groups that can never schedule them.
+const bulkGroupOptions = computed(() => {
+  if (targetSelectedPlatforms.value.length <= 1) return props.groups
+  return props.groups.filter(group => group.platform === 'composite')
+})
 // Grok 快捷端点仅在所选账号全部为 grok 平台时展示（其他平台不显示）
 const allTargetsGrok = computed(
   () =>

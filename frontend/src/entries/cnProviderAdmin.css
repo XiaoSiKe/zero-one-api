@@ -1,0 +1,30 @@
+/* Utilities introduced by the three CN Provider controls. They are scoped to
+ * the route Adapter because the approved snapshot predates these Tailwind
+ * classes and importing the current global stylesheet would restyle the shell. */
+body.zero-one-cn-provider-admin-active .border-pink-500 { border-color: rgb(236 72 153); }
+body.zero-one-cn-provider-admin-active .border-indigo-500 { border-color: rgb(99 102 241); }
+body.zero-one-cn-provider-admin-active .border-teal-500 { border-color: rgb(20 184 166); }
+body.zero-one-cn-provider-admin-active .bg-pink-50 { background-color: rgb(253 242 248); }
+body.zero-one-cn-provider-admin-active .bg-indigo-50 { background-color: rgb(238 242 255); }
+body.zero-one-cn-provider-admin-active .bg-teal-50 { background-color: rgb(240 253 250); }
+body.zero-one-cn-provider-admin-active .bg-pink-100 { background-color: rgb(252 231 243); }
+body.zero-one-cn-provider-admin-active .bg-indigo-100 { background-color: rgb(224 231 255); }
+body.zero-one-cn-provider-admin-active .bg-teal-100 { background-color: rgb(204 251 241); }
+body.zero-one-cn-provider-admin-active .bg-pink-500 { background-color: rgb(236 72 153); }
+body.zero-one-cn-provider-admin-active .bg-indigo-500 { background-color: rgb(99 102 241); }
+body.zero-one-cn-provider-admin-active .bg-teal-500 { background-color: rgb(20 184 166); }
+body.zero-one-cn-provider-admin-active .text-pink-600 { color: rgb(219 39 119); }
+body.zero-one-cn-provider-admin-active .text-indigo-600 { color: rgb(79 70 229); }
+body.zero-one-cn-provider-admin-active .text-teal-600 { color: rgb(13 148 136); }
+body.zero-one-cn-provider-admin-active .text-pink-700 { color: rgb(190 24 93); }
+body.zero-one-cn-provider-admin-active .text-indigo-700 { color: rgb(67 56 202); }
+body.zero-one-cn-provider-admin-active .text-teal-700 { color: rgb(15 118 110); }
+.dark body.zero-one-cn-provider-admin-active .dark\:bg-pink-900\/20 { background-color: #83184333; }
+.dark body.zero-one-cn-provider-admin-active .dark\:bg-indigo-900\/20 { background-color: #312e8133; }
+.dark body.zero-one-cn-provider-admin-active .dark\:bg-teal-900\/20 { background-color: #134e4a33; }
+.dark body.zero-one-cn-provider-admin-active .dark\:bg-pink-900\/30 { background-color: #8318434d; }
+.dark body.zero-one-cn-provider-admin-active .dark\:bg-indigo-900\/30 { background-color: #312e814d; }
+.dark body.zero-one-cn-provider-admin-active .dark\:bg-teal-900\/30 { background-color: #134e4a4d; }
+.dark body.zero-one-cn-provider-admin-active .dark\:text-pink-400 { color: rgb(244 114 182); }
+.dark body.zero-one-cn-provider-admin-active .dark\:text-indigo-400 { color: rgb(129 140 248); }
+.dark body.zero-one-cn-provider-admin-active .dark\:text-teal-400 { color: rgb(45 212 191); }

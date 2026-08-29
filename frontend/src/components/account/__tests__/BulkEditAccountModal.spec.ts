@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import BulkEditAccountModal from '../BulkEditAccountModal.vue'
 import ModelWhitelistSelector from '../ModelWhitelistSelector.vue'
 import { adminAPI } from '@/api/admin'
@@ -42,6 +42,16 @@ vi.mock('vue-i18n', async () => {
   }
 })
 
+const GroupSelectorStub = defineComponent({
+  name: 'GroupSelector',
+  props: {
+    modelValue: { type: Array, default: () => [] },
+    groups: { type: Array, default: () => [] },
+    platform: { type: String, default: undefined }
+  },
+  template: '<div data-testid="bulk-group-selector" />'
+})
+
 function mountModal(extraProps: Record<string, unknown> = {}) {
   return mount(BulkEditAccountModal, {
     props: {
@@ -73,7 +83,7 @@ function mountModal(extraProps: Record<string, unknown> = {}) {
           `
         },
         ProxySelector: true,
-        GroupSelector: true,
+        GroupSelector: GroupSelectorStub,
         Icon: true
       }
     }
@@ -215,6 +225,23 @@ describe('BulkEditAccountModal', () => {
     })
 
     expect(wrapper.findAll('[data-testid="grok-base-url-preset"]').length).toBe(0)
+  })
+
+  it('混合平台批量编辑只允许绑定 Composite 分组', () => {
+    const groups = [
+      { id: 1, name: 'Kimi', platform: 'kimi' },
+      { id: 2, name: 'GLM', platform: 'zhipu' },
+      { id: 3, name: 'All', platform: 'composite' }
+    ]
+    const wrapper = mountModal({
+      selectedPlatforms: ['kimi', 'zhipu'],
+      selectedTypes: ['apikey'],
+      groups
+    })
+
+    const selector = wrapper.getComponent(GroupSelectorStub)
+    expect(selector.props('groups')).toEqual([groups[2]])
+    expect(selector.props('platform')).toBeUndefined()
   })
 
   it('全部目标为 Grok OAuth 时，第三方 base_url 正常提交', async () => {

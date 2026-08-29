@@ -25,7 +25,7 @@ export function applyAntigravityProjectID(
   }
 }
 
-// ========== 请求头覆写（anthropic/openai 的 api_key 账号 + grok 的 api_key/oauth 账号） ==========
+// ========== 请求头覆写（API-key 平台 + grok 的 api_key/oauth 账号） ==========
 
 export const HEADER_OVERRIDE_ENABLED_CREDENTIAL_KEY = 'header_override_enabled'
 export const HEADER_OVERRIDES_CREDENTIAL_KEY = 'header_overrides'
@@ -37,7 +37,13 @@ export interface HeaderOverrideRow {
 
 /** 请求头覆写资格（与后端 IsHeaderOverrideEligible 保持一致） */
 export function isHeaderOverrideCapable(platform: string, type: string): boolean {
-  if (platform === 'anthropic' || platform === 'openai') {
+  if (
+    platform === 'anthropic' ||
+    platform === 'openai' ||
+    platform === 'kimi' ||
+    platform === 'zhipu' ||
+    platform === 'deepseek'
+  ) {
     return type === 'apikey'
   }
   if (platform === 'grok') {
@@ -251,7 +257,8 @@ export const GROK_BASE_URL_PRESETS: GrokBaseUrlPreset[] = [
 export type CnAccountMode = 'payg' | 'coding'
 
 /** 仅 deepseek 支持 responses 协议（官方原生 /responses 端点，适配 Codex）。 */
-export type CnApiProtocol = 'chat_completions' | 'anthropic' | 'responses'
+export type CnApiProtocol = 'adaptive' | 'chat_completions' | 'anthropic' | 'responses'
+export type CnNativeApiProtocol = Exclude<CnApiProtocol, 'adaptive'>
 
 export interface CnBaseUrlPreset {
   mode: CnAccountMode
@@ -312,6 +319,18 @@ export function defaultCNBaseUrl(
       return 'https://api.deepseek.com'
     default:
       return ''
+  }
+}
+
+/** Return the native protocol endpoints used by adaptive CN routing. */
+export function defaultCNAdaptiveBaseUrls(
+  platform: 'kimi' | 'zhipu' | 'deepseek',
+  mode: CnAccountMode
+): Record<CnNativeApiProtocol, string> {
+  return {
+    chat_completions: defaultCNBaseUrl(platform, mode, 'chat_completions'),
+    anthropic: defaultCNBaseUrl(platform, mode, 'anthropic'),
+    responses: platform === 'deepseek' ? defaultCNBaseUrl(platform, mode, 'responses') : ''
   }
 }
 
