@@ -185,6 +185,23 @@ describe('AdminAffiliateSettingsPanel', () => {
     expect(fetchAdminSettings).toHaveBeenCalledWith(true)
   })
 
+  it('does not render a false disabled state while settings are pending', async () => {
+    let resolveSettings!: (value: typeof baseAffiliateSettings) => void
+    getSettings.mockReturnValueOnce(new Promise((resolve) => { resolveSettings = resolve }))
+
+    const wrapper = mountPanel()
+    expect(wrapper.find('[data-testid="affiliate-settings-loading"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="affiliate-enabled-toggle"]').exists()).toBe(false)
+    expect(listUsers).not.toHaveBeenCalled()
+
+    resolveSettings(baseAffiliateSettings)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="affiliate-settings-loading"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="affiliate-enabled-toggle"]').exists()).toBe(true)
+    expect(listUsers).toHaveBeenCalledTimes(1)
+  })
+
   it('looks up a user and creates exact custom code and rebate-rate settings', async () => {
     const wrapper = mountPanel()
     await flushPromises()

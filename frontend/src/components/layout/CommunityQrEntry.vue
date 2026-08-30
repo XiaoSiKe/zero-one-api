@@ -33,7 +33,7 @@
       >
         <img
           v-if="imageObjectUrl"
-          v-show="!imageLoading"
+          v-show="imageReady && !imageLoading"
           :key="imageObjectUrl"
           :src="imageObjectUrl"
           :alt="imageAlt"
@@ -52,7 +52,7 @@
           <span>{{ t('communityQr.loading') }}</span>
         </div>
         <div
-          v-else-if="!imageObjectUrl"
+          v-else-if="imageLoadFailed"
           class="flex min-h-56 flex-col items-center justify-center gap-3 px-6 text-center text-sm text-gray-500 dark:text-dark-400"
           data-testid="community-qr-error"
           role="alert"
@@ -63,7 +63,7 @@
             type="button"
             class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/20 dark:border-dark-700 dark:bg-dark-900 dark:text-dark-200 dark:hover:bg-dark-800 dark:focus-visible:ring-white/20"
             data-testid="community-qr-retry"
-            @click="loadImage"
+            @click="retryImage"
           >
             {{ t('communityQr.retry') }}
           </button>
@@ -74,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
@@ -111,8 +111,11 @@ const supportedImageTypes = new Set(['image/png', 'image/jpeg', 'image/webp'])
 const dialogOpen = ref(false)
 const imageLoading = ref(false)
 const imageObjectUrl = ref('')
+const imageReady = ref(false)
+const imageLoadFailed = ref(false)
 
 let activeRequest: AbortController | null = null
+let activeLoad: Promise<void> | null = null
 let loadGeneration = 0
 let loadTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -125,56 +128,86 @@ function releaseImageObjectUrl() {
   if (!imageObjectUrl.value) return
   URL.revokeObjectURL(imageObjectUrl.value)
   imageObjectUrl.value = ''
+  imageReady.value = false
 }
 
-async function loadImage() {
-  if (!dialogOpen.value) return
+function canPrewarm(): boolean {
+  if (!authStore.token || !authStore.user) return false
+  return typeof window.matchMedia !== 'function' || window.matchMedia('(min-width: 640px)').matches
+}
+
+async function decodeImage(objectUrl: string) {
+  const decoder = new Image()
+  decoder.src = objectUrl
+  if (typeof decoder.decode === 'function') await decoder.decode()
+}
+
+function loadImage(force = false): Promise<void> {
+  if (!authStore.token || !authStore.user) return Promise.resolve()
+  if (activeLoad && !force) return activeLoad
+  if (imageReady.value && !force) return Promise.resolve()
+
   const generation = ++loadGeneration
   activeRequest?.abort()
   clearLoadTimeout()
   releaseImageObjectUrl()
-  imageLoading.value = true
+  imageLoadFailed.value = false
+  imageLoading.value = dialogOpen.value
 
   const controller = new AbortController()
   activeRequest = controller
-  // Bound both download and browser decoding; a timeout is always retryable.
+  // 下载和浏览器解码共享同一超时；预热失败后仍由弹窗提供显式重试。
   loadTimeout = setTimeout(() => {
-    if (generation !== loadGeneration || !dialogOpen.value) return
+    if (generation !== loadGeneration) return
     ++loadGeneration
     controller.abort()
     activeRequest = null
     clearLoadTimeout()
     releaseImageObjectUrl()
     imageLoading.value = false
+    imageLoadFailed.value = true
   }, 15000)
 
-  try {
-    const response = await apiClient.get<Blob>(props.imageEndpoint, {
-      responseType: 'blob',
-      signal: controller.signal,
-    })
-    if (generation !== loadGeneration || !dialogOpen.value) return
+  const request = (async () => {
+    let objectUrl = ''
+    try {
+      const response = await apiClient.get<Blob>(props.imageEndpoint, {
+        responseType: 'blob',
+        signal: controller.signal,
+      })
+      if (generation !== loadGeneration) return
 
-    const image = response.data
-    const imageType = image.type.toLowerCase().split(';', 1)[0]
-    if (image.size === 0 || !supportedImageTypes.has(imageType)) {
-      throw new Error('Unsupported community QR image response')
-    }
+      const image = response.data
+      const imageType = image.type.toLowerCase().split(';', 1)[0]
+      if (image.size === 0 || !supportedImageTypes.has(imageType)) {
+        throw new Error('Unsupported community QR image response')
+      }
 
-    const objectUrl = URL.createObjectURL(image)
-    if (generation !== loadGeneration || !dialogOpen.value) {
-      URL.revokeObjectURL(objectUrl)
-      return
-    }
-    imageObjectUrl.value = objectUrl
-  } catch {
-    if (generation === loadGeneration) {
-      clearLoadTimeout()
+      objectUrl = URL.createObjectURL(image)
+      await decodeImage(objectUrl)
+      if (generation !== loadGeneration) {
+        URL.revokeObjectURL(objectUrl)
+        return
+      }
+      imageObjectUrl.value = objectUrl
+      imageReady.value = true
       imageLoading.value = false
+    } catch {
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+      if (generation === loadGeneration) {
+        imageLoadFailed.value = true
+        imageLoading.value = false
+      }
+    } finally {
+      if (generation === loadGeneration) clearLoadTimeout()
+      if (activeRequest === controller) activeRequest = null
     }
-  } finally {
-    if (activeRequest === controller) activeRequest = null
-  }
+  })()
+  activeLoad = request
+  void request.then(() => {
+    if (activeLoad === request) activeLoad = null
+  })
+  return request
 }
 
 function isCurrentImage(event: Event): boolean {
@@ -185,6 +218,7 @@ function isCurrentImage(event: Event): boolean {
 function handleImageLoad(event: Event) {
   if (!isCurrentImage(event)) return
   clearLoadTimeout()
+  imageReady.value = true
   imageLoading.value = false
 }
 
@@ -192,34 +226,54 @@ function handleImageError(event: Event) {
   if (!isCurrentImage(event)) return
   clearLoadTimeout()
   releaseImageObjectUrl()
+  imageLoadFailed.value = true
   imageLoading.value = false
 }
 
 function openDialog() {
   if (dialogOpen.value) return
   dialogOpen.value = true
-  void loadImage()
+  if (imageReady.value) {
+    imageLoading.value = false
+    return
+  }
+  imageLoading.value = !imageLoadFailed.value
+  if (!imageLoadFailed.value) void loadImage()
 }
 
 function closeDialog() {
-  ++loadGeneration
-  activeRequest?.abort()
-  activeRequest = null
-  clearLoadTimeout()
-  releaseImageObjectUrl()
   dialogOpen.value = false
   imageLoading.value = false
 }
 
+function retryImage() {
+  void loadImage(true)
+}
+
+function resetImageSession() {
+  ++loadGeneration
+  activeRequest?.abort()
+  activeRequest = null
+  activeLoad = null
+  clearLoadTimeout()
+  releaseImageObjectUrl()
+  imageLoadFailed.value = false
+  closeDialog()
+}
+
 watch(() => props.imageEndpoint, () => {
-  if (dialogOpen.value) void loadImage()
+  resetImageSession()
+  if (canPrewarm()) void loadImage()
 }, { flush: 'sync' })
 watch(
   () => authStore.token && authStore.user ? `${authStore.user.id}:${authStore.user.role}` : '',
-  closeDialog,
+  resetImageSession,
   { flush: 'sync' }
 )
-onBeforeUnmount(closeDialog)
+onMounted(() => {
+  if (canPrewarm()) void loadImage()
+})
+onBeforeUnmount(resetImageSession)
 </script>
 
 <style scoped>

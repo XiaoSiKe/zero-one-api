@@ -116,6 +116,7 @@ function ensureNavigationIdentity(user) {
   adminMenuItems = []
   customIconOverrides.clear()
   activeQRDialog?.dismiss()
+  clearQRAssetSessions()
   window.dispatchEvent(new CustomEvent('zero-one-admin-navigation', { detail: null }))
 }
 
@@ -147,6 +148,7 @@ function acceptSavedNavigation(settings) {
   ensureNavigationIdentity(authenticatedUser())
   adminSettingsRevision += 1
   activeQRDialog?.dismiss()
+  clearQRAssetSessions()
   customIconOverrides.clear()
   publishAdminNavigation(settings)
 }
@@ -327,6 +329,94 @@ function createMenuIcon(item, className = 'zero-one-header-custom-menu-icon') {
 }
 
 let activeQRDialog = null
+const qrAssetSessions = new Map()
+
+function qrAssetSessionKey(item, identity = navigationIdentity()) {
+  return `${identity}:${item.id}`
+}
+
+function releaseQRAssetSession(session) {
+  session?.controller?.abort()
+  if (session?.timeout) window.clearTimeout(session.timeout)
+  if (session?.objectURL) URL.revokeObjectURL(session.objectURL)
+}
+
+function clearQRAssetSessions() {
+  for (const session of qrAssetSessions.values()) releaseQRAssetSession(session)
+  qrAssetSessions.clear()
+}
+
+function canPrewarmQRAssets() {
+  return Boolean(navigationIdentity()) &&
+    (typeof window.matchMedia !== 'function' || window.matchMedia('(min-width: 640px)').matches)
+}
+
+function prewarmQRAsset(item, identity = navigationIdentity(), force = false) {
+  if (!identity) return Promise.resolve(null)
+  const key = qrAssetSessionKey(item, identity)
+  const existing = qrAssetSessions.get(key)
+  if (existing && !force) return existing.promise || Promise.resolve(existing)
+  if (existing) releaseQRAssetSession(existing)
+
+  const controller = new AbortController()
+  const session = {
+    identity,
+    itemId: item.id,
+    controller,
+    timeout: 0,
+    objectURL: '',
+    ready: false,
+    failed: false,
+    promise: null,
+  }
+  qrAssetSessions.set(key, session)
+  const deadline = new Promise((_, reject) => {
+    session.timeout = window.setTimeout(() => {
+      controller.abort()
+      reject(new Error('QR request timed out'))
+    }, 15_000)
+  })
+  session.promise = (async () => {
+    let objectURL = ''
+    try {
+      const response = await Promise.race([
+        fetch('/api/v1/settings/header-navigation/' + encodeURIComponent(item.id) + '/qr', {
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: apiHeaders(),
+          signal: controller.signal,
+        }),
+        deadline,
+      ])
+      if (!response.ok) throw new Error('QR unavailable')
+      const blob = await response.blob()
+      if (!blob.size || blob.size > 300 * 1024 || !['image/png', 'image/jpeg', 'image/webp'].includes(blob.type.toLowerCase().split(';')[0])) {
+        throw new Error('Invalid QR response')
+      }
+      objectURL = URL.createObjectURL(blob)
+      const decoder = new Image()
+      decoder.src = objectURL
+      if (typeof decoder.decode === 'function') await Promise.race([decoder.decode(), deadline])
+      if (controller.signal.aborted || qrAssetSessions.get(key) !== session || navigationIdentity() !== identity) {
+        URL.revokeObjectURL(objectURL)
+        return null
+      }
+      session.objectURL = objectURL
+      session.ready = true
+      return session
+    } catch {
+      if (objectURL) URL.revokeObjectURL(objectURL)
+      if (qrAssetSessions.get(key) === session) session.failed = true
+      return session
+    } finally {
+      window.clearTimeout(session.timeout)
+      session.timeout = 0
+      session.controller = null
+      session.promise = null
+    }
+  })()
+  return session.promise
+}
 
 function openQRDialog(item) {
   activeQRDialog?.dismiss()
@@ -358,19 +448,9 @@ function openQRDialog(item) {
   overlay.append(panel)
   document.body.append(overlay)
 
-  let objectURL = ''
-  let request = null
-  let timeout = 0
   let generation = 0
-  const releaseImage = () => {
-    if (objectURL) URL.revokeObjectURL(objectURL)
-    objectURL = ''
-  }
   const dismiss = () => {
     generation += 1
-    request?.abort()
-    clearTimeout(timeout)
-    releaseImage()
     overlay.remove()
     document.removeEventListener('keydown', onKeydown)
     if (activeQRDialog?.dismiss === dismiss) activeQRDialog = null
@@ -398,7 +478,6 @@ function openQRDialog(item) {
   })
 
   const showError = () => {
-    releaseImage()
     const error = document.createElement('div')
     error.dataset.testid = 'community-qr-error'
     error.setAttribute('role', 'alert')
@@ -409,61 +488,40 @@ function openQRDialog(item) {
     retry.className = 'btn btn-secondary btn-sm'
     retry.dataset.testid = 'community-qr-retry'
     retry.textContent = localText('重试', 'Retry')
-    retry.addEventListener('click', loadImage)
+    retry.addEventListener('click', () => loadImage(true))
     error.append(message, retry)
     frame.replaceChildren(error)
   }
 
-  async function loadImage() {
+  const showImage = (session) => {
+    const image = document.createElement('img')
+    image.src = session.objectURL
+    image.alt = item.label
+    image.dataset.testid = 'community-qr-image'
+    frame.replaceChildren(image)
+  }
+
+  async function loadImage(force = false) {
     const current = ++generation
-    request?.abort()
-    clearTimeout(timeout)
-    releaseImage()
+    const cached = qrAssetSessions.get(qrAssetSessionKey(item, identity))
+    if (cached?.ready && !force) {
+      showImage(cached)
+      return
+    }
+    if (cached?.failed && !force) {
+      showError()
+      return
+    }
     const loading = document.createElement('span')
     loading.dataset.testid = 'community-qr-loading'
     loading.setAttribute('role', 'status')
     loading.textContent = localText('正在安全加载二维码…', 'Securely loading QR code…')
     frame.replaceChildren(loading)
-    const controller = new AbortController()
-    request = controller
     const live = () => current === generation && overlay.isConnected && navigationIdentity() === identity
-    timeout = window.setTimeout(() => {
-      if (!live()) return
-      generation += 1
-      controller.abort()
-      request = null
-      showError()
-    }, 15_000)
-    try {
-      const response = await fetch('/api/v1/settings/header-navigation/' + encodeURIComponent(item.id) + '/qr', {
-        credentials: 'same-origin',
-        cache: 'no-store',
-        headers: apiHeaders(),
-        signal: controller.signal,
-      })
-      if (!response.ok) throw new Error('QR unavailable')
-      const blob = await response.blob()
-      if (!live()) return
-      if (!blob.size || blob.size > 300 * 1024 || !['image/png', 'image/jpeg', 'image/webp'].includes(blob.type.toLowerCase().split(';')[0])) {
-        throw new Error('Invalid QR response')
-      }
-      objectURL = URL.createObjectURL(blob)
-      const image = document.createElement('img')
-      image.src = objectURL
-      image.alt = item.label
-      image.dataset.testid = 'community-qr-image'
-      await image.decode()
-      if (!live()) return
-      if (controller.signal.aborted) throw new Error('QR request timed out')
-      frame.replaceChildren(image)
-    } catch {
-      if (live()) showError()
-    } finally {
-      if (current === generation) {
-        clearTimeout(timeout)
-        request = null
-      }
-    }
+    const session = await prewarmQRAsset(item, identity, force)
+    if (!live()) return
+    if (session?.ready) showImage(session)
+    else showError()
   }
   close.focus()
   void loadImage()
@@ -510,6 +568,7 @@ function renderHeaderMenu(user) {
       button.append(label)
       button.addEventListener('click', () => openQRDialog(item))
       group.append(button)
+      if (canPrewarmQRAssets()) void prewarmQRAsset(item)
       continue
     }
     const link = document.createElement('a')
@@ -1246,6 +1305,7 @@ window.addEventListener('storage', scheduleScan)
 window.addEventListener('online', () => { adminRetryAfter = 0; scheduleScan() })
 window.addEventListener('pagehide', () => {
   activeQRDialog?.dismiss()
+  clearQRAssetSessions()
   releaseCustomPageFrame()
 })
 window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.register('header-custom-menu', scan)

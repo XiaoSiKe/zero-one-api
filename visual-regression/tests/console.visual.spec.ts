@@ -650,7 +650,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
       await expect(workspace.locator('nav a')).toHaveText([
         '邀请记录',
         '客户关系',
-        '返利记录',
+        '专属代理',
         '提取记录',
         '运营设置',
       ])
@@ -746,8 +746,12 @@ test.describe('Console standalone affiliate administration contracts', () => {
     await expect.poll(() => customersRequest?.searchParams.get('include_subscriptions')).toBe('false')
     const customerQuery = customersRequest as URL | null
     expect(customerQuery).not.toBeNull()
-    expect(customerQuery!.searchParams.get('sort_by')).toBe('created_at')
-    expect(customerQuery!.searchParams.get('sort_order')).toBe('desc')
+    expect(customerQuery!.searchParams.get('affiliate_view')).toBe('relationships')
+    expect(customerQuery!.searchParams.has('sort_by')).toBe(false)
+    expect(customerQuery!.searchParams.has('sort_order')).toBe(false)
+    await expect(page.getByTestId('affiliate-customers-list')).toContainText('代理价值')
+    await expect(page.getByTestId('affiliate-customers-list')).toContainText('$12.50')
+    await expect(page.getByTestId('affiliate-customers-list')).toContainText('专属代理')
 
     await page.getByTestId('affiliate-customer-10').click()
     await expect(page).toHaveURL(
@@ -760,6 +764,44 @@ test.describe('Console standalone affiliate administration contracts', () => {
     await expect(detail.getByText('bound@01yapi.test')).toBeVisible()
     await expect(detail.getByRole('cell', { name: '12.50' })).toBeVisible()
     await expect(page.getByTestId('affiliate-bind-open')).toBeVisible()
+  })
+
+  test('filters exclusive agents by custom rebate rate and preserves detail context', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop')
+    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    let exclusiveRequest: URL | null = null
+    page.on('request', (request) => {
+      const url = new URL(request.url())
+      if (url.pathname === '/api/v1/admin/users' && url.searchParams.get('affiliate_view') === 'exclusive_agents') {
+        exclusiveRequest = url
+      }
+    })
+
+    await page.goto(`${affiliateConsoleOrigin}/admin/affiliates/invites?section=exclusive_agents`)
+    const list = page.getByTestId('affiliate-customers-list')
+    await expect(list).toContainText('inviter@01yapi.test')
+    await expect(list).not.toContainText('missed@01yapi.test')
+    await expect.poll(() => exclusiveRequest?.searchParams.get('affiliate_view')).toBe('exclusive_agents')
+
+    await page.getByTestId('affiliate-customer-10').click()
+    await expect(page).toHaveURL(
+      `${affiliateConsoleOrigin}/admin/affiliates/invites?section=exclusive_agents&user_id=10`,
+    )
+    await page.getByTestId('affiliate-customer-back').click()
+    await expect(page).toHaveURL(
+      `${affiliateConsoleOrigin}/admin/affiliates/invites?section=exclusive_agents`,
+    )
+  })
+
+  test('redirects the removed rebate-record route to customer relationships', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop')
+    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await page.goto(`${affiliateConsoleOrigin}/admin/affiliates/rebates`)
+    await expect(page).toHaveURL(
+      `${affiliateConsoleOrigin}/admin/affiliates/invites?section=customers`,
+    )
+    await expect(page.getByTestId('affiliate-tab-rebates')).toHaveCount(0)
+    await expect(page.getByTestId('affiliate-customers-list')).toBeVisible()
   })
 
   test('uses Vue Router for affiliate links without replacing the document', async ({ page }, testInfo) => {
@@ -914,6 +956,28 @@ test.describe('Console standalone affiliate administration contracts', () => {
       ].sort(),
     )
     expect(submitted?.affiliate_rebate_rate).toBe(23.5)
+  })
+
+  test('shows a loading state instead of a false disabled affiliate switch', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop')
+    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    let releaseSettings!: () => void
+    const settingsGate = new Promise<void>((resolve) => { releaseSettings = resolve })
+    await page.route('**/api/v1/admin/settings*', async (route) => {
+      const url = new URL(route.request().url())
+      if (route.request().method() === 'GET' && !url.searchParams.has('scope')) {
+        await settingsGate
+      }
+      await route.fallback()
+    })
+
+    await page.goto(`${affiliateConsoleOrigin}/admin/affiliates/invites?section=settings`)
+    const panel = page.getByTestId('affiliate-settings-panel')
+    await expect(panel).toContainText('正在加载运营设置…')
+    await expect(page.getByTestId('affiliate-settings-enabled')).toHaveCount(0)
+
+    releaseSettings()
+    await expect(page.getByTestId('affiliate-settings-enabled')).toBeChecked()
   })
 
   test('keeps unsaved global settings through custom-user rerenders and adopts saved server values', async ({ page }, testInfo) => {
@@ -1742,7 +1806,7 @@ test.describe('Console protected QR loading contracts', () => {
     expect(qrRequests).toBe(0)
   })
 
-  test('cancels a closed QR request, reopens cleanly and releases its image URL', async ({ page }, testInfo) => {
+  test('prewarms a protected QR, reuses it across opens and releases it on page teardown', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop', 'Header QR controls are intentionally hidden below 640px.')
     await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [supportItem] })
     await page.addInitScript(() => {
@@ -1780,31 +1844,41 @@ test.describe('Console protected QR loading contracts', () => {
     await page.goto('http://127.0.0.1:4173/dashboard')
     const openQr = page.getByTestId('header-qr-support-group')
     await expect(openQr).toBeVisible()
-    expect(qrRequests).toBe(0)
+    await expect.poll(() => qrRequests).toBe(1)
     await openQr.click()
     const dialog = page.getByRole('dialog', { name: supportItem.label })
     await expect(dialog.getByTestId('community-qr-loading')).toBeVisible()
     await expect.poll(() => qrRequests).toBe(1)
     await dialog.getByRole('button', { name: /关闭|Close/ }).click()
     await expect(dialog).toHaveCount(0)
-    await expect.poll(() => page.evaluate(() =>
+    expect(await page.evaluate(() =>
       (window as Window & { __qrRequestLifecycle?: { aborted: number } }).__qrRequestLifecycle?.aborted,
-    )).toBe(1)
+    )).toBe(0)
 
     releaseFirstRequest()
+    await expect.poll(() => page.evaluate(() =>
+      (window as Window & { __qrRequestLifecycle?: { created: string[] } }).__qrRequestLifecycle?.created.length,
+    )).toBe(1)
     await openQr.click()
     const image = dialog.getByTestId('community-qr-image')
     await expect(image).toBeVisible()
     await expect.poll(() => image.evaluate((node) => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
-    expect(qrRequests).toBe(2)
+    expect(qrRequests).toBe(1)
     await expect(dialog.getByTestId('community-qr-loading')).toHaveCount(0)
     await dialog.getByRole('button', { name: /关闭|Close/ }).click()
-    const urls = await page.evaluate(() =>
+    let urls = await page.evaluate(() =>
       (window as Window & {
         __qrRequestLifecycle?: { created: string[]; revoked: string[] }
       }).__qrRequestLifecycle,
     )
     expect(urls?.created).toHaveLength(1)
+    expect(urls?.revoked).toHaveLength(0)
+    await page.evaluate(() => window.dispatchEvent(new Event('pagehide')))
+    urls = await page.evaluate(() =>
+      (window as Window & {
+        __qrRequestLifecycle?: { created: string[]; revoked: string[] }
+      }).__qrRequestLifecycle,
+    )
     expect(urls?.revoked).toEqual(urls?.created)
   })
 
@@ -1859,9 +1933,9 @@ test.describe('Console protected QR loading contracts', () => {
       if (attempt === 1) await stalledRequestGate
       await route.fallback()
     })
+    await page.clock.install()
     await page.goto('http://127.0.0.1:4173/dashboard')
     await expect(page.getByTestId('header-qr-support-group')).toBeVisible()
-    await page.clock.install()
     await page.getByTestId('header-qr-support-group').click()
     const dialog = page.getByRole('dialog', { name: supportItem.label })
     await expect(dialog.getByTestId('community-qr-loading')).toBeVisible()
@@ -2719,12 +2793,12 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=4')
     expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=10')
     expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=5')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=19')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=20')
     expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=7')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.js?v=1')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.css?v=1')
     expect(html).toContain('/assets/zero-one-ccswitch-launch-v1.js?v=1')
-    expect(html).toContain('/assets/zero-one-affiliate-admin-v1.js?v=5')
+    expect(html).toContain('/assets/zero-one-affiliate-admin-v1.js?v=6')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.css?v=3')
     expect(html).toContain('/assets/zero-one-floating-panels-v1.js?v=2')
     expect(html).not.toContain('/src/main.ts')

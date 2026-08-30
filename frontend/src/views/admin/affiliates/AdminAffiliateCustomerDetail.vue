@@ -2,7 +2,7 @@
   <div class="space-y-6" data-testid="affiliate-customer-detail">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <RouterLink
-        :to="{ path: '/admin/affiliates/invites', query: { section: 'customers' } }"
+        :to="{ path: '/admin/affiliates/invites', query: { section: props.returnSection } }"
         class="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
         data-testid="affiliate-customer-back"
       >
@@ -207,9 +207,12 @@ import { useAppStore } from '@/stores/app'
 import { extractI18nErrorMessage } from '@/utils/apiError'
 import { formatDateTime as formatDisplayDateTime } from '@/utils/format'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   userId: number
-}>()
+  returnSection?: 'customers' | 'exclusive_agents'
+}>(), {
+  returnSection: 'customers',
+})
 
 const { t } = useI18n()
 const appStore = useAppStore()

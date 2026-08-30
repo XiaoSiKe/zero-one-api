@@ -35,6 +35,15 @@ removal, visibility changes and repository failures never fall back to cached
 authorization. The handler receives validated bytes rather than decoding the
 same image twice. Browser responses remain `no-store` and `nosniff`.
 
+After the caller is authenticated and a role-visible header entry has been
+resolved, the Console may prewarm that entry's protected image into page
+memory and decode it before the dialog opens. The prewarm request still
+crosses the authenticated endpoint and never enters the Public Settings
+Projection or persistent browser storage. Native and recovered Console
+adapters coalesce an early click with the in-flight prewarm, and abort requests
+and release object URLs when identity, role, entry endpoint or document
+lifetime changes. Mobile-hidden entries do not prewarm.
+
 The Console shell reads `GET /api/v1/admin/settings?scope=navigation` under the
 existing administrator authorization. This nine-field projection includes menu
 metadata, sidebar orders, profile/subscription visibility, Model Plaza placement

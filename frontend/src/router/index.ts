@@ -672,16 +672,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin/affiliates/rebates',
-    name: 'AdminAffiliateRebates',
-    component: () => import('@/views/admin/affiliates/AdminAffiliateRebatesView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      consoleShell: true,
-      title: 'Affiliate Rebate Records',
-      titleKey: 'nav.affiliateRebateRecords',
-      descriptionKey: 'admin.affiliates.rebatesDescription'
-    }
+    redirect: { path: '/admin/affiliates/invites', query: { section: 'customers' } }
   },
   {
     path: '/admin/affiliates/transfers',

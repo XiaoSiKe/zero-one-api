@@ -387,6 +387,20 @@ const affiliateHeaderKeys = computed(() => {
           description: 'admin.affiliates.customers.description',
         }
   }
+  if (section === 'exclusive_agents') {
+    const rawUserId = typeof route.query.user_id === 'string' ? route.query.user_id : ''
+    const userId = Number(rawUserId)
+    const detailVisible = /^\d+$/.test(rawUserId) && Number.isSafeInteger(userId) && userId > 0
+    return detailVisible
+      ? {
+          title: 'admin.affiliates.customers.detailTitle',
+          description: 'admin.affiliates.customers.detailDescription',
+        }
+      : {
+          title: 'admin.affiliates.tabs.exclusiveAgents',
+          description: 'admin.affiliates.customers.exclusiveDescription',
+        }
+  }
   return null
 })
 

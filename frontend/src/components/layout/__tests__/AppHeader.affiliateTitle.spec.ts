@@ -72,4 +72,16 @@ describe('AppHeader affiliate workspace title', () => {
     expect(wrapper.get('h1').text()).toBe('admin.affiliates.tabs.settings')
     expect(wrapper.get('h1 + p').text()).toBe('admin.affiliates.settings.description')
   })
+
+  it('uses exclusive-agent copy and keeps the shared customer detail title', async () => {
+    routeState.query = { section: 'exclusive_agents' }
+    const wrapper = mountHeader()
+    expect(wrapper.get('h1').text()).toBe('admin.affiliates.tabs.exclusiveAgents')
+    expect(wrapper.get('h1 + p').text()).toBe('admin.affiliates.customers.exclusiveDescription')
+
+    routeState.query = { section: 'exclusive_agents', user_id: '42' }
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('h1').text()).toBe('admin.affiliates.customers.detailTitle')
+    expect(wrapper.get('h1 + p').text()).toBe('admin.affiliates.customers.detailDescription')
+  })
 })

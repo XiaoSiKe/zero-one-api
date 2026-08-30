@@ -23,8 +23,12 @@
       <AdminAffiliateCustomerDetail
         v-else-if="customerUserId != null"
         :user-id="customerUserId"
+        :return-section="customerReturnSection"
       />
-      <AdminAffiliateCustomers v-else-if="showCustomers" />
+      <AdminAffiliateCustomers
+        v-else-if="showCustomers || showExclusiveAgents"
+        :exclusive-only="showExclusiveAgents"
+      />
       <AdminAffiliateRecordsTable v-else :type="props.type" />
     </div>
 </template>
@@ -52,21 +56,25 @@ const inviteSection = computed(() => {
   return typeof route.query.section === 'string' ? route.query.section : ''
 })
 const showCustomers = computed(() => inviteSection.value === 'customers')
+const showExclusiveAgents = computed(() => inviteSection.value === 'exclusive_agents')
 const showSettings = computed(() => inviteSection.value === 'settings')
 const customerUserId = computed(() => {
-  if (!showCustomers.value) return null
+  if (!showCustomers.value && !showExclusiveAgents.value) return null
   const raw = typeof route.query.user_id === 'string' ? route.query.user_id : ''
   if (!/^\d+$/.test(raw)) return null
   const value = Number(raw)
   return Number.isSafeInteger(value) && value > 0 ? value : null
 })
+const customerReturnSection = computed<'customers' | 'exclusive_agents'>(() =>
+  showExclusiveAgents.value ? 'exclusive_agents' : 'customers',
+)
 
 const affiliateTabs = computed(() => [
   {
     key: 'invites',
     label: t('admin.affiliates.tabs.invites'),
     to: { path: '/admin/affiliates/invites' },
-    active: props.type === 'invites' && !showCustomers.value && !showSettings.value,
+    active: props.type === 'invites' && !showCustomers.value && !showExclusiveAgents.value && !showSettings.value,
   },
   {
     key: 'customers',
@@ -75,10 +83,10 @@ const affiliateTabs = computed(() => [
     active: showCustomers.value,
   },
   {
-    key: 'rebates',
-    label: t('admin.affiliates.tabs.rebates'),
-    to: { path: '/admin/affiliates/rebates' },
-    active: props.type === 'rebates',
+    key: 'exclusive-agents',
+    label: t('admin.affiliates.tabs.exclusiveAgents'),
+    to: { path: '/admin/affiliates/invites', query: { section: 'exclusive_agents' } },
+    active: showExclusiveAgents.value,
   },
   {
     key: 'transfers',

@@ -527,6 +527,19 @@ func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.
 	}
 
 	q := r.client.User.Query()
+	affiliateView := strings.TrimSpace(filters.AffiliateView)
+	switch affiliateView {
+	case "", service.AffiliateUserViewRelationships:
+	case service.AffiliateUserViewExclusiveAgents:
+		q = q.Where(func(selector *entsql.Selector) {
+			selector.Where(entsql.ExprP(
+				"EXISTS (SELECT 1 FROM user_affiliates affiliate_view WHERE affiliate_view.user_id = " +
+					selector.C(dbuser.FieldID) + " AND affiliate_view.aff_rebate_rate_percent IS NOT NULL)",
+			))
+		})
+	default:
+		return nil, nil, fmt.Errorf("invalid affiliate view: %q", affiliateView)
+	}
 
 	if filters.Status != "" {
 		q = q.Where(dbuser.StatusEQ(filters.Status))
@@ -585,7 +598,11 @@ func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.
 	usersQuery := q.
 		Offset(params.Offset()).
 		Limit(params.Limit())
-	for _, order := range userListOrder(params) {
+	orders := userListOrder(params)
+	if affiliateView != "" {
+		orders = userAffiliateValueOrder()
+	}
+	for _, order := range orders {
 		usersQuery = usersQuery.Order(order)
 	}
 
@@ -606,6 +623,12 @@ func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.
 		u := userEntityToService(users[i])
 		outUsers = append(outUsers, *u)
 		userMap[u.ID] = &outUsers[len(outUsers)-1]
+	}
+
+	if affiliateView != "" {
+		if err := r.loadAffiliateUserProjection(ctx, userIDs, userMap); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	shouldLoadSubscriptions := filters.IncludeSubscriptions == nil || *filters.IncludeSubscriptions
@@ -640,6 +663,58 @@ func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.
 	}
 
 	return outUsers, paginationResultFromTotal(int64(total), params), nil
+}
+
+func userAffiliateValueOrder() []func(*entsql.Selector) {
+	return []func(*entsql.Selector){func(selector *entsql.Selector) {
+		subquery := "COALESCE((SELECT affiliate_view.aff_history_quota FROM user_affiliates affiliate_view WHERE affiliate_view.user_id = " +
+			selector.C(dbuser.FieldID) + "), 0)"
+		selector.OrderExpr(entsql.Expr(subquery + " DESC"))
+		selector.OrderBy(entsql.Desc(selector.C(dbuser.FieldID)))
+	}}
+}
+
+func (r *userRepository) loadAffiliateUserProjection(ctx context.Context, userIDs []int64, users map[int64]*service.User) error {
+	for _, user := range users {
+		value := 0.0
+		exclusive := false
+		user.AgentValue = &value
+		user.ExclusiveAgent = &exclusive
+	}
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	exec := txAwareSQLExecutor(ctx, r.sql, r.client)
+	rows, err := exec.QueryContext(ctx, `
+SELECT user_id,
+       aff_history_quota::double precision,
+       aff_rebate_rate_percent IS NOT NULL
+FROM user_affiliates
+WHERE user_id = ANY($1)`, pq.Array(userIDs))
+	if err != nil {
+		return fmt.Errorf("load affiliate user projection: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	for rows.Next() {
+		var userID int64
+		var value float64
+		var exclusive bool
+		if err := rows.Scan(&userID, &value, &exclusive); err != nil {
+			return fmt.Errorf("scan affiliate user projection: %w", err)
+		}
+		if user := users[userID]; user != nil {
+			valueCopy := value
+			exclusiveCopy := exclusive
+			user.AgentValue = &valueCopy
+			user.ExclusiveAgent = &exclusiveCopy
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate affiliate user projection: %w", err)
+	}
+	return nil
 }
 
 func userListOrder(params pagination.PaginationParams) []func(*entsql.Selector) {

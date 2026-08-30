@@ -46,13 +46,18 @@
           <span class="text-sm text-gray-700 dark:text-gray-300">{{ row.username || '-' }}</span>
         </template>
         <template #cell-role="{ row }">
-          <span class="badge" :class="row.role === 'admin' ? 'badge-warning' : 'badge-gray'">
-            {{ row.role === 'admin' ? t('admin.users.admin') : t('admin.users.user') }}
+          <span
+            class="badge"
+            :class="row.exclusive_agent ? 'badge-success' : row.role === 'admin' ? 'badge-warning' : 'badge-gray'"
+          >
+            {{ row.exclusive_agent
+              ? t('admin.affiliates.customers.exclusiveAgent')
+              : row.role === 'admin' ? t('admin.users.admin') : t('admin.users.user') }}
           </span>
         </template>
-        <template #cell-status="{ row }">
-          <span class="badge" :class="row.status === 'active' ? 'badge-success' : 'badge-gray'">
-            {{ row.status === 'active' ? t('common.active') : t('admin.users.disabled') }}
+        <template #cell-agent_value="{ row }">
+          <span class="text-sm font-semibold text-zo-signal-600 dark:text-zo-signal-400">
+            ${{ formatAmount(row.agent_value) }}
           </span>
         </template>
         <template #cell-created_at="{ row }">
@@ -90,6 +95,11 @@ import { extractI18nErrorMessage } from '@/utils/apiError'
 import { formatDateTime as formatDisplayDateTime } from '@/utils/format'
 
 const { t } = useI18n()
+const props = withDefaults(defineProps<{
+  exclusiveOnly?: boolean
+}>(), {
+  exclusiveOnly: false,
+})
 const appStore = useAppStore()
 const loading = ref(false)
 const customers = ref<AdminUser[]>([])
@@ -103,7 +113,7 @@ const columns = computed<Column[]>(() => [
   { key: 'email', label: t('admin.affiliates.customers.email') },
   { key: 'username', label: t('admin.affiliates.customers.username') },
   { key: 'role', label: t('admin.affiliates.customers.role') },
-  { key: 'status', label: t('admin.affiliates.customers.status') },
+  { key: 'agent_value', label: t('admin.affiliates.customers.agentValue') },
   { key: 'created_at', label: t('admin.affiliates.customers.registeredAt') },
 ])
 
@@ -117,8 +127,7 @@ async function loadCustomers() {
       {
         search: search.value.trim() || undefined,
         include_subscriptions: false,
-        sort_by: 'created_at',
-        sort_order: 'desc',
+        affiliate_view: props.exclusiveOnly ? 'exclusive_agents' : 'relationships',
       },
     )
     if (requestSequence !== customerRequestSequence) return
@@ -156,8 +165,15 @@ function handlePageSizeChange(size: number) {
 function customerDetailLocation(userId: number) {
   return {
     path: '/admin/affiliates/invites',
-    query: { section: 'customers', user_id: String(userId) },
+    query: {
+      section: props.exclusiveOnly ? 'exclusive_agents' : 'customers',
+      user_id: String(userId),
+    },
   }
+}
+
+function formatAmount(value: number | null | undefined): string {
+  return Number(value || 0).toFixed(2)
 }
 
 function formatDateTime(value: string | null | undefined): string {

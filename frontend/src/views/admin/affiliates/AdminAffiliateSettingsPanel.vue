@@ -1,6 +1,25 @@
 <template>
   <div class="space-y-6" data-testid="affiliate-settings-panel">
-    <div class="card">
+    <div
+      v-if="loading && !settingsReady"
+      class="card flex min-h-48 items-center justify-center p-8 text-sm text-gray-500 dark:text-dark-400"
+      data-testid="affiliate-settings-loading"
+      role="status"
+    >
+      <span>{{ t('common.loading') }}</span>
+    </div>
+    <div
+      v-else-if="loadFailed && !settingsReady"
+      class="card flex min-h-48 flex-col items-center justify-center gap-3 p-8 text-sm text-gray-500 dark:text-dark-400"
+      data-testid="affiliate-settings-error"
+      role="alert"
+    >
+      <span>{{ t('admin.affiliates.settings.loadFailed') }}</span>
+      <button type="button" class="btn btn-secondary btn-sm" @click="loadAffiliateSettings">
+        {{ t('common.retry') }}
+      </button>
+    </div>
+    <div v-else class="card">
       <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
           {{ t('admin.settings.features.affiliate.title') }}
@@ -498,7 +517,9 @@ const { t } = useI18n()
 const appStore = useAppStore()
 const adminSettingsStore = useAdminSettingsStore()
 const settingsStepUp = useStepUp()
-const loading = ref(false)
+const loading = ref(true)
+const settingsReady = ref(false)
+const loadFailed = ref(false)
 const saving = ref(false)
 const settings = reactive<AffiliateSettings>({
   affiliate_enabled: false,
@@ -520,9 +541,13 @@ function assignAffiliateSettings(source: SystemSettings) {
 
 async function loadAffiliateSettings() {
   loading.value = true
+  loadFailed.value = false
   try {
     assignAffiliateSettings(await adminAPI.settings.getSettings())
+    settingsReady.value = true
+    if (settings.affiliate_enabled) await loadAffiliateUsers()
   } catch (error) {
+    loadFailed.value = true
     appStore.showError(extractApiErrorMessage(error, t('admin.affiliates.settings.loadFailed')))
   } finally {
     loading.value = false
@@ -846,8 +871,9 @@ async function submitAffiliateBatchModal() {
 watch(
   () => settings.affiliate_enabled,
   (enabled, previous) => {
-    if (enabled && !previous) void loadAffiliateUsers()
+    if (settingsReady.value && enabled && !previous) void loadAffiliateUsers()
   },
+  { flush: 'sync' },
 )
 
 onMounted(() => {

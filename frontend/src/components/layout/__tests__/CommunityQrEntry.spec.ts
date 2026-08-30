@@ -9,6 +9,8 @@ const { getMock, createObjectURLMock, revokeObjectURLMock } = vi.hoisted(() => (
   revokeObjectURLMock: vi.fn(),
 }))
 
+const decodeMock = vi.fn(() => Promise.resolve())
+
 vi.mock('@/api/client', () => ({
   default: { get: getMock },
 }))
@@ -76,6 +78,15 @@ describe('CommunityQrEntry', () => {
     getMock.mockReset()
     createObjectURLMock.mockClear()
     revokeObjectURLMock.mockClear()
+    decodeMock.mockClear()
+    vi.stubGlobal('Image', class {
+      src = ''
+      decode = decodeMock
+    })
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    })
     Object.defineProperty(URL, 'createObjectURL', {
       configurable: true,
       value: createObjectURLMock,
@@ -90,17 +101,19 @@ describe('CommunityQrEntry', () => {
     vi.useRealTimers()
   })
 
-  it('loads the protected endpoint as a Blob only after the dialog opens', async () => {
+  it('prewarms the protected Blob before opening and coalesces an early click', async () => {
     let resolveRequest!: (value: { data: Blob }) => void
     getMock.mockReturnValue(new Promise((resolve) => {
       resolveRequest = resolve
     }))
     const wrapper = mountEntry()
+    await wrapper.vm.$nextTick()
 
     const trigger = wrapper.get('[data-testid="community-qr-button"]')
     expect(trigger.attributes('aria-label')).toBe('打开交流群二维码: 交流群')
     expect(wrapper.find('[data-testid="community-qr-dialog"]').exists()).toBe(false)
     expect(wrapper.find('img').exists()).toBe(false)
+    expect(getMock).toHaveBeenCalledTimes(1)
 
     await trigger.trigger('click')
 
@@ -115,6 +128,8 @@ describe('CommunityQrEntry', () => {
     resolveRequest({ data: new Blob(['qr'], { type: 'image/png' }) })
     await flushPromises()
 
+    expect(getMock).toHaveBeenCalledTimes(1)
+    expect(decodeMock).toHaveBeenCalledTimes(1)
     expect(createObjectURLMock).toHaveBeenCalledWith(expect.any(Blob))
     expect(wrapper.get('[data-testid="community-qr-image"]').attributes('src')).toBe(
       'blob:community-qr',
@@ -125,7 +140,18 @@ describe('CommunityQrEntry', () => {
 
     await wrapper.get('[data-testid="dialog-close"]').trigger('click')
     expect(wrapper.find('[data-testid="community-qr-dialog"]').exists()).toBe(false)
-    expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:community-qr')
+    expect(revokeObjectURLMock).not.toHaveBeenCalled()
+  })
+
+  it('opens without a loading state after desktop prewarm completes', async () => {
+    getMock.mockResolvedValue({ data: new Blob(['qr'], { type: 'image/png' }) })
+    const wrapper = mountEntry()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="community-qr-button"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="community-qr-loading"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="community-qr-image"]').attributes('src')).toBe('blob:community-qr')
   })
 
   it('renders the configured dialog title and subtitle', async () => {
@@ -187,7 +213,7 @@ describe('CommunityQrEntry', () => {
     )
   })
 
-  it('aborts a pending request when the dialog closes', async () => {
+  it('keeps a pending prewarm after close and reuses it on the next open', async () => {
     let resolveRequest!: (value: { data: Blob }) => void
     getMock.mockReturnValue(new Promise((resolve) => {
       resolveRequest = resolve
@@ -198,10 +224,12 @@ describe('CommunityQrEntry', () => {
     const signal = getMock.mock.calls[0][1].signal as AbortSignal
     await wrapper.get('[data-testid="dialog-close"]').trigger('click')
 
-    expect(signal.aborted).toBe(true)
+    expect(signal.aborted).toBe(false)
     resolveRequest({ data: new Blob(['qr'], { type: 'image/jpeg' }) })
     await flushPromises()
-    expect(createObjectURLMock).not.toHaveBeenCalled()
+    await wrapper.get('[data-testid="community-qr-button"]').trigger('click')
+    expect(wrapper.find('[data-testid="community-qr-loading"]').exists()).toBe(false)
+    expect(getMock).toHaveBeenCalledTimes(1)
   })
 
   it('times out a stalled download and ignores it after a successful retry', async () => {
@@ -210,6 +238,7 @@ describe('CommunityQrEntry', () => {
     getMock.mockReturnValueOnce(new Promise((resolve) => { resolveStalled = resolve }))
       .mockResolvedValueOnce({ data: new Blob(['fresh'], { type: 'image/png' }) })
     const wrapper = mountEntry()
+    await wrapper.vm.$nextTick()
     await wrapper.get('[data-testid="community-qr-button"]').trigger('click')
     const firstSignal = getMock.mock.calls[0][1].signal as AbortSignal
 
@@ -231,8 +260,9 @@ describe('CommunityQrEntry', () => {
   it('releases images that fail decoding and retries without retaining the failed Blob', async () => {
     getMock.mockResolvedValue({ data: new Blob(['broken'], { type: 'image/png' }) })
     const wrapper = mountEntry()
-    await wrapper.get('[data-testid="community-qr-button"]').trigger('click')
+    await wrapper.vm.$nextTick()
     await flushPromises()
+    await wrapper.get('[data-testid="community-qr-button"]').trigger('click')
     await wrapper.get('[data-testid="community-qr-image"]').trigger('error')
     expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:community-qr')
     expect(wrapper.find('[data-testid="community-qr-error"]').exists()).toBe(true)
@@ -271,14 +301,14 @@ describe('CommunityQrEntry', () => {
     expect(getMock).toHaveBeenCalledTimes(1)
   })
 
-  it('aborts and releases the Blob on unmount and never prefetches on session changes', async () => {
+  it('prewarms once, ignores token refreshes, and releases the Blob on unmount', async () => {
     getMock.mockResolvedValue({ data: new Blob(['qr'], { type: 'image/png' }) })
     const wrapper = mountEntry()
+    await flushPromises()
+    expect(getMock).toHaveBeenCalledTimes(1)
     authStore.token = 'refreshed-token'
     await flushPromises()
-    expect(getMock).not.toHaveBeenCalled()
-    await wrapper.get('[data-testid="community-qr-button"]').trigger('click')
-    await flushPromises()
+    expect(getMock).toHaveBeenCalledTimes(1)
     wrapper.unmount()
     expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:community-qr')
   })

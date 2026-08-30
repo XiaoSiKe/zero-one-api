@@ -34,6 +34,7 @@ const workspaceState = {
   customersPageSize: 20,
   customersSearch: '',
   customersTotal: 0,
+  customersView: '',
   customerDetail: null,
   customerDetailUserId: null,
   customerDetailError: '',
@@ -326,15 +327,15 @@ function hideLegacySettingsCard() {
 
 function affiliateSection() {
   const path = window.location.pathname
-  if (path.endsWith('/rebates')) return 'rebates'
+  if (path.endsWith('/rebates')) return 'customers'
   if (path.endsWith('/transfers')) return 'transfers'
   const requested = new URLSearchParams(window.location.search).get('section')
-  if (requested === 'customers' || requested === 'settings') return requested
+  if (requested === 'customers' || requested === 'exclusive_agents' || requested === 'settings') return requested
   return 'invites'
 }
 
 function customerUserId() {
-  if (affiliateSection() !== 'customers') return null
+  if (!['customers', 'exclusive_agents'].includes(affiliateSection())) return null
   const value = Number(new URLSearchParams(window.location.search).get('user_id'))
   return Number.isInteger(value) && value > 0 ? value : null
 }
@@ -376,7 +377,12 @@ function createWorkspaceShell(currentSection) {
       'customers',
       currentSection,
     ),
-    tabLink('返利记录', '/admin/affiliates/rebates', 'rebates', currentSection),
+    tabLink(
+      '专属代理',
+      '/admin/affiliates/invites?section=exclusive_agents',
+      'exclusive_agents',
+      currentSection,
+    ),
     tabLink('提取记录', '/admin/affiliates/transfers', 'transfers', currentSection),
     tabLink(
       '运营设置',
@@ -388,6 +394,44 @@ function createWorkspaceShell(currentSection) {
   header.append(tabs)
   root.append(header)
   return root
+}
+
+function affiliatePageCopy(section, userId) {
+  const english = (localStorage.getItem('sub2api_locale') || document.documentElement.lang || '')
+    .toLowerCase().startsWith('en')
+  if (userId) return english
+    ? ['Customer Detail', 'View invited users and cumulative rebate from each customer']
+    : ['客户详情', '查看该客户邀请过的用户及逐客户累计返利']
+  if (section === 'customers') return english
+    ? ['Customer Relationships', 'View every user and open their invitation relationship details']
+    : ['客户关系', '查看全部用户并进入其邀请关系详情']
+  if (section === 'exclusive_agents') return english
+    ? ['Exclusive Agents', 'View agents with an exclusive rebate rate']
+    : ['专属代理', '查看全部设置了专属返利比例的代理']
+  if (section === 'settings') return english
+    ? ['Operations Settings', 'Manage global affiliate rules and per-user overrides']
+    : ['运营设置', '管理全局邀请返利规则和用户专属配置']
+  if (section === 'transfers') return english
+    ? ['Transfer Records', 'View affiliate quota transfers into account balance']
+    : ['提取记录', '查看返利额度转入账户余额的提取流水']
+  return english
+    ? ['Invite Records', 'View site-wide inviter and invitee relationships']
+    : ['邀请记录', '查看全站邀请关系和被邀请用户累计返利']
+}
+
+function reconcileAffiliatePageHeader(section, userId) {
+  const title = document.querySelector('header.app-header-surface h1')
+  if (!(title instanceof HTMLElement)) return
+  const description = title.nextElementSibling
+  const [titleText, descriptionText] = affiliatePageCopy(section, userId)
+  if (title.textContent !== titleText) title.textContent = titleText
+  if (title.dataset.zeroOneAffiliateHeader !== 'true') title.dataset.zeroOneAffiliateHeader = 'true'
+  if (description instanceof HTMLElement) {
+    if (description.textContent !== descriptionText) description.textContent = descriptionText
+    if (description.dataset.zeroOneAffiliateHeader !== 'true') {
+      description.dataset.zeroOneAffiliateHeader = 'true'
+    }
+  }
 }
 
 function findAffiliateTableLayout(main) {
@@ -410,6 +454,7 @@ function ensureAffiliateWorkspace() {
   if (!(main instanceof HTMLElement)) return
 
   const currentSection = affiliateSection()
+  reconcileAffiliatePageHeader(currentSection, customerUserId())
   const viewKey = workspaceViewKey()
   let workspace = main.querySelector('[data-zero-one-affiliate-admin="workspace"]')
   if (!(workspace instanceof HTMLElement) || workspace.dataset.viewKey !== viewKey) {
@@ -420,7 +465,7 @@ function ensureAffiliateWorkspace() {
     main.prepend(workspace)
   }
 
-  if (currentSection === 'settings' || currentSection === 'customers') {
+  if (currentSection === 'settings' || currentSection === 'customers' || currentSection === 'exclusive_agents') {
     const layout = findAffiliateTableLayout(main)
     if (layout instanceof HTMLElement) {
       layout.hidden = true
@@ -460,18 +505,13 @@ function customerRoleLabel(role) {
   return role || '-'
 }
 
-function customerStatusLabel(status) {
-  if (status === 'active') return '正常'
-  if (status === 'disabled') return '已禁用'
-  return status || '-'
-}
-
 function customerRow(customer) {
   const row = createElement('tr')
   const userId = Number(customer.id)
+  const section = workspaceState.customersView || 'customers'
   const identity = createElement('td')
   const detailLink = bindInternalLink(createElement('a', {
-    href: `/admin/affiliates/invites?section=customers&user_id=${encodeURIComponent(userId)}`,
+    href: `/admin/affiliates/invites?section=${section}&user_id=${encodeURIComponent(userId)}`,
     class: 'zero-one-affiliate-customer-link',
     'data-testid': `affiliate-customer-${userId}`,
   }))
@@ -483,8 +523,8 @@ function customerRow(customer) {
   row.append(
     createElement('td', { class: 'font-mono' }, String(userId)),
     identity,
-    createElement('td', {}, customerRoleLabel(customer.role)),
-    createElement('td', {}, customerStatusLabel(customer.status)),
+    createElement('td', {}, customer.exclusive_agent ? '专属代理' : customerRoleLabel(customer.role)),
+    createElement('td', { class: 'zero-one-affiliate-amount' }, `$${formatAmount(customer.agent_value)}`),
     createElement('td', {}, formatDateTime(customer.created_at)),
   )
   return row
@@ -498,9 +538,12 @@ function renderCustomersList(panel) {
   })
   const heading = createElement('div', { class: 'zero-one-affiliate-card-heading' })
   const copy = createElement('div')
+  const exclusiveOnly = workspaceState.customersView === 'exclusive_agents'
   copy.append(
-    createElement('h2', { class: 'text-lg font-semibold text-gray-900 dark:text-white' }, '客户关系'),
-    createElement('p', { class: 'mt-1 text-sm text-gray-500 dark:text-gray-400' }, '查看全部客户，以及每位客户建立的邀请关系和累计返利。'),
+    createElement('h2', { class: 'text-lg font-semibold text-gray-900 dark:text-white' }, exclusiveOnly ? '专属代理' : '客户关系'),
+    createElement('p', { class: 'mt-1 text-sm text-gray-500 dark:text-gray-400' }, exclusiveOnly
+      ? '查看全部设置了专属返利比例的代理。'
+      : '查看全部客户，以及每位客户建立的邀请关系和累计返利。'),
   )
   heading.append(copy)
 
@@ -509,7 +552,7 @@ function renderCustomersList(panel) {
     type: 'search',
     class: 'input',
     placeholder: '搜索邮箱或用户名',
-    'aria-label': '搜索全部客户',
+    'aria-label': exclusiveOnly ? '搜索专属代理' : '搜索全部客户',
     'data-testid': 'affiliate-customers-search',
   })
   search.value = workspaceState.customersSearch
@@ -529,7 +572,7 @@ function renderCustomersList(panel) {
   const table = createElement('table', { class: 'zero-one-affiliate-custom-table' })
   const head = createElement('thead')
   const headRow = createElement('tr')
-  for (const label of ['用户 ID', '客户', '角色', '状态', '注册时间']) {
+  for (const label of ['用户 ID', '客户', '角色', '代理价值', '注册时间']) {
     headRow.append(createElement('th', {}, label))
   }
   head.append(headRow)
@@ -576,8 +619,9 @@ async function loadCustomers(panel) {
       page_size: String(workspaceState.customersPageSize),
       search: workspaceState.customersSearch,
       include_subscriptions: 'false',
-      sort_by: 'created_at',
-      sort_order: 'desc',
+      affiliate_view: workspaceState.customersView === 'exclusive_agents'
+        ? 'exclusive_agents'
+        : 'relationships',
     })
     const result = await apiRequest(`/admin/users?${params}`)
     if (requestVersion !== customerListRequestVersion) return
@@ -639,7 +683,7 @@ function renderCustomerDetail(panel, userId) {
       'data-testid': 'affiliate-customer-detail',
     }, message)
     const back = bindInternalLink(createElement('a', {
-      href: '/admin/affiliates/invites?section=customers',
+      href: `/admin/affiliates/invites?section=${workspaceState.customersView || 'customers'}`,
       class: 'btn btn-secondary btn-sm',
     }, '返回客户关系'))
     state.prepend(back)
@@ -654,7 +698,7 @@ function renderCustomerDetail(panel, userId) {
   const heading = createElement('div', { class: 'zero-one-affiliate-card-heading' })
   const copy = createElement('div')
   const back = bindInternalLink(createElement('a', {
-    href: '/admin/affiliates/invites?section=customers',
+    href: `/admin/affiliates/invites?section=${workspaceState.customersView || 'customers'}`,
     class: 'zero-one-affiliate-back-link',
     'data-testid': 'affiliate-customer-back',
   }, '← 返回客户关系'))
@@ -765,6 +809,14 @@ function changeCustomerInvitesPage(userId, page) {
 }
 
 function ensureCustomersPanel(workspace, userId) {
+  const requestedView = affiliateSection() === 'exclusive_agents' ? 'exclusive_agents' : 'customers'
+  if (workspaceState.customersView !== requestedView) {
+    workspaceState.customersView = requestedView
+    workspaceState.customers = []
+    workspaceState.customersLoaded = false
+    workspaceState.customersPage = 1
+    workspaceState.customersTotal = 0
+  }
   let panel = workspace.querySelector('[data-zero-one-affiliate-customers-panel]')
   if (!(panel instanceof HTMLElement)) {
     panel = createElement('div', {
@@ -1628,6 +1680,16 @@ function removeCompatibilityLayer() {
 function scanAffiliateAdmin() {
   if (!isAdministrator() || hasNativeWorkspace()) {
     removeCompatibilityLayer()
+    return
+  }
+  if (window.location.pathname === '/admin/affiliates/rebates') {
+    const router = document.querySelector('#app')?.__vue_app__?.config?.globalProperties?.$router
+    const destination = '/admin/affiliates/invites?section=customers'
+    if (router && typeof router.replace === 'function') {
+      void router.replace(destination)
+    } else {
+      window.location.replace(destination)
+    }
     return
   }
   ensureStandaloneNavigation()

@@ -398,6 +398,7 @@ export default {
         customers: 'Customer Relationships',
         relationships: 'Customer Relationships',
         rebates: 'Rebate Records',
+        exclusiveAgents: 'Exclusive Agents',
         transfers: 'Transfer Records',
         settings: 'Operations Settings'
       },
@@ -431,7 +432,9 @@ export default {
         email: 'Email',
         username: 'Username',
         role: 'Role',
-        status: 'Status',
+        agentValue: 'Agent Value',
+        exclusiveAgent: 'Exclusive Agent',
+        exclusiveDescription: 'View agents with an exclusive rebate rate',
         registeredAt: 'Registered At',
         back: 'Back to Customer Relationships',
         loadFailed: 'Failed to load customer relationships',
