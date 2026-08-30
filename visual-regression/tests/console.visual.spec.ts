@@ -2281,7 +2281,7 @@ test.describe('Console header custom iframe menu contracts', () => {
       id, label: `页面${id}`, icon_svg: '', url: `https://embed.01yapi.test/${id}`,
       visibility: 'all' as const, placement: 'both' as const, sort_order,
     }))
-    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: items })
+    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: items, theme: 'dark' })
     let releaseFirst!: () => void
     let releaseSecond!: () => void
     const gates = {
@@ -2298,10 +2298,26 @@ test.describe('Console header custom iframe menu contracts', () => {
     await page.goto('http://127.0.0.1:4173/dashboard')
     await expect(page.getByTestId('header-custom-menu-first')).toBeVisible()
     expect(loadedPaths).toEqual([])
+    await page.evaluate(() => {
+      const state = window as typeof window & { __CUSTOM_PAGE_FRAME_INSERTIONS__?: number }
+      state.__CUSTOM_PAGE_FRAME_INSERTIONS__ = 0
+      new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (!(node instanceof Element)) continue
+            if (node.matches('iframe.custom-embed-frame')) state.__CUSTOM_PAGE_FRAME_INSERTIONS__! += 1
+            state.__CUSTOM_PAGE_FRAME_INSERTIONS__! += node.querySelectorAll('iframe.custom-embed-frame').length
+          }
+        }
+      }).observe(document.querySelector('#app')!, { childList: true, subtree: true })
+    })
     await page.getByTestId('header-custom-menu-first').click()
     const frame = page.locator('main iframe.custom-embed-frame')
     await expect(frame).toHaveAttribute('src', /\/first\?/)
     await expect.poll(() => loadedPaths).toEqual(['/first'])
+    await expect.poll(() => page.evaluate(() => (
+      window as typeof window & { __CUSTOM_PAGE_FRAME_INSERTIONS__?: number }
+    ).__CUSTOM_PAGE_FRAME_INSERTIONS__)).toBe(1)
     const oldFrame = await frame.elementHandle()
     await page.getByTestId('header-custom-menu-second').click()
     await expect(frame).toHaveAttribute('src', /\/second\?/)
