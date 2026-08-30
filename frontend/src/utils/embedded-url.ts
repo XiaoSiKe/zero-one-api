@@ -19,14 +19,20 @@ export function buildEmbeddedUrl(
   authToken?: string | null,
   theme: 'light' | 'dark' = 'light',
   lang?: string,
+  credentialPolicy: 'include' | 'same-origin' | 'omit' = 'include',
 ): string {
   if (!baseUrl) return baseUrl
   try {
     const url = new URL(baseUrl)
-    if (userId) {
+    const isSameOrigin =
+      typeof window !== 'undefined' && url.origin === window.location.origin
+    const includeCredentials =
+      credentialPolicy === 'include' ||
+      (credentialPolicy === 'same-origin' && isSameOrigin)
+    if (includeCredentials && userId) {
       url.searchParams.set(EMBEDDED_USER_ID_QUERY_KEY, String(userId))
     }
-    if (authToken) {
+    if (includeCredentials && authToken) {
       url.searchParams.set(EMBEDDED_AUTH_TOKEN_QUERY_KEY, authToken)
     }
     url.searchParams.set(EMBEDDED_THEME_QUERY_KEY, theme)

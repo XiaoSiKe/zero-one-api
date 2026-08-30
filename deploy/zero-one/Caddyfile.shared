@@ -21,6 +21,18 @@
 (recovered_console_routes) {
 	root * /srv/console
 
+	@console_exact_trailing_slash {
+		method GET HEAD
+		path /setup/ /home/ /login/ /register/ /email-verify/ /forgot-password/ /reset-password/ /key-usage/ /model-plaza/ /dashboard/ /keys/ /images/ /batch-image/ /usage/ /redeem/ /affiliate/ /available-channels/ /profile/ /subscriptions/ /purchase/ /orders/ /admin/ /monitor/
+	}
+
+	handle @console_exact_trailing_slash {
+		route {
+			uri strip_suffix /
+			redir {uri} 308
+		}
+	}
+
 	@console_asset_files {
 		method GET HEAD
 		path /assets/*
@@ -50,7 +62,7 @@
 
 	@console_pages {
 		method GET HEAD
-		path /setup /home /login /register /email-verify /auth/* /forgot-password /reset-password /key-usage /legal/* /model-plaza /dashboard /keys /batch-image /usage /redeem /affiliate /available-channels /profile /subscriptions /purchase /orders /payment/* /custom/* /admin /admin/* /monitor
+		path /setup /setup/ /home /home/ /login /login/ /register /register/ /email-verify /email-verify/ /auth/* /forgot-password /forgot-password/ /reset-password /reset-password/ /key-usage /key-usage/ /legal/* /model-plaza /model-plaza/ /dashboard /dashboard/ /keys /keys/ /images /images/ /batch-image /batch-image/ /usage /usage/ /redeem /redeem/ /affiliate /affiliate/ /available-channels /available-channels/ /profile /profile/ /subscriptions /subscriptions/ /purchase /purchase/ /orders /orders/ /payment/* /custom/* /admin /admin/ /admin/* /monitor /monitor/
 	}
 
 	handle @console_pages {

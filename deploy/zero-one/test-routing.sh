@@ -6,8 +6,8 @@ production_caddyfile="$repo_root/deploy/zero-one/Caddyfile"
 preview_caddyfile="$repo_root/deploy/zero-one/Caddyfile.preview"
 shared_caddyfile="$repo_root/deploy/zero-one/Caddyfile.shared"
 recovered_console_index="$repo_root/deploy/zero-one/recovered-frontend/console/index.html"
-recovered_console_entry='await import("/assets/cn-provider-shell-v1/index-9xJBhx8B.js")'
-recovered_console_entry_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v1/index-9xJBhx8B.js"
+recovered_console_entry='await import("/assets/cn-provider-shell-v3/index-9xJBhx8B.js")'
+recovered_console_entry_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v3/index-9xJBhx8B.js"
 recovered_pricing_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/useKeyedDebouncedSearch-BrW9dWBu.js"
 recovered_console_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-B-81-jXj.js"
 recovered_console_admin_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-Bn5PLb3-.js"
@@ -17,18 +17,22 @@ recovered_payment_result="$repo_root/deploy/zero-one/recovered-frontend/console/
 recovered_floating_overlay="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-floating-panels-v1.js"
 recovered_navigation_reconciliation="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-navigation-reconciliation-v1.js"
 recovered_local_guard="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-local-preview-guard-v2.js"
+recovered_custom_page_security="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-custom-page-security-v1.js"
 recovered_console_parity="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-console-parity-v1.js"
 recovered_console_parity_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-console-parity-v1.css"
 recovered_header_navigation="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.js"
 recovered_header_navigation_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.css"
 recovered_header_custom_menu="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.js"
 recovered_header_custom_menu_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.css"
+recovered_settings_unified_save="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-settings-unified-save-v1.js"
 recovered_redeem_actions="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-redeem-actions-v1.js"
 recovered_redeem_actions_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-redeem-actions-v1.css"
 recovered_ccswitch_launch="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-ccswitch-launch-v1.js"
 recovered_affiliate_admin="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-affiliate-admin-v1.js"
 recovered_affiliate_admin_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-affiliate-admin-v1.css"
 recovered_login_recovery="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-login-recovery-v2.js"
+recovered_online_image="$repo_root/deploy/zero-one/recovered-frontend/console/assets/online-image-v10/online-image.js"
+recovered_online_image_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/online-image-v10/online-image.css"
 
 require() {
 	file=$1
@@ -62,6 +66,8 @@ require "$preview_caddyfile" 'auto_https off'
 require "$preview_caddyfile" 'import Caddyfile.shared'
 require "$preview_caddyfile" ':80 {'
 require "$preview_caddyfile" '@preview_console_pages {'
+require "$preview_caddyfile" '/keys /keys/ /images /images/ /batch-image /batch-image/'
+require "$preview_caddyfile" '/payment/* /custom/* /admin /admin/'
 require "$preview_caddyfile" "connect-src 'self'; frame-src http: https:"
 require "$preview_caddyfile" 'import landing_routes'
 
@@ -69,7 +75,11 @@ require "$shared_caddyfile" '(landing_routes) {'
 require "$shared_caddyfile" 'method GET HEAD'
 require "$shared_caddyfile" 'path /'
 require "$shared_caddyfile" 'handle_path /_landing/* {'
+require "$shared_caddyfile" '@console_exact_trailing_slash {'
+require "$shared_caddyfile" 'uri strip_suffix /'
+require "$shared_caddyfile" 'redir {uri} 308'
 require "$shared_caddyfile" 'import sub2api_proxy'
+require "$shared_caddyfile" '/keys /keys/ /images /images/ /batch-image /batch-image/'
 require "$shared_caddyfile" 'reverse_proxy sub2api:8080'
 require "$shared_caddyfile" 'header_up -CF-Connecting-IP'
 require "$shared_caddyfile" 'header_up -True-Client-IP'
@@ -82,12 +92,13 @@ require "$shared_caddyfile" 'https://checkout-demo.airwallex.com https:; frame-a
 require "$recovered_console_index" 'fetch("/api/v1/settings/public"'
 require "$recovered_console_index" "$recovered_console_entry"
 require "$recovered_console_index" 'await import("/assets/zero-one-local-preview-guard-v2.js")'
+require "$recovered_console_index" 'await import("/assets/zero-one-custom-page-security-v1.js")'
 require "$recovered_console_index" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=3")'
-require "$recovered_console_index" 'await import("/assets/zero-one-console-parity-v1.js?v=4")'
+require "$recovered_console_index" 'await import("/assets/zero-one-console-parity-v1.js?v=6")'
 require "$recovered_console_index" 'href="/assets/zero-one-console-parity-v1.css?v=4"'
-require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=10")'
-require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=5"'
-require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=20")'
+require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=14")'
+require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=6"'
+require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=24")'
 require "$recovered_header_custom_menu" "style.setProperty('display', 'none', 'important')"
 require "$recovered_console_index" 'window.__ZERO_ONE_PUBLIC_SETTINGS__ = payload.data'
 require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=7"'
@@ -95,6 +106,8 @@ require "$recovered_console_index" 'await import("/assets/zero-one-redeem-action
 require "$recovered_console_index" 'href="/assets/zero-one-redeem-actions-v1.css?v=1"'
 require "$recovered_console_index" 'await import("/assets/zero-one-ccswitch-launch-v1.js?v=1")'
 require "$recovered_console_index" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=6")'
+require "$recovered_console_index" 'await import("/assets/online-image-v10/online-image.js")'
+require "$recovered_console_index" 'await import("/assets/zero-one-settings-unified-save-v1.js")'
 require "$recovered_console_index" 'href="/assets/zero-one-affiliate-admin-v1.css?v=3"'
 require "$recovered_console_index" 'await import("/assets/zero-one-floating-panels-v1.js?v=2")'
 require "$recovered_console_index" 'await import("/assets/zero-one-login-recovery-v2.js?v=3")'
@@ -124,6 +137,10 @@ require "$recovered_local_guard" 'Local preview blocked an external request:'
 require "$recovered_local_guard" '本地预览已阻止外部跳转，当前页面仍连接本地 Docker。'
 require "$recovered_local_guard" 'External iframe pages are an intentional Custom Page feature'
 forbid "$recovered_local_guard" 'node instanceof HTMLIFrameElement'
+require "$recovered_custom_page_security" "const SENSITIVE_QUERY_KEYS = ['user_id', 'token']"
+require "$recovered_custom_page_security" "window.location.pathname.startsWith('/custom/')"
+require "$recovered_custom_page_security" "guardURLProperty(HTMLIFrameElement.prototype, 'src')"
+require "$recovered_custom_page_security" "guardURLProperty(HTMLAnchorElement.prototype, 'href')"
 require "$recovered_console_parity" "const USER_DASHBOARD_PATH = '/dashboard'"
 require "$recovered_console_parity" "const ADMIN_DASHBOARD_PATH = '/admin/dashboard'"
 require "$recovered_console_parity" "window.location.pathname === '/login'"
@@ -135,11 +152,11 @@ require "$recovered_console_parity_css" ':has(.card, iframe, table, .fixed, .sti
 forbid "$recovered_console_parity_css" '.console-dashboard-surface .card:hover'
 require "$recovered_header_navigation" "'data-testid': 'header-navigation-settings'"
 require "$recovered_header_navigation" "'data-testid': 'header-navigation-add'"
-require "$recovered_header_navigation" "'data-testid': 'header-navigation-save'"
-require "$recovered_header_navigation" 'custom_menu_items: adminMenuItems'
-require "$recovered_header_navigation" 'community_qr_enabled: false'
+forbid "$recovered_header_navigation" "'data-testid': 'header-navigation-save'"
+require "$recovered_header_navigation" 'mergeAdminMenuItemsForSave'
+require "$recovered_header_navigation" 'payload.community_qr_enabled = false'
 require "$recovered_header_navigation" "placement: 'header'"
-require "$recovered_header_navigation" 'window.location.reload()'
+require "$recovered_header_navigation" 'augmentSettingsPayload(payload)'
 forbid "$recovered_header_navigation" '/api/v1/settings/community-qr'
 forbid "$recovered_header_navigation" "'data-testid': 'community-qr-button'"
 require "$recovered_header_navigation_css" '.zero-one-header-navigation-settings'
@@ -148,6 +165,23 @@ require "$recovered_header_navigation_css" '.zero-one-header-navigation-fields'
 require "$recovered_header_navigation" 'profile_navigation_enabled'
 require "$recovered_header_navigation" 'subscription_navigation_enabled'
 require "$recovered_header_navigation" 'model_plaza_placement'
+require "$recovered_settings_unified_save" "'settings-unified-save'"
+require "$recovered_settings_unified_save" 'button[type="submit"]'
+require "$recovered_settings_unified_save" 'button[data-zero-one-standalone-save="true"]'
+require "$recovered_settings_unified_save" "form.addEventListener('click', markManagedCardDirty"
+require "$recovered_settings_unified_save" "form.addEventListener('keydown'"
+require "$recovered_settings_unified_save" 'form.requestSubmit(bottomSave)'
+require "$recovered_settings_unified_save" 'activeManagedRequestBatch'
+require "$recovered_settings_unified_save" 'installManagedFetchTracking()'
+require "$recovered_settings_unified_save" 'waitForManagedRequestRegistration(batch, expectedEndpoints)'
+require "$recovered_settings_unified_save" 'waitForManagedResults(batch.requests)'
+require "$recovered_settings_unified_save" "this.onloadend = null"
+require "$recovered_settings_unified_save" 'nativeLoadEnd.call(this, event)'
+require "$recovered_settings_unified_save" "nativeError.call(this, new ProgressEvent('error'))"
+require "$recovered_header_navigation" 'if (!adminSettingsReady || !identity || identity !== adminSettingsIdentity) return'
+require "$recovered_header_navigation" 'applySavedSettings(settings)'
+require "$recovered_header_navigation" 'adminSettingsController?.abort()'
+require "$recovered_header_custom_menu" 'applySavedSettings(savedSettings)'
 require "$recovered_header_navigation" 'header-navigation-qr-upload-'
 require "$recovered_header_navigation" 'window.__ZERO_ONE_NAVIGATION_ICON_PRESETS__'
 require "$recovered_header_custom_menu" "item.placement === 'header'"
@@ -214,6 +248,9 @@ require "$recovered_login_recovery" "const LOGIN_BUTTON_CLASS = 'btn btn-primary
 require "$recovered_login_recovery" "window.location.pathname === '/forgot-password'"
 require "$recovered_login_recovery" 'sendResetLink.className = LOGIN_BUTTON_CLASS'
 require "$recovered_login_recovery" 'backWrapper.replaceChildren(backToLogin)'
+require "$recovered_console_entry_asset" 'zero-one-online-image-route-placeholder-v1.js'
+require "$recovered_online_image" 'import "./onlineImage-'
+require "$recovered_online_image_css" 'online-image-control'
 
 if [ "$(readlink "$recovered_asset_alias")" != '.' ]; then
 	echo 'recovered Console cache-busting asset alias is missing' >&2
@@ -223,6 +260,8 @@ fi
 node "$repo_root/deploy/zero-one/verify-console-asset-closure.mjs" \
 	"$repo_root/deploy/zero-one/recovered-frontend/console"
 node "$repo_root/deploy/zero-one/verify-cn-provider-console.mjs" \
+	"$repo_root/deploy/zero-one/recovered-frontend/console"
+node "$repo_root/deploy/zero-one/verify-online-image-console.mjs" \
 	"$repo_root/deploy/zero-one/recovered-frontend/console"
 
 for shell_caddyfile in "$production_caddyfile" "$preview_caddyfile"; do

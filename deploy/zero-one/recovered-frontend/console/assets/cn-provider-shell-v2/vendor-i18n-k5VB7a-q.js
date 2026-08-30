@@ -1,0 +1,1 @@
+../vendor-i18n-k5VB7a-q.js

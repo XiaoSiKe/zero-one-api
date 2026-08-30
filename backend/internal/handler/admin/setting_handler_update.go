@@ -167,6 +167,7 @@ type UpdateSettingsRequest struct {
 	APIBaseURL                  string                `json:"api_base_url"`
 	ContactInfo                 string                `json:"contact_info"`
 	DocURL                      string                `json:"doc_url"`
+	LandingTutorialURL          string                `json:"landing_tutorial_url"`
 	HomeContent                 string                `json:"home_content"`
 	CompactHomeEnabled          bool                  `json:"compact_home_enabled"`
 	HideCcsImportButton         bool                  `json:"hide_ccs_import_button"`
@@ -1354,6 +1355,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			return
 		}
 		for i, item := range items {
+			imageTutorialEligible := false
 			if strings.TrimSpace(item.Label) == "" {
 				response.BadRequest(c, "Custom menu item label is required")
 				return
@@ -1412,20 +1414,29 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 						response.BadRequest(c, "Custom menu item URL must be an absolute http(s) URL or md:<slug>")
 						return
 					}
+					imageTutorialEligible = items[i].Placement == "sidebar" || items[i].Placement == "both"
 				}
 			}
 			if len(item.IconSVG) > maxMenuItemIconSVGLen {
 				response.BadRequest(c, "Custom menu item icon SVG is too large (max 10KB)")
 				return
 			}
-			// Auto-generate ID if missing
+			// Reserve image-tutorial for a real iframe page that remains in the sidebar.
+			// A QR/header-only/Markdown item with the same display label must not occupy it.
 			if strings.TrimSpace(item.ID) == "" {
-				id, err := generateMenuItemID()
-				if err != nil {
-					response.Error(c, http.StatusInternalServerError, "Failed to generate menu item ID")
-					return
+				if imageTutorialEligible && isImageTutorialMenuLabel(item.Label) {
+					items[i].ID = imageTutorialMenuItemID
+				} else {
+					id, err := generateMenuItemID()
+					if err != nil {
+						response.Error(c, http.StatusInternalServerError, "Failed to generate menu item ID")
+						return
+					}
+					items[i].ID = id
 				}
-				items[i].ID = id
+			} else if item.ID == imageTutorialMenuItemID && !imageTutorialEligible {
+				response.BadRequest(c, "image-tutorial must be a non-QR http(s) custom page with sidebar or both placement")
+				return
 			} else if len(item.ID) > maxMenuItemIDLen {
 				response.BadRequest(c, "Custom menu item ID is too long (max 32 characters)")
 				return
@@ -1748,6 +1759,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		APIBaseURL:                             req.APIBaseURL,
 		ContactInfo:                            req.ContactInfo,
 		DocURL:                                 req.DocURL,
+		LandingTutorialURL:                     req.LandingTutorialURL,
 		HomeContent:                            req.HomeContent,
 		CompactHomeEnabled:                     req.CompactHomeEnabled,
 		HideCcsImportButton:                    req.HideCcsImportButton,
@@ -2390,6 +2402,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		APIBaseURL:                                             updatedSettings.APIBaseURL,
 		ContactInfo:                                            updatedSettings.ContactInfo,
 		DocURL:                                                 updatedSettings.DocURL,
+		LegacyImageTutorialURL:                                 updatedSettings.LegacyImageTutorialURL,
+		LandingTutorialURL:                                     updatedSettings.LandingTutorialURL,
 		HomeContent:                                            updatedSettings.HomeContent,
 		CompactHomeEnabled:                                     updatedSettings.CompactHomeEnabled,
 		HideCcsImportButton:                                    updatedSettings.HideCcsImportButton,

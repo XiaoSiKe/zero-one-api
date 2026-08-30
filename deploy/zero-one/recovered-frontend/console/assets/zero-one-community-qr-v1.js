@@ -6,6 +6,8 @@ const MAX_MENU_ITEMS = 20
 const MAX_QR_BYTES = 300 * 1024
 const MAX_SVG_BYTES = 10 * 1024
 const SUPPORTED_QR_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp'])
+const IMAGE_TUTORIAL_MENU_ID = 'image-tutorial'
+const IMAGE_TUTORIAL_LABELS = new Set(['生图教程', 'image tutorial', 'image generation tutorial'])
 
 const USER_SIDEBAR_ITEMS = [
   ['/dashboard', '仪表盘', 'Dashboard'],
@@ -19,6 +21,7 @@ const USER_SIDEBAR_ITEMS = [
   ['/purchase', '购买订阅', 'Buy Subscription'],
   ['/orders', '我的订单', 'My Orders'],
   ['/redeem', '兑换', 'Redeem'],
+  ['/images', '在线生图', 'Online Images'],
   ['/affiliate', '邀请返利', 'Affiliate'],
   ['/profile', '个人资料', 'Profile'],
 ]
@@ -59,12 +62,57 @@ const ICON_PRESETS = [
 window.__ZERO_ONE_NAVIGATION_ICON_PRESETS__ = ICON_PRESETS
 
 let adminMenuItems = []
-let adminSettingsLoading = false
+let adminSettingsRequest = null
+let adminSettingsController = null
+let adminSettingsRevision = 0
+let adminSettingsIdentity = ''
+let adminSettingsReady = false
 let profileNavigationEnabled = true
 let subscriptionNavigationEnabled = true
 let modelPlazaPlacement = 'header'
+let landingTutorialURL = ''
+let legacyImageTutorialURL = ''
+let imageTutorialLegacyID = ''
 let userSidebarOrder = []
 let adminSidebarOrder = []
+
+function mergeAdminMenuItemsForSave(nativeItems) {
+  const eligibleNativeItems = nativeItems.filter(
+    (item) => !imageTutorialLegacyID || item.id !== imageTutorialLegacyID,
+  )
+  const nativeByID = new Map(eligibleNativeItems.filter((item) => item.id).map((item) => [item.id, item]))
+  const merged = adminMenuItems.map((item) => {
+    if (item.placement === 'header' && item.navigation_type === 'qr') return { ...item }
+    return item.id && nativeByID.has(item.id) ? nativeByID.get(item.id) : { ...item }
+  })
+  const knownIDs = new Set(merged.map((item) => item.id).filter(Boolean))
+  for (const item of eligibleNativeItems) {
+    if (!item.id || !knownIDs.has(item.id)) merged.push(item)
+  }
+  return merged.map((item, index) => ({ ...item, sort_order: index }))
+}
+
+window.__ZERO_ONE_HEADER_NAVIGATION_EDITOR__ = {
+  augmentSettingsPayload(payload) {
+    const identity = window.__ZERO_ONE_ADMIN_NAVIGATION__?.identity() || ''
+    if (!adminSettingsReady || !identity || identity !== adminSettingsIdentity) return
+    payload.custom_menu_items = mergeAdminMenuItemsForSave(payload.custom_menu_items)
+    payload.profile_navigation_enabled = profileNavigationEnabled
+    payload.subscription_navigation_enabled = subscriptionNavigationEnabled
+    payload.model_plaza_placement = modelPlazaPlacement
+    payload.landing_tutorial_url = landingTutorialURL
+    payload.user_sidebar_order = userSidebarOrder
+    payload.admin_sidebar_order = adminSidebarOrder
+    payload.community_qr_enabled = false
+  },
+  applySavedSettings(settings) {
+    const identity = window.__ZERO_ONE_ADMIN_NAVIGATION__?.identity() || ''
+    if (!adminSettingsReady || !identity || identity !== adminSettingsIdentity) return
+    applySettings(settings)
+    const panel = document.querySelector('[data-zero-one-header-navigation="settings"]')
+    if (panel instanceof HTMLElement) renderItems(panel)
+  },
+}
 
 function localText(zh, en) {
   const locale = localStorage.getItem('sub2api_locale') || document.documentElement.lang || 'zh-CN'
@@ -136,6 +184,67 @@ function normalizeSidebarOrder(value) {
   return [...new Set(value.filter((path) => typeof path === 'string' && path.startsWith('/')))]
 }
 
+function imageTutorialMenuItem() {
+  const pages = adminMenuItems.filter((item) =>
+    item.navigation_type !== 'qr' && item.placement !== 'header' && item.id && item.url.trim()
+  )
+  return pages.find((item) => item.id === IMAGE_TUTORIAL_MENU_ID) || pages.find((item) => {
+    const label = item.label.trim().toLowerCase()
+    return IMAGE_TUTORIAL_LABELS.has(label)
+  })
+}
+
+function replaceSidebarPath(order, from, to) {
+  return [...new Set(order.map((path) => path === from ? to : path))]
+}
+
+function normalizeImageTutorialMenu() {
+  const item = imageTutorialMenuItem()
+  if (!item) return
+  const previousID = item.id
+  const previousPath = '/custom/' + previousID
+  item.id = IMAGE_TUTORIAL_MENU_ID
+  item.label = '生图教程'
+  item.icon_svg = item.icon_svg || ICON_PRESETS[3][1]
+  item.visibility = 'all'
+  item.placement = 'sidebar'
+  item.navigation_type = ''
+  item.qr_description = ''
+  item.qr_image = ''
+  if (previousID !== IMAGE_TUTORIAL_MENU_ID) imageTutorialLegacyID = previousID
+  userSidebarOrder = replaceSidebarPath(userSidebarOrder, previousPath, '/custom/' + IMAGE_TUTORIAL_MENU_ID)
+  adminSidebarOrder = replaceSidebarPath(adminSidebarOrder, previousPath, '/custom/' + IMAGE_TUTORIAL_MENU_ID)
+}
+
+function setImageTutorialMenuURL(url) {
+  const item = imageTutorialMenuItem()
+  if (!url.trim()) {
+    if (!item) return
+    const path = '/custom/' + item.id
+    adminMenuItems.splice(adminMenuItems.indexOf(item), 1)
+    userSidebarOrder = userSidebarOrder.filter((candidate) => candidate !== path)
+    adminSidebarOrder = adminSidebarOrder.filter((candidate) => candidate !== path)
+    reindexMenuItems()
+    return
+  }
+  if (item) item.url = url
+  else if (adminMenuItems.length < MAX_MENU_ITEMS) {
+    adminMenuItems.push({
+      id: IMAGE_TUTORIAL_MENU_ID,
+      label: '生图教程',
+      icon_svg: ICON_PRESETS[3][1],
+      url,
+      visibility: 'all',
+      placement: 'sidebar',
+      navigation_type: '',
+      qr_description: '',
+      qr_image: '',
+      sort_order: adminMenuItems.length,
+    })
+  }
+  normalizeImageTutorialMenu()
+}
+
 function headerEntries() {
   return adminMenuItems.map((item, index) => ({ item, index }))
     .filter(({ item }) => item.placement === 'header')
@@ -180,8 +289,37 @@ function applySettings(settings) {
   profileNavigationEnabled = settings?.profile_navigation_enabled !== false
   subscriptionNavigationEnabled = settings?.subscription_navigation_enabled !== false
   modelPlazaPlacement = settings?.model_plaza_placement === 'sidebar' ? 'sidebar' : 'header'
+  landingTutorialURL = typeof settings?.landing_tutorial_url === 'string' ? settings.landing_tutorial_url : ''
+  legacyImageTutorialURL = typeof settings?.legacy_image_tutorial_url === 'string'
+    ? settings.legacy_image_tutorial_url.trim()
+    : ''
   userSidebarOrder = normalizeSidebarOrder(settings?.user_sidebar_order)
   adminSidebarOrder = normalizeSidebarOrder(settings?.admin_sidebar_order)
+  imageTutorialLegacyID = ''
+  if (!imageTutorialMenuItem() && legacyImageTutorialURL) {
+    setImageTutorialMenuURL(legacyImageTutorialURL)
+  }
+  userSidebarOrder = replaceSidebarPath(userSidebarOrder, '/image-tutorial', '/custom/image-tutorial')
+  adminSidebarOrder = replaceSidebarPath(adminSidebarOrder, '/image-tutorial', '/custom/image-tutorial')
+  normalizeImageTutorialMenu()
+}
+
+function resetAdminSettingsState(identity = '') {
+  adminSettingsRevision += 1
+  adminSettingsController?.abort()
+  adminSettingsController = null
+  adminSettingsRequest = null
+  adminSettingsIdentity = identity
+  adminSettingsReady = false
+  adminMenuItems = []
+  profileNavigationEnabled = true
+  subscriptionNavigationEnabled = true
+  modelPlazaPlacement = 'header'
+  landingTutorialURL = ''
+  legacyImageTutorialURL = ''
+  imageTutorialLegacyID = ''
+  userSidebarOrder = []
+  adminSidebarOrder = []
 }
 
 function sidebarOrderCandidates(role) {
@@ -273,6 +411,21 @@ function createToggleRow(title, hint, checked, testId, onChange) {
   const input = createElement('input', { type: 'checkbox', 'data-testid': testId })
   input.checked = checked
   input.addEventListener('change', () => onChange(input.checked))
+  row.append(copy, input)
+  return row
+}
+
+function createURLRow(title, hint, value, testId, onInput) {
+  const row = createElement('label', { class: 'zero-one-navigation-url-row' })
+  const copy = createElement('span')
+  copy.append(createElement('strong', {}, title), createElement('small', {}, hint))
+  const input = createElement('input', {
+    type: 'text',
+    placeholder: 'https://docs.example.com',
+    'data-testid': testId,
+  })
+  input.value = value
+  input.addEventListener('input', () => onInput(input.value))
   row.append(copy, input)
   return row
 }
@@ -435,6 +588,7 @@ function renderItems(panel) {
 
 function buildAdminPanel(cardBody, settings) {
   applySettings(settings)
+  adminSettingsReady = true
   const panel = createElement('section', {
     class: 'zero-one-header-navigation-settings',
     'data-testid': 'header-navigation-settings',
@@ -447,6 +601,8 @@ function buildAdminPanel(cardBody, settings) {
     createElement('p', {}, localText('控制内置入口，以及模型广场在控制台中的位置。', 'Control built-in entries and Model Plaza placement.')),
     createToggleRow(localText('个人资料', 'Profile'), localText('控制侧边导航入口。', 'Controls the sidebar entry.'), profileNavigationEnabled, 'profile-navigation-toggle', (value) => { profileNavigationEnabled = value }),
     createToggleRow(localText('我的订阅', 'My Subscriptions'), localText('控制“我的订阅”和顶部订阅进度入口。', 'Controls My Subscriptions and the header progress entry.'), subscriptionNavigationEnabled, 'subscription-navigation-toggle', (value) => { subscriptionNavigationEnabled = value }),
+    createURLRow(localText('生图教程（特殊自定义菜单）', 'Image Tutorial (Special Custom Menu)'), localText('仍按标准自定义菜单保存，固定显示在左侧导航；在线生图按钮打开同一个站内 /custom/image-tutorial iframe 页面。目标网站必须允许 iframe 嵌入，留空会移除该菜单。', 'Saved as a standard custom-menu page fixed in the sidebar. The Online Images button opens the same internal /custom/image-tutorial iframe page. The target must allow iframe embedding; clear the field to remove it.'), imageTutorialMenuItem()?.url || '', 'image-tutorial-menu-url', setImageTutorialMenuURL),
+    createURLRow(localText('首页接入教学文档链接', 'Homepage Integration Tutorial URL'), localText('用于首页“查看接入教学文档”按钮；留空时沿用开源知识库链接。', 'Used by the homepage integration tutorial button; falls back to the Open-source Knowledge Base URL.'), landingTutorialURL, 'landing-tutorial-url', (value) => { landingTutorialURL = value }),
   )
   const placementRow = createElement('label', { class: 'zero-one-navigation-placement-row' })
   const placementCopy = createElement('span')
@@ -472,8 +628,7 @@ function buildAdminPanel(cardBody, settings) {
   const footerCopy = createElement('div')
   const status = createElement('p', { class: 'zero-one-header-navigation-status', role: 'status', 'aria-live': 'polite', 'data-testid': 'header-navigation-status' })
   footerCopy.append(createElement('p', { class: 'zero-one-header-navigation-hint' }, localText('这里只管理顶部二维码入口；侧边栏和双位置页面仍在下方管理。', 'This area manages header QR entries; other pages remain below.')), status)
-  const saveButton = createElement('button', { type: 'button', class: 'zero-one-header-navigation-save', 'data-testid': 'header-navigation-save' }, localText('保存导航设置', 'Save Navigation Settings'))
-  footer.append(footerCopy, saveButton)
+  footer.append(footerCopy)
   panel.append(builtIn, header, list, footer)
   const landingNotice = cardBody.querySelector('[data-testid="landing-notice-settings"]')
   if (landingNotice) landingNotice.after(panel)
@@ -499,42 +654,16 @@ function buildAdminPanel(cardBody, settings) {
     })
     renderItems(panel)
   })
-  saveButton.addEventListener('click', async () => {
+  cardBody.closest('form')?.addEventListener('submit', (event) => {
     const invalid = headerEntries().find(({ item }) => !item.label.trim() || (item.navigation_type === 'qr' && !item.qr_image))
     if (invalid) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
       setStatus(localText('请填写标题并为新增入口选择二维码。', 'Enter a title and select a QR image.'), 'error')
       return
     }
-    saveButton.disabled = true
-    const identity = window.__ZERO_ONE_ADMIN_NAVIGATION__.identity()
-    setStatus(localText('正在保存…', 'Saving…'))
-    try {
-      const updated = await fetch(ADMIN_SETTINGS_API, {
-        method: 'PUT',
-        credentials: 'same-origin',
-        headers: apiHeaders(true),
-        body: JSON.stringify({
-          custom_menu_items: adminMenuItems,
-          profile_navigation_enabled: profileNavigationEnabled,
-          subscription_navigation_enabled: subscriptionNavigationEnabled,
-          model_plaza_placement: modelPlazaPlacement,
-          user_sidebar_order: userSidebarOrder,
-          admin_sidebar_order: adminSidebarOrder,
-          community_qr_enabled: false,
-        }),
-      }).then(readApiResponse)
-      if (identity !== window.__ZERO_ONE_ADMIN_NAVIGATION__.identity()) return
-      window.__ZERO_ONE_ADMIN_NAVIGATION__.apply(updated)
-      applySettings(updated)
-      renderItems(panel)
-      setStatus(localText('导航设置已保存，正在刷新…', 'Navigation settings saved. Refreshing…'), 'success')
-      window.setTimeout(() => window.location.reload(), 350)
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : localText('保存失败。', 'Save failed.'), 'error')
-    } finally {
-      saveButton.disabled = false
-    }
-  })
+    setStatus('')
+  }, { capture: true })
   renderItems(panel)
 }
 
@@ -548,27 +677,53 @@ function findSiteSettingsBody() {
 }
 
 function ensureAdminSettings() {
-  const overlay = document.querySelector('[data-zero-one-header-navigation="settings"]')
+  let overlay = document.querySelector('[data-zero-one-header-navigation="settings"]')
+  const identity = window.__ZERO_ONE_ADMIN_NAVIGATION__?.identity() || ''
   if (window.location.pathname !== ADMIN_SETTINGS_PATH || !authenticatedAdmin()) {
     overlay?.remove()
+    if (adminSettingsIdentity || adminSettingsReady) resetAdminSettingsState()
     return
+  }
+  if (identity !== adminSettingsIdentity) {
+    overlay?.remove()
+    overlay = null
+    resetAdminSettingsState(identity)
   }
   const nativePanel = [...document.querySelectorAll('[data-testid="header-navigation-settings"]')].some((node) => !node.hasAttribute('data-zero-one-header-navigation'))
   if (nativePanel) {
     overlay?.remove()
     return
   }
-  if (overlay || adminSettingsLoading) return
+  if (overlay || adminSettingsRequest) return
   const cardBody = findSiteSettingsBody()
   if (!(cardBody instanceof HTMLElement)) return
-  adminSettingsLoading = true
-  fetch(ADMIN_SETTINGS_API, { credentials: 'same-origin', headers: apiHeaders() })
+  const revision = ++adminSettingsRevision
+  const controller = new AbortController()
+  adminSettingsController = controller
+  const request = fetch(ADMIN_SETTINGS_API, {
+    credentials: 'same-origin',
+    headers: apiHeaders(),
+    signal: controller.signal,
+  })
     .then(readApiResponse)
     .then((settings) => {
-      if (cardBody.isConnected) buildAdminPanel(cardBody, settings)
+      if (
+        revision === adminSettingsRevision &&
+        identity === (window.__ZERO_ONE_ADMIN_NAVIGATION__?.identity() || '') &&
+        cardBody.isConnected
+      ) {
+        buildAdminPanel(cardBody, settings)
+      }
     })
     .catch(() => {})
-    .finally(() => { adminSettingsLoading = false })
+    .finally(() => {
+      if (adminSettingsRequest === request) {
+        adminSettingsRequest = null
+        adminSettingsController = null
+      }
+      window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.request()
+    })
+  adminSettingsRequest = request
 }
 
 window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.register('header-navigation-settings', ensureAdminSettings)

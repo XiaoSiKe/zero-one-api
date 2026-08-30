@@ -6,8 +6,8 @@ export default {
   // Home Page
   home: {
     viewOnGithub: '在 GitHub 上查看',
-    viewDocs: '查看文档',
-    docs: '文档',
+    viewDocs: '开源知识库',
+    docs: '开源知识库',
     switchToLight: '切换到浅色模式',
     switchToDark: '切换到深色模式',
     dashboard: '控制台',

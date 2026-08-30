@@ -15,13 +15,17 @@ const {
   updateWebSearchEmulationConfig,
   getAdminApiKey,
   getOverloadCooldownSettings,
+  updateOverloadCooldownSettings,
   getRateLimit429CooldownSettings,
   updateRateLimit429CooldownSettings,
   getPanelRateLimitSettings,
   updatePanelRateLimitSettings,
   getStreamTimeoutSettings,
+  updateStreamTimeoutSettings,
   getRectifierSettings,
+  updateRectifierSettings,
   getBetaPolicySettings,
+  updateBetaPolicySettings,
   getUpstreamBillingProbeSettings,
   updateUpstreamBillingProbeSettings,
   getOllamaCloudUsageSettings,
@@ -43,6 +47,7 @@ const {
   updateWebSearchEmulationConfig: vi.fn(),
   getAdminApiKey: vi.fn(),
   getOverloadCooldownSettings: vi.fn(),
+  updateOverloadCooldownSettings: vi.fn(),
   getRateLimit429CooldownSettings: vi.fn(),
   updateRateLimit429CooldownSettings: vi.fn(),
   getPanelRateLimitSettings: vi.fn().mockResolvedValue({
@@ -54,8 +59,11 @@ const {
   }),
   updatePanelRateLimitSettings: vi.fn().mockImplementation(async (payload) => payload),
   getStreamTimeoutSettings: vi.fn(),
+  updateStreamTimeoutSettings: vi.fn(),
   getRectifierSettings: vi.fn(),
+  updateRectifierSettings: vi.fn(),
   getBetaPolicySettings: vi.fn(),
+  updateBetaPolicySettings: vi.fn(),
   getUpstreamBillingProbeSettings: vi.fn().mockResolvedValue({
     enabled: true,
     interval_minutes: 30,
@@ -92,13 +100,17 @@ vi.mock("@/api", () => ({
       updateWebSearchEmulationConfig,
       getAdminApiKey,
       getOverloadCooldownSettings,
+      updateOverloadCooldownSettings,
       getRateLimit429CooldownSettings,
       updateRateLimit429CooldownSettings,
       getPanelRateLimitSettings,
       updatePanelRateLimitSettings,
       getStreamTimeoutSettings,
+      updateStreamTimeoutSettings,
       getRectifierSettings,
+      updateRectifierSettings,
       getBetaPolicySettings,
+      updateBetaPolicySettings,
     },
     accounts: {
       getUpstreamBillingProbeSettings,
@@ -411,6 +423,7 @@ const baseSettingsResponse = {
   api_base_url: "",
   contact_info: "",
   doc_url: "",
+  landing_tutorial_url: "",
   home_content: "",
   compact_home_enabled: false,
   hide_ccs_import_button: false,
@@ -692,11 +705,17 @@ describe("admin SettingsView payment visible method controls", () => {
     updateWebSearchEmulationConfig.mockReset();
     getAdminApiKey.mockReset();
     getOverloadCooldownSettings.mockReset();
+    updateOverloadCooldownSettings.mockReset();
     getRateLimit429CooldownSettings.mockReset();
     updateRateLimit429CooldownSettings.mockReset();
+    getPanelRateLimitSettings.mockReset();
+    updatePanelRateLimitSettings.mockReset();
     getStreamTimeoutSettings.mockReset();
+    updateStreamTimeoutSettings.mockReset();
     getRectifierSettings.mockReset();
+    updateRectifierSettings.mockReset();
     getBetaPolicySettings.mockReset();
+    updateBetaPolicySettings.mockReset();
     getUpstreamBillingProbeSettings.mockReset();
     updateUpstreamBillingProbeSettings.mockReset();
     getOllamaCloudUsageSettings.mockReset();
@@ -734,11 +753,20 @@ describe("admin SettingsView payment visible method controls", () => {
       enabled: true,
       cooldown_minutes: 10,
     });
+    updateOverloadCooldownSettings.mockImplementation(async (payload) => payload);
     getRateLimit429CooldownSettings.mockResolvedValue({
       enabled: true,
       cooldown_seconds: 5,
     });
     updateRateLimit429CooldownSettings.mockImplementation(async (payload) => payload);
+    getPanelRateLimitSettings.mockResolvedValue({
+      enabled: true,
+      user_rpm: 240,
+      heavy_rpm: 60,
+      exempt_admin: true,
+      public_ip_rpm: 300,
+    });
+    updatePanelRateLimitSettings.mockImplementation(async (payload) => payload);
     getStreamTimeoutSettings.mockResolvedValue({
       enabled: true,
       action: "temp_unsched",
@@ -746,6 +774,7 @@ describe("admin SettingsView payment visible method controls", () => {
       threshold_count: 3,
       threshold_window_minutes: 10,
     });
+    updateStreamTimeoutSettings.mockImplementation(async (payload) => payload);
     getRectifierSettings.mockResolvedValue({
       enabled: true,
       thinking_signature_enabled: true,
@@ -753,9 +782,11 @@ describe("admin SettingsView payment visible method controls", () => {
       apikey_signature_enabled: false,
       apikey_signature_patterns: [],
     });
+    updateRectifierSettings.mockImplementation(async (payload) => payload);
     getBetaPolicySettings.mockResolvedValue({
       rules: [],
     });
+    updateBetaPolicySettings.mockImplementation(async (payload) => payload);
     getUpstreamBillingProbeSettings.mockResolvedValue({
       enabled: true,
       interval_minutes: 30,
@@ -851,6 +882,92 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(updateSettings).toHaveBeenCalledWith(
       expect.objectContaining({ landing_notice_url: "" }),
     );
+  });
+
+  it("edits the image tutorial as a special custom menu page", async () => {
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      landing_tutorial_url: "https://docs.example.com/getting-started",
+      custom_menu_items: [{
+        id: "image-tutorial",
+        label: "生图教程",
+        icon_svg: "",
+        url: "https://docs.example.com/images",
+        visibility: "user",
+        placement: "sidebar",
+        sort_order: 0,
+      }],
+      user_sidebar_order: ["/custom/image-tutorial", "/images", "/keys"],
+    });
+    const wrapper = mountView();
+    await flushPromises();
+
+    const imageTutorialURL = wrapper.get('[data-testid="image-tutorial-menu-url"]');
+    expect((imageTutorialURL.element as HTMLInputElement).value)
+      .toBe("https://docs.example.com/images");
+    expect(wrapper.text()).toContain("admin.settings.site.imageTutorialMenuHint");
+    expect((wrapper.get('[data-testid="landing-tutorial-url"]').element as HTMLInputElement).value)
+      .toBe("https://docs.example.com/getting-started");
+    expect(wrapper.get('[data-testid="user-sidebar-order-list"] [data-sidebar-path]').attributes('data-sidebar-path'))
+      .toBe('/custom/image-tutorial');
+
+    await imageTutorialURL.setValue("https://docs.example.com/new-images");
+    await wrapper.get('[data-testid="landing-tutorial-url"]').setValue("/getting-started");
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    const payload = updateSettings.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(payload).toEqual(expect.objectContaining({
+      landing_tutorial_url: "/getting-started",
+      custom_menu_items: [expect.objectContaining({
+        id: "image-tutorial",
+        label: "生图教程",
+        url: "https://docs.example.com/new-images",
+        visibility: "all",
+        placement: "sidebar",
+      })],
+      user_sidebar_order: expect.arrayContaining(["/custom/image-tutorial", "/images"]),
+    }));
+    expect(payload).not.toHaveProperty("image_tutorial_url");
+  });
+
+  it("migrates the legacy image tutorial without changing the integration tutorial", async () => {
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      legacy_image_tutorial_url: "https://docs.example.com/image-generation",
+      landing_tutorial_url: "https://docs.example.com/getting-started",
+      custom_menu_items: [{
+        id: "legacy-guide",
+        label: "接入教程",
+        icon_svg: "",
+        url: "https://docs.example.com/getting-started",
+        visibility: "user",
+        placement: "sidebar",
+        sort_order: 0,
+      }],
+      user_sidebar_order: ["/custom/legacy-guide", "/images", "/keys"],
+    });
+    const wrapper = mountView();
+    await flushPromises();
+
+    expect((wrapper.get('[data-testid="image-tutorial-menu-url"]').element as HTMLInputElement).value)
+      .toBe("https://docs.example.com/image-generation");
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateSettings).toHaveBeenCalledWith(expect.objectContaining({
+      custom_menu_items: [expect.objectContaining({
+        id: "legacy-guide",
+        label: "接入教程",
+      }), expect.objectContaining({
+        id: "image-tutorial",
+        label: "生图教程",
+        url: "https://docs.example.com/image-generation",
+        visibility: "all",
+        placement: "sidebar",
+      })],
+      user_sidebar_order: expect.arrayContaining(["/custom/image-tutorial"]),
+    }));
   });
 
   it("fails closed when landing notice fields are omitted", async () => {
@@ -1093,7 +1210,7 @@ describe("admin SettingsView payment visible method controls", () => {
     );
   });
 
-  it("renders panel rate limit card and saves settings", async () => {
+  it("renders panel rate limit card and saves it through the bottom settings action", async () => {
     getPanelRateLimitSettings.mockClear();
     updatePanelRateLimitSettings.mockClear();
     getPanelRateLimitSettings.mockResolvedValue({
@@ -1117,8 +1234,8 @@ describe("admin SettingsView payment visible method controls", () => {
     await userRpmInput.setValue("120");
 
     const saveButton = wrapper.find('[data-testid="panel-rate-limit-save"]');
-    expect(saveButton.exists()).toBe(true);
-    await saveButton.trigger("click");
+    expect(saveButton.exists()).toBe(false);
+    await wrapper.find("form").trigger("submit.prevent");
     await flushPromises();
 
     expect(updatePanelRateLimitSettings).toHaveBeenCalledWith({
@@ -1129,6 +1246,138 @@ describe("admin SettingsView payment visible method controls", () => {
       public_ip_rpm: 300,
     });
     expect(showSuccess).toHaveBeenCalled();
+  });
+
+  it("keeps one form submit action and persists every changed auxiliary setting", async () => {
+    getBetaPolicySettings.mockResolvedValueOnce({
+      rules: [{ beta_token: "context-1m-2025-08-07", action: "pass", scope: "all" }],
+    });
+    const wrapper = mountView();
+    await flushPromises();
+
+    expect(wrapper.findAll('form button[type="submit"]')).toHaveLength(1);
+    expect(wrapper.find('[data-testid="header-navigation-save"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="panel-rate-limit-save"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="upstream-billing-probe-save"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="ollama-cloud-usage-global-save"]').exists()).toBe(false);
+
+    await wrapper.get('[data-testid="overload-cooldown-minutes"]').setValue("20");
+    await wrapper.get('[data-testid="rate-limit-429-cooldown-seconds"]').setValue("12");
+    await wrapper.get('[data-testid="stream-timeout-threshold-count"]').setValue("4");
+    await wrapper.get('[data-testid="rectifier-enabled"]').setValue(false);
+    await wrapper.get('[data-testid="beta-policy-action"]').setValue("block");
+    await wrapper.get('[data-testid="panel-rate-limit-user-rpm"]').setValue("120");
+    await wrapper.get('[data-testid="upstream-billing-probe-interval"]').setValue("60");
+    await wrapper.get('[data-testid="ollama-cloud-usage-global-enabled"]').setValue(true);
+    await wrapper.get('[data-testid="ollama-cloud-usage-global-debounce"]').setValue("3");
+    await wrapper.get('[data-testid="ollama-cloud-usage-global-interval"]').setValue("90");
+
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateOverloadCooldownSettings).toHaveBeenCalledWith({
+      enabled: true,
+      cooldown_minutes: 20,
+    });
+    expect(updateRateLimit429CooldownSettings).toHaveBeenCalledWith({
+      enabled: true,
+      cooldown_seconds: 12,
+    });
+    expect(updateStreamTimeoutSettings).toHaveBeenCalledWith(expect.objectContaining({
+      threshold_count: 4,
+    }));
+    expect(updateRectifierSettings).toHaveBeenCalledWith(expect.objectContaining({
+      enabled: false,
+    }));
+    expect(updateBetaPolicySettings).toHaveBeenCalledWith({
+      rules: [expect.objectContaining({ action: "block" })],
+    });
+    expect(updatePanelRateLimitSettings).toHaveBeenCalledWith(expect.objectContaining({
+      user_rpm: 120,
+    }));
+    expect(updateUpstreamBillingProbeSettings).toHaveBeenCalledWith({
+      enabled: true,
+      interval_minutes: 60,
+    });
+    expect(updateOllamaCloudUsageSettings).toHaveBeenCalledWith({
+      enabled: true,
+      interval_minutes: 90,
+      debounce_minutes: 3,
+    });
+    expect(showSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not overwrite auxiliary defaults after a failed load", async () => {
+    getOverloadCooldownSettings.mockRejectedValueOnce(new Error("unavailable"));
+    const wrapper = mountView();
+    await flushPromises();
+
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateOverloadCooldownSettings).not.toHaveBeenCalled();
+    expect(showSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not report global success when an auxiliary update fails", async () => {
+    updatePanelRateLimitSettings.mockRejectedValueOnce(new Error("save failed"));
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.get('[data-testid="panel-rate-limit-user-rpm"]').setValue("120");
+    fetchPublicSettings.mockClear();
+    adminSettingsFetch.mockClear();
+    updateWebSearchEmulationConfig.mockClear();
+
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(showError).toHaveBeenCalled();
+    expect(showSuccess).not.toHaveBeenCalled();
+    expect(updateWebSearchEmulationConfig).toHaveBeenCalledTimes(1);
+    expect(fetchPublicSettings).toHaveBeenCalledWith(true);
+    expect(adminSettingsFetch).toHaveBeenCalledWith(true);
+  });
+
+  it("waits for every changed auxiliary save and ignores a duplicate submit", async () => {
+    let resolveOverloadSave!: (value: {
+      enabled: boolean;
+      cooldown_minutes: number;
+    }) => void;
+    const overloadSave = new Promise<{
+      enabled: boolean;
+      cooldown_minutes: number;
+    }>((resolve) => {
+      resolveOverloadSave = resolve;
+    });
+    updateOverloadCooldownSettings.mockImplementation(() => overloadSave);
+    updatePanelRateLimitSettings.mockRejectedValueOnce(new Error("save failed"));
+
+    const wrapper = mountView();
+    await flushPromises();
+    showError.mockClear();
+    showSuccess.mockClear();
+    updateSettings.mockClear();
+    await wrapper.get('[data-testid="overload-cooldown-minutes"]').setValue("20");
+    await wrapper.get('[data-testid="panel-rate-limit-user-rpm"]').setValue("120");
+
+    await wrapper.find("form").trigger("submit.prevent");
+    await vi.waitFor(() => {
+      expect(updateOverloadCooldownSettings).toHaveBeenCalledTimes(1);
+      expect(updatePanelRateLimitSettings).toHaveBeenCalledTimes(1);
+    });
+
+    await wrapper.find("form").trigger("submit.prevent");
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    expect(showError).not.toHaveBeenCalled();
+    expect(showSuccess).not.toHaveBeenCalled();
+
+    resolveOverloadSave({ enabled: true, cooldown_minutes: 20 });
+    await flushPromises();
+
+    expect(showError).toHaveBeenCalledTimes(1);
+    expect(showSuccess).not.toHaveBeenCalled();
+    expect(fetchPublicSettings).toHaveBeenCalledWith(true);
+    expect(adminSettingsFetch).toHaveBeenCalledWith(true);
   });
 
   it("does not render legacy visible payment method controls", async () => {
@@ -1622,6 +1871,80 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(getProviders).toHaveBeenCalledTimes(2);
   });
 
+  it("saves a provider without submitting unrelated settings drafts", async () => {
+    const providerPayload = {
+      provider_key: "alipay",
+      name: "Official Alipay",
+      config: {},
+      supported_types: ["alipay"],
+      enabled: true,
+    };
+    createProvider.mockResolvedValue({ data: { id: 7, ...providerPayload } });
+
+    const PaymentProviderListStub = defineComponent({
+      emits: ["create"],
+      setup(_, { emit }) {
+        return () =>
+          h(
+            "button",
+            {
+              class: "provider-create-stub",
+              onClick: () => emit("create"),
+            },
+            "create provider",
+          );
+      },
+    });
+    const PaymentProviderDialogStub = defineComponent({
+      props: { show: Boolean },
+      emits: ["save"],
+      setup(props, { emit, expose }) {
+        expose({ reset: vi.fn() });
+        return () =>
+          props.show
+            ? h(
+                "button",
+                {
+                  class: "provider-dialog-save-stub",
+                  onClick: () => emit("save", providerPayload),
+                },
+                "save provider",
+              )
+            : null;
+      },
+    });
+
+    const wrapper = mount(SettingsView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          Select: SelectStub,
+          Toggle: ToggleStub,
+          Icon: true,
+          ConfirmDialog: true,
+          PaymentProviderList: PaymentProviderListStub,
+          PaymentProviderDialog: PaymentProviderDialogStub,
+          GroupBadge: true,
+          GroupOptionItem: true,
+          ProxySelector: true,
+          ImageUpload: ImageUploadStub,
+          BackupSettings: true,
+        },
+      },
+    });
+
+    await flushPromises();
+    await openPaymentTab(wrapper);
+    updateSettings.mockClear();
+    await wrapper.get(".provider-create-stub").trigger("click");
+    await wrapper.get(".provider-dialog-save-stub").trigger("click");
+    await flushPromises();
+
+    expect(createProvider).toHaveBeenCalledWith(providerPayload);
+    expect(getProviders).toHaveBeenCalledTimes(2);
+    expect(updateSettings).not.toHaveBeenCalled();
+  });
+
   it("renders advanced scheduler copy as local experimental gateway policy", async () => {
     const wrapper = mountView();
 
@@ -1671,7 +1994,7 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(summary.text()).not.toContain("透传");
   });
 
-  it("loads and saves upstream billing probe settings from the gateway tab", async () => {
+  it("loads and saves upstream billing probe settings from the bottom settings action", async () => {
     getUpstreamBillingProbeSettings.mockResolvedValueOnce({
       enabled: false,
       interval_minutes: 45,
@@ -1693,14 +2016,15 @@ describe("admin SettingsView payment visible method controls", () => {
 
     await card.get('[data-testid="upstream-billing-probe-enabled"]').setValue(true);
     await card.get('[data-testid="upstream-billing-probe-interval"]').setValue(60);
-    await card.get('[data-testid="upstream-billing-probe-save"]').trigger("click");
+    expect(card.find('[data-testid="upstream-billing-probe-save"]').exists()).toBe(false);
+    await wrapper.find("form").trigger("submit.prevent");
     await flushPromises();
 
     expect(updateUpstreamBillingProbeSettings).toHaveBeenCalledWith({
       enabled: true,
       interval_minutes: 60,
     });
-    expect(showSuccess).toHaveBeenCalledWith("上游倍率自动探测设置已保存");
+    expect(showSuccess).toHaveBeenCalled();
   });
 
   it("loads and saves configurable Grok cross-client model mapping", async () => {
@@ -1748,7 +2072,8 @@ describe("admin SettingsView payment visible method controls", () => {
     await card.get('[data-testid="ollama-cloud-usage-global-enabled"]').setValue(true);
     await card.get('[data-testid="ollama-cloud-usage-global-debounce"]').setValue(3);
     await card.get('[data-testid="ollama-cloud-usage-global-interval"]').setValue(90);
-    await card.get('[data-testid="ollama-cloud-usage-global-save"]').trigger("click");
+    expect(card.find('[data-testid="ollama-cloud-usage-global-save"]').exists()).toBe(false);
+    await wrapper.find("form").trigger("submit.prevent");
     await flushPromises();
 
     expect(updateOllamaCloudUsageSettings).toHaveBeenCalledWith({

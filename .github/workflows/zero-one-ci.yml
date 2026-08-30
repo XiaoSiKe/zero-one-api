@@ -108,8 +108,11 @@ jobs:
       - name: Build approved Console router seam
         working-directory: frontend
         run: pnpm run build:cn-provider-shell
-      - name: Verify checked-in CN Provider administration assets
-        run: test -z "$(git status --porcelain --untracked-files=all -- deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v1)"
+      - name: Build Online Images route adapter
+        working-directory: frontend
+        run: pnpm run build:online-image
+      - name: Verify checked-in Console adapter assets
+        run: test -z "$(git status --porcelain --untracked-files=all -- deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v2 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v3 deploy/zero-one/recovered-frontend/console/assets/online-image-v7 deploy/zero-one/recovered-frontend/console/assets/online-image-v8 deploy/zero-one/recovered-frontend/console/assets/online-image-v9 deploy/zero-one/recovered-frontend/console/assets/online-image-v10)"
 
   backend:
     runs-on: ubuntu-latest

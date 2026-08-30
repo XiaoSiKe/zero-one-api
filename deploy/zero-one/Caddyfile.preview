@@ -14,7 +14,7 @@ import Caddyfile.shared
 :80 {
 	@preview_console_pages {
 		method GET HEAD
-		path /setup /home /login /register /email-verify /auth/* /forgot-password /reset-password /key-usage /legal/* /model-plaza /dashboard /keys /batch-image /usage /redeem /affiliate /available-channels /profile /subscriptions /purchase /orders /payment/* /admin /admin/* /monitor
+		path /setup /setup/ /home /home/ /login /login/ /register /register/ /email-verify /email-verify/ /auth/* /forgot-password /forgot-password/ /reset-password /reset-password/ /key-usage /key-usage/ /legal/* /model-plaza /model-plaza/ /dashboard /dashboard/ /keys /keys/ /images /images/ /batch-image /batch-image/ /usage /usage/ /redeem /redeem/ /affiliate /affiliate/ /available-channels /available-channels/ /profile /profile/ /subscriptions /subscriptions/ /purchase /purchase/ /orders /orders/ /payment/* /custom/* /admin /admin/ /admin/* /monitor /monitor/
 	}
 	header @preview_console_pages >Content-Security-Policy "default-src 'self'; worker-src 'self' blob:; script-src 'self' 'nonce-hJm3vqvOCSJtMiorHL9OJA=='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src http: https:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
 	import landing_routes

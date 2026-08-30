@@ -5,6 +5,7 @@ import {
   formatIntervalLabel,
   formatPeakNote,
   formatPrice,
+  listLandingPlatforms,
   parseModelPlazaResponse,
   selectRepresentativePriceRows,
   type ModelPlazaData,
@@ -365,9 +366,9 @@ describe('landing price projection', () => {
       }),
       group({
         id: 4,
-        name: 'gemini',
-        platform: 'gemini',
-        models: [model('gemini-2.5-pro', 'gemini')],
+        name: 'deepseek',
+        platform: 'deepseek',
+        models: [model('deepseek-v3.2', 'deepseek')],
       }),
     ])
 
@@ -379,9 +380,27 @@ describe('landing price projection', () => {
     const openai = selectRepresentativePriceRows(data, { platform: 'openai', search: 'gpt-9' })
     expect(openai).toHaveLength(1)
     expect(openai[0]?.platformFilter).toBe('openai')
-    expect(filterPriceRows(all, 'gemini')).toEqual([
-      expect.objectContaining({ model: 'gemini-2.5-pro' }),
+    expect(filterPriceRows(all, 'deepseek')).toEqual([
+      expect.objectContaining({ model: 'deepseek-v3.2' }),
     ])
+    expect(listLandingPlatforms(data)).toEqual(['anthropic', 'openai', 'deepseek'])
+    expect(all).toEqual(expect.arrayContaining([
+      expect.objectContaining({ model: 'deepseek-v3.2', platformFilter: 'deepseek' }),
+    ]))
+  })
+
+  it('omits platforms that have no displayable price row', () => {
+    const data = dataFrom([
+      group({ platform: 'openai', models: [model('gpt-live', 'openai')] }),
+      group({
+        id: 2,
+        name: 'gemini-without-price',
+        platform: 'gemini',
+        models: [model('gemini-hidden', 'gemini', { pricing: null })],
+      }),
+    ])
+
+    expect(listLandingPlatforms(data)).toEqual(['openai'])
   })
 
   it('prefers a standard group before price and keeps different billing modes separate', () => {
@@ -499,11 +518,19 @@ describe('model plaza fetch states', () => {
     })
   })
 
-  it('returns empty for valid responses with no models and rejects malformed JSON', async () => {
+  it('returns empty for valid responses with no displayable models and rejects malformed JSON', async () => {
     const emptyRequest = vi
       .fn<typeof fetch>()
       .mockResolvedValue(Response.json(envelope([group({ models: [] })])))
     await expect(fetchModelPlaza({ request: emptyRequest })).resolves.toMatchObject({ status: 'empty' })
+
+    const unpricedRequest = vi.fn<typeof fetch>().mockResolvedValue(Response.json(envelope([
+      group({
+        platform: 'gemini',
+        models: [model('gemini-without-price', 'gemini', { pricing: null })],
+      }),
+    ])))
+    await expect(fetchModelPlaza({ request: unpricedRequest })).resolves.toMatchObject({ status: 'empty' })
 
     const invalidRequest = vi
       .fn<typeof fetch>()

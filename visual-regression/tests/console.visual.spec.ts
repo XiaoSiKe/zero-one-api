@@ -1361,6 +1361,9 @@ test.describe('Console header navigation settings contracts', () => {
     const descriptions = panel.locator('[data-testid^="header-navigation-description-"]')
 
     await expect(panel).toBeVisible()
+    await expect(page.locator('button[data-zero-one-settings-save="true"]')).toBeVisible()
+    await expect(page.locator('button[data-zero-one-standalone-save="true"]')).toHaveCount(8)
+    await expect(page.locator('button[data-zero-one-standalone-save="true"]:visible')).toHaveCount(0)
     await expect(page.getByTestId('community-qr-settings')).toHaveCount(0)
     await expect(page.getByTestId('community-qr-button')).toHaveCount(0)
     await expect(names).toHaveCount(2)
@@ -1370,6 +1373,9 @@ test.describe('Console header navigation settings contracts', () => {
     await expect(page.getByTestId('profile-navigation-toggle')).toBeChecked()
     await expect(page.getByTestId('subscription-navigation-toggle')).toBeChecked()
     await expect(page.getByTestId('model-plaza-placement')).toHaveValue('header')
+    await expect(page.locator('header a[href="https://docs.01yapi.test/start"]')).toHaveText('开源知识库')
+    await expect(page.getByText('开源知识库链接', { exact: true })).toBeVisible()
+    await expect(page.getByTestId('image-tutorial-menu-url')).toHaveValue('')
     await expect(page.getByTestId('user-sidebar-order-list').locator('[data-sidebar-path]').first()).toHaveAttribute('data-sidebar-path', '/keys')
     await expect(page.getByTestId('admin-sidebar-order-list').locator('[data-sidebar-path]').first()).toHaveAttribute('data-sidebar-path', '/admin/settings')
     await expect.poll(() => page.locator('aside nav a[href="/admin/settings"], aside nav a[href="/admin/dashboard"]').evaluateAll((links) =>
@@ -1398,6 +1404,7 @@ test.describe('Console header navigation settings contracts', () => {
     await page.getByTestId('header-navigation-icon-2').getByTestId('navigation-icon-preset-star').click()
     await page.getByTestId('subscription-navigation-toggle').uncheck()
     await page.getByTestId('model-plaza-placement').selectOption('sidebar')
+    await page.getByTestId('image-tutorial-menu-url').fill('https://docs.01yapi.test/image-generation')
     await page.getByTestId('user-sidebar-order-section').locator('summary').click()
     await page.getByTestId('user-sidebar-order-list').locator('[data-sidebar-path="/keys"]').getByRole('button', { name: '下移' }).click()
     await page.getByTestId('user-sidebar-order-section').locator('summary').click()
@@ -1415,7 +1422,8 @@ test.describe('Console header navigation settings contracts', () => {
     await expect(panel).toHaveScreenshot('console-header-navigation-settings.png', {
       maxDiffPixelRatio: 0.02,
     })
-    await page.getByTestId('header-navigation-save').click()
+    await expect(page.getByTestId('header-navigation-save')).toHaveCount(0)
+    await page.locator('button[data-zero-one-settings-save="true"]').click()
     await expect.poll(() => savedBody).not.toBeNull()
     const submittedBody = savedBody as unknown as Record<string, unknown>
     expect(submittedBody).toMatchObject({
@@ -1423,7 +1431,9 @@ test.describe('Console header navigation settings contracts', () => {
       profile_navigation_enabled: true,
       subscription_navigation_enabled: false,
       model_plaza_placement: 'sidebar',
+      landing_tutorial_url: 'https://docs.01yapi.test/getting-started',
     })
+    expect(submittedBody).not.toHaveProperty('image_tutorial_url')
     expect((submittedBody.user_sidebar_order as string[]).slice(0, 3)).toEqual([
       '/dashboard', '/keys', '/model-plaza',
     ])
@@ -1441,10 +1451,146 @@ test.describe('Console header navigation settings contracts', () => {
         navigation_type: 'qr',
         qr_description: '扫码查看运营公告',
       }),
+      expect.objectContaining({
+        id: 'image-tutorial',
+        label: '生图教程',
+        url: 'https://docs.01yapi.test/image-generation',
+        visibility: 'all',
+        placement: 'sidebar',
+      }),
     ])
     expect(savedHeaders.authorization).toBe('Bearer visual-fixture-token')
     expect(savedHeaders['accept-language']).toBe('zh')
     expect(savedHeaders['x-admin-ui-request']).toBe('1')
+  })
+
+  test('routes toggle-only and Enter saves through the bottom action after auxiliary requests settle', async ({ page }) => {
+    const requestOrder: string[] = []
+    let mainSaves = 0
+    let auxiliarySaves = 0
+    let auxiliarySettled = false
+
+    await page.route('**/api/v1/admin/settings/overload-cooldown', async (route) => {
+      if (route.request().method() !== 'PUT') return route.fallback()
+      auxiliarySaves += 1
+      requestOrder.push(`aux-start-${auxiliarySaves}`)
+      const submitted = route.request().postDataJSON() as {
+        enabled: boolean
+        cooldown_minutes: number
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      auxiliarySettled = true
+      requestOrder.push(`aux-end-${auxiliarySaves}`)
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json; charset=utf-8',
+        body: JSON.stringify({ code: 0, message: 'ok', data: submitted }),
+      })
+    })
+    await page.route('**/api/v1/admin/settings', async (route) => {
+      if (route.request().method() === 'PUT') {
+        mainSaves += 1
+        auxiliarySettled = false
+        requestOrder.push(`main-${mainSaves}`)
+      }
+      await route.fallback()
+    })
+
+    await page.goto('http://127.0.0.1:4173/admin/settings')
+    await page.getByRole('tab', { name: '网关服务' }).click()
+    const card = page.getByRole('heading', { name: '529 过载冷却', exact: true })
+      .locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " card ")][1]')
+    const toggle = card.getByRole('switch')
+    const bottomSave = page.locator('button[data-zero-one-settings-save="true"]')
+    await expect(card.locator('button[data-zero-one-standalone-save="true"]')).toBeHidden()
+
+    // Toggle emits only click (no native input/change), so this covers the
+    // button-only dirty path.
+    await toggle.click()
+    await bottomSave.click()
+    await expect.poll(() => auxiliarySaves).toBe(1)
+    await expect.poll(() => mainSaves).toBe(1)
+    await expect(page.getByText('设置保存成功', { exact: true })).toBeVisible()
+    expect(auxiliarySettled).toBe(true)
+    expect(requestOrder).toEqual(['main-1', 'aux-start-1', 'aux-end-1'])
+    await expect(bottomSave).toBeEnabled()
+
+    // The recovered page used to bind Enter directly to the card-only save.
+    // It must now submit the bottom action and preserve main-first ordering.
+    await toggle.click()
+    const cooldown = card.locator('input[type="number"]').first()
+    await cooldown.fill('17')
+    await cooldown.press('Enter')
+    await expect.poll(() => auxiliarySaves).toBe(2)
+    await expect.poll(() => mainSaves).toBe(2)
+    await expect.poll(() => requestOrder).toEqual([
+      'main-1', 'aux-start-1', 'aux-end-1',
+      'main-2', 'aux-start-2', 'aux-end-2',
+    ])
+    await expect(bottomSave).toBeEnabled()
+  })
+
+  test('does not report global success when an auxiliary save fails', async ({ page }) => {
+    let mainSaves = 0
+    let auxiliarySaves = 0
+    await page.route('**/api/v1/admin/settings/overload-cooldown', async (route) => {
+      if (route.request().method() !== 'PUT') return route.fallback()
+      auxiliarySaves += 1
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json; charset=utf-8',
+        body: JSON.stringify({ code: 500, message: 'auxiliary save failed' }),
+      })
+    })
+    await page.route('**/api/v1/admin/settings', async (route) => {
+      if (route.request().method() === 'PUT') mainSaves += 1
+      await route.fallback()
+    })
+
+    await page.goto('http://127.0.0.1:4173/admin/settings')
+    await page.getByRole('tab', { name: '网关服务' }).click()
+    const card = page.getByRole('heading', { name: '529 过载冷却', exact: true })
+      .locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " card ")][1]')
+    await card.getByRole('switch').click()
+    const bottomSave = page.locator('button[data-zero-one-settings-save="true"]')
+    await bottomSave.click()
+
+    await expect(page.locator('[data-zero-one-settings-save-status]')).toContainText('辅助设置保存失败')
+    expect(mainSaves).toBe(1)
+    expect(auxiliarySaves).toBe(1)
+    await expect(page.getByText('设置保存成功', { exact: true })).toHaveCount(0)
+    await expect(bottomSave).toBeEnabled()
+    await expect(card).toHaveAttribute('data-zero-one-settings-dirty', 'true')
+  })
+
+  test('does not let an unfinished navigation editor overwrite an early main save', async ({ page }) => {
+    let releaseOverlayRead: (() => void) | undefined
+    const overlayReadGate = new Promise<void>((resolve) => { releaseOverlayRead = resolve })
+    let savedBody: Record<string, unknown> | null = null
+
+    await page.route('**/api/v1/admin/settings', async (route) => {
+      const request = route.request()
+      if (request.method() === 'GET' && request.resourceType() === 'fetch') {
+        await overlayReadGate
+        return route.fallback()
+      }
+      if (request.method() === 'PUT') {
+        savedBody = request.postDataJSON() as Record<string, unknown>
+      }
+      await route.fallback()
+    })
+
+    await page.goto('http://127.0.0.1:4173/admin/settings')
+    const bottomSave = page.locator('button[data-zero-one-settings-save="true"]')
+    await expect(bottomSave).toBeVisible()
+    await bottomSave.click()
+    await expect.poll(() => savedBody).not.toBeNull()
+
+    const submitted = savedBody as unknown as Record<string, unknown>
+    expect(submitted.landing_tutorial_url).not.toBe('')
+    expect(submitted.user_sidebar_order).not.toEqual([])
+    expect(submitted.admin_sidebar_order).not.toEqual([])
+    releaseOverlayRead?.()
   })
 })
 
@@ -1599,7 +1745,7 @@ test.describe('Console built-in sidebar navigation contracts', () => {
       response.request().method() === 'PUT' &&
       new URL(response.url()).pathname === '/api/v1/admin/settings',
     )
-    await page.getByTestId('header-navigation-save').click()
+    await page.locator('button[data-zero-one-settings-save="true"]').click()
     await settingsResponse
     await page.reload()
     await expect(orderList.locator('[data-sidebar-path]').first())
@@ -1686,6 +1832,15 @@ test.describe('Console built-in sidebar navigation contracts', () => {
       profileNavigationEnabled: false,
       subscriptionNavigationEnabled: false,
       modelPlazaPlacement: 'sidebar',
+      imageGenerationKeys: [{
+        id: 301,
+        user_id: regularUser.id,
+        key: 'sk-regular-image',
+        name: '普通用户生图',
+        group_id: 401,
+        status: 'active',
+        group: { id: 401, name: '生图分组', platform: 'openai', allow_image_generation: true },
+      }],
       userSidebarOrder: [
         '/dashboard', '/keys', '/batch-image', '/usage', '/available-channels', '/monitor',
         '/subscriptions', '/purchase', '/orders', '/redeem', '/affiliate', '/profile',
@@ -1726,7 +1881,10 @@ test.describe('Console built-in sidebar navigation contracts', () => {
       links.map((link) => new URL((link as HTMLAnchorElement).href).pathname),
     )
     expect(orderedHrefs.slice(0, 2)).toEqual(['/dashboard', '/keys'])
-    expect(orderedHrefs.slice(-3)).toEqual(['/model-plaza', '/custom/user-tool', '/custom/all-tool'])
+    expect(orderedHrefs.slice(-4)).toEqual([
+      '/model-plaza', '/custom/user-tool', '/custom/all-tool', '/images',
+    ])
+    await expect(page.locator('aside nav a[href="/images"]')).toHaveCount(1)
     await expect.poll(() => modelPlaza.locator('svg').evaluate((svg) => {
       const rect = svg.getBoundingClientRect()
       return [rect.width, rect.height]
@@ -2270,7 +2428,7 @@ test.describe('Console header custom iframe menu contracts', () => {
     const settingsRequest = page.waitForRequest((request) =>
       request.method() === 'PUT' && new URL(request.url()).pathname === '/api/v1/admin/settings',
     )
-    await page.getByTestId('header-navigation-save').click()
+    await page.locator('button[data-zero-one-settings-save="true"]').click()
     const submitted = (await settingsRequest).postDataJSON() as {
       custom_menu_items: Array<{ id: string; placement?: string; visibility?: string }>
     }
@@ -2786,14 +2944,17 @@ test.describe('Console visual contracts', () => {
     expect(response?.status()).toBe(200)
     const html = await response!.text()
     expect(html).toContain('/assets/cn-provider-admin-v1/cn-provider-admin.js')
-    expect(html).toContain('/assets/cn-provider-shell-v1/index-9xJBhx8B.js')
+    expect(html).toContain('/assets/cn-provider-shell-v3/index-9xJBhx8B.js')
+    expect(html).toContain('/assets/online-image-v10/online-image.js')
+    expect(html).toContain('/assets/zero-one-settings-unified-save-v1.js')
     expect(html).toContain('/assets/zero-one-local-preview-guard-v2.js')
+    expect(html).toContain('/assets/zero-one-custom-page-security-v1.js')
     expect(html).toContain('/assets/zero-one-navigation-reconciliation-v1.js?v=3')
-    expect(html).toContain('/assets/zero-one-console-parity-v1.js?v=4')
+    expect(html).toContain('/assets/zero-one-console-parity-v1.js?v=6')
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=4')
-    expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=10')
-    expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=5')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=20')
+    expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=14')
+    expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=6')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=24')
     expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=7')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.js?v=1')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.css?v=1')

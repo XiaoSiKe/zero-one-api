@@ -19,6 +19,7 @@ const sidebarApp = reactive({
     admin_sidebar_order: [] as string[], user_sidebar_order: [] as string[],
     custom_menu_items: [] as CustomMenuItem[], profile_navigation_enabled: true,
     subscription_navigation_enabled: true, model_plaza_placement: 'sidebar',
+    landing_tutorial_url: '',
   },
   toggleSidebar: vi.fn(), setMobileOpen: vi.fn(),
 })
@@ -34,6 +35,9 @@ vi.mock('@/stores', () => ({
 }))
 vi.mock('@/composables/useBatchImageAccess', () => ({
   useBatchImageAccess: () => ({ canUseBatchImage: { value: false }, refreshBatchImageAccess: vi.fn() }),
+}))
+vi.mock('@/composables/useImageGenerationAccess', () => ({
+  useImageGenerationAccess: () => ({ canUseImageGeneration: { value: true }, refreshImageGenerationAccess: vi.fn() }),
 }))
 vi.mock('@/utils/featureFlags', () => ({
   FeatureFlags: {},
@@ -263,6 +267,7 @@ describe('AppSidebar rendered ordering', () => {
     sidebarApp.cachedPublicSettings.admin_sidebar_order = []
     sidebarApp.cachedPublicSettings.user_sidebar_order = []
     sidebarApp.cachedPublicSettings.custom_menu_items = []
+    sidebarApp.cachedPublicSettings.landing_tutorial_url = ''
     sidebarApp.cachedPublicSettings.profile_navigation_enabled = true
     sidebarAdmin.customMenuItems = []
     sidebarAdmin.navigationSettings = null
@@ -319,6 +324,33 @@ describe('AppSidebar rendered ordering', () => {
     await nextTick()
     expect(wrapper.findAll('a.sidebar-link').slice(0, 2).map((link) => link.attributes('href')))
       .toEqual(['/usage', '/keys'])
+  })
+
+  it('uses the image tutorial custom page once in the persisted user order', async () => {
+    sidebarApp.cachedPublicSettings.custom_menu_items = [{
+      id: 'image-tutorial', label: '生图教程', icon_svg: '',
+      url: 'https://docs.example.test/image-generation', visibility: 'user',
+      placement: 'sidebar', sort_order: 0,
+    }]
+    sidebarApp.cachedPublicSettings.user_sidebar_order = ['/custom/image-tutorial', '/images', '/keys']
+    const { wrapper } = await renderSidebar()
+    sidebarAuth.isAdmin = false
+    await nextTick()
+    const links = wrapper.findAll('a[href="/custom/image-tutorial"]')
+    expect(links).toHaveLength(1)
+    expect(wrapper.findAll('a.sidebar-link')[0].attributes('href')).toBe('/custom/image-tutorial')
+    expect(wrapper.find('a[href="/image-tutorial"]').exists()).toBe(false)
+  })
+
+  it('shows the migrated image tutorial from the admin navigation projection', async () => {
+    sidebarAdmin.customMenuItems = [{
+      id: 'image-tutorial', label: '生图教程', icon_svg: '',
+      url: 'https://docs.example.test/image-generation', visibility: 'user',
+      placement: 'sidebar', sort_order: 0,
+    }]
+    const { wrapper } = await renderSidebar()
+    const tutorial = wrapper.get('a[href="/custom/image-tutorial"]')
+    expect(tutorial.text()).toContain('生图教程')
   })
 
   it('keeps filtered simple-mode groups out and orders model plaza and custom entries once', async () => {

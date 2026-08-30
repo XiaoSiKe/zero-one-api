@@ -22,6 +22,15 @@ var semverPattern = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
 // menuItemIDPattern validates custom menu item IDs: alphanumeric, hyphens, underscores only.
 var menuItemIDPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
+const imageTutorialMenuItemID = "image-tutorial"
+
+func isImageTutorialMenuLabel(label string) bool {
+	trimmed := strings.TrimSpace(label)
+	return trimmed == "生图教程" ||
+		strings.EqualFold(trimmed, "Image Tutorial") ||
+		strings.EqualFold(trimmed, "Image Generation Tutorial")
+}
+
 // generateMenuItemID generates a short random hex ID for a custom menu item.
 func generateMenuItemID() (string, error) {
 	b := make([]byte, 8)
@@ -274,6 +283,8 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		APIBaseURL:                                             settings.APIBaseURL,
 		ContactInfo:                                            settings.ContactInfo,
 		DocURL:                                                 settings.DocURL,
+		LegacyImageTutorialURL:                                 settings.LegacyImageTutorialURL,
+		LandingTutorialURL:                                     settings.LandingTutorialURL,
 		HomeContent:                                            settings.HomeContent,
 		CompactHomeEnabled:                                     settings.CompactHomeEnabled,
 		HideCcsImportButton:                                    settings.HideCcsImportButton,

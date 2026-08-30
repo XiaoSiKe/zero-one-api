@@ -41,7 +41,7 @@ function NavigationLinks({
       <a href="#pricing" onClick={onNavigate}>定价｜模型广场</a>
       {channelMonitorEnabled ? <a href="#status" onClick={onNavigate}>渠道状态</a> : null}
       {docUrl ? (
-        <a href={documentUrl(docUrl)} onClick={onNavigate}>文档</a>
+        <a href={documentUrl(docUrl)} onClick={onNavigate}>开源知识库</a>
       ) : null}
       <button
         className="nav-announcements"
