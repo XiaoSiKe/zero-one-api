@@ -171,7 +171,7 @@ const iframeSlow = ref(false)
 const iframeGeneration = ref(0)
 const embeddedFrame = ref<HTMLIFrameElement | null>(null)
 let iframeSlowTimeout: ReturnType<typeof setTimeout> | null = null
-const pageTheme = ref<'light' | 'dark'>('light')
+const pageTheme = ref<'light' | 'dark'>(detectTheme())
 const renderedHtml = ref('')
 const markdownContainer = ref<HTMLElement | null>(null)
 const tocItems = ref<TocItem[]>([])
@@ -406,8 +406,6 @@ watch(markdownSlug, (slug) => {
 }, { immediate: true })
 
 onMounted(async () => {
-  pageTheme.value = detectTheme()
-
   if (typeof document !== 'undefined') {
     themeObserver = new MutationObserver(() => {
       pageTheme.value = detectTheme()

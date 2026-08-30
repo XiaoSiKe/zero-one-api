@@ -7,6 +7,7 @@ import type { CustomMenuItem } from '@/types'
 import CustomPageView from '../CustomPageView.vue'
 
 const storeFixtures = vi.hoisted(() => ({
+  detectedTheme: { value: 'light' as 'light' | 'dark' },
   adminSettingsStore: {
     customMenuItems: [] as CustomMenuItem[],
     fetch: vi.fn(),
@@ -39,8 +40,9 @@ vi.mock('@/stores/adminSettings', () => ({
   useAdminSettingsStore: () => adminSettingsStore,
 }))
 vi.mock('@/utils/embedded-url', () => ({
-  buildEmbeddedUrl: (url: string) => url,
-  detectTheme: () => 'light',
+  buildEmbeddedUrl: (url: string, _userId: number, _token: string, theme: string) =>
+    theme === 'dark' ? `${url}?theme=dark` : url,
+  detectTheme: () => storeFixtures.detectedTheme.value,
 }))
 vi.mock('@/api/client', () => ({ buildApiUrl: (path: string) => path }))
 vi.mock('vue-i18n', async (importOriginal) => {
@@ -58,6 +60,7 @@ vi.mock('vue-i18n', async (importOriginal) => {
 
 describe('CustomPageView iframe loading state', () => {
   beforeEach(() => {
+    storeFixtures.detectedTheme.value = 'light'
     appStore.fetchPublicSettings.mockClear()
     appStore.publicSettingsLoaded = true
     appStore.cachedPublicSettings.custom_menu_items = [
@@ -113,6 +116,15 @@ describe('CustomPageView iframe loading state', () => {
     expect(wrapper.get('iframe').classes()).not.toContain('custom-embed-frame-loading')
 
     wrapper.unmount()
+  })
+
+  it('starts a dark-theme custom page with its final URL instead of loading twice', async () => {
+    storeFixtures.detectedTheme.value = 'dark'
+    const { wrapper } = await mountPage()
+    await nextTick()
+
+    expect(wrapper.get('iframe').attributes('src')).toBe('https://embed.01yapi.test/radar?theme=dark')
+    expect(wrapper.get('iframe').attributes('data-load-generation')).toBe('1')
   })
 
   it('retains a completed iframe while a slower public configuration request finishes', async () => {
