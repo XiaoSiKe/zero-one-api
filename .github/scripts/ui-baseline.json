@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-08-29-r1",
-  "baseline_commit": "862dc1b4793387570ef5c4626ee29a95227cd41c",
+  "baseline_ref": "ui-approved-2026-08-30-r1",
+  "baseline_commit": "06349b7919439df60cdcb6d7d3776ac00d6b13bb",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -15,6 +15,7 @@
     "deploy/zero-one/test-routing.sh",
     "deploy/zero-one/verify-cn-provider-console.mjs",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-accounts-cn-platform-options.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-accounts-cn-protocol-guidance.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-groups-cn-platform-options.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-affiliate-customers.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-announcement-editor.png",
@@ -30,11 +31,13 @@
     "visual-regression/tests/__screenshots__/chromium-desktop/console-user-redeem.png",
     "visual-regression/tests/__screenshots__/chromium-mobile/console-affiliate-customers.png",
     "visual-regression/tests/__screenshots__/chromium-mobile/console-accounts-cn-platform-options.png",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-accounts-cn-protocol-guidance.png",
     "visual-regression/tests/__screenshots__/chromium-mobile/console-groups-cn-platform-options.png",
     "visual-regression/tests/console.cn-platforms.spec.ts",
     "visual-regression/tests/console.visual.spec.ts",
     "visual-regression/tests/fixtures/api.ts",
-    "visual-regression/tests/redeem.behavior.spec.ts"
+    "visual-regression/tests/redeem.behavior.spec.ts",
+    "visual-regression/tests/version-baseline.spec.ts"
   ],
   "compatibility_paths": [
     "frontend/src/api/",
@@ -79,7 +82,9 @@
         "frontend/src/router/meta.d.ts",
         "frontend/src/styles/console-skin.css",
         "frontend/src/views/admin/ops/",
-        "deploy/zero-one/recovered-frontend/console/"
+        "deploy/zero-one/recovered-frontend/console/",
+        "visual-regression/tests/fixtures/api.ts",
+        "visual-regression/tests/version-baseline.spec.ts"
       ]
     },
     {
@@ -260,8 +265,10 @@
         "visual-regression/tests/console.cn-platforms.spec.ts",
         "visual-regression/tests/fixtures/api.ts",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-accounts-cn-platform-options.png",
+        "visual-regression/tests/__screenshots__/chromium-desktop/console-accounts-cn-protocol-guidance.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-groups-cn-platform-options.png",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-accounts-cn-platform-options.png",
+        "visual-regression/tests/__screenshots__/chromium-mobile/console-accounts-cn-protocol-guidance.png",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-groups-cn-platform-options.png"
       ]
     },
