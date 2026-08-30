@@ -6,8 +6,8 @@ const e = {
   // Home Page
   home: {
     viewOnGithub: "在 GitHub 上查看",
-    viewDocs: "查看文档",
-    docs: "文档",
+    viewDocs: "开源知识库",
+    docs: "开源知识库",
     switchToLight: "切换到浅色模式",
     switchToDark: "切换到深色模式",
     dashboard: "控制台",
@@ -412,6 +412,7 @@ const e = {
     announcements: "公告",
     apiKeys: "API 密钥",
     batchImage: "批量生图",
+    onlineImageGeneration: "在线生图",
     usage: "使用记录",
     redeem: "兑换",
     affiliate: "邀请返利",
@@ -442,7 +443,7 @@ const e = {
     github: "GitHub",
     mySubscriptions: "我的订阅",
     buySubscription: "充值/订阅",
-    docs: "文档",
+    docs: "开源知识库",
     myOrders: "我的订单",
     orderManagement: "订单管理",
     paymentDashboard: "支付概览",
@@ -2070,6 +2071,82 @@ const e = {
     }
   }
 }, r = {
+  imageGeneration: {
+    title: "在线生图",
+    description: "使用已开启生图权限的 API Key 生成图片，并在浏览器里直接预览或下载。",
+    controls: {
+      apiKey: "API Key",
+      createImageApiKey: "创建生图API密钥",
+      refreshKeys: "刷新密钥",
+      modelSelection: "模型选择",
+      count: "张数",
+      imageSize: "尺寸",
+      quality: "质量",
+      responseFormat: "返回格式",
+      prompt: "提示词",
+      referenceImages: "参考图",
+      clearReferenceImages: "清空参考图",
+      removeReferenceImage: "移除参考图",
+      referenceImagesDrop: "拖拽参考图到这里，或点击选择文件",
+      chooseReferenceImages: "选择图片",
+      imageTutorial: "生图教程",
+      generate: "开始生成",
+      generating: "正在生成"
+    },
+    hints: {
+      apiKey: "这里只显示仍然可用、且所属分组已开启生图的密钥。",
+      modelsLoading: "正在读取当前密钥可用的模型…",
+      modelsEmpty: "当前密钥没有返回可用模型，请刷新密钥或检查分组模型配置。",
+      responseFormat: "使用 base64 便于在浏览器内直接保存结果。",
+      referenceImages: "可选，支持 PNG、JPG、WEBP；单张不超过 20MB，最多 4 张。上传后将使用图生图模式。",
+      referenceImagesSelected: "已选择 {count} 张参考图。",
+      imageTutorialUnavailable: "管理员尚未添加“生图教程”自定义菜单。"
+    },
+    results: {
+      title: "生成结果",
+      empty: "还没有生成图片",
+      emptyHint: "填写提示词后点击开始生成。",
+      revisedPrompt: "优化后的提示词",
+      download: "下载",
+      open: "打开"
+    },
+    history: {
+      title: "历史记录",
+      hint: "记录保存在当前浏览器，可随时下载。",
+      clear: "清空历史",
+      clearConfirm: "确认清空当前浏览器里的生图历史吗？",
+      empty: "暂无历史记录",
+      download: "下载历史图片",
+      open: "打开历史图片"
+    },
+    sizeDialog: {
+      title: "选择图片尺寸",
+      current: "当前选择：{size}",
+      resolution: "分辨率",
+      aspectRatio: "宽高比",
+      output: "实际输出尺寸",
+      cancel: "取消",
+      confirm: "确认"
+    },
+    messages: {
+      chooseKey: "请选择 API Key。",
+      chooseModel: "请选择当前密钥可用的模型。",
+      choosePrompt: "请填写提示词。",
+      loadKeysFailed: "加载生图密钥失败。",
+      loadModelsFailed: "读取当前密钥可用模型失败。",
+      generateFailed: "图片生成失败。",
+      generated: "图片生成成功。",
+      noImages: "接口没有返回可预览的图片。",
+      downloadFailed: "图片下载失败。",
+      historyLoadFailed: "加载本地历史失败。",
+      historySaveFailed: "图片已生成，但保存本地历史失败。",
+      historyClearFailed: "清空本地历史失败。",
+      referenceImagesLimit: "最多选择 4 张参考图。",
+      referenceImageType: "参考图只支持 PNG、JPG 或 WEBP。",
+      referenceImageTooLarge: "单张参考图不能超过 20MB。"
+    }
+  }
+}, n = {
   // Dashboard
   dashboard: {
     title: "管理控制台",
@@ -3313,7 +3390,7 @@ const e = {
     }
   }
   // Available Channels (aggregated read-only view)
-}, n = {
+}, s = {
   availableChannels: {
     title: "可用渠道",
     description: "按渠道聚合查看关联分组与支持模型（已展开通配符）",
@@ -4066,7 +4143,7 @@ anthropic-beta: claude-code-20250219`,
     }
   }
   // Accounts Management
-}, s = {
+}, l = {
   accounts: {
     title: "账号管理",
     description: "管理 AI 平台账号和 Cookie",
@@ -5542,7 +5619,7 @@ sk-ant-sid01-yyyyy...`,
     }
   }
   // Scheduled Tests
-}, l = {
+}, d = {
   scheduledTests: {
     title: "定时测试",
     addPlan: "添加计划",
@@ -6157,7 +6234,7 @@ https://user:pass{'@'}proxy.example.com:443`,
     }
   }
   // Ops Monitoring
-}, d = {
+}, c = {
   ops: {
     title: "运维监控",
     description: "运维监控与排障",
@@ -6963,7 +7040,7 @@ https://user:pass{'@'}proxy.example.com:443`,
     }
   }
   // Settings
-}, c = {
+}, p = {
   settings: {
     title: "系统设置",
     description: "管理注册、邮箱验证、默认值和 SMTP 设置",
@@ -7592,8 +7669,7 @@ https://user:pass{'@'}proxy.example.com:443`,
         empty: "尚未添加顶部入口。可按需添加一个或多个。",
         hint: "这里只管理顶部二维码入口；侧边栏和双位置页面仍在下方“自定义菜单页面”中管理。",
         add: "添加顶部入口",
-        remove: "删除顶部入口",
-        save: "保存顶部导航"
+        remove: "删除顶部入口"
       },
       apiBaseUrl: "API 端点地址",
       apiBaseUrlHint: '用于"使用密钥"、"导入到 CC Switch"和回调地址建议，留空则使用当前站点地址',
@@ -7622,9 +7698,15 @@ https://user:pass{'@'}proxy.example.com:443`,
       contactInfo: "客服联系方式",
       contactInfoPlaceholder: "例如：QQ: 123456789",
       contactInfoHint: "填写客服联系方式，将展示在兑换页面、个人资料等位置",
-      docUrl: "文档链接",
-      docUrlHint: "文档网站的链接。留空则隐藏文档链接。",
+      docUrl: "开源知识库链接",
+      docUrlHint: "用于官网和控制台顶部导航的“开源知识库”入口。留空则隐藏该入口。",
       docUrlPlaceholder: "https://docs.example.com",
+      imageTutorialMenu: "生图教程（特殊自定义菜单）",
+      imageTutorialMenuPlaceholder: "https://docs.example.com/image-generation",
+      imageTutorialMenuHint: "这里编辑的仍是标准自定义菜单页面：固定显示在左侧导航，并由在线生图页的“生图教程”按钮打开同一个 /custom/image-tutorial iframe 页面。目标网站必须允许 iframe 嵌入；留空会移除该菜单。",
+      landingTutorialUrl: "首页接入教学文档链接",
+      landingTutorialUrlPlaceholder: "https://docs.example.com/getting-started",
+      landingTutorialUrlHint: "用于首页“查看接入教学文档”按钮。留空时沿用上方开源知识库链接。",
       siteLogo: "站点Logo",
       uploadImage: "上传图片",
       remove: "移除",
@@ -8458,7 +8540,7 @@ model not supported`,
     saveFailed: "保存模板失败",
     deleteFailed: "删除模板失败"
   }
-}, p = {
+}, u = {
   audit: {
     title: "操作日志",
     description: "记录管理员与用户的管理面操作，请求头凭证仅保留首尾、请求体已脱敏。日志无法单条删除，全量清理需二次验证。",
@@ -8509,7 +8591,7 @@ model not supported`,
       failed: "清理操作日志失败"
     }
   }
-}, u = {
+}, m = {
   promptAudit: {
     title: "提示词审计",
     description: "通过 OpenAI 兼容 Qwen3Guard 节点异步复核或同步阻止用户输入；事件的完整提示词会入库保存，仅供管理员复核。",
@@ -8703,16 +8785,16 @@ model not supported`,
       prompt_audit_scanners_required: "至少需要启用一个风险分类。"
     }
   }
-}, m = {
-  ...r,
+}, g = {
   ...n,
   ...s,
   ...l,
   ...d,
   ...c,
   ...p,
-  ...u
-}, g = {
+  ...u,
+  ...m
+}, y = {
   // Subscription Progress (Header component)
   subscriptionProgress: {
     title: "我的订阅",
@@ -9327,15 +9409,16 @@ model not supported`,
       }
     }
   }
-}, y = {
+}, h = {
   ...e,
   ...t,
   ...i,
   ...o,
   ...a,
-  admin: m,
-  ...g
+  ...r,
+  admin: g,
+  ...y
 };
 export {
-  y as default
+  h as default
 };

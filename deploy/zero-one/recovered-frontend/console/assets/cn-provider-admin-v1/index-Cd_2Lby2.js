@@ -6,8 +6,8 @@ const e = {
   // Home Page
   home: {
     viewOnGithub: "View on GitHub",
-    viewDocs: "View Documentation",
-    docs: "Docs",
+    viewDocs: "Open-source Knowledge Base",
+    docs: "Open-source Knowledge Base",
     switchToLight: "Switch to Light Mode",
     switchToDark: "Switch to Dark Mode",
     dashboard: "Dashboard",
@@ -412,6 +412,7 @@ const e = {
     announcements: "Announcements",
     apiKeys: "API Keys",
     batchImage: "Batch Images",
+    onlineImageGeneration: "Online Images",
     usage: "Usage",
     redeem: "Redeem",
     affiliate: "Affiliate Rebates",
@@ -442,7 +443,7 @@ const e = {
     github: "GitHub",
     mySubscriptions: "My Subscriptions",
     buySubscription: "Recharge / Subscription",
-    docs: "Docs",
+    docs: "Open-source Knowledge Base",
     myOrders: "My Orders",
     orderManagement: "Orders",
     paymentDashboard: "Payment Dashboard",
@@ -2070,6 +2071,82 @@ const e = {
     }
   }
 }, r = {
+  imageGeneration: {
+    title: "Online Image Generation",
+    description: "Generate images with an API key that has image access, then preview or download them in the browser.",
+    controls: {
+      apiKey: "API Key",
+      createImageApiKey: "Create image API key",
+      refreshKeys: "Refresh keys",
+      modelSelection: "Model selection",
+      count: "Count",
+      imageSize: "Size",
+      quality: "Quality",
+      responseFormat: "Response format",
+      prompt: "Prompt",
+      referenceImages: "Reference images",
+      clearReferenceImages: "Clear reference images",
+      removeReferenceImage: "Remove reference image",
+      referenceImagesDrop: "Drop reference images here, or click to choose files",
+      chooseReferenceImages: "Choose images",
+      imageTutorial: "Image tutorial",
+      generate: "Generate",
+      generating: "Generating"
+    },
+    hints: {
+      apiKey: "Only active keys whose groups allow image generation are shown.",
+      modelsLoading: "Loading models available to this key…",
+      modelsEmpty: "This key returned no available models. Refresh the key or check its group model configuration.",
+      responseFormat: "Base64 makes it easier to save results directly in the browser.",
+      referenceImages: "Optional PNG, JPG, or WEBP files; 20MB each, up to four. Adding files switches to image editing.",
+      referenceImagesSelected: "{count} reference image(s) selected.",
+      imageTutorialUnavailable: "The administrator has not added the Image Tutorial custom page."
+    },
+    results: {
+      title: "Results",
+      empty: "No images yet",
+      emptyHint: "Enter a prompt and start generating.",
+      revisedPrompt: "Revised prompt",
+      download: "Download",
+      open: "Open"
+    },
+    history: {
+      title: "History",
+      hint: "History stays in this browser and can be downloaded at any time.",
+      clear: "Clear history",
+      clearConfirm: "Clear image history stored in this browser?",
+      empty: "No history yet",
+      download: "Download history image",
+      open: "Open history image"
+    },
+    sizeDialog: {
+      title: "Choose image size",
+      current: "Current selection: {size}",
+      resolution: "Resolution",
+      aspectRatio: "Aspect ratio",
+      output: "Output size",
+      cancel: "Cancel",
+      confirm: "Confirm"
+    },
+    messages: {
+      chooseKey: "Choose an API key.",
+      chooseModel: "Choose a model available to the current key.",
+      choosePrompt: "Enter a prompt.",
+      loadKeysFailed: "Failed to load image-generation keys.",
+      loadModelsFailed: "Failed to load models for this key.",
+      generateFailed: "Image generation failed.",
+      generated: "Images generated.",
+      noImages: "The API returned no previewable images.",
+      downloadFailed: "Image download failed.",
+      historyLoadFailed: "Failed to load local history.",
+      historySaveFailed: "The image was generated, but local history could not be saved.",
+      historyClearFailed: "Failed to clear local history.",
+      referenceImagesLimit: "You can select up to four reference images.",
+      referenceImageType: "Reference images must be PNG, JPG, or WEBP.",
+      referenceImageTooLarge: "Each reference image must be 20MB or smaller."
+    }
+  }
+}, n = {
   // Dashboard
   dashboard: {
     title: "Admin Dashboard",
@@ -3313,7 +3390,7 @@ const e = {
     }
   }
   // Available Channels (aggregated read-only view)
-}, n = {
+}, s = {
   availableChannels: {
     title: "Available Channels",
     description: "Aggregated view: each channel with its linked groups and supported models (wildcards expanded)",
@@ -4066,7 +4143,7 @@ anthropic-beta: claude-code-20250219`,
     }
   }
   // Accounts
-}, s = {
+}, l = {
   accounts: {
     title: "Account Management",
     description: "Manage AI platform accounts and credentials",
@@ -5541,7 +5618,7 @@ Supports multiple tokens, one per line`,
     usageError: "Fetch Error"
   }
   // Scheduled Tests
-}, l = {
+}, d = {
   scheduledTests: {
     title: "Scheduled Tests",
     addPlan: "Add Plan",
@@ -6154,7 +6231,7 @@ https://user:pass{'@'}proxy.example.com:443`,
     }
   }
   // Ops Monitoring
-}, d = {
+}, c = {
   ops: {
     title: "Ops Monitoring",
     description: "Operational monitoring and troubleshooting",
@@ -6960,7 +7037,7 @@ https://user:pass{'@'}proxy.example.com:443`,
     }
   }
   // Settings
-}, c = {
+}, u = {
   settings: {
     title: "System Settings",
     description: "Manage registration, email verification, default values, and SMTP settings",
@@ -7589,8 +7666,7 @@ https://user:pass{'@'}proxy.example.com:443`,
         empty: "No header entries yet. Add one or more as needed.",
         hint: "This section manages header QR entries. Sidebar and dual-placement pages remain in Custom Menu Pages below.",
         add: "Add Header Entry",
-        remove: "Remove Header Entry",
-        save: "Save Header Navigation"
+        remove: "Remove Header Entry"
       },
       apiBaseUrl: "API Base URL",
       apiBaseUrlPlaceholder: "https://api.example.com",
@@ -7619,9 +7695,15 @@ https://user:pass{'@'}proxy.example.com:443`,
       contactInfo: "Contact Info",
       contactInfoPlaceholder: "e.g., QQ: 123456789",
       contactInfoHint: "Customer support contact info, displayed on redeem page, profile, etc.",
-      docUrl: "Documentation URL",
+      docUrl: "Open-source Knowledge Base URL",
       docUrlPlaceholder: "https://docs.example.com",
-      docUrlHint: "Link to your documentation site. Leave empty to hide the documentation link.",
+      docUrlHint: "Used by the “Open-source Knowledge Base” links on the public site and Console header. Leave empty to hide them.",
+      imageTutorialMenu: "Image Tutorial (Special Custom Menu)",
+      imageTutorialMenuPlaceholder: "https://docs.example.com/image-generation",
+      imageTutorialMenuHint: "This is still a standard custom-menu page. It is fixed in the sidebar, and the Online Images tutorial button opens the same /custom/image-tutorial iframe page. The target must allow iframe embedding; clear the field to remove the menu.",
+      landingTutorialUrl: "Homepage Integration Tutorial URL",
+      landingTutorialUrlPlaceholder: "https://docs.example.com/getting-started",
+      landingTutorialUrlHint: "Used by the “View integration tutorial” button on the homepage. Falls back to the Open-source Knowledge Base URL when empty.",
       siteLogo: "Site Logo",
       uploadImage: "Upload Image",
       remove: "Remove",
@@ -8455,7 +8537,7 @@ model not supported`,
     saveFailed: "Failed to save profile",
     deleteFailed: "Failed to delete profile"
   }
-}, u = {
+}, p = {
   audit: {
     title: "Audit Logs",
     description: "Records management-plane operations by admins and users. Header credentials keep only their first/last characters and request bodies are redacted. Entries cannot be deleted individually; clearing all requires two-factor verification.",
@@ -8506,7 +8588,7 @@ model not supported`,
       failed: "Failed to clear audit logs"
     }
   }
-}, p = {
+}, m = {
   promptAudit: {
     title: "Prompt Audit",
     description: "Review user input asynchronously or block it synchronously through OpenAI-compatible Qwen3Guard nodes. Full prompts are stored with events for admin review.",
@@ -8700,16 +8782,16 @@ model not supported`,
       prompt_audit_scanners_required: "Enable at least one risk category."
     }
   }
-}, m = {
-  ...r,
+}, h = {
   ...n,
   ...s,
   ...l,
   ...d,
   ...c,
   ...u,
-  ...p
-}, h = {
+  ...p,
+  ...m
+}, g = {
   // Subscription Progress (Header component)
   subscriptionProgress: {
     title: "My Subscriptions",
@@ -9324,15 +9406,16 @@ You can restart it anytime from the user menu in the top right corner.`,
       }
     }
   }
-}, g = {
+}, y = {
   ...e,
   ...t,
   ...a,
   ...o,
   ...i,
-  admin: m,
-  ...h
+  ...r,
+  admin: h,
+  ...g
 };
 export {
-  g as default
+  y as default
 };
