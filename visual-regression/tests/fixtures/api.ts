@@ -447,6 +447,11 @@ export async function seedConsole(
     { id: 21, email: 'bound@01yapi.test', username: '已绑定客户丙', role: 'user', status: 'disabled', created_at: '2026-04-01T00:00:00+08:00' },
   ]
   const allCustomers = [user, ...affiliateUsers]
+  const affiliateValueByUser = new Map<number, number>([
+    [10, 12.5],
+    [21, 5],
+  ])
+  const exclusiveAgentIDs = new Set([10])
   const affiliateInvites = [
     {
       inviter_id: 10,
@@ -727,9 +732,20 @@ export async function seedConsole(
       const query = requestUrl.searchParams.get('search')?.toLocaleLowerCase() || ''
       const pageNumber = Math.max(1, Number(requestUrl.searchParams.get('page') || 1))
       const pageSize = Math.max(1, Number(requestUrl.searchParams.get('page_size') || 20))
-      const matches = allCustomers.filter((candidate) =>
+      const affiliateView = requestUrl.searchParams.get('affiliate_view')
+      let matches = allCustomers.filter((candidate) =>
         `${candidate.id} ${candidate.email} ${candidate.username}`.toLocaleLowerCase().includes(query),
       )
+      if (affiliateView === 'relationships' || affiliateView === 'exclusive_agents') {
+        matches = matches
+          .map((candidate) => ({
+            ...candidate,
+            agent_value: affiliateValueByUser.get(candidate.id) ?? 0,
+            exclusive_agent: exclusiveAgentIDs.has(candidate.id),
+          }))
+          .filter((candidate) => affiliateView !== 'exclusive_agents' || candidate.exclusive_agent)
+          .sort((left, right) => right.agent_value - left.agent_value || right.id - left.id)
+      }
       const start = (pageNumber - 1) * pageSize
       return fulfill(route, {
         items: matches.slice(start, start + pageSize),

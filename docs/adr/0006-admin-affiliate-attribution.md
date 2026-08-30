@@ -46,12 +46,16 @@ affiliate-profile `created_at`; a late manual attribution does not restart or
 extend that window.
 
 The administrator Console presents Affiliate Attribution as one clickable
-first-level navigation entry. The original invitation, rebate and transfer
-records remain the upstream-shaped core of the module, and the full affiliate
-settings and per-user overrides remain available without a second editable
-copy in System Settings. The administrator entry remains reachable when the
-user-facing affiliate switch is off so an administrator can configure and
-re-enable it; the ordinary user entry remains controlled by that switch.
+first-level navigation entry. Its visible workspace contains invitation
+records, customer relationships, exclusive agents, transfer records and
+operations settings. The order-level rebate-record reader and ledger data
+remain available for financial audit and compatibility, but the rebate-record
+page is no longer a visible workspace tab; its historical route redirects to
+customer relationships. The full affiliate settings and per-user overrides
+remain available without a second editable copy in System Settings. The
+administrator entry remains reachable when the user-facing affiliate switch
+is off so an administrator can configure and re-enable it; the ordinary user
+entry remains controlled by that switch.
 An administrator mutation that changes one user's custom invite code and
 exclusive rebate rate is atomic, including the action that clears both values;
 a code conflict or database failure must not leave only one value changed.
@@ -109,11 +113,15 @@ already expired can be attributed for visibility but does not receive a new
 validity period. Corrections to an existing attribution remain an exceptional
 database-governance task outside this UI.
 
-The customer list deliberately reuses the general administrator user API, and
-the detail deliberately reuses the affiliate overview and inviter-filtered
-invitation records. The custom-affiliate-user endpoint keeps its original
-meaning, so the new view does not add a competing customer API or duplicate
-the ledger calculation.
+The customer list deliberately reuses the general administrator user API. Its
+explicit affiliate view adds Agent Value and Exclusive Agent fields, orders
+before pagination by Agent Value descending and User ID descending, and may
+filter to Exclusive Agents only. Ordinary administrator user-list calls remain
+unchanged. Agent Value reads the existing affiliate historical quota rather
+than recalculating ledger rows. The detail deliberately reuses the affiliate
+overview and inviter-filtered invitation records. The custom-affiliate-user
+endpoint keeps its original meaning, so the view does not add a competing
+customer API or duplicate the ledger calculation.
 
 Upstream syncs persist an `upstream_sync` attestation that binds the previous
 stable release, the pre-merge product commit and the resulting two-parent merge

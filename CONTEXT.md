@@ -104,6 +104,14 @@ _Avoid_: 计费账单、异步鉴权、无限后台任务
 一个 Invitee 最多归属一个 Inviter。Administrator 只能为从未绑定过邀请人的现有 User 做一次人工补绑；绑定时间是不可覆盖的墓碑，即使邀请人账号删除后 `inviter_id` 被清空，也不能再绑。禁止自绑、循环关系、覆盖、改绑或解绑。补绑只影响绑定时间之后完成付款的交易，不追溯订单、余额或既有返利流水；返利有效期仍从 Invitee 的 Affiliate 档案创建时间计算，不因补绑而重新起算。人工补绑仅接受人类操作者的 JWT Administrator，不接受 Admin API Key，并受既有敏感操作 step-up 策略保护；该策略启用时必须完成近期 TOTP step-up。关系记录必须持久保存绑定时间；操作者 ID 是不随 Administrator 账号删除而清空的审计快照。
 _Avoid_: 邀请码补发、历史返利重算、可编辑客户分组、Admin API Key 批量归属
 
+**Agent Value（代理价值）**:
+一个 User 作为邀请人累计获得的全部返利，权威值为 Affiliate 档案的 `aff_history_quota`。它包含当前可提、仍在冻结和已经提取到余额的返利；提取不减少代理价值。没有 Affiliate 档案的 User 代理价值为零。管理员客户目录按代理价值倒序、再按 User ID 倒序排列。
+_Avoid_: 当前可提额度、提现余额、订单金额、客户端逐页求和
+
+**Exclusive Agent（专属代理）**:
+由 Administrator 设置了专属返利比例（`aff_rebate_rate_percent IS NOT NULL`）的 User。只设置专属邀请码而没有专属返利比例的 User 不是 Exclusive Agent。该标签只描述邀请返利运营身份，不改变 User 的系统权限角色。
+_Avoid_: 自定义邀请码用户、Administrator 角色、普通 Inviter、客户分组
+
 **Public Announcement（公开公告）**:
 由 Administrator 明确标记为公开，并通过匿名官网接口投影为纯文本标题与正文的有效公告；历史公告默认不公开。
 _Avoid_: Console 内部公告、默认公开公告、富文本营销内容

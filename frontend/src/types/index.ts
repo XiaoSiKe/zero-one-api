@@ -109,6 +109,9 @@ export interface AdminUser extends User {
   group_rates?: Record<number, number>
   // 当前并发数（仅管理员列表接口返回）
   current_concurrency?: number
+  // 仅管理员邀请返利客户目录返回。
+  agent_value?: number
+  exclusive_agent?: boolean
 }
 
 export interface LoginRequest {

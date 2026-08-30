@@ -35,6 +35,11 @@ type User struct {
 	UpdatedAt            time.Time
 	DeletedAt            *time.Time // 非 nil 表示用户已软删除
 
+	// AgentValue 与 ExclusiveAgent 只在管理员邀请返利客户目录中填充。
+	// 指针用于保证普通管理员 User 列表的响应合同保持不变。
+	AgentValue     *float64
+	ExclusiveAgent *bool
+
 	// GroupRates 用户专属分组倍率配置
 	// map[groupID]rateMultiplier
 	GroupRates map[int64]float64

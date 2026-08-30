@@ -15,7 +15,7 @@ const consoleRouteNames = [
   'AdminChannelMonitor', 'ChannelStatus', 'AdminSubscriptions', 'AdminAccounts',
   'AdminAnnouncements', 'AdminProxies', 'AdminRedeem', 'AdminPromoCodes',
   'AdminSettings', 'AdminRiskControl', 'AdminPromptAudit', 'AdminUsage',
-  'AdminAffiliateInvites', 'AdminAffiliateRebates', 'AdminAffiliateTransfers',
+  'AdminAffiliateInvites', 'AdminAffiliateTransfers',
   'AdminPaymentDashboard', 'AdminOrders', 'AdminPaymentPlans',
 ]
 

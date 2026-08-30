@@ -87,14 +87,14 @@ require "$recovered_console_index" 'await import("/assets/zero-one-console-parit
 require "$recovered_console_index" 'href="/assets/zero-one-console-parity-v1.css?v=4"'
 require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=10")'
 require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=5"'
-require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=19")'
+require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=20")'
 require "$recovered_header_custom_menu" "style.setProperty('display', 'none', 'important')"
 require "$recovered_console_index" 'window.__ZERO_ONE_PUBLIC_SETTINGS__ = payload.data'
 require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=7"'
 require "$recovered_console_index" 'await import("/assets/zero-one-redeem-actions-v1.js?v=1")'
 require "$recovered_console_index" 'href="/assets/zero-one-redeem-actions-v1.css?v=1"'
 require "$recovered_console_index" 'await import("/assets/zero-one-ccswitch-launch-v1.js?v=1")'
-require "$recovered_console_index" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=5")'
+require "$recovered_console_index" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=6")'
 require "$recovered_console_index" 'href="/assets/zero-one-affiliate-admin-v1.css?v=3"'
 require "$recovered_console_index" 'await import("/assets/zero-one-floating-panels-v1.js?v=2")'
 require "$recovered_console_index" 'await import("/assets/zero-one-login-recovery-v2.js?v=3")'
@@ -167,7 +167,8 @@ require "$recovered_header_custom_menu" 'reconcileSidebarOrder'
 require "$recovered_header_custom_menu" 'sidebarRowNodes(row)'
 require "$recovered_header_custom_menu" 'final: true'
 forbid "$recovered_header_custom_menu" 'previewSidebarSectionOrder'
-require "$recovered_header_custom_menu" 'await image.decode()'
+require "$recovered_header_custom_menu" 'prewarmQRAsset(item'
+require "$recovered_header_custom_menu" 'await Promise.race([decoder.decode(), deadline])'
 require "$recovered_header_custom_menu" 'state.loadSeen = true'
 require "$recovered_header_custom_menu" "retry.dataset.testid = 'custom-page-retry'"
 require "$recovered_header_navigation" 'defaultSidebarOrders'
@@ -190,6 +191,9 @@ require "$recovered_ccswitch_launch" "includes('keys.ccSwitchNotInstalled')"
 require "$recovered_affiliate_admin" "'data-testid': 'admin-affiliate-nav'"
 require "$recovered_affiliate_admin" "'data-testid': 'affiliate-bind-open'"
 require "$recovered_affiliate_admin" "tabLink('邀请记录'"
+require "$recovered_affiliate_admin" "'专属代理'"
+require "$recovered_affiliate_admin" 'affiliate_view:'
+forbid "$recovered_affiliate_admin" "tabLink('返利记录'"
 require "$recovered_affiliate_admin" '/admin/users?'
 require "$recovered_affiliate_admin" '/overview'
 require "$recovered_affiliate_admin" "method: 'POST'"

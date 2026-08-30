@@ -12,8 +12,8 @@ const manifest = validateManifest(
 )
 
 test('validates the approved UI baseline manifest', () => {
-  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-30-r1')
-  assert.equal(manifest.baseline_commit, '06349b7919439df60cdcb6d7d3776ac00d6b13bb')
+  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-30-r4')
+  assert.equal(manifest.baseline_commit, '3a25dfd2bce2238a68f670de91752f90c4c0c6e4')
   assert.equal(manifest.edge_build.console_source, 'deploy/zero-one/recovered-frontend/console')
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/redeem.behavior.spec.ts'))
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/version-baseline.spec.ts'))
@@ -91,6 +91,8 @@ test('validates the approved UI baseline manifest', () => {
     '/admin/affiliates/invites',
     '/admin/affiliates/invites?section=customers',
     '/admin/affiliates/invites?section=customers&user_id={id}',
+    '/admin/affiliates/invites?section=exclusive_agents',
+    '/admin/affiliates/invites?section=exclusive_agents&user_id={id}',
     '/admin/affiliates/invites?section=settings',
     '/admin/affiliates/rebates',
     '/admin/affiliates/transfers',

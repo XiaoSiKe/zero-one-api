@@ -55,6 +55,71 @@ func (s *UserRepoSuite) TestList_DefaultSortByNewestFirst() {
 	s.Require().Equal(first.ID, users[1].ID)
 }
 
+func (s *UserRepoSuite) TestListWithFilters_AffiliateRelationshipsSortsBeforePagination() {
+	first := s.mustCreateUser(&service.User{Email: "affiliate-first@example.com"})
+	second := s.mustCreateUser(&service.User{Email: "affiliate-second@example.com"})
+	third := s.mustCreateUser(&service.User{Email: "affiliate-third@example.com"})
+	fourth := s.mustCreateUser(&service.User{Email: "affiliate-fourth@example.com"})
+
+	_, err := integrationDB.ExecContext(s.ctx, `
+		INSERT INTO user_affiliates (
+			user_id, aff_code, aff_code_custom, aff_rebate_rate_percent,
+			aff_history_quota, created_at, updated_at
+		) VALUES
+			($1, 'AFFFIRST', false, NULL, 50, NOW(), NOW()),
+			($2, 'AFFSECOND', false, 12.5, 75, NOW(), NOW()),
+			($3, 'AFFTHIRD', true, NULL, 75, NOW(), NOW())`,
+		first.ID, second.ID, third.ID,
+	)
+	s.Require().NoError(err)
+
+	pageOne, result, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{
+		Page: 1, PageSize: 2,
+	}, service.UserListFilters{AffiliateView: service.AffiliateUserViewRelationships})
+	s.Require().NoError(err)
+	s.Require().Equal(int64(4), result.Total)
+	s.Require().Equal([]int64{third.ID, second.ID}, []int64{pageOne[0].ID, pageOne[1].ID})
+	s.Require().Equal(75.0, *pageOne[0].AgentValue)
+	s.Require().False(*pageOne[0].ExclusiveAgent, "自定义邀请码不能成为专属代理")
+	s.Require().True(*pageOne[1].ExclusiveAgent)
+
+	pageTwo, _, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{
+		Page: 2, PageSize: 2,
+	}, service.UserListFilters{AffiliateView: service.AffiliateUserViewRelationships})
+	s.Require().NoError(err)
+	s.Require().Equal([]int64{first.ID, fourth.ID}, []int64{pageTwo[0].ID, pageTwo[1].ID})
+	s.Require().Equal(0.0, *pageTwo[1].AgentValue)
+	s.Require().False(*pageTwo[1].ExclusiveAgent)
+}
+
+func (s *UserRepoSuite) TestListWithFilters_AffiliateExclusiveAgentsFiltersByRateOnly() {
+	rateAgent := s.mustCreateUser(&service.User{Email: "rate-agent@example.com"})
+	codeOnly := s.mustCreateUser(&service.User{Email: "code-only@example.com"})
+	noProfile := s.mustCreateUser(&service.User{Email: "no-profile@example.com"})
+
+	_, err := integrationDB.ExecContext(s.ctx, `
+		INSERT INTO user_affiliates (
+			user_id, aff_code, aff_code_custom, aff_rebate_rate_percent,
+			aff_history_quota, created_at, updated_at
+		) VALUES
+			($1, 'RATEAGENT', false, 8.5, 20, NOW(), NOW()),
+			($2, 'CODEONLY', true, NULL, 99, NOW(), NOW())`,
+		rateAgent.ID, codeOnly.ID,
+	)
+	s.Require().NoError(err)
+
+	users, result, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{
+		Page: 1, PageSize: 20,
+	}, service.UserListFilters{AffiliateView: service.AffiliateUserViewExclusiveAgents})
+	s.Require().NoError(err)
+	s.Require().Equal(int64(1), result.Total)
+	s.Require().Len(users, 1)
+	s.Require().Equal(rateAgent.ID, users[0].ID)
+	s.Require().True(*users[0].ExclusiveAgent)
+	s.Require().NotEqual(codeOnly.ID, users[0].ID)
+	s.Require().NotEqual(noProfile.ID, users[0].ID)
+}
+
 func (s *UserRepoSuite) TestCreateAndRead_PreservesSignupSourceAndActivityTimestamps() {
 	lastLoginAt := time.Now().Add(-2 * time.Hour).UTC().Truncate(time.Microsecond)
 	lastActiveAt := time.Now().Add(-30 * time.Minute).UTC().Truncate(time.Microsecond)

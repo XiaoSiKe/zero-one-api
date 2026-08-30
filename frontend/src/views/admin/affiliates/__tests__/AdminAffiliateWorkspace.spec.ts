@@ -28,10 +28,11 @@ function mountWorkspace(type: 'invites' | 'rebates' | 'transfers' = 'invites') {
       stubs: {
         AppLayout: LayoutStub,
         AdminAffiliateRecordsTable: { template: '<div data-testid="records" />' },
-        AdminAffiliateSettingsPanel: { template: '<div data-testid="settings" />' },
-        AdminAffiliateCustomers: { template: '<div data-testid="customers" />' },
+        AdminAffiliateSettingsPanel: { name: 'AdminAffiliateSettingsPanel', template: '<div data-testid="settings" />' },
+        AdminAffiliateCustomers: { name: 'AdminAffiliateCustomers', props: ['exclusiveOnly'], template: '<div data-testid="customers" />' },
         AdminAffiliateCustomerDetail: {
-          props: ['userId'],
+          name: 'AdminAffiliateCustomerDetail',
+          props: ['userId', 'returnSection'],
           template: '<div data-testid="customer-detail">{{ userId }}</div>',
         },
       },
@@ -44,7 +45,7 @@ describe('AdminAffiliateWorkspace', () => {
     routeState.query = {}
   })
 
-  it('shows five tabs in the approved order and defaults to Invite Records', () => {
+  it('shows the new five tabs in the approved order and defaults to Invite Records', () => {
     const wrapper = mountWorkspace()
     const tabs = wrapper.findAll('[data-testid^="affiliate-tab-"]')
 
@@ -52,7 +53,7 @@ describe('AdminAffiliateWorkspace', () => {
     expect(tabs.map((tab) => tab.attributes('data-testid'))).toEqual([
       'affiliate-tab-invites',
       'affiliate-tab-customers',
-      'affiliate-tab-rebates',
+      'affiliate-tab-exclusive-agents',
       'affiliate-tab-transfers',
       'affiliate-tab-settings',
     ])
@@ -72,14 +73,27 @@ describe('AdminAffiliateWorkspace', () => {
     expect(wrapper.get('[data-testid="affiliate-tab-customers"]').attributes('aria-selected')).toBe('true')
   })
 
-  it('keeps settings query-only and rebate/transfer pages independent', () => {
+  it('routes exclusive agents through the shared customer list and preserves detail context', async () => {
+    routeState.query = { section: 'exclusive_agents' }
+    const wrapper = mountWorkspace()
+    expect(wrapper.find('[data-testid="customers"]').exists()).toBe(true)
+    expect(wrapper.getComponent({ name: 'AdminAffiliateCustomers' }).props('exclusiveOnly')).toBe(true)
+
+    routeState.query = { section: 'exclusive_agents', user_id: '42' }
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('[data-testid="customer-detail"]').text()).toBe('42')
+    expect(wrapper.getComponent({ name: 'AdminAffiliateCustomerDetail' }).props('returnSection')).toBe('exclusive_agents')
+    expect(wrapper.get('[data-testid="affiliate-tab-exclusive-agents"]').attributes('aria-selected')).toBe('true')
+  })
+
+  it('keeps settings query-only and transfer pages independent', () => {
     routeState.query = { section: 'settings' }
     const settingsWrapper = mountWorkspace()
     expect(settingsWrapper.find('[data-testid="settings"]').exists()).toBe(true)
 
     routeState.query = {}
-    const rebateWrapper = mountWorkspace('rebates')
-    expect(rebateWrapper.get('[data-testid="affiliate-tab-rebates"]').attributes('aria-selected')).toBe('true')
-    expect(rebateWrapper.find('[data-testid="records"]').exists()).toBe(true)
+    const transferWrapper = mountWorkspace('transfers')
+    expect(transferWrapper.get('[data-testid="affiliate-tab-transfers"]').attributes('aria-selected')).toBe('true')
+    expect(transferWrapper.find('[data-testid="records"]').exists()).toBe(true)
   })
 })

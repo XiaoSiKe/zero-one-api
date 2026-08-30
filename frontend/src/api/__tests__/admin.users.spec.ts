@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { post } = vi.hoisted(() => ({
+const { get, post } = vi.hoisted(() => ({
+  get: vi.fn(),
   post: vi.fn(),
 }))
 
 vi.mock('@/api/client', () => ({
   apiClient: {
+    get,
     post,
   },
 }))
@@ -13,6 +15,7 @@ vi.mock('@/api/client', () => ({
 import {
   batchUpdateLimits,
   bindUserAuthIdentity,
+  list,
   type AdminBindAuthIdentityRequest,
   type AdminBoundAuthIdentity,
   type BatchUpdateUserLimitsRequest,
@@ -83,6 +86,7 @@ const batchResponseContractExact: Assert<
 
 describe('admin users api auth identity binding', () => {
   beforeEach(() => {
+    get.mockReset()
     post.mockReset()
   })
 
@@ -146,5 +150,24 @@ describe('admin users api auth identity binding', () => {
     expect(result).toEqual({ affected: 2 })
     expect(batchRequestContractExact).toBe(true)
     expect(batchResponseContractExact).toBe(true)
+  })
+
+  it('sends the explicit affiliate customer view without a client-side sort override', async () => {
+    get.mockResolvedValue({ data: { items: [], total: 0, page: 1, page_size: 20 } })
+
+    await list(1, 20, {
+      include_subscriptions: false,
+      affiliate_view: 'exclusive_agents',
+    })
+
+    expect(get).toHaveBeenCalledWith('/admin/users', {
+      params: expect.objectContaining({
+        affiliate_view: 'exclusive_agents',
+        include_subscriptions: false,
+        sort_by: undefined,
+        sort_order: undefined,
+      }),
+      signal: undefined,
+    })
   })
 })

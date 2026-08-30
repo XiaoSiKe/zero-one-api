@@ -120,6 +120,7 @@ type BindUserAuthIdentityChannelRequest struct {
 //   - attr[{id}]: filter by custom attribute value, e.g. attr[1]=company
 //   - group_name: fuzzy filter by allowed group name
 //   - api_key_group_id: filter by the exact group bound to the user's API keys
+//   - affiliate_view: relationships or exclusive_agents; adds the affiliate projection and owns ordering
 func (h *UserHandler) List(c *gin.Context) {
 	page, pageSize := response.ParsePagination(c)
 
@@ -137,6 +138,15 @@ func (h *UserHandler) List(c *gin.Context) {
 		GroupName:  strings.TrimSpace(c.Query("group_name")),
 		Attributes: parseAttributeFilters(c),
 	}
+	affiliateView := strings.TrimSpace(c.Query("affiliate_view"))
+	switch affiliateView {
+	case "":
+	case service.AffiliateUserViewRelationships, service.AffiliateUserViewExclusiveAgents:
+		filters.AffiliateView = affiliateView
+	default:
+		response.BadRequest(c, "Invalid affiliate_view")
+		return
+	}
 	if raw := strings.TrimSpace(c.Query("api_key_group_id")); raw != "" {
 		if id, parseErr := strconv.ParseInt(raw, 10, 64); parseErr == nil && id > 0 {
 			filters.APIKeyGroupID = id
@@ -144,6 +154,11 @@ func (h *UserHandler) List(c *gin.Context) {
 	}
 	sortBy := c.DefaultQuery("sort_by", "created_at")
 	sortOrder := c.DefaultQuery("sort_order", "desc")
+	if filters.AffiliateView != "" {
+		// 邀请返利客户目录的财务排序属于该视图合同，不能被普通 User 列表排序覆盖。
+		sortBy = "agent_value"
+		sortOrder = "desc"
+	}
 	if raw, ok := c.GetQuery("include_subscriptions"); ok {
 		includeSubscriptions := parseBoolQueryWithDefault(raw, true)
 		filters.IncludeSubscriptions = &includeSubscriptions

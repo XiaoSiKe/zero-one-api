@@ -398,6 +398,7 @@ export default {
         customers: '客户关系',
         relationships: '客户关系',
         rebates: '返利记录',
+        exclusiveAgents: '专属代理',
         transfers: '提取记录',
         settings: '运营设置'
       },
@@ -431,7 +432,9 @@ export default {
         email: '邮箱',
         username: '用户名',
         role: '角色',
-        status: '状态',
+        agentValue: '代理价值',
+        exclusiveAgent: '专属代理',
+        exclusiveDescription: '查看全部设置了专属返利比例的代理',
         registeredAt: '注册时间',
         back: '返回客户关系',
         loadFailed: '加载客户关系失败',
