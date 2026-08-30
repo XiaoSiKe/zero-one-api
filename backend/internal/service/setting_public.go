@@ -883,10 +883,6 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 	return s.GetPublicSettingsProjection(ctx)
 }
 
-func parsePublicCustomMenuItems(raw string) []PublicCustomMenuItem {
-	return filterPublicCustomMenuItems(parseNavigationCustomMenuItems(raw))
-}
-
 func filterPublicCustomMenuItems(items []PublicCustomMenuItem) []PublicCustomMenuItem {
 	filtered := make([]PublicCustomMenuItem, 0, len(items))
 	for _, item := range items {
