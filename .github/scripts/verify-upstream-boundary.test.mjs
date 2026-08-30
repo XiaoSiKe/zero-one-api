@@ -726,10 +726,11 @@ test('allows named immutable exceptions while adjacent seam files still fail', (
         'frontend/src/api/admin/settings.ts',
         'frontend/src/api/admin/affiliates.ts',
         'frontend/src/api/__tests__/admin.affiliates.spec.ts',
+        'frontend/src/api/__tests__/admin.users.spec.ts',
         'frontend/src/api/admin/redeem.ts',
         'frontend/src/api/__tests__/admin.redeem.spec.ts',
         'frontend/src/types/index.ts',
-        'frontend/src/api/admin/users.ts',
+        'frontend/src/api/admin/proxies.ts',
         'frontend/src/types/admin.ts',
         'frontend/vite.config.ts',
         'frontend/src/router/index.ts',
@@ -737,7 +738,7 @@ test('allows named immutable exceptions while adjacent seam files still fail', (
       baseline,
     ),
     [
-      'frontend/src/api/admin/users.ts modifies immutable upstream path frontend/src/api/',
+      'frontend/src/api/admin/proxies.ts modifies immutable upstream path frontend/src/api/',
       'frontend/src/types/admin.ts modifies immutable upstream path frontend/src/types/',
     ],
   )
@@ -784,6 +785,18 @@ test('allows named immutable exceptions while adjacent seam files still fail', (
         name: 'public-capabilities-admin-affiliates-api-test',
         owner: 'Public Capabilities',
         path: 'frontend/src/api/__tests__/admin.affiliates.spec.ts',
+        immutable_path: 'frontend/src/api/',
+      },
+      {
+        name: 'public-capabilities-admin-users-affiliate-view',
+        owner: 'Public Capabilities',
+        path: 'frontend/src/api/admin/users.ts',
+        immutable_path: 'frontend/src/api/',
+      },
+      {
+        name: 'public-capabilities-admin-users-affiliate-view-test',
+        owner: 'Public Capabilities',
+        path: 'frontend/src/api/__tests__/admin.users.spec.ts',
         immutable_path: 'frontend/src/api/',
       },
       {
