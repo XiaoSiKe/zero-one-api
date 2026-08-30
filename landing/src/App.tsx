@@ -134,7 +134,7 @@ export default function App({ initialSettings: settings }: AppProps) {
               modelPlazaEnabled={siteSettings.modelPlazaEnabled}
               consoleHomePath={consoleHomePath}
             />
-            <QuickStart docUrl={siteSettings.docUrl} />
+            <QuickStart docUrl={siteSettings.landingTutorialUrl || siteSettings.docUrl} />
           </div>
           <PricingSection
             enabled={settings.modelPlazaEnabled}

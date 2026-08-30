@@ -3,6 +3,7 @@ export interface PublicSettings {
   siteLogo: string
   siteSubtitle: string
   docUrl: string
+  landingTutorialUrl: string
   registrationEnabled: boolean
   modelPlazaEnabled: boolean
   modelPlazaRequireAuth: boolean
@@ -21,6 +22,7 @@ export const DEFAULT_PUBLIC_SETTINGS: Readonly<PublicSettings> = Object.freeze({
   siteLogo: '',
   siteSubtitle: '从零到一，连接每一次模型调用。',
   docUrl: '',
+  landingTutorialUrl: '',
   // Capability switches fail closed until the public settings endpoint answers.
   registrationEnabled: false,
   modelPlazaEnabled: false,
@@ -133,6 +135,7 @@ export function normalizePublicSettings(payload: unknown): PublicSettings {
     siteLogo: sanitizeImageUrl(data.site_logo),
     siteSubtitle: asNonEmptyString(data.site_subtitle, DEFAULT_PUBLIC_SETTINGS.siteSubtitle),
     docUrl: sanitizeHttpUrl(data.doc_url),
+    landingTutorialUrl: sanitizeLandingNoticeUrl(data.landing_tutorial_url),
     registrationEnabled:
       typeof data.registration_enabled === 'boolean'
         ? data.registration_enabled

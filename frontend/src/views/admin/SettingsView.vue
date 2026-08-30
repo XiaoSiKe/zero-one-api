@@ -203,7 +203,7 @@
         <!-- Tab: Gateway -->
         <div v-show="activeTab === 'gateway'" class="space-y-6">
           <!-- Overload Cooldown (529) Settings -->
-          <div class="card">
+          <div class="card" data-testid="overload-cooldown-settings">
             <div
               class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
             >
@@ -235,7 +235,7 @@
                       {{ t("admin.settings.overloadCooldown.enabledHint") }}
                     </p>
                   </div>
-                  <Toggle v-model="overloadCooldownForm.enabled" />
+                  <Toggle v-model="overloadCooldownForm.enabled" data-testid="overload-cooldown-enabled" />
                 </div>
 
                 <div
@@ -250,6 +250,7 @@
                     </label>
                     <input
                       v-model.number="overloadCooldownForm.cooldown_minutes"
+                      data-testid="overload-cooldown-minutes"
                       type="number"
                       min="1"
                       max="120"
@@ -263,48 +264,12 @@
                   </div>
                 </div>
 
-                <div
-                  class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700"
-                >
-                  <button
-                    type="button"
-                    @click="saveOverloadCooldownSettings"
-                    :disabled="overloadCooldownSaving"
-                    class="btn btn-primary btn-sm"
-                  >
-                    <svg
-                      v-if="overloadCooldownSaving"
-                      class="mr-1 h-4 w-4 animate-spin"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
-                      ></circle>
-                      <path
-                        class="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    {{
-                      overloadCooldownSaving
-                        ? t("common.saving")
-                        : t("common.save")
-                    }}
-                  </button>
-                </div>
               </template>
             </div>
           </div>
 
           <!-- Rate Limit Cooldown (429) Settings -->
-          <div class="card">
+          <div class="card" data-testid="rate-limit-429-cooldown-settings">
             <div
               class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
             >
@@ -336,7 +301,7 @@
                       {{ t("admin.settings.rateLimit429Cooldown.enabledHint") }}
                     </p>
                   </div>
-                  <Toggle v-model="rateLimit429CooldownForm.enabled" />
+                  <Toggle v-model="rateLimit429CooldownForm.enabled" data-testid="rate-limit-429-cooldown-enabled" />
                 </div>
 
                 <div
@@ -355,6 +320,7 @@
                     </label>
                     <input
                       v-model.number="rateLimit429CooldownForm.cooldown_seconds"
+                      data-testid="rate-limit-429-cooldown-seconds"
                       type="number"
                       min="1"
                       max="7200"
@@ -370,48 +336,12 @@
                   </div>
                 </div>
 
-                <div
-                  class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700"
-                >
-                  <button
-                    type="button"
-                    @click="saveRateLimit429CooldownSettings"
-                    :disabled="rateLimit429CooldownSaving"
-                    class="btn btn-primary btn-sm"
-                  >
-                    <svg
-                      v-if="rateLimit429CooldownSaving"
-                      class="mr-1 h-4 w-4 animate-spin"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
-                      ></circle>
-                      <path
-                        class="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    {{
-                      rateLimit429CooldownSaving
-                        ? t("common.saving")
-                        : t("common.save")
-                    }}
-                  </button>
-                </div>
               </template>
             </div>
           </div>
 
           <!-- Stream Timeout Settings -->
-          <div class="card">
+          <div class="card" data-testid="stream-timeout-settings">
             <div
               class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
             >
@@ -511,6 +441,7 @@
                     </label>
                     <input
                       v-model.number="streamTimeoutForm.threshold_count"
+                      data-testid="stream-timeout-threshold-count"
                       type="number"
                       min="1"
                       max="10"
@@ -549,49 +480,12 @@
                   </div>
                 </div>
 
-                <!-- Save Button -->
-                <div
-                  class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700"
-                >
-                  <button
-                    type="button"
-                    @click="saveStreamTimeoutSettings"
-                    :disabled="streamTimeoutSaving"
-                    class="btn btn-primary btn-sm"
-                  >
-                    <svg
-                      v-if="streamTimeoutSaving"
-                      class="mr-1 h-4 w-4 animate-spin"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
-                      ></circle>
-                      <path
-                        class="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    {{
-                      streamTimeoutSaving
-                        ? t("common.saving")
-                        : t("common.save")
-                    }}
-                  </button>
-                </div>
               </template>
             </div>
           </div>
 
           <!-- Request Rectifier Settings -->
-          <div class="card">
+          <div class="card" data-testid="rectifier-settings">
             <div
               class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
             >
@@ -625,7 +519,7 @@
                       {{ t("admin.settings.rectifier.enabledHint") }}
                     </p>
                   </div>
-                  <Toggle v-model="rectifierForm.enabled" />
+                  <Toggle v-model="rectifierForm.enabled" data-testid="rectifier-enabled" />
                 </div>
 
                 <!-- Sub-toggles (only show when master is enabled) -->
@@ -751,46 +645,11 @@
                   </div>
                 </div>
 
-                <!-- Save Button -->
-                <div
-                  class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700"
-                >
-                  <button
-                    type="button"
-                    @click="saveRectifierSettings"
-                    :disabled="rectifierSaving"
-                    class="btn btn-primary btn-sm"
-                  >
-                    <svg
-                      v-if="rectifierSaving"
-                      class="mr-1 h-4 w-4 animate-spin"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
-                      ></circle>
-                      <path
-                        class="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    {{
-                      rectifierSaving ? t("common.saving") : t("common.save")
-                    }}
-                  </button>
-                </div>
               </template>
             </div>
           </div>
           <!-- Beta Policy Settings -->
-          <div class="card">
+          <div class="card" data-testid="beta-policy-settings">
             <div
               class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
             >
@@ -842,6 +701,7 @@
                         {{ t("admin.settings.betaPolicy.action") }}
                       </label>
                       <Select
+                        data-testid="beta-policy-action"
                         :modelValue="rule.action"
                         @update:modelValue="rule.action = $event as any"
                         :options="betaPolicyActionOptions"
@@ -1030,41 +890,6 @@
                   </div>
                 </div>
 
-                <!-- Save Button -->
-                <div
-                  class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700"
-                >
-                  <button
-                    type="button"
-                    @click="saveBetaPolicySettings"
-                    :disabled="betaPolicySaving"
-                    class="btn btn-primary btn-sm"
-                  >
-                    <svg
-                      v-if="betaPolicySaving"
-                      class="mr-1 h-4 w-4 animate-spin"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
-                      ></circle>
-                      <path
-                        class="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    {{
-                      betaPolicySaving ? t("common.saving") : t("common.save")
-                    }}
-                  </button>
-                </div>
               </template>
             </div>
           </div>
@@ -1990,43 +1815,6 @@
                   </div>
                 </div>
 
-                <div
-                  class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700"
-                >
-                  <button
-                    type="button"
-                    data-testid="panel-rate-limit-save"
-                    @click="savePanelRateLimitSettings"
-                    :disabled="panelRateLimitSaving"
-                    class="btn btn-primary btn-sm"
-                  >
-                    <svg
-                      v-if="panelRateLimitSaving"
-                      class="mr-1 h-4 w-4 animate-spin"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
-                      ></circle>
-                      <path
-                        class="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    {{
-                      panelRateLimitSaving
-                        ? t("common.saving")
-                        : t("common.save")
-                    }}
-                  </button>
-                </div>
               </template>
             </div>
           </div>
@@ -4796,30 +4584,12 @@
                     max="1440"
                     class="input w-32"
                     data-testid="upstream-billing-probe-interval"
-                    @keydown.enter.prevent="saveUpstreamBillingProbeSettings"
                   />
                   <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                     {{ t("admin.settings.upstreamBillingProbe.intervalHint") }}
                   </p>
                 </div>
 
-                <div
-                  class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700"
-                >
-                  <button
-                    type="button"
-                    class="btn btn-primary btn-sm"
-                    :disabled="upstreamBillingProbeSaving"
-                    data-testid="upstream-billing-probe-save"
-                    @click="saveUpstreamBillingProbeSettings"
-                  >
-                    {{
-                      upstreamBillingProbeSaving
-                        ? t("common.saving")
-                        : t("common.save")
-                    }}
-                  </button>
-                </div>
               </template>
             </div>
           </div>
@@ -4868,7 +4638,6 @@
                       max="60"
                       class="input w-32"
                       data-testid="ollama-cloud-usage-global-debounce"
-                      @keydown.enter.prevent="saveOllamaCloudUsageSettings"
                     />
                     <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                       {{ t("admin.settings.ollamaCloudUsage.debounceHint") }}
@@ -4886,23 +4655,11 @@
                       max="1440"
                       class="input w-32"
                       data-testid="ollama-cloud-usage-global-interval"
-                      @keydown.enter.prevent="saveOllamaCloudUsageSettings"
                     />
                     <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                       {{ t("admin.settings.ollamaCloudUsage.intervalHint") }}
                     </p>
                   </div>
-                </div>
-                <div class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700">
-                  <button
-                    type="button"
-                    class="btn btn-primary btn-sm"
-                    :disabled="ollamaCloudUsageSaving"
-                    data-testid="ollama-cloud-usage-global-save"
-                    @click="saveOllamaCloudUsageSettings"
-                  >
-                    {{ ollamaCloudUsageSaving ? t("common.saving") : t("common.save") }}
-                  </button>
                 </div>
               </template>
             </div>
@@ -6687,13 +6444,10 @@
                   </div>
                 </div>
 
-                <div class="mt-4 flex items-center justify-between gap-4">
+                <div class="mt-4">
                   <p class="text-xs text-gray-500 dark:text-gray-400">
                     {{ t("admin.settings.site.headerNavigation.hint") }}
                   </p>
-                  <button type="submit" class="btn btn-primary btn-sm shrink-0">
-                    {{ t("admin.settings.site.headerNavigation.save") }}
-                  </button>
                 </div>
               </div>
 
@@ -6930,6 +6684,24 @@
                 </p>
               </div>
 
+              <div>
+                <label
+                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  {{ t("admin.settings.site.landingTutorialUrl") }}
+                </label>
+                <input
+                  v-model="form.landing_tutorial_url"
+                  type="text"
+                  class="input"
+                  data-testid="landing-tutorial-url"
+                  :placeholder="t('admin.settings.site.landingTutorialUrlPlaceholder')"
+                />
+                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t("admin.settings.site.landingTutorialUrlHint") }}
+                </p>
+              </div>
+
               <!-- Site Logo Upload -->
               <div>
                 <label
@@ -7012,6 +6784,27 @@
               </p>
             </div>
             <div class="space-y-4 p-6">
+              <div
+                class="rounded-lg border border-primary-200 bg-primary-50/50 p-4 dark:border-primary-800 dark:bg-primary-900/10"
+                data-testid="image-tutorial-menu-settings"
+              >
+                <label
+                  class="mb-1 block text-sm font-medium text-gray-900 dark:text-white"
+                >
+                  {{ t("admin.settings.site.imageTutorialMenu") }}
+                </label>
+                <input
+                  v-model="imageTutorialMenuURL"
+                  type="url"
+                  class="input font-mono text-sm"
+                  data-testid="image-tutorial-menu-url"
+                  :placeholder="t('admin.settings.site.imageTutorialMenuPlaceholder')"
+                />
+                <p class="mt-1.5 text-xs leading-5 text-gray-500 dark:text-gray-400">
+                  {{ t("admin.settings.site.imageTutorialMenuHint") }}
+                </p>
+              </div>
+
               <!-- Existing menu items -->
               <div
                 v-for="(entry, visibleIndex) in customMenuPageEntries"
@@ -8806,6 +8599,10 @@ import { extractApiErrorMessage, extractI18nErrorMessage } from "@/utils/apiErro
 import { useAppStore } from "@/stores";
 import { useAdminSettingsStore } from "@/stores/adminSettings";
 import { sortNavItems as orderSidebarItems } from "@/utils/navigation-order";
+import {
+  findImageTutorialMenuItem,
+  IMAGE_TUTORIAL_MENU_ID,
+} from "@/utils/image-tutorial";
 import { normalizeVisibleMethod } from "@/components/payment/paymentFlow";
 import {
   isRegistrationEmailSuffixDomainValid,
@@ -8938,16 +8735,35 @@ const adminApiKeyOperating = ref(false);
 const newAdminApiKey = ref("");
 const subscriptionGroups = ref<AdminGroup[]>([]);
 
+type AuxiliarySettingsKey =
+  | "upstreamBillingProbe"
+  | "ollamaCloudUsage"
+  | "overloadCooldown"
+  | "rateLimit429Cooldown"
+  | "panelRateLimit"
+  | "streamTimeout"
+  | "rectifier"
+  | "betaPolicy";
+
+const auxiliarySettingsSnapshots = new Map<AuxiliarySettingsKey, string>();
+
+function rememberAuxiliarySettings(key: AuxiliarySettingsKey, value: unknown): void {
+  auxiliarySettingsSnapshots.set(key, JSON.stringify(value));
+}
+
+function auxiliarySettingsChanged(key: AuxiliarySettingsKey, value: unknown): boolean {
+  const snapshot = auxiliarySettingsSnapshots.get(key);
+  return snapshot !== undefined && snapshot !== JSON.stringify(value);
+}
+
 // Upstream billing probe state
 const upstreamBillingProbeLoading = ref(true);
-const upstreamBillingProbeSaving = ref(false);
 const upstreamBillingProbeForm = reactive({
   enabled: true,
   interval_minutes: 30,
 });
 
 const ollamaCloudUsageLoading = ref(true);
-const ollamaCloudUsageSaving = ref(false);
 const ollamaCloudUsageForm = reactive({
   enabled: false,
   interval_minutes: 60,
@@ -8956,7 +8772,6 @@ const ollamaCloudUsageForm = reactive({
 
 // Overload Cooldown (529) 状态
 const overloadCooldownLoading = ref(true);
-const overloadCooldownSaving = ref(false);
 const overloadCooldownForm = reactive({
   enabled: true,
   cooldown_minutes: 10,
@@ -8964,7 +8779,6 @@ const overloadCooldownForm = reactive({
 
 // Rate Limit Cooldown (429) 状态
 const rateLimit429CooldownLoading = ref(true);
-const rateLimit429CooldownSaving = ref(false);
 const rateLimit429CooldownForm = reactive({
   enabled: true,
   cooldown_seconds: 5,
@@ -8972,7 +8786,6 @@ const rateLimit429CooldownForm = reactive({
 
 // Panel API Rate Limit 状态
 const panelRateLimitLoading = ref(true);
-const panelRateLimitSaving = ref(false);
 const panelRateLimitForm = reactive({
   enabled: true,
   user_rpm: 240,
@@ -8983,7 +8796,6 @@ const panelRateLimitForm = reactive({
 
 // Stream Timeout 状态
 const streamTimeoutLoading = ref(true);
-const streamTimeoutSaving = ref(false);
 const streamTimeoutForm = reactive({
   enabled: true,
   action: "temp_unsched" as "temp_unsched" | "error" | "none",
@@ -8994,7 +8806,6 @@ const streamTimeoutForm = reactive({
 
 // Rectifier 状态
 const rectifierLoading = ref(true);
-const rectifierSaving = ref(false);
 const rectifierForm = reactive({
   enabled: true,
   thinking_signature_enabled: true,
@@ -9005,7 +8816,6 @@ const rectifierForm = reactive({
 
 // Beta Policy 状态
 const betaPolicyLoading = ref(true);
-const betaPolicySaving = ref(false);
 const betaPolicyForm = reactive({
   rules: [] as Array<{
     beta_token: string;
@@ -9598,6 +9408,7 @@ const form = reactive<SettingsForm>({
   api_base_url: "",
   contact_info: "",
   doc_url: "",
+  landing_tutorial_url: "",
   home_content: "",
   compact_home_enabled: false,
   backend_mode_enabled: false,
@@ -9856,11 +9667,21 @@ const landingNoticeUrlInvalid = computed(
 const indexedCustomMenuItems = computed(() =>
   form.custom_menu_items.map((item, index) => ({ item, index })),
 );
+const imageTutorialMenuItem = computed(() =>
+  findImageTutorialMenuItem(form.custom_menu_items),
+);
+const imageTutorialMenuURL = computed({
+  get: () => imageTutorialMenuItem.value?.url ?? "",
+  set: (url: string) => setImageTutorialMenuURL(url),
+});
 const headerNavigationEntries = computed(() =>
   indexedCustomMenuItems.value.filter(({ item }) => item.placement === "header"),
 );
 const customMenuPageEntries = computed(() =>
-  indexedCustomMenuItems.value.filter(({ item }) => item.placement !== "header"),
+  indexedCustomMenuItems.value.filter(
+    ({ item }) =>
+      item.placement !== "header" && item !== imageTutorialMenuItem.value,
+  ),
 );
 
 interface SidebarOrderItem {
@@ -9886,6 +9707,7 @@ const userSidebarOrderCandidates = computed<SidebarOrderItem[]>(() => [
   { path: "/purchase", label: t("nav.buySubscription") },
   { path: "/orders", label: t("nav.myOrders") },
   { path: "/redeem", label: t("nav.redeem") },
+  { path: "/images", label: t("nav.onlineImageGeneration") },
   { path: "/affiliate", label: t("nav.affiliate") },
   { path: "/profile", label: t("nav.profile") },
   ...form.custom_menu_items
@@ -10159,6 +9981,7 @@ const webSearchConfig = reactive<WebSearchEmulationConfig>({
   enabled: false,
   providers: [],
 });
+const webSearchConfigLoaded = ref(false);
 
 const expandedProviders = reactive<Record<number, boolean>>({});
 const apiKeyVisible = reactive<Record<number, boolean>>({});
@@ -10288,10 +10111,12 @@ async function loadWebSearchConfig() {
       webSearchConfig.enabled = resp.enabled || false;
       webSearchConfig.providers = resp.providers || [];
     }
+    webSearchConfigLoaded.value = true;
     webSearchProxies.value = proxiesResp.items || [];
   } catch (err: unknown) {
     // 404 is expected when config hasn't been created yet; show error for other failures
     const status = (err as { status?: number })?.status;
+    webSearchConfigLoaded.value = status === 404;
     if (status !== 404 && status !== undefined) {
       appStore.showError(extractApiErrorMessage(err, t("common.error")));
     }
@@ -10299,6 +10124,7 @@ async function loadWebSearchConfig() {
 }
 
 async function saveWebSearchConfig(): Promise<boolean> {
+  if (!webSearchConfigLoaded.value) return true;
   try {
     for (const p of webSearchConfig.providers) {
       const raw = p.quota_limit;
@@ -10736,6 +10562,65 @@ function addMenuItem() {
   });
 }
 
+function replaceSidebarMenuPath(paths: string[], from: string, to: string): string[] {
+  return [...new Set(paths.map((path) => (path === from ? to : path)))];
+}
+
+function normalizeImageTutorialMenuItem(): void {
+  const item = findImageTutorialMenuItem(form.custom_menu_items);
+  if (!item) return;
+  const previousPath = `/custom/${item.id}`;
+  item.id = IMAGE_TUTORIAL_MENU_ID;
+  item.label = "生图教程";
+  item.icon_svg = item.icon_svg || DEFAULT_CUSTOM_MENU_ICON;
+  item.visibility = "all";
+  item.placement = "sidebar";
+  delete item.navigation_type;
+  delete item.qr_description;
+  delete item.qr_image;
+  const nextPath = `/custom/${IMAGE_TUTORIAL_MENU_ID}`;
+  form.user_sidebar_order = replaceSidebarMenuPath(
+    form.user_sidebar_order,
+    previousPath,
+    nextPath,
+  );
+  form.admin_sidebar_order = replaceSidebarMenuPath(
+    form.admin_sidebar_order,
+    previousPath,
+    nextPath,
+  );
+}
+
+function setImageTutorialMenuURL(url: string): void {
+  const item = findImageTutorialMenuItem(form.custom_menu_items);
+  if (!url.trim()) {
+    if (!item) return;
+    const path = `/custom/${item.id}`;
+    form.custom_menu_items.splice(form.custom_menu_items.indexOf(item), 1);
+    form.user_sidebar_order = form.user_sidebar_order.filter(
+      (candidate) => candidate !== path,
+    );
+    form.admin_sidebar_order = form.admin_sidebar_order.filter(
+      (candidate) => candidate !== path,
+    );
+    return;
+  }
+  if (item) {
+    item.url = url;
+  } else {
+    form.custom_menu_items.push({
+      id: IMAGE_TUTORIAL_MENU_ID,
+      label: "生图教程",
+      icon_svg: DEFAULT_CUSTOM_MENU_ICON,
+      url,
+      visibility: "all",
+      placement: "sidebar",
+      sort_order: form.custom_menu_items.length,
+    });
+  }
+  normalizeImageTutorialMenuItem();
+}
+
 function removeMenuItem(index: number) {
   form.custom_menu_items.splice(index, 1);
   // Re-index sort_order
@@ -10983,6 +10868,12 @@ async function loadSettings() {
           ? item.placement
           : "sidebar",
     }));
+    if (
+      !findImageTutorialMenuItem(form.custom_menu_items) &&
+      settings.legacy_image_tutorial_url?.trim()
+    ) {
+      setImageTutorialMenuURL(settings.legacy_image_tutorial_url);
+    }
     form.profile_navigation_enabled = settings.profile_navigation_enabled !== false;
     form.subscription_navigation_enabled =
       settings.subscription_navigation_enabled !== false;
@@ -10996,6 +10887,7 @@ async function loadSettings() {
       adminSidebarOrderCandidates.value,
       Array.isArray(settings.admin_sidebar_order) ? settings.admin_sidebar_order : [],
     ).map((item) => item.path);
+    normalizeImageTutorialMenuItem();
     syncCaptchaProviderSelection();
     if (!form.claude_oauth_system_prompt_blocks?.trim()) {
       form.claude_oauth_system_prompt_blocks =
@@ -11228,6 +11120,7 @@ function findDuplicateDefaultSubscription(
 }
 
 async function saveSettings() {
+  if (saving.value) return;
   saving.value = true;
   try {
     const normalizedTableDefaultPageSize = Math.floor(
@@ -11363,6 +11256,7 @@ async function saveSettings() {
     // Optional URL fields: auto-clear invalid values so they don't cause backend 400 errors
     if (!isValidHttpUrl(form.frontend_url)) form.frontend_url = "";
     if (!isValidHttpUrl(form.doc_url)) form.doc_url = "";
+    if (!isValidLandingNoticeUrl(form.landing_tutorial_url || "")) form.landing_tutorial_url = "";
     if (!isValidLandingNoticeUrl(form.landing_notice_url)) form.landing_notice_url = "";
     syncWeChatConnectMode();
     const wechatStoredMode = deriveWeChatConnectStoredMode(
@@ -11421,6 +11315,7 @@ async function saveSettings() {
       api_base_url: form.api_base_url,
       contact_info: form.contact_info,
       doc_url: form.doc_url,
+      landing_tutorial_url: form.landing_tutorial_url,
       home_content: form.home_content,
       compact_home_enabled: form.compact_home_enabled,
       backend_mode_enabled: form.backend_mode_enabled,
@@ -11811,11 +11706,27 @@ async function saveSettings() {
         }));
       openaiFastPolicyLoaded.value = true;
     }
-    // Save web search emulation config separately (errors handled internally)
-    const wsOk = await saveWebSearchConfig();
-    // Refresh cached settings so sidebar/header update immediately
-    await appStore.fetchPublicSettings(true);
-    await adminSettingsStore.fetch(true);
+    let wsOk = false;
+    try {
+      const [auxiliaryResult, webSearchResult] = await Promise.allSettled([
+        saveChangedAuxiliarySettings(),
+        // Save web search emulation config separately (errors handled internally).
+        saveWebSearchConfig(),
+      ]);
+      wsOk =
+        webSearchResult.status === "fulfilled" && webSearchResult.value;
+      if (auxiliaryResult.status === "rejected") {
+        throw auxiliaryResult.reason;
+      }
+      if (webSearchResult.status === "rejected") {
+        throw webSearchResult.reason;
+      }
+    } finally {
+      // The main settings request has already committed. Refresh navigation even
+      // when a later specialized adapter fails, so the Console never shows stale state.
+      await appStore.fetchPublicSettings(true);
+      await adminSettingsStore.fetch(true);
+    }
     if (wsOk) {
       appStore.showSuccess(t("admin.settings.settingsSaved"));
     }
@@ -11974,6 +11885,7 @@ async function loadUpstreamBillingProbeSettings() {
       upstreamBillingProbeForm,
       await adminAPI.accounts.getUpstreamBillingProbeSettings(),
     );
+    rememberAuxiliarySettings("upstreamBillingProbe", upstreamBillingProbeForm);
   } catch (_error: unknown) {
     // Keep defaults when this optional setting cannot be loaded.
   } finally {
@@ -11981,24 +11893,12 @@ async function loadUpstreamBillingProbeSettings() {
   }
 }
 
-async function saveUpstreamBillingProbeSettings() {
-  upstreamBillingProbeSaving.value = true;
-  try {
-    const updated = await adminAPI.accounts.updateUpstreamBillingProbeSettings({
-      ...upstreamBillingProbeForm,
-    });
-    Object.assign(upstreamBillingProbeForm, updated);
-    appStore.showSuccess(t("admin.settings.upstreamBillingProbe.saved"));
-  } catch (error: unknown) {
-    appStore.showError(
-      extractApiErrorMessage(
-        error,
-        t("admin.settings.upstreamBillingProbe.saveFailed"),
-      ),
-    );
-  } finally {
-    upstreamBillingProbeSaving.value = false;
-  }
+async function persistUpstreamBillingProbeSettings() {
+  const updated = await adminAPI.accounts.updateUpstreamBillingProbeSettings({
+    ...upstreamBillingProbeForm,
+  });
+  Object.assign(upstreamBillingProbeForm, updated);
+  rememberAuxiliarySettings("upstreamBillingProbe", upstreamBillingProbeForm);
 }
 
 async function loadOllamaCloudUsageSettings() {
@@ -12008,6 +11908,7 @@ async function loadOllamaCloudUsageSettings() {
       ollamaCloudUsageForm,
       await adminAPI.accounts.getOllamaCloudUsageSettings(),
     );
+    rememberAuxiliarySettings("ollamaCloudUsage", ollamaCloudUsageForm);
   } catch (_error: unknown) {
     // Keep the fail-safe disabled defaults when this optional setting cannot be loaded.
   } finally {
@@ -12015,21 +11916,12 @@ async function loadOllamaCloudUsageSettings() {
   }
 }
 
-async function saveOllamaCloudUsageSettings() {
-  ollamaCloudUsageSaving.value = true;
-  try {
-    const updated = await adminAPI.accounts.updateOllamaCloudUsageSettings({
-      ...ollamaCloudUsageForm,
-    });
-    Object.assign(ollamaCloudUsageForm, updated);
-    appStore.showSuccess(t("admin.settings.ollamaCloudUsage.saved"));
-  } catch (error: unknown) {
-    appStore.showError(
-      extractApiErrorMessage(error, t("admin.settings.ollamaCloudUsage.saveFailed")),
-    );
-  } finally {
-    ollamaCloudUsageSaving.value = false;
-  }
+async function persistOllamaCloudUsageSettings() {
+  const updated = await adminAPI.accounts.updateOllamaCloudUsageSettings({
+    ...ollamaCloudUsageForm,
+  });
+  Object.assign(ollamaCloudUsageForm, updated);
+  rememberAuxiliarySettings("ollamaCloudUsage", ollamaCloudUsageForm);
 }
 
 // Overload Cooldown 方法
@@ -12038,6 +11930,7 @@ async function loadOverloadCooldownSettings() {
   try {
     const settings = await adminAPI.settings.getOverloadCooldownSettings();
     Object.assign(overloadCooldownForm, settings);
+    rememberAuxiliarySettings("overloadCooldown", overloadCooldownForm);
   } catch (_error: unknown) {
     // Silent fail - settings will use defaults
   } finally {
@@ -12045,25 +11938,13 @@ async function loadOverloadCooldownSettings() {
   }
 }
 
-async function saveOverloadCooldownSettings() {
-  overloadCooldownSaving.value = true;
-  try {
-    const updated = await adminAPI.settings.updateOverloadCooldownSettings({
-      enabled: overloadCooldownForm.enabled,
-      cooldown_minutes: overloadCooldownForm.cooldown_minutes,
-    });
-    Object.assign(overloadCooldownForm, updated);
-    appStore.showSuccess(t("admin.settings.overloadCooldown.saved"));
-  } catch (error: unknown) {
-    appStore.showError(
-      extractApiErrorMessage(
-        error,
-        t("admin.settings.overloadCooldown.saveFailed"),
-      ),
-    );
-  } finally {
-    overloadCooldownSaving.value = false;
-  }
+async function persistOverloadCooldownSettings() {
+  const updated = await adminAPI.settings.updateOverloadCooldownSettings({
+    enabled: overloadCooldownForm.enabled,
+    cooldown_minutes: overloadCooldownForm.cooldown_minutes,
+  });
+  Object.assign(overloadCooldownForm, updated);
+  rememberAuxiliarySettings("overloadCooldown", overloadCooldownForm);
 }
 
 // Panel API Rate Limit 方法
@@ -12072,6 +11953,7 @@ async function loadPanelRateLimitSettings() {
   try {
     const settings = await adminAPI.settings.getPanelRateLimitSettings();
     Object.assign(panelRateLimitForm, settings);
+    rememberAuxiliarySettings("panelRateLimit", panelRateLimitForm);
   } catch (_error: unknown) {
     // Silent fail - settings will use defaults
   } finally {
@@ -12079,28 +11961,16 @@ async function loadPanelRateLimitSettings() {
   }
 }
 
-async function savePanelRateLimitSettings() {
-  panelRateLimitSaving.value = true;
-  try {
-    const updated = await adminAPI.settings.updatePanelRateLimitSettings({
-      enabled: panelRateLimitForm.enabled,
-      user_rpm: panelRateLimitForm.user_rpm,
-      heavy_rpm: panelRateLimitForm.heavy_rpm,
-      exempt_admin: panelRateLimitForm.exempt_admin,
-      public_ip_rpm: panelRateLimitForm.public_ip_rpm,
-    });
-    Object.assign(panelRateLimitForm, updated);
-    appStore.showSuccess(t("admin.settings.panelRateLimit.saved"));
-  } catch (error: unknown) {
-    appStore.showError(
-      extractApiErrorMessage(
-        error,
-        t("admin.settings.panelRateLimit.saveFailed"),
-      ),
-    );
-  } finally {
-    panelRateLimitSaving.value = false;
-  }
+async function persistPanelRateLimitSettings() {
+  const updated = await adminAPI.settings.updatePanelRateLimitSettings({
+    enabled: panelRateLimitForm.enabled,
+    user_rpm: panelRateLimitForm.user_rpm,
+    heavy_rpm: panelRateLimitForm.heavy_rpm,
+    exempt_admin: panelRateLimitForm.exempt_admin,
+    public_ip_rpm: panelRateLimitForm.public_ip_rpm,
+  });
+  Object.assign(panelRateLimitForm, updated);
+  rememberAuxiliarySettings("panelRateLimit", panelRateLimitForm);
 }
 
 // Rate Limit Cooldown (429) 方法
@@ -12109,6 +11979,7 @@ async function loadRateLimit429CooldownSettings() {
   try {
     const settings = await adminAPI.settings.getRateLimit429CooldownSettings();
     Object.assign(rateLimit429CooldownForm, settings);
+    rememberAuxiliarySettings("rateLimit429Cooldown", rateLimit429CooldownForm);
   } catch (_error: unknown) {
     // Silent fail - settings will use defaults
   } finally {
@@ -12116,25 +11987,13 @@ async function loadRateLimit429CooldownSettings() {
   }
 }
 
-async function saveRateLimit429CooldownSettings() {
-  rateLimit429CooldownSaving.value = true;
-  try {
-    const updated = await adminAPI.settings.updateRateLimit429CooldownSettings({
-      enabled: rateLimit429CooldownForm.enabled,
-      cooldown_seconds: rateLimit429CooldownForm.cooldown_seconds,
-    });
-    Object.assign(rateLimit429CooldownForm, updated);
-    appStore.showSuccess(t("admin.settings.rateLimit429Cooldown.saved"));
-  } catch (error: unknown) {
-    appStore.showError(
-      extractApiErrorMessage(
-        error,
-        t("admin.settings.rateLimit429Cooldown.saveFailed"),
-      ),
-    );
-  } finally {
-    rateLimit429CooldownSaving.value = false;
-  }
+async function persistRateLimit429CooldownSettings() {
+  const updated = await adminAPI.settings.updateRateLimit429CooldownSettings({
+    enabled: rateLimit429CooldownForm.enabled,
+    cooldown_seconds: rateLimit429CooldownForm.cooldown_seconds,
+  });
+  Object.assign(rateLimit429CooldownForm, updated);
+  rememberAuxiliarySettings("rateLimit429Cooldown", rateLimit429CooldownForm);
 }
 
 // Stream Timeout 方法
@@ -12143,6 +12002,7 @@ async function loadStreamTimeoutSettings() {
   try {
     const settings = await adminAPI.settings.getStreamTimeoutSettings();
     Object.assign(streamTimeoutForm, settings);
+    rememberAuxiliarySettings("streamTimeout", streamTimeoutForm);
   } catch (_error: unknown) {
     // Silent fail - settings will use defaults
   } finally {
@@ -12150,28 +12010,16 @@ async function loadStreamTimeoutSettings() {
   }
 }
 
-async function saveStreamTimeoutSettings() {
-  streamTimeoutSaving.value = true;
-  try {
-    const updated = await adminAPI.settings.updateStreamTimeoutSettings({
-      enabled: streamTimeoutForm.enabled,
-      action: streamTimeoutForm.action,
-      temp_unsched_minutes: streamTimeoutForm.temp_unsched_minutes,
-      threshold_count: streamTimeoutForm.threshold_count,
-      threshold_window_minutes: streamTimeoutForm.threshold_window_minutes,
-    });
-    Object.assign(streamTimeoutForm, updated);
-    appStore.showSuccess(t("admin.settings.streamTimeout.saved"));
-  } catch (error: unknown) {
-    appStore.showError(
-      extractApiErrorMessage(
-        error,
-        t("admin.settings.streamTimeout.saveFailed"),
-      ),
-    );
-  } finally {
-    streamTimeoutSaving.value = false;
-  }
+async function persistStreamTimeoutSettings() {
+  const updated = await adminAPI.settings.updateStreamTimeoutSettings({
+    enabled: streamTimeoutForm.enabled,
+    action: streamTimeoutForm.action,
+    temp_unsched_minutes: streamTimeoutForm.temp_unsched_minutes,
+    threshold_count: streamTimeoutForm.threshold_count,
+    threshold_window_minutes: streamTimeoutForm.threshold_window_minutes,
+  });
+  Object.assign(streamTimeoutForm, updated);
+  rememberAuxiliarySettings("streamTimeout", streamTimeoutForm);
 }
 
 // Rectifier 方法
@@ -12184,6 +12032,7 @@ async function loadRectifierSettings() {
     if (!Array.isArray(rectifierForm.apikey_signature_patterns)) {
       rectifierForm.apikey_signature_patterns = [];
     }
+    rememberAuxiliarySettings("rectifier", rectifierForm);
   } catch (_error: unknown) {
     // Silent fail - settings will use defaults
   } finally {
@@ -12191,30 +12040,21 @@ async function loadRectifierSettings() {
   }
 }
 
-async function saveRectifierSettings() {
-  rectifierSaving.value = true;
-  try {
-    const updated = await adminAPI.settings.updateRectifierSettings({
-      enabled: rectifierForm.enabled,
-      thinking_signature_enabled: rectifierForm.thinking_signature_enabled,
-      thinking_budget_enabled: rectifierForm.thinking_budget_enabled,
-      apikey_signature_enabled: rectifierForm.apikey_signature_enabled,
-      apikey_signature_patterns: rectifierForm.apikey_signature_patterns.filter(
-        (p) => p.trim() !== "",
-      ),
-    });
-    Object.assign(rectifierForm, updated);
-    if (!Array.isArray(rectifierForm.apikey_signature_patterns)) {
-      rectifierForm.apikey_signature_patterns = [];
-    }
-    appStore.showSuccess(t("admin.settings.rectifier.saved"));
-  } catch (error: unknown) {
-    appStore.showError(
-      extractApiErrorMessage(error, t("admin.settings.rectifier.saveFailed")),
-    );
-  } finally {
-    rectifierSaving.value = false;
+async function persistRectifierSettings() {
+  const updated = await adminAPI.settings.updateRectifierSettings({
+    enabled: rectifierForm.enabled,
+    thinking_signature_enabled: rectifierForm.thinking_signature_enabled,
+    thinking_budget_enabled: rectifierForm.thinking_budget_enabled,
+    apikey_signature_enabled: rectifierForm.apikey_signature_enabled,
+    apikey_signature_patterns: rectifierForm.apikey_signature_patterns.filter(
+      (pattern) => pattern.trim() !== "",
+    ),
+  });
+  Object.assign(rectifierForm, updated);
+  if (!Array.isArray(rectifierForm.apikey_signature_patterns)) {
+    rectifierForm.apikey_signature_patterns = [];
   }
+  rememberAuxiliarySettings("rectifier", rectifierForm);
 }
 
 const betaPolicyActionOptions = computed(() => [
@@ -12298,6 +12138,7 @@ async function loadBetaPolicySettings() {
   try {
     const settings = await adminAPI.settings.getBetaPolicySettings();
     betaPolicyForm.rules = settings.rules;
+    rememberAuxiliarySettings("betaPolicy", betaPolicyForm);
   } catch (_error: unknown) {
     // Silent fail - settings will use defaults
   } finally {
@@ -12375,39 +12216,60 @@ function removeOpenAIFastPolicyModelPattern(
   rule.model_whitelist?.splice(idx, 1);
 }
 
-async function saveBetaPolicySettings() {
-  betaPolicySaving.value = true;
-  try {
-    // Clean up empty patterns before saving
-    const cleanedRules = betaPolicyForm.rules.map((rule) => {
-      const whitelist = rule.model_whitelist?.filter((p) => p.trim() !== "");
-      const hasWhitelist = whitelist && whitelist.length > 0;
-      return {
-        beta_token: rule.beta_token,
-        action: rule.action,
-        scope: rule.scope,
-        error_message: rule.error_message,
-        model_whitelist: hasWhitelist ? whitelist : undefined,
-        fallback_action: hasWhitelist
-          ? rule.fallback_action || "pass"
+async function persistBetaPolicySettings() {
+  const cleanedRules = betaPolicyForm.rules.map((rule) => {
+    const whitelist = rule.model_whitelist?.filter((pattern) => pattern.trim() !== "");
+    const hasWhitelist = whitelist && whitelist.length > 0;
+    return {
+      beta_token: rule.beta_token,
+      action: rule.action,
+      scope: rule.scope,
+      error_message: rule.error_message,
+      model_whitelist: hasWhitelist ? whitelist : undefined,
+      fallback_action: hasWhitelist ? rule.fallback_action || "pass" : undefined,
+      fallback_error_message:
+        hasWhitelist && rule.fallback_action === "block"
+          ? rule.fallback_error_message
           : undefined,
-        fallback_error_message:
-          hasWhitelist && rule.fallback_action === "block"
-            ? rule.fallback_error_message
-            : undefined,
-      };
-    });
-    const updated = await adminAPI.settings.updateBetaPolicySettings({
-      rules: cleanedRules,
-    });
-    betaPolicyForm.rules = updated.rules;
-    appStore.showSuccess(t("admin.settings.betaPolicy.saved"));
-  } catch (error: unknown) {
-    appStore.showError(
-      extractApiErrorMessage(error, t("admin.settings.betaPolicy.saveFailed")),
-    );
-  } finally {
-    betaPolicySaving.value = false;
+    };
+  });
+  const updated = await adminAPI.settings.updateBetaPolicySettings({ rules: cleanedRules });
+  betaPolicyForm.rules = updated.rules;
+  rememberAuxiliarySettings("betaPolicy", betaPolicyForm);
+}
+
+async function saveChangedAuxiliarySettings(): Promise<void> {
+  const saves: Promise<void>[] = [];
+  if (auxiliarySettingsChanged("upstreamBillingProbe", upstreamBillingProbeForm)) {
+    saves.push(persistUpstreamBillingProbeSettings());
+  }
+  if (auxiliarySettingsChanged("ollamaCloudUsage", ollamaCloudUsageForm)) {
+    saves.push(persistOllamaCloudUsageSettings());
+  }
+  if (auxiliarySettingsChanged("overloadCooldown", overloadCooldownForm)) {
+    saves.push(persistOverloadCooldownSettings());
+  }
+  if (auxiliarySettingsChanged("rateLimit429Cooldown", rateLimit429CooldownForm)) {
+    saves.push(persistRateLimit429CooldownSettings());
+  }
+  if (auxiliarySettingsChanged("panelRateLimit", panelRateLimitForm)) {
+    saves.push(persistPanelRateLimitSettings());
+  }
+  if (auxiliarySettingsChanged("streamTimeout", streamTimeoutForm)) {
+    saves.push(persistStreamTimeoutSettings());
+  }
+  if (auxiliarySettingsChanged("rectifier", rectifierForm)) {
+    saves.push(persistRectifierSettings());
+  }
+  if (auxiliarySettingsChanged("betaPolicy", betaPolicyForm)) {
+    saves.push(persistBetaPolicySettings());
+  }
+  const results = await Promise.allSettled(saves);
+  const failure = results.find(
+    (result): result is PromiseRejectedResult => result.status === "rejected",
+  );
+  if (failure) {
+    throw failure.reason;
   }
 }
 
@@ -12663,8 +12525,6 @@ async function handleSaveProvider(payload: Partial<ProviderInstance>) {
     showProviderDialog.value = false;
     // Reload full list (API returns decrypted/formatted data with correct sort order)
     await loadProviders();
-    // Auto-save settings so provider changes take effect immediately
-    await saveSettings();
   } catch (err: unknown) {
     appStore.showError(extractI18nErrorMessage(err, t, "payment.errors", t("common.error")));
   } finally {

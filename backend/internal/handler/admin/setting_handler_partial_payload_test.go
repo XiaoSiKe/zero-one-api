@@ -41,11 +41,12 @@ func TestGetSettingsNavigationScopeReadsOnlyNavigationMetadata(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	repo := &navigationSettingsRepoStub{settingHandlerRepoStub: &settingHandlerRepoStub{values: map[string]string{
 		service.SettingKeyCustomMenuItems:              `[{"id":"admin-docs","label":"运维文档","url":"https://example.com","visibility":"admin","sort_order":0},{"id":"support","label":"售后群","placement":"header","navigation_type":"qr","visibility":"all","qr_description":"扫码加入","qr_image":"must-not-leak","sort_order":1}]`,
+		service.SettingKeyLegacyImageTutorialURL:       "https://example.com/image-generation",
 		service.SettingKeyHeaderNavQRImages:            "must-not-read-image-map",
 		service.SettingKeyCommunityQRImage:             "must-not-read-legacy-image",
 		service.SettingKeySiteLogo:                     "must-not-read-logo",
 		service.SettingKeySMTPPassword:                 "must-not-read-secret",
-		service.SettingKeyUserSidebarOrder:             `["/dashboard","/profile","/dashboard","bad"]`,
+		service.SettingKeyUserSidebarOrder:             `["/dashboard","/profile","/image-tutorial","/dashboard","bad"]`,
 		service.SettingKeyAdminSidebarOrder:            `["/admin/dashboard","/admin/users"]`,
 		service.SettingKeyProfileNavEnabled:            "false",
 		service.SettingKeySubscriptionNavEnabled:       "true",
@@ -64,6 +65,7 @@ func TestGetSettingsNavigationScopeReadsOnlyNavigationMetadata(t *testing.T) {
 	require.Len(t, repo.requestedKeys, 1, "navigation must not wait for auth-source or payment configuration")
 	require.ElementsMatch(t, []string{
 		service.SettingKeyCustomMenuItems, service.SettingKeyUserSidebarOrder, service.SettingKeyAdminSidebarOrder,
+		service.SettingKeyLegacyImageTutorialURL,
 		service.SettingKeyProfileNavEnabled, service.SettingKeySubscriptionNavEnabled, service.SettingKeyModelPlazaNavPlacement,
 		service.SettingKeyOpsMonitoringEnabled, service.SettingKeyOpsRealtimeMonitoringEnabled, service.SettingKeyOpsQueryModeDefault,
 	}, repo.requestedKeys[0])
@@ -72,8 +74,8 @@ func TestGetSettingsNavigationScopeReadsOnlyNavigationMetadata(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
 	require.Len(t, response.Data, 9)
-	require.JSONEq(t, `["/dashboard","/profile"]`, string(response.Data["user_sidebar_order"]))
-	require.JSONEq(t, `["/admin/dashboard","/admin/users"]`, string(response.Data["admin_sidebar_order"]))
+	require.JSONEq(t, `["/dashboard","/profile","/custom/image-tutorial"]`, string(response.Data["user_sidebar_order"]))
+	require.JSONEq(t, `["/admin/dashboard","/admin/users","/custom/image-tutorial"]`, string(response.Data["admin_sidebar_order"]))
 	require.Equal(t, "false", string(response.Data["profile_navigation_enabled"]))
 	require.Equal(t, "true", string(response.Data["subscription_navigation_enabled"]))
 	require.Equal(t, `"sidebar"`, string(response.Data["model_plaza_placement"]))
@@ -82,6 +84,7 @@ func TestGetSettingsNavigationScopeReadsOnlyNavigationMetadata(t *testing.T) {
 	require.Equal(t, `"raw"`, string(response.Data["ops_query_mode_default"]))
 	require.Contains(t, string(response.Data["custom_menu_items"]), "admin-docs")
 	require.Contains(t, string(response.Data["custom_menu_items"]), "support")
+	require.Contains(t, string(response.Data["custom_menu_items"]), "image-tutorial")
 	require.NotContains(t, recorder.Body.String(), "qr_image")
 	require.NotContains(t, recorder.Body.String(), "must-not-")
 	t.Logf("navigation response: %d bytes; settings reads: %d", recorder.Body.Len(), len(repo.requestedKeys))
@@ -214,11 +217,12 @@ func TestUpdateSettingsLandingNoticePartialUpdateKeepsUnsentFields(t *testing.T)
 func TestUpdateSettingsRepresentativeValuesSurviveSubsequentGet(t *testing.T) {
 	rawLogo := validCommunityQRImageForAdminTest("logo")
 	h, repo := newStepUpSwitchTestHandler(t, map[string]string{
-		service.SettingKeySiteName:           "Old Gateway",
-		service.SettingKeySiteLogo:           rawLogo,
-		service.SettingKeyCompactHomeEnabled: "false",
-		service.SettingKeyChannelMonitorMode: service.ChannelMonitorModeV1,
-		service.SettingKeyCustomMenuItems:    "[]",
+		service.SettingKeySiteName:               "Old Gateway",
+		service.SettingKeySiteLogo:               rawLogo,
+		service.SettingKeyCompactHomeEnabled:     "false",
+		service.SettingKeyChannelMonitorMode:     service.ChannelMonitorModeV1,
+		service.SettingKeyCustomMenuItems:        "[]",
+		service.SettingKeyLegacyImageTutorialURL: "https://example.com/image-generation",
 	})
 
 	menuItems := []map[string]any{{
@@ -244,6 +248,7 @@ func TestUpdateSettingsRepresentativeValuesSurviveSubsequentGet(t *testing.T) {
 	require.Contains(t, getRecorder.Body.String(), `"compact_home_enabled":true`)
 	require.Contains(t, getRecorder.Body.String(), `"channel_monitor_mode":"v2"`)
 	require.Contains(t, getRecorder.Body.String(), `"label":"最新帮助"`)
+	require.Contains(t, getRecorder.Body.String(), `"legacy_image_tutorial_url":"https://example.com/image-generation"`)
 	require.NotContains(t, getRecorder.Body.String(), "Old Gateway")
 	require.Equal(t, "Latest Gateway", repo.values[service.SettingKeySiteName])
 }
@@ -299,6 +304,109 @@ func TestSettingHandlerCommunityQRAdminGetAndPartialUpdateRoundTrip(t *testing.T
 }
 
 func TestUpdateSettingsCustomMenuPlacementDefaultsAndValidates(t *testing.T) {
+	t.Run("image tutorial receives its stable custom page id", func(t *testing.T) {
+		h, repo := newStepUpSwitchTestHandler(t, map[string]string{})
+		recorder := doUpdateSettings(t, h, map[string]any{
+			"custom_menu_items": []map[string]any{{
+				"id": "", "label": "生图教程", "url": "https://example.com/images",
+				"visibility": "user", "placement": "sidebar", "sort_order": 0,
+			}},
+		}, nil)
+
+		require.Equal(t, http.StatusOK, recorder.Code)
+		require.Contains(t, repo.values[service.SettingKeyCustomMenuItems], `"id":"image-tutorial"`)
+	})
+
+	t.Run("English image generation tutorial receives its stable custom page id", func(t *testing.T) {
+		h, repo := newStepUpSwitchTestHandler(t, map[string]string{})
+		recorder := doUpdateSettings(t, h, map[string]any{
+			"custom_menu_items": []map[string]any{{
+				"id": "", "label": "Image Generation Tutorial", "url": "https://example.com/images",
+				"visibility": "all", "placement": "sidebar", "sort_order": 0,
+			}},
+		}, nil)
+
+		require.Equal(t, http.StatusOK, recorder.Code)
+		require.Contains(t, repo.values[service.SettingKeyCustomMenuItems], `"id":"image-tutorial"`)
+	})
+
+	t.Run("image tutorial keeps its reserved id for admin visibility and both placement", func(t *testing.T) {
+		h, repo := newStepUpSwitchTestHandler(t, map[string]string{})
+		recorder := doUpdateSettings(t, h, map[string]any{
+			"custom_menu_items": []map[string]any{{
+				"id": imageTutorialMenuItemID, "label": "Admin image guide", "url": "https://example.com/admin-images",
+				"visibility": "admin", "placement": "both", "sort_order": 0,
+			}},
+		}, nil)
+
+		require.Equal(t, http.StatusOK, recorder.Code)
+		require.Contains(t, repo.values[service.SettingKeyCustomMenuItems], `"id":"image-tutorial"`)
+		require.Contains(t, repo.values[service.SettingKeyCustomMenuItems], `"visibility":"admin"`)
+		require.Contains(t, repo.values[service.SettingKeyCustomMenuItems], `"placement":"both"`)
+	})
+
+	t.Run("QR label cannot occupy the image tutorial id", func(t *testing.T) {
+		h, repo := newStepUpSwitchTestHandler(t, map[string]string{})
+		recorder := doUpdateSettings(t, h, map[string]any{
+			"custom_menu_items": []map[string]any{
+				{
+					"id": "", "label": "生图教程", "url": "",
+					"visibility": "all", "placement": "header", "navigation_type": "qr",
+					"qr_image": validCommunityQRImageForAdminTest("tutorial-qr"), "sort_order": 0,
+				},
+				{
+					"id": "", "label": "生图教程", "url": "https://example.com/images",
+					"visibility": "user", "placement": "sidebar", "sort_order": 1,
+				},
+			},
+		}, nil)
+
+		require.Equal(t, http.StatusOK, recorder.Code)
+		var saved []map[string]any
+		require.NoError(t, json.Unmarshal([]byte(repo.values[service.SettingKeyCustomMenuItems]), &saved))
+		require.Len(t, saved, 2)
+		require.NotEqual(t, imageTutorialMenuItemID, saved[0]["id"])
+		require.Equal(t, imageTutorialMenuItemID, saved[1]["id"])
+	})
+
+	for _, testCase := range []struct {
+		name string
+		item map[string]any
+	}{
+		{
+			name: "reserved id rejects QR navigation",
+			item: map[string]any{
+				"id": imageTutorialMenuItemID, "label": "生图教程", "url": "",
+				"visibility": "all", "placement": "header", "navigation_type": "qr",
+				"qr_image": validCommunityQRImageForAdminTest("reserved-qr"), "sort_order": 0,
+			},
+		},
+		{
+			name: "reserved id rejects header-only page",
+			item: map[string]any{
+				"id": imageTutorialMenuItemID, "label": "生图教程", "url": "https://example.com/images",
+				"visibility": "all", "placement": "header", "sort_order": 0,
+			},
+		},
+		{
+			name: "reserved id rejects Markdown page",
+			item: map[string]any{
+				"id": imageTutorialMenuItemID, "label": "生图教程", "url": "md:image-guide",
+				"visibility": "all", "placement": "sidebar", "sort_order": 0,
+			},
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			h, _ := newStepUpSwitchTestHandler(t, map[string]string{})
+			recorder := doUpdateSettings(t, h, map[string]any{
+				"custom_menu_items": []map[string]any{testCase.item},
+			}, nil)
+
+			require.Equal(t, http.StatusBadRequest, recorder.Code)
+			require.Contains(t, recorder.Body.String(), "image-tutorial must be a non-QR http(s) custom page")
+		})
+	}
+
 	t.Run("legacy item defaults to sidebar", func(t *testing.T) {
 		h, repo := newStepUpSwitchTestHandler(t, map[string]string{})
 		recorder := doUpdateSettings(t, h, map[string]any{

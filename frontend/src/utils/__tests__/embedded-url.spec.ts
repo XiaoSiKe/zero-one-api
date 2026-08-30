@@ -56,6 +56,38 @@ describe('embedded-url', () => {
     expect(url.searchParams.has('lang')).toBe(false)
   })
 
+  it('omits credentials from cross-origin custom pages when requested', () => {
+    const result = buildEmbeddedUrl(
+      'https://docs.example.com/tutorial',
+      42,
+      'token-123',
+      'dark',
+      'zh-CN',
+      'same-origin',
+    )
+
+    const url = new URL(result)
+    expect(url.searchParams.has('user_id')).toBe(false)
+    expect(url.searchParams.has('token')).toBe(false)
+    expect(url.searchParams.get('theme')).toBe('dark')
+    expect(url.searchParams.get('lang')).toBe('zh-CN')
+  })
+
+  it('retains credentials for same-origin custom pages', () => {
+    const result = buildEmbeddedUrl(
+      'https://app.example.com/tutorial',
+      42,
+      'token-123',
+      'light',
+      'zh-CN',
+      'same-origin',
+    )
+
+    const url = new URL(result)
+    expect(url.searchParams.get('user_id')).toBe('42')
+    expect(url.searchParams.get('token')).toBe('token-123')
+  })
+
   it('returns original string for invalid url input', () => {
     expect(buildEmbeddedUrl('not a url', 1, 'token')).toBe('not a url')
   })

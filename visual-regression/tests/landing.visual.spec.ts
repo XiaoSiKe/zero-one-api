@@ -270,6 +270,9 @@ test.describe('Landing visual contracts', () => {
     await page.evaluate(() => document.fonts.ready)
     const pricing = page.locator('#pricing')
     await expect(pricing.getByText('claude-sonnet-4-6')).toBeVisible()
+    await expect(pricing.getByRole('group', { name: '按平台筛选' }).getByRole('button'))
+      .toHaveText(['All', 'Claude', 'OpenAI'])
+    await expect(pricing.getByRole('button', { name: 'Gemini' })).toHaveCount(0)
     await page.addStyleTag({
       content: `
         .skip-link,

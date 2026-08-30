@@ -6,8 +6,8 @@ export default {
   // Home Page
   home: {
     viewOnGithub: 'View on GitHub',
-    viewDocs: 'View Documentation',
-    docs: 'Docs',
+    viewDocs: 'Open-source Knowledge Base',
+    docs: 'Open-source Knowledge Base',
     switchToLight: 'Switch to Light Mode',
     switchToDark: 'Switch to Dark Mode',
     dashboard: 'Dashboard',

@@ -117,7 +117,7 @@ describe("public site", () => {
     ).toBeTruthy();
     expect(
       screen
-        .getAllByRole("link", { name: "文档" })
+        .getAllByRole("link", { name: "开源知识库" })
         .some(
           (link) =>
             link.getAttribute("href") === "https://docs.01yapi.com/guide",
@@ -354,15 +354,17 @@ describe("public site", () => {
     expect(footerLogo?.src).toContain("cdn.01yapi.com");
     expect(
       screen
-        .getAllByRole("link", { name: "文档" })
+        .getAllByRole("link", { name: "开源知识库" })
         .some(
           (link) =>
             link.getAttribute("href") === "https://docs.01yapi.com/guide",
         ),
     ).toBe(true);
     expect(
-      screen.getByRole("link", { name: "查看文档" }).getAttribute("href"),
-    ).toBe("https://docs.01yapi.com/guide");
+      screen
+        .getAllByRole("link", { name: "开源知识库" })
+        .some((link) => link.getAttribute("href") === "https://docs.01yapi.com/guide"),
+    ).toBe(true);
   });
 
   it("uses resolved capability switches on the first render", () => {
@@ -715,6 +717,18 @@ describe("public site", () => {
     ).toBeNull();
     fireEvent.keyDown(claudeTab, { key: "Home" });
     expect(ccSwitchTab.getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("uses the dedicated homepage tutorial URL without changing the global documentation link", () => {
+    renderApp(settings({
+      docUrl: "https://docs.01yapi.com/guide",
+      landingTutorialUrl: "https://docs.01yapi.com/getting-started",
+    }));
+
+    expect(screen.getByRole("link", { name: "查看接入教学文档" }).getAttribute("href"))
+      .toBe("https://docs.01yapi.com/getting-started");
+    expect(screen.getAllByRole("link", { name: "开源知识库" })[0]?.getAttribute("href"))
+      .toBe("https://docs.01yapi.com/guide");
   });
 
   it("falls back to the quick-start anchor when no documentation URL is configured", async () => {

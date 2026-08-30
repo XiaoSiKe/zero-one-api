@@ -215,7 +215,10 @@ import { sanitizeSvg } from '@/utils/sanitize'
 import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, isFeatureFlagEnabled, makeSidebarFlag } from '@/utils/featureFlags'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
+import { useImageGenerationAccess } from '@/composables/useImageGenerationAccess'
 import { sortNavItems } from '@/utils/navigation-order'
+import { findImageTutorialMenuItem } from '@/utils/image-tutorial'
+import type { CustomMenuItem } from '@/types'
 
 interface NavItem {
   path: string
@@ -262,6 +265,7 @@ const authStore = useAuthStore()
 const onboardingStore = useOnboardingStore()
 const adminSettingsStore = useAdminSettingsStore()
 const { canUseBatchImage, refreshBatchImageAccess } = useBatchImageAccess()
+const { canUseImageGeneration, refreshImageGenerationAccess } = useImageGenerationAccess()
 
 const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)
 const mobileOpen = computed(() => appStore.mobileOpen)
@@ -292,6 +296,19 @@ const modelPlazaPlacement = computed(() =>
 )
 const userSidebarOrder = computed(() => navigationSettings.value?.user_sidebar_order ?? [])
 const adminSidebarOrder = computed(() => navigationSettings.value?.admin_sidebar_order ?? [])
+
+function normalizeRuntimeImageTutorial(items: CustomMenuItem[]): CustomMenuItem[] {
+  const tutorial = findImageTutorialMenuItem(
+    items,
+  )
+  if (!tutorial) return items
+  return items.map((item) => item === tutorial ? {
+    ...item,
+    label: '生图教程',
+    visibility: 'all',
+    placement: 'sidebar',
+  } : item)
+}
 
 // SVG Icon Components
 const DashboardIcon = {
@@ -720,6 +737,7 @@ const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
 const flagAdminPayment = () => adminSettingsStore.paymentEnabled
 const flagBatchImageAccess = () => canUseBatchImage.value
+const flagImageGenerationAccess = () => canUseImageGeneration.value
 const flagProfileNavigation = () => profileNavigationEnabled.value
 const flagSubscriptionNavigation = () => subscriptionNavigationEnabled.value
 const flagModelPlazaInSidebar = () =>
@@ -746,6 +764,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
     { path: '/purchase', label: t('nav.buySubscription'), icon: RechargeSubscriptionIcon, hideInSimpleMode: true, featureFlag: flagPayment },
     { path: '/orders', label: t('nav.myOrders'), icon: OrderListIcon, hideInSimpleMode: true, featureFlag: flagPayment },
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
+    { path: '/images', label: t('nav.onlineImageGeneration'), icon: BatchImageIcon, hideInSimpleMode: true, featureFlag: flagImageGenerationAccess },
     { path: '/affiliate', label: t('nav.affiliate'), icon: UsersIcon, hideInSimpleMode: true, featureFlag: flagAffiliate },
     { path: '/profile', label: t('nav.profile'), icon: UserIcon, featureFlag: flagProfileNavigation },
     ...(withDashboard ? customMenuItemsForUser.value : []).map((item): NavItem => ({
@@ -782,7 +801,9 @@ const personalNavItems = computed((): NavItem[] =>
 
 // Custom menu items filtered by visibility
 const customMenuItemsForUser = computed(() => {
-  const items = appStore.cachedPublicSettings?.custom_menu_items ?? []
+  const items = normalizeRuntimeImageTutorial(
+    appStore.cachedPublicSettings?.custom_menu_items ?? [],
+  )
   return items
     .filter(
       (item) =>
@@ -793,7 +814,7 @@ const customMenuItemsForUser = computed(() => {
 })
 
 const customMenuItemsForAdmin = computed(() => {
-  return adminSettingsStore.customMenuItems
+  return normalizeRuntimeImageTutorial(adminSettingsStore.customMenuItems)
     .filter(
       (item) =>
         (item.visibility === 'admin' || item.visibility === 'all') &&
@@ -987,6 +1008,7 @@ watch(
 
 onMounted(() => {
   void refreshBatchImageAccess()
+  void refreshImageGenerationAccess()
   if (isAdmin.value) {
     adminSettingsStore.fetch()
   }

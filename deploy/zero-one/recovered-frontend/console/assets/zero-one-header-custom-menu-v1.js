@@ -6,6 +6,8 @@ const PUBLIC_SETTINGS_API = '/api/v1/settings/public'
 const ADMIN_SETTINGS_PATH = '/admin/settings'
 const MENU_GROUP_MARKER = 'zero-one-header-custom-menu-group'
 const CUSTOM_MENU_DESCRIPTION = '添加自定义 iframe 页面到侧边栏、顶部导航或同时显示在两处。每个页面可以选择普通用户、管理员或全部登录用户可见。'
+const IMAGE_TUTORIAL_MENU_ID = 'image-tutorial'
+const IMAGE_TUTORIAL_LABELS = new Set(['生图教程', 'image tutorial', 'image generation tutorial'])
 
 let adminMenuItems = []
 let adminNavigationSettings = null
@@ -251,11 +253,26 @@ function normalizeMenuItemsForSave(value) {
   })
 }
 
+function normalizeRuntimeImageTutorial(items) {
+  const candidate = items.find((item) => {
+    if (item.navigation_type === 'qr' || item.placement === 'header' || !item.id || !item.url.trim()) return false
+    const label = item.label.trim().toLowerCase()
+    return item.id === IMAGE_TUTORIAL_MENU_ID || IMAGE_TUTORIAL_LABELS.has(label)
+  })
+  if (!candidate) return items
+  return items.map((item) => item === candidate ? {
+    ...item,
+    label: '生图教程',
+    visibility: 'all',
+    placement: 'sidebar',
+  } : item)
+}
+
 function currentMenuItems(user) {
-  if (user?.role === 'admin') {
-    return adminNavigationSettings ? adminMenuItems : normalizeMenuItems(publicNavigationSettings?.custom_menu_items)
-  }
-  return normalizeMenuItems(publicNavigationSettings?.custom_menu_items)
+  const items = user?.role === 'admin'
+    ? adminNavigationSettings ? adminMenuItems : normalizeMenuItems(publicNavigationSettings?.custom_menu_items)
+    : normalizeMenuItems(publicNavigationSettings?.custom_menu_items)
+  return normalizeRuntimeImageTutorial(items)
 }
 
 function isVisibleToUser(item, user) {
@@ -676,6 +693,9 @@ function reconcileSidebar(user) {
     )
     if (nativeLink) {
       injectedLink?.remove()
+      nativeLink.setAttribute('aria-label', item.label.trim())
+      const label = nativeLink.querySelector('.sidebar-label')
+      if (label && label.textContent !== item.label.trim()) label.textContent = item.label.trim()
       continue
     }
     if (injectedLink instanceof HTMLAnchorElement) {
@@ -1227,12 +1247,14 @@ function installXHRSaveBridge() {
         if (Array.isArray(payload.custom_menu_items)) {
           const identity = navigationIdentity()
           payload.custom_menu_items = augmentCustomMenuItems(payload.custom_menu_items)
+          window.__ZERO_ONE_HEADER_NAVIGATION_EDITOR__?.augmentSettingsPayload(payload)
           nextBody = JSON.stringify(payload)
           this.addEventListener('load', () => {
             if (this.status < 200 || this.status >= 300 || identity !== navigationIdentity()) return
             const savedSettings = confirmedXHRSettings(this)
             if (savedSettings) {
               acceptSavedNavigation(savedSettings)
+              window.__ZERO_ONE_HEADER_NAVIGATION_EDITOR__?.applySavedSettings(savedSettings)
             } else {
               // Do not turn an unconfirmed request body into authoritative state.
               void loadAdminNavigation(true).catch(() => {})

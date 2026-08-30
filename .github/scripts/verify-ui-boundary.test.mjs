@@ -30,6 +30,7 @@ test('validates the approved UI baseline manifest', () => {
       'affiliate-attribution',
       'online-recharge-and-custom-pages',
       'cn-provider-management',
+      'online-image-generation',
       'model-plaza-pricing',
       'redeem-benefits-mystery-box',
     ],

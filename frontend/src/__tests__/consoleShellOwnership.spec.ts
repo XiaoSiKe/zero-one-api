@@ -8,7 +8,7 @@ const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const readSource = (path: string) => readFileSync(resolve(sourceRoot, path), 'utf8')
 
 const consoleRouteNames = [
-  'Dashboard', 'Keys', 'BatchImageGuide', 'Usage', 'Redeem', 'Affiliate',
+  'Dashboard', 'Keys', 'ImageGeneration', 'BatchImageGuide', 'Usage', 'Redeem', 'Affiliate',
   'UserAvailableChannels', 'Profile', 'Subscriptions', 'PurchaseSubscription', 'OrderList',
   'PaymentQRCode', 'CustomPage', 'AdminDashboard', 'AdminOps',
   'AdminAuditLogs', 'AdminUsers', 'AdminGroups', 'AdminChannels',
@@ -21,6 +21,7 @@ const consoleRouteNames = [
 
 const migratedLeafViews = [
   'views/user/DashboardView.vue', 'views/user/KeysView.vue',
+  'views/user/ImageGenerationView.vue',
   'views/user/BatchImageGuideView.vue', 'views/user/UsageView.vue',
   'views/user/RedeemView.vue', 'views/user/AffiliateView.vue',
   'views/user/AvailableChannelsView.vue', 'views/user/ProfileView.vue',

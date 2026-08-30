@@ -107,7 +107,7 @@ export default function Hero({
             <Action
               href={documentUrl(docUrl)}
             >
-              查看文档
+              开源知识库
             </Action>
           ) : (
             <Action href="#quick-start">

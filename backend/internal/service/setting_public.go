@@ -192,6 +192,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyAPIBaseURL,
 		SettingKeyContactInfo,
 		SettingKeyDocURL,
+		SettingKeyLegacyImageTutorialURL,
+		SettingKeyLandingTutorialURL,
 		SettingKeyHomeContent,
 		SettingKeyCompactHomeEnabled,
 		SettingKeyHideCcsImportButton,
@@ -360,6 +362,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		APIBaseURL:                          settings[SettingKeyAPIBaseURL],
 		ContactInfo:                         settings[SettingKeyContactInfo],
 		DocURL:                              settings[SettingKeyDocURL],
+		LegacyImageTutorialURL:              strings.TrimSpace(settings[SettingKeyLegacyImageTutorialURL]),
+		LandingTutorialURL:                  strings.TrimSpace(settings[SettingKeyLandingTutorialURL]),
 		HomeContent:                         settings[SettingKeyHomeContent],
 		CompactHomeEnabled:                  settings[SettingKeyCompactHomeEnabled] == "true",
 		HideCcsImportButton:                 settings[SettingKeyHideCcsImportButton] == "true",
@@ -713,6 +717,7 @@ type PublicSettingsProjection struct {
 	APIBaseURL                          string                   `json:"api_base_url"`
 	ContactInfo                         string                   `json:"contact_info"`
 	DocURL                              string                   `json:"doc_url"`
+	LandingTutorialURL                  string                   `json:"landing_tutorial_url"`
 	HomeContent                         string                   `json:"home_content"`
 	CompactHomeEnabled                  bool                     `json:"compact_home_enabled"`
 	HideCcsImportButton                 bool                     `json:"hide_ccs_import_button"`
@@ -779,6 +784,12 @@ func (s *SettingService) GetPublicSettingsProjection(ctx context.Context) (*Publ
 		return nil, err
 	}
 
+	allMenuItems, _ := withLegacyImageTutorialMenu(
+		parseNavigationCustomMenuItems(settings.CustomMenuItems),
+		settings.LegacyImageTutorialURL,
+	)
+	menuItems := filterPublicCustomMenuItems(allMenuItems)
+	hasImageTutorial := hasImageTutorialMenuItem(menuItems)
 	return &PublicSettingsProjection{
 		RegistrationEnabled:                 settings.RegistrationEnabled,
 		EmailVerifyEnabled:                  settings.EmailVerifyEnabled,
@@ -816,19 +827,20 @@ func (s *SettingService) GetPublicSettingsProjection(ctx context.Context) (*Publ
 		APIBaseURL:                          settings.APIBaseURL,
 		ContactInfo:                         settings.ContactInfo,
 		DocURL:                              settings.DocURL,
+		LandingTutorialURL:                  settings.LandingTutorialURL,
 		HomeContent:                         settings.HomeContent,
 		CompactHomeEnabled:                  settings.CompactHomeEnabled,
 		HideCcsImportButton:                 settings.HideCcsImportButton,
 		ProfileNavEnabled:                   settings.ProfileNavEnabled,
 		SubscriptionNavEnabled:              settings.SubscriptionNavEnabled,
 		ModelPlazaNavPlacement:              settings.ModelPlazaNavPlacement,
-		UserSidebarOrder:                    ParseSidebarOrder(settings.UserSidebarOrder),
-		AdminSidebarOrder:                   ParseSidebarOrder(settings.AdminSidebarOrder),
+		UserSidebarOrder:                    withImageTutorialSidebarOrder(ParseSidebarOrder(settings.UserSidebarOrder), hasImageTutorial),
+		AdminSidebarOrder:                   withImageTutorialSidebarOrder(ParseSidebarOrder(settings.AdminSidebarOrder), hasImageTutorial),
 		PurchaseSubscriptionEnabled:         settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:             settings.PurchaseSubscriptionURL,
 		TableDefaultPageSize:                settings.TableDefaultPageSize,
 		TablePageSizeOptions:                settings.TablePageSizeOptions,
-		CustomMenuItems:                     parsePublicCustomMenuItems(settings.CustomMenuItems),
+		CustomMenuItems:                     menuItems,
 		CustomEndpoints:                     parsePublicCustomEndpoints(settings.CustomEndpoints),
 		LinuxDoOAuthEnabled:                 settings.LinuxDoOAuthEnabled,
 		DingTalkOAuthEnabled:                settings.DingTalkOAuthEnabled,
@@ -872,7 +884,10 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 }
 
 func parsePublicCustomMenuItems(raw string) []PublicCustomMenuItem {
-	items := parseNavigationCustomMenuItems(raw)
+	return filterPublicCustomMenuItems(parseNavigationCustomMenuItems(raw))
+}
+
+func filterPublicCustomMenuItems(items []PublicCustomMenuItem) []PublicCustomMenuItem {
 	filtered := make([]PublicCustomMenuItem, 0, len(items))
 	for _, item := range items {
 		if item.Visibility != "user" && item.Visibility != "all" {
@@ -932,6 +947,7 @@ func (s *SettingService) GetFrameSrcOrigins(ctx context.Context) ([]string, erro
 	for _, item := range parseCustomMenuItemURLs(settings.CustomMenuItems) {
 		addOrigin(item)
 	}
+	addOrigin(settings.LegacyImageTutorialURL)
 
 	return origins, nil
 }

@@ -165,6 +165,8 @@ type SystemSettings struct {
 	APIBaseURL                  string           `json:"api_base_url"`
 	ContactInfo                 string           `json:"contact_info"`
 	DocURL                      string           `json:"doc_url"`
+	LegacyImageTutorialURL      string           `json:"legacy_image_tutorial_url"`
+	LandingTutorialURL          string           `json:"landing_tutorial_url"`
 	HomeContent                 string           `json:"home_content"`
 	CompactHomeEnabled          bool             `json:"compact_home_enabled"`
 	HideCcsImportButton         bool             `json:"hide_ccs_import_button"`
@@ -373,6 +375,7 @@ type LandingPublicSettings struct {
 	SiteLogo                   string `json:"site_logo"`
 	SiteSubtitle               string `json:"site_subtitle"`
 	DocURL                     string `json:"doc_url"`
+	LandingTutorialURL         string `json:"landing_tutorial_url"`
 	RegistrationEnabled        bool   `json:"registration_enabled"`
 	ModelPlazaEnabled          bool   `json:"model_plaza_enabled"`
 	ModelPlazaRequireAuth      bool   `json:"model_plaza_require_auth"`

@@ -83,9 +83,9 @@ function plazaData(): ModelPlazaData {
       },
       {
         id: 3,
-        name: 'Gemini 公开组',
+        name: 'DeepSeek 公开组',
         description: '',
-        platform: 'gemini',
+        platform: 'deepseek',
         subscriptionType: 'standard',
         rateMultiplier: 0.6,
         peakRateEnabled: false,
@@ -97,8 +97,8 @@ function plazaData(): ModelPlazaData {
         imageRateMultiplier: 1,
         models: [
           {
-            name: 'gemini-2.5-pro',
-            platform: 'gemini',
+            name: 'deepseek-v3.2',
+            platform: 'deepseek',
             pricing: tokenPricing(1.25e-6, 10e-6),
             officialPricing: null,
           },
@@ -145,8 +145,9 @@ describe('PricingSection', () => {
       'All',
       'Claude',
       'OpenAI',
-      'Gemini',
+      'DeepSeek',
     ])
+    expect(filters.queryByRole('button', { name: 'Gemini' })).toBeNull()
     expect(filters.getByRole('button', { name: 'All' }).getAttribute('aria-pressed')).toBe('true')
 
     const headers = within(screen.getByRole('table'))
@@ -224,7 +225,7 @@ describe('PricingSection', () => {
     expect(await screen.findByText('价格请求过于频繁')).toBeTruthy()
     expect(screen.getByText('请在约 12 秒后重试。')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: '重新读取' }))
-    expect((await screen.findAllByText('gemini-2.5-pro')).length).toBeGreaterThan(0)
+    expect((await screen.findAllByText('deepseek-v3.2')).length).toBeGreaterThan(0)
   })
 
   it('filters by platform, searches by model, and clears an empty result', async () => {
@@ -263,7 +264,69 @@ describe('PricingSection', () => {
       '输出（零一 API）',
     ])
     await user.click(screen.getByRole('button', { name: '清除筛选' }))
-    expect(screen.getAllByText('gemini-2.5-pro').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('deepseek-v3.2').length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: 'All' }).getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('shows only platforms returned by the live model plaza', async () => {
+    const data = plazaData()
+    data.groups = data.groups.filter((group) => group.platform === 'openai')
+    mocks.fetchModelPlaza.mockResolvedValue({ status: 'success', data })
+
+    render(<PricingSection enabled requireAuth={false} serverUtcOffset="+08:00" />)
+    await screen.findByText('gpt-5.4')
+
+    const filters = within(screen.getByRole('group', { name: '按平台筛选' }))
+    expect(filters.getAllByRole('button').map((button) => button.textContent)).toEqual([
+      'All',
+      'OpenAI',
+    ])
+  })
+
+  it.each(['new-provider', '__proto__'])(
+    'falls back to the live platform name for unknown platform %s',
+    async (platform) => {
+      const baseGroup = plazaData().groups[1]!
+      const baseModel = baseGroup.models[0]!
+      const data: ModelPlazaData = {
+        description: '',
+        groups: [{
+          ...baseGroup,
+          name: `${platform} group`,
+          platform,
+          models: [{ ...baseModel, name: `${platform}-model`, platform }],
+        }],
+      }
+      mocks.fetchModelPlaza.mockResolvedValue({ status: 'success', data })
+
+      render(<PricingSection enabled requireAuth={false} serverUtcOffset="+08:00" />)
+      await screen.findByText(`${platform}-model`)
+
+      const filters = within(screen.getByRole('group', { name: '按平台筛选' }))
+      expect(filters.getByRole('button', { name: platform })).toBeTruthy()
+    },
+  )
+
+  it('resets a platform selection after that platform becomes unavailable', async () => {
+    const user = userEvent.setup()
+    const openAIOnly = plazaData()
+    openAIOnly.groups = openAIOnly.groups.filter((group) => group.platform === 'openai')
+    mocks.fetchModelPlaza
+      .mockResolvedValueOnce(success())
+      .mockResolvedValueOnce({ status: 'success', data: openAIOnly })
+
+    const { rerender } = render(
+      <PricingSection enabled requireAuth={false} serverUtcOffset="+08:00" />,
+    )
+    await user.click(await screen.findByRole('button', { name: 'DeepSeek' }))
+    expect(screen.getByRole('button', { name: 'DeepSeek' }).getAttribute('aria-pressed')).toBe('true')
+
+    rerender(<PricingSection enabled={false} requireAuth={false} serverUtcOffset="+08:00" />)
+    await screen.findByText('实时价目暂未公开')
+    rerender(<PricingSection enabled requireAuth={false} serverUtcOffset="+08:00" />)
+    await screen.findByText('gpt-5.4')
+
+    expect(screen.queryByRole('button', { name: 'DeepSeek' })).toBeNull()
     expect(screen.getByRole('button', { name: 'All' }).getAttribute('aria-pressed')).toBe('true')
   })
 })

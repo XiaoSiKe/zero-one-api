@@ -134,8 +134,9 @@ func TestSettingHandler_GetPublicSettings_ProjectsUserAndAllCustomMenus(t *testi
 			{"id":"admin-help","visibility":"admin"},
 			{"id":"invalid-help","visibility":"guest"}
 		]`,
-		service.SettingKeyUserSidebarOrder:  `["/keys","/dashboard"]`,
-		service.SettingKeyAdminSidebarOrder: `["/admin/settings","/admin/dashboard"]`,
+		service.SettingKeyLegacyImageTutorialURL: "https://docs.example.com/image-generation",
+		service.SettingKeyUserSidebarOrder:       `["/keys","/image-tutorial","/dashboard"]`,
+		service.SettingKeyAdminSidebarOrder:      `["/admin/settings","/admin/dashboard"]`,
 	}}
 	h := NewSettingHandler(service.NewSettingService(repo, &config.Config{}), "test-version")
 
@@ -156,17 +157,21 @@ func TestSettingHandler_GetPublicSettings_ProjectsUserAndAllCustomMenus(t *testi
 		} `json:"data"`
 	}
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
-	require.Len(t, resp.Data.CustomMenuItems, 2)
-	require.Equal(t, []string{"/keys", "/dashboard"}, resp.Data.UserSidebarOrder)
-	require.Equal(t, []string{"/admin/settings", "/admin/dashboard"}, resp.Data.AdminSidebarOrder)
-	require.Equal(t, []string{"user-help", "shared-help"}, []string{
+	require.Len(t, resp.Data.CustomMenuItems, 3)
+	require.Equal(t, []string{"/keys", "/custom/image-tutorial", "/dashboard"}, resp.Data.UserSidebarOrder)
+	require.Equal(t, []string{"/admin/settings", "/admin/dashboard", "/custom/image-tutorial"}, resp.Data.AdminSidebarOrder)
+	require.Equal(t, []string{"user-help", "shared-help", "image-tutorial"}, []string{
 		resp.Data.CustomMenuItems[0].ID,
 		resp.Data.CustomMenuItems[1].ID,
+		resp.Data.CustomMenuItems[2].ID,
 	})
-	require.Equal(t, []string{"user", "all"}, []string{
+	require.Equal(t, []string{"user", "all", "all"}, []string{
 		resp.Data.CustomMenuItems[0].Visibility,
 		resp.Data.CustomMenuItems[1].Visibility,
+		resp.Data.CustomMenuItems[2].Visibility,
 	})
+	require.NotContains(t, recorder.Body.String(), "legacy_image_tutorial_url")
+	require.NotContains(t, recorder.Body.String(), `"image_tutorial_url"`)
 }
 
 func TestSettingHandler_PublicSettingsMatchesFirstFrameInjection(t *testing.T) {
@@ -413,6 +418,7 @@ func TestSettingHandler_GetPublicSettings_LandingScopeIsSmallProjection(t *testi
 		service.SettingKeySiteLogo:                   rawLogo,
 		service.SettingKeySiteSubtitle:               "API Gateway",
 		service.SettingKeyDocURL:                     "https://docs.example.com",
+		service.SettingKeyLandingTutorialURL:         "https://docs.example.com/getting-started",
 		service.SettingKeyRegistrationEnabled:        "true",
 		service.SettingKeyModelPlazaEnabled:          "true",
 		service.SettingKeyModelPlazaRequireAuth:      "true",
@@ -440,6 +446,7 @@ func TestSettingHandler_GetPublicSettings_LandingScopeIsSmallProjection(t *testi
 		"site_logo",
 		"site_subtitle",
 		"doc_url",
+		"landing_tutorial_url",
 		"registration_enabled",
 		"model_plaza_enabled",
 		"model_plaza_require_auth",
@@ -453,6 +460,7 @@ func TestSettingHandler_GetPublicSettings_LandingScopeIsSmallProjection(t *testi
 	require.NotContains(t, resp.Data, "payment_enabled")
 	require.NotContains(t, resp.Data, "email_verify_enabled")
 	require.NotContains(t, resp.Data, "version")
+	require.JSONEq(t, `"https://docs.example.com/getting-started"`, string(resp.Data["landing_tutorial_url"]))
 
 	var returnedLogo string
 	require.NoError(t, json.Unmarshal(resp.Data["site_logo"], &returnedLogo))

@@ -1,8 +1,8 @@
 import { ArrowRight, ExternalLink, RefreshCw, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  LANDING_PLATFORM_FILTERS,
   fetchModelPlaza,
+  listLandingPlatforms,
   selectRepresentativePriceRows,
   type LandingPlatformFilter,
   type LandingPriceRow,
@@ -22,15 +22,21 @@ interface PricingSectionProps {
 
 type PricingViewState = { status: 'loading' } | ModelPlazaResult
 
-const FILTER_LABELS: Record<LandingPlatformFilter, string> = {
-  all: 'All',
-  anthropic: 'Claude',
-  openai: 'OpenAI',
-  gemini: 'Gemini',
-  other: '其他',
-}
+const FILTER_LABELS = new Map<string, string>([
+  ['all', 'All'],
+  ['anthropic', 'Claude'],
+  ['openai', 'OpenAI'],
+  ['gemini', 'Gemini'],
+  ['antigravity', 'Antigravity'],
+  ['grok', 'Grok'],
+  ['kimi', 'Kimi'],
+  ['zhipu', 'Zhipu GLM'],
+  ['deepseek', 'DeepSeek'],
+])
 
-const VISIBLE_FILTERS = LANDING_PLATFORM_FILTERS.filter((filter) => filter !== 'other')
+function platformLabel(platform: string): string {
+  return FILTER_LABELS.get(platform) ?? platform
+}
 
 function discountLabel(rateLabel: string): string {
   return rateLabel.endsWith('×') ? `${rateLabel.slice(0, -1)}折` : rateLabel
@@ -263,6 +269,15 @@ export default function PricingSection({
     })
   }, [now, platform, search, serverUtcOffset, state])
 
+  const visiblePlatforms = useMemo(() => {
+    if (state.status !== 'success') return []
+    return listLandingPlatforms(state.data, { serverUtcOffset, now })
+  }, [now, serverUtcOffset, state])
+
+  useEffect(() => {
+    if (platform !== 'all' && !visiblePlatforms.includes(platform)) setPlatform('all')
+  }, [platform, visiblePlatforms])
+
   return (
     <section id="pricing" className="section pricing-section" aria-labelledby="pricing-title">
       <div className="pricing-heading-row" data-reveal>
@@ -282,14 +297,14 @@ export default function PricingSection({
         <div className="pricing-data-shell pricing-data-enter">
           <div className="price-controls">
             <div className="filter-tabs" role="group" aria-label="按平台筛选">
-              {VISIBLE_FILTERS.map((filter) => (
+              {(['all', ...visiblePlatforms] as LandingPlatformFilter[]).map((filter) => (
                 <button
                   key={filter}
                   type="button"
                   aria-pressed={platform === filter}
                   onClick={() => setPlatform(filter)}
                 >
-                  {FILTER_LABELS[filter]}
+                  {platformLabel(filter)}
                 </button>
               ))}
             </div>

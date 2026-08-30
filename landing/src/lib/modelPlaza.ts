@@ -6,15 +6,18 @@ const PER_MILLION = 1_000_000
 type UnknownRecord = Record<string, unknown>
 
 export type ModelBillingMode = 'token' | 'per_request' | 'image' | 'video'
-export type LandingPlatformFilter = 'all' | 'anthropic' | 'openai' | 'gemini' | 'other'
+export type LandingPlatformFilter = string
 
-export const LANDING_PLATFORM_FILTERS: readonly LandingPlatformFilter[] = [
-  'all',
+const LANDING_PLATFORM_ORDER = [
   'anthropic',
   'openai',
   'gemini',
-  'other',
-]
+  'antigravity',
+  'grok',
+  'kimi',
+  'zhipu',
+  'deepseek',
+] as const
 
 export interface ModelPricingInterval {
   minTokens: number
@@ -90,7 +93,7 @@ export interface LandingPriceRow {
   key: string
   model: string
   platform: string
-  platformFilter: Exclude<LandingPlatformFilter, 'all'>
+  platformFilter: string
   groupId: number
   groupName: string
   subscriptionType: string
@@ -485,8 +488,8 @@ export async function fetchModelPlaza(
     }
     const data = parseModelPlazaResponse(payload)
     if (!data) return { status: 'error', reason: 'invalid-response' }
-    const hasModels = data.groups.some((group) => group.models.length > 0)
-    return hasModels ? { status: 'success', data } : { status: 'empty', data }
+    const hasDisplayableModels = listLandingPlatforms(data).length > 0
+    return hasDisplayableModels ? { status: 'success', data } : { status: 'empty', data }
   } catch {
     if (timedOut) return { status: 'error', reason: 'timeout' }
     if (options.signal?.aborted) return { status: 'error', reason: 'aborted' }
@@ -581,12 +584,8 @@ export function peakMultiplierAt(
   return serverMinutes >= start && serverMinutes < end ? group.peakRateMultiplier : 1
 }
 
-export function platformFilterFor(platform: string): Exclude<LandingPlatformFilter, 'all'> {
-  const normalized = platform.trim().toLowerCase()
-  if (normalized === 'anthropic' || normalized === 'openai' || normalized === 'gemini') {
-    return normalized
-  }
-  return 'other'
+export function platformFilterFor(platform: string): string {
+  return platform.trim().toLowerCase() || 'other'
 }
 
 function effectiveRate(group: ModelPlazaGroup, now?: Date, serverUtcOffset?: string): number {
@@ -754,6 +753,40 @@ function compareRows(
   return b.model.localeCompare(a.model, 'en', { numeric: true, sensitivity: 'base' })
 }
 
+function orderLandingPlatforms(platforms: Iterable<string>): string[] {
+  const values = [...new Set(platforms)]
+  const knownOrder = new Map<string, number>(
+    LANDING_PLATFORM_ORDER.map((platform, index) => [platform, index]),
+  )
+  return values.sort((left, right) => {
+    const leftIndex = knownOrder.get(left)
+    const rightIndex = knownOrder.get(right)
+    if (leftIndex !== undefined || rightIndex !== undefined) {
+      return (leftIndex ?? Number.MAX_SAFE_INTEGER) - (rightIndex ?? Number.MAX_SAFE_INTEGER)
+    }
+    return left.localeCompare(right, 'en', { sensitivity: 'base' })
+  })
+}
+
+export function listLandingPlatforms(
+  data: ModelPlazaData,
+  options: Pick<SelectPriceRowsOptions, 'serverUtcOffset' | 'now'> = {},
+): string[] {
+  const platforms: string[] = []
+  for (const group of data.groups) {
+    for (const model of group.models) {
+      const row = toLandingPriceRow(
+        group,
+        model,
+        options.serverUtcOffset ?? '',
+        options.now,
+      )
+      if (row) platforms.push(row.platformFilter)
+    }
+  }
+  return orderLandingPlatforms(platforms)
+}
+
 export function filterPriceRows<Row extends LandingPriceRow>(
   rows: readonly Row[],
   platform: LandingPlatformFilter = 'all',
@@ -800,21 +833,13 @@ export function selectRepresentativePriceRows(
   const filtered = filterPriceRows([...byModel.values()], platform, options.search).sort(compareRows)
   if (platform !== 'all') return filtered.slice(0, limit).map(({ score: _, ...row }) => row)
 
-  const buckets = new Map<Exclude<LandingPlatformFilter, 'all'>, Array<LandingPriceRow & { score: number }>>([
-    ['anthropic', []],
-    ['openai', []],
-    ['gemini', []],
-    ['other', []],
-  ])
+  const order = orderLandingPlatforms(filtered.map((row) => row.platformFilter))
+  const buckets = new Map<string, Array<LandingPriceRow & { score: number }>>(
+    order.map((category) => [category, []]),
+  )
   for (const row of filtered) buckets.get(row.platformFilter)?.push(row)
 
   const selected: Array<LandingPriceRow & { score: number }> = []
-  const order: Array<Exclude<LandingPlatformFilter, 'all'>> = [
-    'anthropic',
-    'openai',
-    'gemini',
-    'other',
-  ]
   while (selected.length < limit) {
     let added = false
     for (const category of order) {

@@ -57,6 +57,7 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 			SiteLogo:                   service.PublicSiteLogoURL(settings.SiteLogo),
 			SiteSubtitle:               settings.SiteSubtitle,
 			DocURL:                     settings.DocURL,
+			LandingTutorialURL:         settings.LandingTutorialURL,
 			RegistrationEnabled:        settings.RegistrationEnabled,
 			ModelPlazaEnabled:          settings.ModelPlazaEnabled,
 			ModelPlazaRequireAuth:      settings.ModelPlazaRequireAuth,

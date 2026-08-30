@@ -66,6 +66,7 @@ export function publicSettings(mode: 'v1' | 'v2' = 'v2') {
     api_base_url: 'https://api.01yapi.com',
     contact_info: '',
     doc_url: 'https://docs.01yapi.test/start',
+    landing_tutorial_url: 'https://docs.01yapi.test/getting-started',
     home_content: '',
     compact_home_enabled: false,
     hide_ccs_import_button: false,
@@ -392,6 +393,7 @@ export async function seedConsole(
     communityQrDescription?: string
     affiliateEnabled?: boolean
     locale?: 'en' | 'zh'
+    theme?: 'light' | 'dark'
     profileNavigationEnabled?: boolean
     subscriptionNavigationEnabled?: boolean
     modelPlazaPlacement?: 'header' | 'sidebar'
@@ -400,6 +402,7 @@ export async function seedConsole(
     riskControlEnabled?: boolean
     userSidebarOrder?: string[]
     adminSidebarOrder?: string[]
+    imageGenerationKeys?: Array<Record<string, unknown>>
     customMenuItems?: Array<{
       id: string
       label: string
@@ -417,6 +420,7 @@ export async function seedConsole(
   const authenticated = options.authenticated ?? true
   const user = options.user ?? adminUser
   const locale = options.locale ?? 'zh'
+  const theme = options.theme ?? 'light'
   const settings = {
     ...publicSettings(mode),
     community_qr_enabled: options.communityQrEnabled ?? false,
@@ -465,7 +469,7 @@ export async function seedConsole(
       created_at: '2026-08-15T10:00:00+08:00',
     },
   ]
-  await page.addInitScript(({ user, authenticated, locale }) => {
+  await page.addInitScript(({ user, authenticated, locale, theme }) => {
     if (authenticated) {
       localStorage.setItem('auth_token', 'visual-fixture-token')
       localStorage.setItem('auth_user', JSON.stringify(user))
@@ -474,9 +478,9 @@ export async function seedConsole(
       localStorage.removeItem('auth_user')
     }
     localStorage.setItem('sub2api_locale', locale)
-    localStorage.setItem('theme', 'light')
+    localStorage.setItem('theme', theme)
     localStorage.setItem('admin_guide_1_admin_v4_interactive', 'true')
-  }, { user, authenticated, locale })
+  }, { user, authenticated, locale, theme })
 
   await page.route('**/setup/status', (route) =>
     fulfill(route, { needs_setup: false, step: 'completed' }),
@@ -557,6 +561,7 @@ export async function seedConsole(
         profile_navigation_enabled?: boolean
         subscription_navigation_enabled?: boolean
         model_plaza_placement?: 'header' | 'sidebar'
+        landing_tutorial_url?: string
         user_sidebar_order?: string[]
         admin_sidebar_order?: string[]
         affiliate_enabled?: boolean
@@ -592,6 +597,9 @@ export async function seedConsole(
       }
       if (submitted.model_plaza_placement === 'header' || submitted.model_plaza_placement === 'sidebar') {
         settings.model_plaza_placement = submitted.model_plaza_placement
+      }
+      if (typeof submitted.landing_tutorial_url === 'string') {
+        settings.landing_tutorial_url = submitted.landing_tutorial_url
       }
       if (Array.isArray(submitted.user_sidebar_order)) {
         settings.user_sidebar_order = submitted.user_sidebar_order
@@ -642,7 +650,7 @@ export async function seedConsole(
     // Falling through to the generic {} response can crash rendering after navigation.
     if (route.request().method() === 'GET' && path === '/keys') {
       return fulfill(route, {
-        items: [], total: 0,
+        items: options.imageGenerationKeys ?? [], total: options.imageGenerationKeys?.length ?? 0,
         page: Number(requestUrl.searchParams.get('page') || 1),
         page_size: Number(requestUrl.searchParams.get('page_size') || 20),
         pages: 1,

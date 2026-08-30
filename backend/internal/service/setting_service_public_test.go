@@ -183,6 +183,75 @@ func TestParsePublicCustomMenuItemsKeepsQRMetadataButNeverImageBytes(t *testing.
 	require.NotContains(t, string(encoded), image)
 }
 
+func TestLegacyImageTutorialProjectsAsCustomMenuWithoutReplacingIntegrationGuide(t *testing.T) {
+	repo := &settingPublicRepoStub{values: map[string]string{
+		SettingKeyCustomMenuItems: `[{
+			"id":"integration-guide","label":"接入教程","url":"https://docs.example.com/integration",
+			"visibility":"user","placement":"sidebar","sort_order":0
+		}]`,
+		SettingKeyLegacyImageTutorialURL: "https://docs.example.com/image-generation",
+		SettingKeyUserSidebarOrder:       `["/keys","/image-tutorial"]`,
+		SettingKeyAdminSidebarOrder:      `["/admin/dashboard"]`,
+	}}
+	svc := NewSettingService(repo, &config.Config{})
+
+	publicSettings, err := svc.GetPublicSettingsProjection(context.Background())
+	require.NoError(t, err)
+	require.Len(t, publicSettings.CustomMenuItems, 2)
+	require.Equal(t, "integration-guide", publicSettings.CustomMenuItems[0].ID)
+	require.Equal(t, PublicCustomMenuItem{
+		ID:         "image-tutorial",
+		Label:      "生图教程",
+		URL:        "https://docs.example.com/image-generation",
+		Visibility: "all",
+		Placement:  "sidebar",
+		SortOrder:  1,
+	}, publicSettings.CustomMenuItems[1])
+	require.Equal(t, []string{"/keys", "/custom/image-tutorial"}, publicSettings.UserSidebarOrder)
+	require.Equal(t, []string{"/admin/dashboard", "/custom/image-tutorial"}, publicSettings.AdminSidebarOrder)
+
+	adminNavigation, err := svc.GetAdminNavigationSettings(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, publicSettings.CustomMenuItems, adminNavigation.CustomMenuItems)
+	require.Equal(t, publicSettings.UserSidebarOrder, adminNavigation.UserSidebarOrder)
+	require.Equal(t, publicSettings.AdminSidebarOrder, adminNavigation.AdminSidebarOrder)
+
+	encoded, err := json.Marshal(publicSettings)
+	require.NoError(t, err)
+	require.NotContains(t, string(encoded), "legacy_image_tutorial_url")
+	require.NotContains(t, string(encoded), "image_tutorial_url")
+}
+
+func TestLegacyImageTutorialProjectionRejectsInvalidURL(t *testing.T) {
+	items, ok := withLegacyImageTutorialMenu(nil, "javascript:alert(1)")
+	require.False(t, ok)
+	require.Empty(t, items)
+}
+
+func TestAdminOnlyImageTutorialIsNotWidenedByLegacyProjection(t *testing.T) {
+	repo := &settingPublicRepoStub{values: map[string]string{
+		SettingKeyCustomMenuItems: `[{
+			"id":"image-tutorial","label":"Admin image guide","url":"https://docs.example.com/admin-images",
+			"visibility":"admin","placement":"sidebar","sort_order":0
+		}]`,
+		SettingKeyLegacyImageTutorialURL: "https://docs.example.com/legacy-images",
+		SettingKeyUserSidebarOrder:       `["/keys","/image-tutorial"]`,
+		SettingKeyAdminSidebarOrder:      `["/admin/dashboard","/image-tutorial"]`,
+	}}
+	svc := NewSettingService(repo, &config.Config{})
+
+	publicSettings, err := svc.GetPublicSettingsProjection(context.Background())
+	require.NoError(t, err)
+	require.Empty(t, publicSettings.CustomMenuItems)
+	require.NotContains(t, publicSettings.UserSidebarOrder, "/custom/image-tutorial")
+
+	adminNavigation, err := svc.GetAdminNavigationSettings(context.Background())
+	require.NoError(t, err)
+	require.Len(t, adminNavigation.CustomMenuItems, 1)
+	require.Equal(t, "admin", adminNavigation.CustomMenuItems[0].Visibility)
+	require.Contains(t, adminNavigation.AdminSidebarOrder, "/custom/image-tutorial")
+}
+
 func TestSettingService_GetPublicSettings_ExposesAllowUserViewErrorRequests(t *testing.T) {
 	repo := &settingPublicRepoStub{
 		values: map[string]string{

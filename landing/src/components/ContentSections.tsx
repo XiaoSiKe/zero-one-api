@@ -68,7 +68,7 @@ export function ValuePricingSection({
                   <Layers />
                 </span>
                 <h4>一个平台，接全模型。</h4>
-                <p>Claude、Codex、Gemini 等常用模型，一套 API 即可统一接入。</p>
+                <p>模型广场中已公开的常用模型，一套 API 即可统一接入。</p>
               </article>
               <article className="value-pricing-reason-card">
                 <span className="value-pricing-reason-icon" aria-hidden="true">
@@ -395,7 +395,7 @@ export function SiteFooter({
       </div>
       <div className="footer-column">
         <strong>资源</strong>
-        {docUrl ? <a href={documentUrl(docUrl)}>文档</a> : null}
+        {docUrl ? <a href={documentUrl(docUrl)}>开源知识库</a> : null}
         {channelMonitorEnabled ? (
           <a href={consoleUrl("/monitor")}>渠道状态</a>
         ) : null}

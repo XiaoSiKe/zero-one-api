@@ -209,6 +209,7 @@ const embeddedUrl = computed(() => {
     authStore.token,
     pageTheme.value,
     locale.value,
+    'same-origin',
   )
 })
 

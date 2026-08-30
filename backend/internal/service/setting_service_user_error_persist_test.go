@@ -29,3 +29,17 @@ func TestAllowUserViewErrorRequests_PersistsToDB(t *testing.T) {
 	require.True(t, ok, "updates map 中应包含 SettingKeyAllowUserViewErrorRequests，但未找到（bug：buildSystemSettingsUpdates 漏写）")
 	require.Equal(t, "true", val)
 }
+
+func TestImageTutorialCustomMenuClearsLegacyURL(t *testing.T) {
+	repo := &bmUpdateRepoStub{}
+	svc := NewSettingService(repo, &config.Config{})
+
+	err := svc.UpdateSettings(context.Background(), &SystemSettings{
+		CustomMenuItems: `[{
+			"id":"image-tutorial","label":"生图教程","url":"https://docs.example.com/image-generation",
+			"visibility":"all","placement":"sidebar","sort_order":0
+		}]`,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "", repo.updates[SettingKeyLegacyImageTutorialURL])
+}

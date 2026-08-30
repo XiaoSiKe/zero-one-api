@@ -7,6 +7,11 @@ const ADMIN_DASHBOARD_PATH = '/admin/dashboard'
 const NESTED_MOTION_HOST_SELECTOR = '.card, iframe'
 let pendingDashboardPath = ''
 
+function localText(zh, en) {
+  const locale = localStorage.getItem('sub2api_locale') || document.documentElement.lang || 'zh-CN'
+  return locale.toLowerCase().startsWith('zh') ? zh : en
+}
+
 function dashboardPathFor(rawUser) {
   try {
     return JSON.parse(rawUser)?.role === 'admin'
@@ -130,9 +135,39 @@ function enhanceConsoleCards() {
   if (surface instanceof HTMLElement) installConsoleCardMotion(surface)
 }
 
+function renameKnowledgeBaseLinks() {
+  const settings = window.__ZERO_ONE_PUBLIC_SETTINGS__ || window.__APP_CONFIG__ || {}
+  const configured = typeof settings.doc_url === 'string' ? settings.doc_url.trim() : ''
+  if (configured) {
+    for (const link of document.querySelectorAll('header a[href]')) {
+      if (!(link instanceof HTMLAnchorElement) || link.href !== new URL(configured, window.location.href).href) continue
+      const label = link.querySelector('span') || link
+      const text = localText('开源知识库', 'Open-source Knowledge Base')
+      if (label.textContent !== text) label.textContent = text
+      if (link.getAttribute('aria-label') !== text) link.setAttribute('aria-label', text)
+    }
+  }
+  if (window.location.pathname !== '/admin/settings') return
+  for (const label of document.querySelectorAll('main label')) {
+    const text = label.textContent?.trim().toLowerCase()
+    if (text !== '文档链接' && text !== 'documentation url') continue
+    const labelText = localText('开源知识库链接', 'Open-source Knowledge Base URL')
+    if (label.textContent !== labelText) label.textContent = labelText
+    const hint = label.parentElement?.querySelector('p')
+    if (hint) {
+      const hintText = localText(
+        '用于官网和控制台顶部导航的“开源知识库”入口。留空则隐藏该入口。',
+        'Used by the Open-source Knowledge Base links on the public site and Console header. Leave empty to hide them.',
+      )
+      if (hint.textContent !== hintText) hint.textContent = hintText
+    }
+  }
+}
+
 function scanConsoleParity() {
   redirectCompletedLogin()
   enhanceConsoleCards()
+  renameKnowledgeBaseLinks()
 }
 
 function scheduleScan() {
