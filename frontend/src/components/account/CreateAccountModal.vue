@@ -3827,6 +3827,9 @@ const apiKeyHint = computed(() => {
   if (form.platform === 'openai') return t('admin.accounts.openai.apiKeyHint')
   if (form.platform === 'gemini') return t('admin.accounts.gemini.apiKeyHint')
   if (form.platform === 'grok') return ''
+  if (form.platform === 'kimi' || form.platform === 'zhipu' || form.platform === 'deepseek') {
+    return t('admin.accounts.cnProviders.apiKeyHint')
+  }
   return t('admin.accounts.apiKeyHint')
 })
 

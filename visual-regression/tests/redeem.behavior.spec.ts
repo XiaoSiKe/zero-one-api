@@ -13,7 +13,7 @@ const record = (type = 'benefit', value = 5) => ({
 
 test.describe('Recovered Redeem Code behavior', () => {
   test.beforeEach(async ({ page }) => {
-    await seedConsole(page, 'v2', { user: regularUser, version: '0.1.183' })
+    await seedConsole(page, 'v2', { user: regularUser })
   })
 
   for (const [type, value, title] of [
@@ -157,7 +157,7 @@ test.describe('Recovered Redeem Code behavior', () => {
 
 test.describe('Recovered Administrator Redeem Code behavior', () => {
   test.beforeEach(async ({ page }) => {
-    await seedConsole(page, 'v2', { user: adminUser, version: '0.1.183' })
+    await seedConsole(page, 'v2', { user: adminUser })
   })
 
   for (const type of ['benefit', 'mystery_box'] as const) {

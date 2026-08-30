@@ -4171,6 +4171,7 @@ anthropic-beta: claude-code-20250219`,
       deepseek: "DeepSeek"
     },
     cnProviders: {
+      apiKeyHint: "Enter the provider API key that matches the selected account type and endpoint.",
       accountMode: {
         title: "Account Type",
         payg: "Pay-as-you-go",
@@ -4186,8 +4187,8 @@ anthropic-beta: claude-code-20250219`,
         responsesFallbackDesc: "Responses requests are converted to Chat Completions because this provider has no native Responses endpoint.",
         chatCompletions: "Chat Completions",
         chatCompletionsDesc: "Standard OpenAI-compatible endpoint; requests in other formats are converted.",
-        anthropic: "Anthropic",
-        anthropicDesc: "Native passthrough to the provider’s Anthropic endpoint — ideal for Claude Code.",
+        anthropic: "Anthropic-compatible",
+        anthropicDesc: "Uses the selected provider’s Anthropic-compatible endpoint. Requests still go to the selected provider; intended for Claude Code.",
         responses: "Responses",
         responsesDesc: "Provider’s native Responses endpoint — ideal for Codex."
       },

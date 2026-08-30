@@ -4375,6 +4375,7 @@ anthropic-beta: claude-code-20250219`,
       deepseek: "DeepSeek"
     },
     cnProviders: {
+      apiKeyHint: "请输入与所选账号类型及端点匹配的供应商 API Key",
       accountMode: {
         title: "账号类型",
         payg: "按量付费",
@@ -4390,8 +4391,8 @@ anthropic-beta: claude-code-20250219`,
         responsesFallbackDesc: "该供应商没有原生 Responses 端点，Responses 请求将转换为 Chat Completions。",
         chatCompletions: "Chat Completions",
         chatCompletionsDesc: "标准 OpenAI 兼容端点，其他格式请求将被转换。",
-        anthropic: "Anthropic",
-        anthropicDesc: "直通供应商原生 Anthropic 端点，零转换，适配 Claude Code。",
+        anthropic: "Anthropic 兼容",
+        anthropicDesc: "使用当前供应商的 Anthropic 兼容端点；请求仍发送到当前供应商，适配 Claude Code。",
         responses: "Responses",
         responsesDesc: "供应商原生 Responses 端点，适配 Codex。"
       },
