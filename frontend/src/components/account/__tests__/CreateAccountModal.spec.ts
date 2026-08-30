@@ -2,6 +2,9 @@ import { defineComponent } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import enAccounts from '@/i18n/locales/en/admin/accounts'
+import zhAccounts from '@/i18n/locales/zh/admin/accounts'
+
 const {
   createAccountMock,
   probeUpstreamBillingMock,
@@ -301,6 +304,34 @@ describe('CreateAccountModal OpenAI long-context billing', () => {
     await selectButtonByText(wrapper, 'DeepSeek')
     expect(wrapper.text()).toContain('admin.accounts.cnProviders.apiProtocol.responsesDesc')
     expect(wrapper.text()).not.toContain('admin.accounts.cnProviders.accountMode.codingDesc')
+  })
+
+  it('uses provider API key guidance for every CN provider', async () => {
+    const wrapper = mountModal()
+
+    for (const platform of ['Kimi', 'Zhipu GLM', 'DeepSeek']) {
+      await selectButtonByText(wrapper, platform)
+      expect(wrapper.text()).toContain('admin.accounts.cnProviders.apiKeyHint')
+      expect(wrapper.text()).not.toContain('admin.accounts.apiKeyHint')
+    }
+
+    expect(zhAccounts.accounts.cnProviders.apiKeyHint).toBe(
+      '请输入与所选账号类型及端点匹配的供应商 API Key'
+    )
+    expect(enAccounts.accounts.cnProviders.apiKeyHint).toBe(
+      'Enter the provider API key that matches the selected account type and endpoint.'
+    )
+  })
+
+  it('identifies Anthropic as a provider-compatible protocol', () => {
+    expect(zhAccounts.accounts.cnProviders.apiProtocol.anthropic).toBe('Anthropic 兼容')
+    expect(zhAccounts.accounts.cnProviders.apiProtocol.anthropicDesc).toContain(
+      '请求仍发送到当前供应商'
+    )
+    expect(enAccounts.accounts.cnProviders.apiProtocol.anthropic).toBe('Anthropic-compatible')
+    expect(enAccounts.accounts.cnProviders.apiProtocol.anthropicDesc).toContain(
+      'Requests still go to the selected provider'
+    )
   })
 
   it('exposes Agent Identity in the OpenAI authorization methods', async () => {

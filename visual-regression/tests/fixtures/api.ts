@@ -1,4 +1,22 @@
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import type { Page, Route } from '@playwright/test'
+
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
+export const visualFixtureVersion = readFileSync(
+  resolve(repositoryRoot, 'backend/cmd/server/VERSION'),
+  'utf8',
+).trim()
+const pinnedUpstreamRelease = (JSON.parse(
+  readFileSync(resolve(repositoryRoot, '.github/upstream-baseline.json'), 'utf8'),
+) as { release: string }).release
+
+if (pinnedUpstreamRelease !== `v${visualFixtureVersion}`) {
+  throw new Error(
+    `Visual fixture version ${visualFixtureVersion} does not match pinned upstream release ${pinnedUpstreamRelease}`,
+  )
+}
 
 const observedAt = '2026-08-16T12:00:00+08:00'
 
@@ -67,7 +85,7 @@ export function publicSettings(mode: 'v1' | 'v2' = 'v2') {
     github_oauth_enabled: false,
     google_oauth_enabled: false,
     backend_mode_enabled: false,
-    version: '0.1.177',
+    version: visualFixtureVersion,
     server_utc_offset: '+08:00',
     balance_low_notify_enabled: false,
     account_quota_notify_enabled: false,
@@ -380,7 +398,6 @@ export async function seedConsole(
     siteLogo?: string
     paymentEnabled?: boolean
     riskControlEnabled?: boolean
-    version?: string
     userSidebarOrder?: string[]
     adminSidebarOrder?: string[]
     customMenuItems?: Array<{
@@ -418,7 +435,7 @@ export async function seedConsole(
     model_plaza_placement: options.modelPlazaPlacement ?? 'header',
     site_logo: options.siteLogo ?? '',
     risk_control_enabled: options.riskControlEnabled ?? false,
-    version: options.version ?? publicSettings(mode).version,
+    version: publicSettings(mode).version,
     user_sidebar_order: options.userSidebarOrder ?? [],
     admin_sidebar_order: options.adminSidebarOrder ?? [],
   }

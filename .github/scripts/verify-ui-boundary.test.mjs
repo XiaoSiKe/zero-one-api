@@ -12,10 +12,11 @@ const manifest = validateManifest(
 )
 
 test('validates the approved UI baseline manifest', () => {
-  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-29-r1')
-  assert.equal(manifest.baseline_commit, '862dc1b4793387570ef5c4626ee29a95227cd41c')
+  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-30-r1')
+  assert.equal(manifest.baseline_commit, '06349b7919439df60cdcb6d7d3776ac00d6b13bb')
   assert.equal(manifest.edge_build.console_source, 'deploy/zero-one/recovered-frontend/console')
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/redeem.behavior.spec.ts'))
+  assert.ok(manifest.protected_paths.includes('visual-regression/tests/version-baseline.spec.ts'))
   const redeem = manifest.protected_surfaces.find(({ name }) => name === 'redeem-benefits-mystery-box')
   assert.ok(redeem.paths.includes('frontend/src/api/redeem.ts'))
   assert.ok(redeem.paths.includes('visual-regression/tests/redeem.behavior.spec.ts'))
@@ -51,6 +52,21 @@ test('validates the approved UI baseline manifest', () => {
     ),
   )
   assert.ok(cnProviderManagement.paths.includes('visual-regression/tests/console.cn-platforms.spec.ts'))
+  assert.ok(
+    cnProviderManagement.paths.includes(
+      'visual-regression/tests/__screenshots__/chromium-desktop/console-accounts-cn-protocol-guidance.png',
+    ),
+  )
+  assert.ok(
+    cnProviderManagement.paths.includes(
+      'visual-regression/tests/__screenshots__/chromium-mobile/console-accounts-cn-protocol-guidance.png',
+    ),
+  )
+
+  const consoleShell = manifest.protected_surfaces.find(({ name }) => name === 'console-shell')
+  assert.ok(consoleShell)
+  assert.ok(consoleShell.paths.includes('visual-regression/tests/fixtures/api.ts'))
+  assert.ok(consoleShell.paths.includes('visual-regression/tests/version-baseline.spec.ts'))
 
   const onlineRecharge = manifest.protected_surfaces.find(
     ({ name }) => name === 'online-recharge-and-custom-pages',

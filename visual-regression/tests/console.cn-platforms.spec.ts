@@ -83,6 +83,11 @@ test.describe('Recovered CN Provider management contracts', () => {
     await expect(page.getByText('按量付费', { exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: /^Coding Plan / })).toHaveCount(0)
     await expect(page.getByRole('button', { name: /^Responses / })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^Anthropic 兼容/ })).toBeVisible()
+    await expect(
+      page.getByText('请输入与所选账号类型及端点匹配的供应商 API Key', { exact: true }),
+    ).toBeVisible()
+    await expect(page.getByText('您的 Claude Console API Key', { exact: true })).toHaveCount(0)
 
     await page.getByRole('button', { name: 'Kimi', exact: true }).click()
     await expect(page.getByRole('button', { name: /^Coding Plan / })).toBeVisible()
@@ -180,6 +185,20 @@ test.describe('Recovered CN Provider management contracts', () => {
     await openCreateAccount(page)
     await page.evaluate(() => document.fonts.ready)
     await expect(page).toHaveScreenshot('console-accounts-cn-platform-options.png')
+  })
+
+  test('Accounts clarifies CN protocol and API key ownership', async ({ page }) => {
+    await openCreateAccount(page)
+    await page.getByRole('button', { name: 'DeepSeek', exact: true }).click()
+    const apiKeyHint = page.getByText(
+      '请输入与所选账号类型及端点匹配的供应商 API Key',
+      { exact: true },
+    )
+    await apiKeyHint.scrollIntoViewIfNeeded()
+    await expect(page.getByRole('button', { name: /^Anthropic 兼容/ })).toBeVisible()
+    await expect(apiKeyHint).toBeVisible()
+    await page.evaluate(() => document.fonts.ready)
+    await expect(page).toHaveScreenshot('console-accounts-cn-protocol-guidance.png')
   })
 
   test('route adapter follows same-document navigation and restores approved routes', async ({ page }) => {

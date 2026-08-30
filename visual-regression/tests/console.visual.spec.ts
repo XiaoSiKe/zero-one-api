@@ -2932,7 +2932,6 @@ test.describe('Console visual contracts', () => {
   test('user redeem follows the configured online recharge navigation without reloading', async ({ page }) => {
     await page.unroute('**/api/v1/**')
     await seedConsole(page, 'v2', {
-      version: '0.1.183',
       customMenuItems: [
         {
           id: 'online-recharge',
@@ -2971,7 +2970,7 @@ test.describe('Console visual contracts', () => {
 
   test('user redeem form', async ({ page }) => {
     await page.unroute('**/api/v1/**')
-    await seedConsole(page, 'v2', { version: '0.1.183' })
+    await seedConsole(page, 'v2')
     await page.goto('http://127.0.0.1:4173/redeem')
     await page.evaluate(() => document.fonts.ready)
     await expect(page.locator('#code')).toBeVisible()

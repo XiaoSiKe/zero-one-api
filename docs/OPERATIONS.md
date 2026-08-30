@@ -651,17 +651,23 @@ same HTTPS gate; a failed rollback is reported separately. Do not replace this
 entrypoint with a direct `docker compose up edge` during a release.
 
 The approved UI is a separate release boundary. The current protected snapshot
-is the `ui-approved-2026-08-28-r4` tag at commit
-`d5e4b4cc70e733ede2d1dab61fecdab510b1be19`. The
-`ui-approved-2026-08-28-r3`, `ui-approved-2026-08-28-r2`, `ui-approved-2026-08-28-r1` and
-`ui-approved-2026-08-27-r17` tags remain immutable;
-all older approval tags also remain unchanged. The new snapshot passed native
-Linux x86 visual and interaction verification (147 passed, 65 unchanged viewport
-exclusions, zero flaky/retry) in [GitHub Actions run 33180357784](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33180357784).
-This approval corrects test read-model fixtures; production UI assets are
-byte-for-byte unchanged from r3.
-The previous r1 snapshot and its 143-pass result remain historical evidence in
-[GitHub Actions run 33104422137](https://github.com/01-Yang/zero-one-api/actions/runs/33104422137).
+is the `ui-approved-2026-08-30-r1` tag at commit
+`06349b7919439df60cdcb6d7d3776ac00d6b13bb`. All previous `ui-approved-*`
+tags remain immutable. The new snapshot passed two consecutive native Linux x86
+Playwright 1.55.1 / Ubuntu Noble runs: each completed 160 tests with 56 documented
+viewport exclusions and zero failures or retries. It clarifies that the Kimi,
+Zhipu GLM and DeepSeek Anthropic option is a provider-compatible protocol, fixes
+the provider API Key guidance, and records matching desktop/mobile evidence.
+
+Visual fixtures must obtain the displayed server version from
+`backend/cmd/server/VERSION` and must fail when it differs from the release in
+`.github/upstream-baseline.json`. A visual test must not handwrite or override a
+semantic server version. `visual-regression/tests/version-baseline.spec.ts`
+enforces both rules across the complete visual test tree. This prevents an old
+fixture version, such as 0.1.177, from silently returning in later screenshots.
+The earlier native Linux evidence remains historical in
+[GitHub Actions run 33180357784](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33180357784)
+and [GitHub Actions run 33104422137](https://github.com/01-Yang/zero-one-api/actions/runs/33104422137).
 An upstream version update must not modify `landing/src`, the protected console
 source paths, or `deploy/zero-one/recovered-frontend`. This explicitly covers
 the landing page, login/register pages, the console shell, model-plaza pricing,
