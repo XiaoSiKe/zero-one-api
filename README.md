@@ -5,7 +5,7 @@
 > rewrite upstream authorship or historical release evidence; see the
 > [migration checklist](docs/OPERATIONS.md#repository-hosting-migration-2026-08-28). Its technical
 > baseline is the stable upstream release
-> [Wei-Shaw/sub2api v0.1.183@e8cb019fabf8b55199436229044cbf9aa7a82564](https://github.com/Wei-Shaw/sub2api/tree/e8cb019fabf8b55199436229044cbf9aa7a82564).
+> [Wei-Shaw/sub2api v0.1.184@e98ef32eb29aecd30d1def615912ec4dc93173f3](https://github.com/Wei-Shaw/sub2api/tree/e98ef32eb29aecd30d1def615912ec4dc93173f3).
 > This is an independently maintained downstream distribution, currently hosted
 > as a standalone GitHub repository, not a GitHub-native fork. Full upstream
 > history and a read-only `upstream` remote preserve its provenance; see

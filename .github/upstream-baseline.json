@@ -1,13 +1,13 @@
 {
   "schema_version": 4,
   "repository": "Wei-Shaw/sub2api",
-  "release": "v0.1.183",
-  "commit": "e8cb019fabf8b55199436229044cbf9aa7a82564",
+  "release": "v0.1.184",
+  "commit": "e98ef32eb29aecd30d1def615912ec4dc93173f3",
   "upstream_sync": {
-    "previous_release": "v0.1.182",
-    "previous_commit": "5a7d469622911a6b1291a692376df5fa03f9ac2e",
-    "product_commit": "7eb3f0616a27c5b9927b6affd396db3a80ca8bc9",
-    "merge_commit": "56733926f5244389be97cc2a21264bcfb0d68d13"
+    "previous_release": "v0.1.183",
+    "previous_commit": "e8cb019fabf8b55199436229044cbf9aa7a82564",
+    "product_commit": "92a9afc308362bf2ed8e8247666da63396e25ffb",
+    "merge_commit": "44af04c6ef2dee9ad2f5404b14a430e55ec46eaf"
   },
   "approved_backports": [],
   "preserve_on_upstream_sync": [
@@ -499,7 +499,7 @@
   "legacy_hotfixes": [
     {
       "name": "approved-v0.1.179-production-correctness-and-billing-compatibility",
-      "valid_for_release": "v0.1.183",
+      "valid_for_release": "v0.1.184",
       "exit_condition": "Remove each path when the first stable upstream release containing its equivalent production-correctness fix becomes the baseline; remove the entire block when no listed path remains.",
       "paths": [
         "backend/internal/handler/admin/admin_basic_handlers_test.go",
@@ -529,7 +529,7 @@
     },
     {
       "name": "approved-v0.1.179-version-metadata-alignment",
-      "valid_for_release": "v0.1.183",
+      "valid_for_release": "v0.1.184",
       "exit_condition": "Remove this metadata alignment when the first stable upstream release makes backend/cmd/server/VERSION match the baseline release.",
       "paths": [
         "backend/cmd/server/VERSION"
@@ -537,7 +537,7 @@
     },
     {
       "name": "approved-v0.1.179-race-safety",
-      "valid_for_release": "v0.1.183",
+      "valid_for_release": "v0.1.184",
       "exit_condition": "Remove each path when the first stable upstream release contains the equivalent race-safe runtime cache and asynchronous test fixture handling.",
       "paths": [
         "backend/internal/service/content_moderation.go",
@@ -548,7 +548,7 @@
     },
     {
       "name": "approved-v0.1.179-go-format-normalization",
-      "valid_for_release": "v0.1.183",
+      "valid_for_release": "v0.1.184",
       "exit_condition": "Remove each path when the first stable upstream release contains the same Go 1.26 formatting normalization.",
       "paths": [
         "backend/internal/handler/auth_current_user_test.go",
@@ -559,7 +559,7 @@
     },
     {
       "name": "approved-v0.1.179-remove-unconditional-sticky-debug-logs",
-      "valid_for_release": "v0.1.183",
+      "valid_for_release": "v0.1.184",
       "exit_condition": "Remove this hotfix when the first stable upstream release removes or explicitly gates the equivalent per-request sticky-session debug logs.",
       "paths": [
         "backend/internal/service/gateway_scheduling.go"
@@ -567,7 +567,7 @@
     },
     {
       "name": "approved-v0.1.181-grok-mapping-test-isolation",
-      "valid_for_release": "v0.1.183",
+      "valid_for_release": "v0.1.184",
       "exit_condition": "Remove this hotfix when the first stable upstream release contains equivalent runtime model-mapping isolation in the canonical scheduling test.",
       "paths": [
         "backend/internal/service/openai_model_mapping_test.go"
@@ -575,7 +575,7 @@
     },
     {
       "name": "approved-v0.1.182-go-dependency-security-updates",
-      "valid_for_release": "v0.1.183",
+      "valid_for_release": "v0.1.184",
       "exit_condition": "Remove this hotfix when the first stable upstream release uses golang.org/x/image v0.45.0 or later, Testcontainers v0.44.0 or later, github.com/moby/go-archive v0.3.0 or later, and no longer depends on github.com/docker/docker.",
       "paths": [
         "backend/go.mod",
@@ -594,6 +594,7 @@
         "frontend/index.html",
         "frontend/src/App.vue",
         "frontend/src/__tests__/consoleShellOwnership.spec.ts",
+        "frontend/src/__tests__/integration/usage-reasoning-effort.spec.ts",
         "frontend/src/components/",
         "frontend/src/composables/__tests__/useModelWhitelist.spec.ts",
         "frontend/src/composables/useImageGenerationAccess.ts",
@@ -652,7 +653,9 @@
         "frontend/src/utils/embedded-url.ts",
         "frontend/src/utils/image-tutorial.ts",
         "frontend/src/utils/billingMode.ts",
+        "frontend/src/utils/codexCatalogConfig.ts",
         "frontend/src/utils/errorBadges.ts",
+        "frontend/src/utils/format.ts",
         "frontend/src/utils/latencyHealth.ts",
         "frontend/src/utils/online-recharge.ts",
         "frontend/src/utils/peak-rate.ts",
@@ -661,6 +664,9 @@
         "frontend/src/utils/__tests__/online-recharge.spec.ts",
         "frontend/src/utils/__tests__/image-tutorial.spec.ts",
         "frontend/src/utils/__tests__/branding.spec.ts",
+        "frontend/src/utils/__tests__/codexCatalogConfig.spec.ts",
+        "frontend/src/utils/__tests__/formatDateTimeLocalInput.spec.ts",
+        "frontend/src/utils/__tests__/formatReasoningEffort.spec.ts",
         "frontend/src/utils/__tests__/peak-rate.spec.ts",
         "frontend/src/views/HomeView.vue",
         "frontend/src/views/KeyUsageView.vue",
@@ -682,9 +688,11 @@
         "frontend/src/views/admin/UsageView.vue",
         "frontend/src/views/admin/__tests__/UsageExportLibrary.spec.ts",
         "frontend/src/views/admin/UsersView.vue",
+        "frontend/src/views/admin/__tests__/AccountsView.bulkEdit.spec.ts",
         "frontend/src/views/admin/__tests__/AccountsView.priorityColumn.spec.ts",
         "frontend/src/views/admin/__tests__/ChannelMonitorView.checkModeBadge.spec.ts",
         "frontend/src/views/admin/__tests__/GroupsView.compositePlatforms.spec.ts",
+        "frontend/src/views/admin/__tests__/GroupsView.duplicate.spec.ts",
         "frontend/src/views/admin/__tests__/MonitorFormDialog.accountSelector.spec.ts",
         "frontend/src/views/admin/__tests__/PluginsView.spec.ts",
         "frontend/src/views/admin/__tests__/ProxiesView.ipv6.spec.ts",
@@ -692,6 +700,7 @@
         "frontend/src/views/admin/__tests__/groupsMessagesDispatch.spec.ts",
         "frontend/src/views/admin/__tests__/platformFilterCatalogUsage.spec.ts",
         "frontend/src/views/admin/__tests__/RedeemView.batchUpdate.spec.ts",
+        "frontend/src/views/admin/__tests__/UsageView.spec.ts",
         "frontend/src/views/admin/affiliates/",
         "frontend/src/views/admin/groupsMessagesDispatch.ts",
         "frontend/src/views/admin/ops/",
@@ -721,6 +730,7 @@
         "frontend/src/views/user/__tests__/PaymentResultView.spec.ts",
         "frontend/src/views/user/PaymentQRCodeView.vue",
         "frontend/src/views/user/PaymentView.vue",
+        "frontend/src/views/user/__tests__/PaymentView.spec.ts",
         "frontend/src/views/user/ProfileView.vue",
         "frontend/src/views/user/RedeemView.vue",
         "frontend/src/views/user/__tests__/RedeemView.spec.ts",
@@ -728,6 +738,7 @@
         "frontend/src/views/user/StripePopupView.vue",
         "frontend/src/views/user/SubscriptionsView.vue",
         "frontend/src/views/user/UsageView.vue",
+        "frontend/src/views/user/__tests__/UsageView.spec.ts",
         "frontend/src/views/user/UserOrdersView.vue",
         "frontend/tailwind.config.js",
         "frontend/vite.cn-provider-admin.config.ts",
