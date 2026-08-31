@@ -771,8 +771,9 @@ function reorderSidebarSection(section, order, role, user) {
   if (!rows.length) return
   section.style.removeProperty('display')
   section.style.removeProperty('flex-direction')
+  const configuredDefaults = window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.defaultSidebarOrders?.[role]
   const defaultPaths = [
-    ...window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.defaultSidebarOrders[role],
+    ...(Array.isArray(configuredDefaults) ? configuredDefaults : []),
     ...visibleSidebarItems(user).map((item) => `/custom/${item.id}`),
   ]
   const defaults = new Map(defaultPaths.map((path, index) => [path, index]))
