@@ -263,7 +263,6 @@ import { useChannelMonitorFormat } from '@/composables/useChannelMonitorFormat'
 import {
   PROVIDER_OPENAI,
   PROVIDER_ANTHROPIC,
-  PROVIDER_GEMINI,
   PROVIDER_GROK,
   PROVIDER_ANTIGRAVITY,
   PROVIDER_KIMI,
@@ -281,6 +280,7 @@ import {
   DEFAULT_DEEPSEEK_ENDPOINT,
   DEFAULT_INTERVAL_SECONDS,
 } from '@/constants/channelMonitor'
+import { CONCRETE_PLATFORM_OPTIONS } from '@/constants/platforms'
 
 const props = defineProps<{
   show: boolean
@@ -464,16 +464,10 @@ interface ProviderOption {
   label: string
 }
 
-const providerOptions = computed<ProviderOption[]>(() => [
-  { value: PROVIDER_ANTHROPIC, label: t('monitorCommon.providers.anthropic') },
-  { value: PROVIDER_OPENAI, label: t('monitorCommon.providers.openai') },
-  { value: PROVIDER_GEMINI, label: t('monitorCommon.providers.gemini') },
-  { value: PROVIDER_GROK, label: t('monitorCommon.providers.grok') },
-  { value: PROVIDER_ANTIGRAVITY, label: t('monitorCommon.providers.antigravity') },
-  { value: PROVIDER_KIMI, label: t('monitorCommon.providers.kimi') },
-  { value: PROVIDER_ZHIPU, label: t('monitorCommon.providers.zhipu') },
-  { value: PROVIDER_DEEPSEEK, label: t('monitorCommon.providers.deepseek') },
-])
+const providerOptions = computed<ProviderOption[]>(() => CONCRETE_PLATFORM_OPTIONS.map(({ value }) => ({
+  value,
+  label: t(`monitorCommon.providers.${value}`),
+})))
 
 // 国产 provider 预填的官方 endpoint（仅探活侧；配额模式 endpoint 可留空）。
 const PROVIDER_DEFAULT_ENDPOINTS: Partial<Record<Provider, string>> = {

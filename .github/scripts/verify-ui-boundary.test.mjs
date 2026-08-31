@@ -44,11 +44,23 @@ test('validates the approved UI baseline manifest', () => {
     ({ name }) => name === 'cn-provider-management',
   )
   assert.ok(cnProviderManagement)
-  assert.deepEqual(cnProviderManagement.routes, ['/admin/groups', '/admin/accounts'])
+  assert.deepEqual(cnProviderManagement.routes, [
+    '/admin/groups',
+    '/admin/accounts',
+    '/admin/channels/pricing',
+    '/admin/channels/monitor',
+    '/admin/ops',
+    '/admin/subscriptions',
+  ])
   assert.ok(cnProviderManagement.paths.includes('frontend/src/entries/cnProviderAdmin.ts'))
   assert.ok(
     cnProviderManagement.paths.includes(
       'deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v1/',
+    ),
+  )
+  assert.ok(
+    cnProviderManagement.paths.includes(
+      'deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v2/',
     ),
   )
   assert.ok(

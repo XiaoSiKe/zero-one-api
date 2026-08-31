@@ -34,24 +34,24 @@
             ? savedLocale
             : navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en"
           const localeChunk = locale === "zh"
-            ? "/assets/cn-provider-shell-v3/index-BBEtrNVx.js"
-            : "/assets/cn-provider-shell-v3/index-6pKNrg32.js"
+            ? "/assets/cn-provider-shell-v4/index-BBEtrNVx.js"
+            : "/assets/cn-provider-shell-v4/index-6pKNrg32.js"
           const registrationModulePreloads = [
             "/assets/zero-one-local-preview-guard-v2.js",
             "/assets/zero-one-navigation-reconciliation-v1.js?v=3",
             "/assets/zero-one-header-custom-menu-v1.js?v=24",
-            "/assets/cn-provider-shell-v3/index-9xJBhx8B.js",
-            "/assets/cn-provider-shell-v3/RegisterView-CP_DoJ_R.js",
+            "/assets/cn-provider-shell-v4/index-9xJBhx8B.js",
+            "/assets/cn-provider-shell-v4/RegisterView-CP_DoJ_R.js",
             localeChunk,
-            "/assets/cn-provider-shell-v3/AppHeader.vue_vue_type_style_index_0_scoped_0aa3fa6b_lang-Cc861dBu.js",
-            "/assets/cn-provider-shell-v3/useClipboard-DuyDJtWH.js",
-            "/assets/cn-provider-shell-v3/AuthLayout.vue_vue_type_script_setup_true_lang-DghqD8r6.js",
-            "/assets/cn-provider-shell-v3/LoginAgreementPrompt-vDSqmtON.js",
-            "/assets/cn-provider-shell-v3/CaptchaChallenge.vue_vue_type_script_setup_true_lang-DJqyTVvj.js",
-            "/assets/cn-provider-shell-v3/authError-Ch9RozGZ.js",
-            "/assets/cn-provider-shell-v3/apiError-BcAuv_LF.js",
-            "/assets/cn-provider-shell-v3/registrationEmailPolicy-BIuq-4e8.js",
-            "/assets/cn-provider-shell-v3/oauthAffiliate-CrlUwkd1.js",
+            "/assets/cn-provider-shell-v4/AppHeader.vue_vue_type_style_index_0_scoped_0aa3fa6b_lang-Cc861dBu.js",
+            "/assets/cn-provider-shell-v4/useClipboard-DuyDJtWH.js",
+            "/assets/cn-provider-shell-v4/AuthLayout.vue_vue_type_script_setup_true_lang-DghqD8r6.js",
+            "/assets/cn-provider-shell-v4/LoginAgreementPrompt-vDSqmtON.js",
+            "/assets/cn-provider-shell-v4/CaptchaChallenge.vue_vue_type_script_setup_true_lang-DJqyTVvj.js",
+            "/assets/cn-provider-shell-v4/authError-Ch9RozGZ.js",
+            "/assets/cn-provider-shell-v4/apiError-BcAuv_LF.js",
+            "/assets/cn-provider-shell-v4/registrationEmailPolicy-BIuq-4e8.js",
+            "/assets/cn-provider-shell-v4/oauthAffiliate-CrlUwkd1.js",
           ]
           const registrationStylePreloads = [
             "/assets/v182-payment-refresh-20260825/AppHeader-p9PUzs49.css",
@@ -66,6 +66,7 @@
             "/assets/online-image-v10/online-image.js",
             "/assets/online-image-v10/onlineImage-CVdGRNSC.js",
             "/assets/cn-provider-admin-v1/cn-provider-admin.js",
+            "/assets/cn-provider-admin-v2/cn-provider-admin.js",
           ]
           for (const href of registrationModulePreloads) {
             const preload = document.createElement("link")
@@ -158,9 +159,10 @@
               window.__ZERO_ONE_ONLINE_IMAGE_ACCESS__?.setClient(pendingOnlineImageClient)
             }
           }),
-          import("/assets/cn-provider-admin-v1/cn-provider-admin.js"),
+          import("/assets/cn-provider-admin-v1/cn-provider-admin.js")
+            .then(() => import("/assets/cn-provider-admin-v2/cn-provider-admin.js")),
         ])
-        await import("/assets/cn-provider-shell-v3/index-9xJBhx8B.js")
+        await import("/assets/cn-provider-shell-v4/index-9xJBhx8B.js")
         await registrationMounted
         await import("/assets/zero-one-custom-page-security-v1.js")
         await import("/assets/zero-one-console-parity-v1.js?v=6")
@@ -183,15 +185,16 @@
         await import("/assets/zero-one-affiliate-admin-v1.js?v=6")
         await import("/assets/online-image-v10/online-image.js")
         await import("/assets/cn-provider-admin-v1/cn-provider-admin.js")
-        await import("/assets/cn-provider-shell-v3/index-9xJBhx8B.js")
+        await import("/assets/cn-provider-admin-v2/cn-provider-admin.js")
+        await import("/assets/cn-provider-shell-v4/index-9xJBhx8B.js")
       }
 
       await import("/assets/zero-one-floating-panels-v1.js?v=2")
       await import("/assets/zero-one-login-recovery-v2.js?v=3")
     </script>
-    <link rel="modulepreload" crossorigin href="/assets/cn-provider-shell-v3/vendor-vue-iKpM1E08.js">
-    <link rel="modulepreload" crossorigin href="/assets/cn-provider-shell-v3/vendor-i18n-k5VB7a-q.js">
-    <link rel="modulepreload" crossorigin href="/assets/cn-provider-shell-v3/vendor-misc-DT6q4xNi.js">
+    <link rel="modulepreload" crossorigin href="/assets/cn-provider-shell-v4/vendor-vue-iKpM1E08.js">
+    <link rel="modulepreload" crossorigin href="/assets/cn-provider-shell-v4/vendor-i18n-k5VB7a-q.js">
+    <link rel="modulepreload" crossorigin href="/assets/cn-provider-shell-v4/vendor-misc-DT6q4xNi.js">
     <link rel="stylesheet" crossorigin href="/assets/v182-payment-refresh-20260825/vendor-misc-DB0Q8XAf.css">
     <link rel="stylesheet" crossorigin href="/assets/index-MneVaLVB.css">
     <link rel="stylesheet" crossorigin href="/assets/TablePageLayout-layer-fix-9bab9fe9.css">

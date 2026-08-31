@@ -681,6 +681,9 @@ export async function seedConsole(
     if (path === '/admin/accounts/upstream-billing-probe/settings') {
       return fulfill(route, { enabled: true, interval_minutes: 60 })
     }
+    if (path === '/admin/subscriptions' && route.request().method() === 'GET') {
+      return fulfill(route, { items: [], total: 0, page: 1, page_size: 20, pages: 0 })
+    }
     if (path === '/admin/proxies/all') return fulfill(route, [])
     if (path === '/admin/tls-fingerprint-profiles') return fulfill(route, [])
     if (path === '/usage/dashboard/stats') return fulfill(route, dashboardStats)
@@ -928,6 +931,29 @@ export async function seedConsole(
           availability_30d: 99.84,
           avg_latency_7d_ms: 790,
         }],
+      })
+    }
+    if (path === '/admin/channel-monitor-templates') {
+      return fulfill(route, { items: [], total: 0, page: 1, page_size: 100 })
+    }
+    if (path === '/admin/channel-monitor-v2/config') {
+      return fulfill(route, {
+        version: 1,
+        enabled: true,
+        refresh_interval_seconds: 300,
+        platforms: [
+          { platform: 'anthropic', enabled: true, models: [] },
+          { platform: 'openai', enabled: true, models: [] },
+          { platform: 'gemini', enabled: true, models: [] },
+          { platform: 'antigravity', enabled: true, models: [] },
+          { platform: 'grok', enabled: true, models: [] },
+          { platform: 'kimi', enabled: true, models: [] },
+          { platform: 'zhipu', enabled: true, models: [] },
+          { platform: 'deepseek', enabled: true, models: [] },
+        ],
+        group_ids: [],
+        health_thresholds: health.thresholds,
+        ignored_error_categories: [],
       })
     }
     if (path.endsWith('/channel-monitor-v2/dimensions')) {
