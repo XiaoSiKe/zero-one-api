@@ -39,12 +39,15 @@ export function verifyCNProviderConsole(consoleDir) {
   }
   const registrationEntry = index.slice(registrationStart, standardStart)
   const standardEntry = index.slice(standardStart, entryEnd)
-  const adapterImport = 'import("/assets/cn-provider-admin-v1/cn-provider-admin.js")'
+  const legacyAdapterImport = 'import("/assets/cn-provider-admin-v1/cn-provider-admin.js")'
+  const adapterImport = 'import("/assets/cn-provider-admin-v2/cn-provider-admin.js")'
   const shellImport = `import("/assets/${CN_PROVIDER_SHELL_ASSET}")`
-  requireMarkers(registrationEntry, [adapterImport, shellImport], 'Registration Console entry')
-  requireMarkers(standardEntry, [`await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
+  requireMarkers(registrationEntry, [legacyAdapterImport, adapterImport, shellImport], 'Registration Console entry')
+  requireMarkers(standardEntry, [`await ${legacyAdapterImport}`, `await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
   if (
+    registrationEntry.indexOf(legacyAdapterImport) > registrationEntry.indexOf(adapterImport) ||
     registrationEntry.indexOf(adapterImport) > registrationEntry.indexOf(shellImport) ||
+    standardEntry.indexOf(legacyAdapterImport) > standardEntry.indexOf(adapterImport) ||
     standardEntry.indexOf(adapterImport) > standardEntry.indexOf(shellImport)
   ) {
     throw new Error('CN Provider route seam must start before the approved Console shell')
@@ -104,7 +107,20 @@ export function verifyCNProviderConsole(consoleDir) {
     throw new Error('CN Provider namespaced route placeholder differs from its approved source')
   }
 
-  const adapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v1')
+  const legacyAdapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v1')
+  const legacyModuleSource = readdirSync(legacyAdapterDirectory)
+    .filter((name) => name.endsWith('.js'))
+    .sort()
+    .map((name) => read(resolve(legacyAdapterDirectory, name), `Legacy CN Provider asset ${name}`))
+    .join('\n')
+  requireMarkers(legacyModuleSource, [
+    '/admin/accounts', '/admin/groups', 'Kimi', 'Zhipu GLM', 'DeepSeek',
+    'account_mode', 'api_protocol', 'adaptive', 'api_base_urls',
+    'https://api.moonshot.cn/v1', 'https://open.bigmodel.cn/api/paas/v4',
+    'https://api.deepseek.com',
+  ], 'Legacy CN Provider Admin route adapter')
+
+  const adapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v2')
   const adapterEntry = read(
     resolve(adapterDirectory, 'cn-provider-admin.js'),
     'CN Provider Admin route adapter',
@@ -142,33 +158,26 @@ export function verifyCNProviderConsole(consoleDir) {
     .join('\n')
 
   requireMarkers(moduleSource, [
-    '/admin/accounts', '/admin/groups',
-    '__ZERO_ONE_NAVIGATION_RECONCILIATION__', 'cn-provider-admin',
+    '/admin/channels/pricing', '/admin/channels/monitor',
+    '/admin/ops', '/admin/subscriptions',
+    '__ZERO_ONE_NAVIGATION_RECONCILIATION__', 'provider-catalog-admin',
     '__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__', 'Management page failed to load',
-    '/assets/cn-provider-admin-v1/cn-provider-admin.css',
+    '/assets/cn-provider-admin-v2/cn-provider-admin.css',
     'Kimi', 'Zhipu GLM', 'DeepSeek',
-    'Anthropic 兼容',
-    '请输入与所选账号类型及端点匹配的供应商 API Key',
-    'admin.accounts.cnProviders.apiKeyHint',
-    'account_mode', 'api_protocol', 'adaptive', 'api_base_urls',
-    'header_override_enabled', 'header_overrides',
-    'quota_limit', 'quota_daily_limit', 'quota_weekly_limit',
-    'https://api.moonshot.cn/v1',
-    'https://open.bigmodel.cn/api/paas/v4',
-    'https://api.deepseek.com',
-    'kimi-for-coding', 'glm-4.6', 'deepseek-chat', 'deepseek-reasoner',
+    'ops-platform-filter', 'subscription-platform-filter',
   ], 'CN Provider Admin route adapter')
   requireMarkers(stylesheet, [
     'table-page-layout', 'table-scroll-container',
-    'body.zero-one-cn-provider-admin-active .border-pink-500',
-    'body.zero-one-cn-provider-admin-active .border-indigo-500',
-    'body.zero-one-cn-provider-admin-active .border-teal-500',
+    'body.zero-one-provider-catalog-admin-active .border-pink-500',
+    'body.zero-one-provider-catalog-admin-active .border-indigo-500',
+    'body.zero-one-provider-catalog-admin-active .border-teal-500',
   ], 'CN Provider Admin stylesheet')
 
   return {
     shell: `/assets/${CN_PROVIDER_SHELL_ASSET}`,
-    module: '/assets/cn-provider-admin-v1/cn-provider-admin.js',
-    stylesheet: '/assets/cn-provider-admin-v1/cn-provider-admin.css',
+    legacyModule: '/assets/cn-provider-admin-v1/cn-provider-admin.js',
+    module: '/assets/cn-provider-admin-v2/cn-provider-admin.js',
+    stylesheet: '/assets/cn-provider-admin-v2/cn-provider-admin.css',
   }
 }
 

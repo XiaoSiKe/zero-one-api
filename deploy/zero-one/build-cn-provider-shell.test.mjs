@@ -9,8 +9,10 @@ import {
   CN_PROVIDER_SHELL_DIRECTORY,
   LEGACY_CN_PROVIDER_SHELL_DIRECTORY,
   PREVIOUS_CN_PROVIDER_SHELL_DIRECTORY,
+  PRIOR_CN_PROVIDER_SHELL_DIRECTORY,
   patchApprovedShell,
   patchLegacyApprovedShell,
+  patchPriorApprovedShell,
   patchPreviousApprovedShell,
 } from './build-cn-provider-shell.mjs'
 
@@ -27,13 +29,18 @@ test('CN Provider shell differs from the approved shell only at the router seam'
     resolve(assetsDirectory, PREVIOUS_CN_PROVIDER_SHELL_DIRECTORY, APPROVED_SHELL_SOURCE),
     'utf8',
   )
+  const prior = readFileSync(
+    resolve(assetsDirectory, PRIOR_CN_PROVIDER_SHELL_DIRECTORY, APPROVED_SHELL_SOURCE),
+    'utf8',
+  )
 
   assert.equal(generated, patchApprovedShell(approved))
   assert.equal(legacy, patchLegacyApprovedShell(approved))
   assert.equal(previous, patchPreviousApprovedShell(approved))
+  assert.equal(prior, patchPriorApprovedShell(approved))
   assert.match(generated, /__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__/)
   assert.doesNotMatch(approved, /__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__/)
-  assert.equal((generated.match(/zero-one-cn-provider-route-placeholder-v1\.js/g) || []).length, 2)
+  assert.equal((generated.match(/zero-one-cn-provider-route-placeholder-v1\.js/g) || []).length, 6)
   assert.equal((generated.match(/zero-one-online-image-route-placeholder-v1\.js/g) || []).length, 1)
   assert.match(generated, /path:"\/images",name:"ImageGeneration"/)
   assert.match(generated, /__ZERO_ONE_ONLINE_IMAGE_ACCESS__/)
@@ -42,9 +49,11 @@ test('CN Provider shell differs from the approved shell only at the router seam'
   assert.doesNotMatch(legacy, /__ZERO_ONE_ONLINE_IMAGE_ACCESS__/)
   assert.match(previous, /path:"\/images",name:"ImageGeneration"/)
   assert.doesNotMatch(previous, /__ZERO_ONE_ONLINE_IMAGE_ACCESS__/)
+  assert.equal((prior.match(/zero-one-cn-provider-route-placeholder-v1\.js/g) || []).length, 2)
+  assert.match(prior, /__ZERO_ONE_ONLINE_IMAGE_ACCESS__/)
   assert.doesNotMatch(
     generated,
-    /path:"\/admin\/(?:groups|accounts)"[^}]+component:\(\)=>y\(\(\)=>import\("\.\/(?:Groups|Accounts)View-/,
+    /path:"\/admin\/(?:groups|accounts|channels\/pricing|channels\/monitor|ops|subscriptions)"[^}]+component:\(\)=>y\(\(\)=>import\("\.\/(?:GroupsView|AccountsView|ChannelsView|ChannelMonitorView|OpsDashboard|SubscriptionsView)-/,
   )
   assert.equal(
     readlinkSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, 'vendor-vue-iKpM1E08.js')),

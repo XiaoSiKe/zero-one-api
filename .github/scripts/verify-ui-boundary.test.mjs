@@ -12,8 +12,8 @@ const manifest = validateManifest(
 )
 
 test('validates the approved UI baseline manifest', () => {
-  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-31-r2')
-  assert.equal(manifest.baseline_commit, '9959d1965f0ca7620eed78a1b54bcf6b18703876')
+  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-31-r5')
+  assert.equal(manifest.baseline_commit, 'e6a393f9c039052646378e00e806657003ebfd18')
   assert.equal(manifest.edge_build.console_source, 'deploy/zero-one/recovered-frontend/console')
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/redeem.behavior.spec.ts'))
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/version-baseline.spec.ts'))
@@ -44,11 +44,23 @@ test('validates the approved UI baseline manifest', () => {
     ({ name }) => name === 'cn-provider-management',
   )
   assert.ok(cnProviderManagement)
-  assert.deepEqual(cnProviderManagement.routes, ['/admin/groups', '/admin/accounts'])
+  assert.deepEqual(cnProviderManagement.routes, [
+    '/admin/groups',
+    '/admin/accounts',
+    '/admin/channels/pricing',
+    '/admin/channels/monitor',
+    '/admin/ops',
+    '/admin/subscriptions',
+  ])
   assert.ok(cnProviderManagement.paths.includes('frontend/src/entries/cnProviderAdmin.ts'))
   assert.ok(
     cnProviderManagement.paths.includes(
       'deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v1/',
+    ),
+  )
+  assert.ok(
+    cnProviderManagement.paths.includes(
+      'deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v2/',
     ),
   )
   assert.ok(

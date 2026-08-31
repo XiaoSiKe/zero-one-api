@@ -145,6 +145,54 @@ test.describe('Recovered online image generation contracts', () => {
     expect(runtimeErrors).toEqual([])
   })
 
+  test('submits and renders an image from a mobile browser', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-mobile')
+    const runtimeErrors = collectRuntimeErrors(page)
+    const requests: Array<{ authorization: string; payload: Record<string, unknown> }> = []
+    await page.route('**/v1/images/generations', async (route) => {
+      requests.push({
+        authorization: route.request().headers().authorization || '',
+        payload: route.request().postDataJSON() as Record<string, unknown>,
+      })
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json; charset=utf-8',
+        body: JSON.stringify({
+          model: 'gpt-image-2',
+          data: [{
+            b64_json: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+            mime_type: 'image/png',
+          }],
+        }),
+      })
+    })
+
+    await page.goto(`${consoleOrigin}/images`)
+    const host = page.locator('#zero-one-online-image')
+    await expect(host.getByRole('button', { name: '模型选择' })).toContainText('gpt-image-2')
+    await host.locator('textarea').fill('一只坐在月球上的橘猫')
+    await host.getByTestId('start-generation').click()
+
+    await expect.poll(() => requests).toHaveLength(1)
+    expect(requests[0]).toEqual({
+      authorization: 'Bearer sk-visual-image-primary',
+      payload: expect.objectContaining({
+        model: 'gpt-image-2',
+        prompt: '一只坐在月球上的橘猫',
+        n: 1,
+        size: '1152x2048',
+        quality: 'high',
+        response_format: 'b64_json',
+      }),
+    })
+    await expect(host.locator('[data-testid="results-panel"] img')).toHaveCount(1)
+    await expect(host.locator('[data-testid="results-panel"] img')).toHaveAttribute(
+      'src',
+      /^data:image\/png;base64,/,
+    )
+    expect(runtimeErrors).toEqual([])
+  })
+
   test('keeps the online image link in the approved sidebar without a document reload', async ({ page }, testInfo) => {
     const runtimeErrors = collectRuntimeErrors(page)
     await page.goto(`${consoleOrigin}/admin/dashboard`)

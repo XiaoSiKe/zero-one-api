@@ -66,16 +66,7 @@ import { useI18n } from 'vue-i18n'
 import type { Provider } from '@/api/admin/channelMonitor'
 import Select from '@/components/common/Select.vue'
 import Icon from '@/components/icons/Icon.vue'
-import {
-  PROVIDER_OPENAI,
-  PROVIDER_ANTHROPIC,
-  PROVIDER_GEMINI,
-  PROVIDER_GROK,
-  PROVIDER_ANTIGRAVITY,
-  PROVIDER_KIMI,
-  PROVIDER_ZHIPU,
-  PROVIDER_DEEPSEEK,
-} from '@/constants/channelMonitor'
+import { CONCRETE_PLATFORM_OPTIONS } from '@/constants/platforms'
 
 defineProps<{
   loading: boolean
@@ -96,14 +87,10 @@ const { t } = useI18n()
 
 const providerFilterOptions = computed(() => [
   { value: '', label: t('admin.channelMonitor.allProviders') },
-  { value: PROVIDER_OPENAI, label: t('monitorCommon.providers.openai') },
-  { value: PROVIDER_ANTHROPIC, label: t('monitorCommon.providers.anthropic') },
-  { value: PROVIDER_GEMINI, label: t('monitorCommon.providers.gemini') },
-  { value: PROVIDER_GROK, label: t('monitorCommon.providers.grok') },
-  { value: PROVIDER_ANTIGRAVITY, label: t('monitorCommon.providers.antigravity') },
-  { value: PROVIDER_KIMI, label: t('monitorCommon.providers.kimi') },
-  { value: PROVIDER_ZHIPU, label: t('monitorCommon.providers.zhipu') },
-  { value: PROVIDER_DEEPSEEK, label: t('monitorCommon.providers.deepseek') },
+  ...CONCRETE_PLATFORM_OPTIONS.map(({ value }) => ({
+    value,
+    label: t(`monitorCommon.providers.${value}`),
+  })),
 ])
 
 const enabledFilterOptions = computed(() => [

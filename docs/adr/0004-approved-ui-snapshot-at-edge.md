@@ -44,16 +44,19 @@ failure must not prevent the form from mounting. The entry must reuse the shared
 navigation reconciliation owner, and its settled desktop and mobile visual
 contract must remain unchanged.
 
-The Kimi, Zhipu GLM and DeepSeek administration controls use one versioned
-route-content Adapter for `/admin/groups` and `/admin/accounts`. It registers
-with the existing navigation reconciliation asset, preserves the approved
-Console shell and mounts only inside the active route's `main` content. The
-Adapter must restore the original route content and remove its scoped
-stylesheet before any other route is painted. Replacing the base entry, adding
-another history hook, or keeping Adapter styles active outside those two routes
+The Kimi, Zhipu GLM and DeepSeek administration controls use two immutable,
+versioned route-content Adapters. The approved v1 Adapter remains byte-stable
+for `/admin/groups` and `/admin/accounts`; the Provider Platform Catalog v2
+Adapter covers `/admin/channels/pricing`, `/admin/channels/monitor`,
+`/admin/ops` and `/admin/subscriptions`. Both register with the existing
+navigation reconciliation asset, preserve the approved Console shell and mount
+only inside the active route's `main` content. Each Adapter must restore the
+original route content and remove its scoped stylesheet before any other route
+is painted. Replacing the base entry, adding another history hook, changing the
+immutable v1 assets, or keeping Adapter styles active outside its target routes
 is not permitted.
 
-The generated shell redirects the two historical route loaders to one inert
+The generated shell redirects the six historical route loaders to one inert
 placeholder before Vue Router is constructed. That placeholder reuses the
 approved AppLayout and contributes only the leaf host inside its `main`; after
 mount it notifies the pre-shell Adapter directly. The maintained leaf application
@@ -85,7 +88,9 @@ separate visual review creates a new immutable UI approval tag.
 
 A route-content Adapter is approved only when existing desktop and mobile
 snapshots remain byte-identical, target-route snapshots are reviewed, and
-browser tests prove the actual group/account request bodies. Source-only tests
+browser tests prove the actual group/account request bodies plus the complete
+Provider Platform Catalog on channel pricing, monitoring, operations and
+subscription filters. Source-only tests
 or static asset presence do not establish this contract.
 
 Any release that changes the stable Console shell or its recovered navigation

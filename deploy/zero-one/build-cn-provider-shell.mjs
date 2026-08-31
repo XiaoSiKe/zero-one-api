@@ -12,7 +12,8 @@ import { fileURLToPath } from 'node:url'
 export const APPROVED_SHELL_SOURCE = 'index-9xJBhx8B.js'
 export const LEGACY_CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v1'
 export const PREVIOUS_CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v2'
-export const CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v3'
+export const PRIOR_CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v3'
+export const CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v4'
 export const CN_PROVIDER_SHELL_ASSET = `${CN_PROVIDER_SHELL_DIRECTORY}/${APPROVED_SHELL_SOURCE}`
 
 const bootstrapNeedle = 'await Na(),e.use(ae),e.use(D),await ae.isReady(),e.mount("#app")'
@@ -21,7 +22,7 @@ const onlineImageAccessClient =
 const placeholderLoader = 'import("./zero-one-cn-provider-route-placeholder-v1.js")'
 const onlineImageRouteNeedle = '},{path:"/batch-image"'
 const onlineImageRouteReplacement = '},{path:"/images",name:"ImageGeneration",component:()=>import("./zero-one-online-image-route-placeholder-v1.js"),meta:{requiresAuth:!0,requiresAdmin:!1,title:"在线生图",description:"使用已开启生图权限的 API Key 生成图片，并在浏览器里直接预览或下载。"}},{path:"/batch-image"'
-const routeLoaders = [
+const priorRouteLoaders = [
   {
     surface: 'groups',
     pattern: /({path:"\/admin\/groups",name:"AdminGroups",component:)\(\)=>(y\(\(\)=>import\("\.\/GroupsView-[^"]+\.js"\),__vite__mapDeps\(\[[^\]]+\]\)\))/,
@@ -32,7 +33,27 @@ const routeLoaders = [
   },
 ]
 
-function patchShellRoutes(source, includeOnlineImage, includeOnlineImageAccess) {
+const routeLoaders = [
+  ...priorRouteLoaders,
+  {
+    surface: 'channels',
+    pattern: /({path:"\/admin\/channels\/pricing",name:"AdminChannels",component:)\(\)=>(y\(\(\)=>import\("\.\/ChannelsView-[^"]+\.js"\),__vite__mapDeps\(\[[^\]]+\]\)\))/,
+  },
+  {
+    surface: 'channel-monitor',
+    pattern: /({path:"\/admin\/channels\/monitor",name:"AdminChannelMonitor",component:)\(\)=>(y\(\(\)=>import\("\.\/ChannelMonitorView-[^"]+\.js"\),__vite__mapDeps\(\[[^\]]+\]\)\))/,
+  },
+  {
+    surface: 'ops',
+    pattern: /({path:"\/admin\/ops",name:"AdminOps",component:)\(\)=>(y\(\(\)=>import\("\.\/OpsDashboard-[^"]+\.js"\),__vite__mapDeps\(\[[^\]]+\]\)\))/,
+  },
+  {
+    surface: 'subscriptions',
+    pattern: /({path:"\/admin\/subscriptions",name:"AdminSubscriptions",component:)\(\)=>(y\(\(\)=>import\("\.\/SubscriptionsView-[^"]+\.js"\),__vite__mapDeps\(\[[^\]]+\]\)\))/,
+  },
+]
+
+function patchShellRoutes(source, includeOnlineImage, includeOnlineImageAccess, loaders) {
   const occurrences = source.split(bootstrapNeedle).length - 1
   if (occurrences !== 1) {
     throw new Error(`approved Console bootstrap seam count changed: expected 1, found ${occurrences}`)
@@ -41,7 +62,7 @@ function patchShellRoutes(source, includeOnlineImage, includeOnlineImageAccess) 
     ? `await Na(),e.use(ae),e.use(D),await ae.isReady(),e.mount("#app"),${onlineImageAccessClient},window.__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__?.()`
     : 'await Na(),e.use(ae),e.use(D),await ae.isReady(),e.mount("#app"),window.__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__?.()'
   let output = source.replace(bootstrapNeedle, bootstrapReplacement)
-  for (const { surface, pattern } of routeLoaders) {
+  for (const { surface, pattern } of loaders) {
     const matches = [...output.matchAll(new RegExp(pattern.source, 'g'))]
     if (matches.length !== 1) {
       throw new Error(`approved ${surface} route seam count changed: expected 1, found ${matches.length}`)
@@ -61,15 +82,19 @@ function patchShellRoutes(source, includeOnlineImage, includeOnlineImageAccess) 
 }
 
 export function patchLegacyApprovedShell(source) {
-  return patchShellRoutes(source, false, false)
+  return patchShellRoutes(source, false, false, priorRouteLoaders)
 }
 
 export function patchPreviousApprovedShell(source) {
-  return patchShellRoutes(source, true, false)
+  return patchShellRoutes(source, true, false, priorRouteLoaders)
+}
+
+export function patchPriorApprovedShell(source) {
+  return patchShellRoutes(source, true, true, priorRouteLoaders)
 }
 
 export function patchApprovedShell(source) {
-  return patchShellRoutes(source, true, true)
+  return patchShellRoutes(source, true, true, routeLoaders)
 }
 
 function writeShellVariant(consoleAssetsDirectory, directory, output, excludedAssets = new Set()) {
@@ -106,12 +131,17 @@ export function buildCNProviderShell(consoleAssetsDirectory) {
     PREVIOUS_CN_PROVIDER_SHELL_DIRECTORY,
     patchPreviousApprovedShell(source),
   )
+  const priorTargetPath = writeShellVariant(
+    consoleAssetsDirectory,
+    PRIOR_CN_PROVIDER_SHELL_DIRECTORY,
+    patchPriorApprovedShell(source),
+  )
   const targetPath = writeShellVariant(
     consoleAssetsDirectory,
     CN_PROVIDER_SHELL_DIRECTORY,
     patchApprovedShell(source),
   )
-  return { sourcePath, legacyTargetPath, previousTargetPath, targetPath }
+  return { sourcePath, legacyTargetPath, previousTargetPath, priorTargetPath, targetPath }
 }
 
 const invokedPath = process.argv[1] ? resolve(process.argv[1]) : ''

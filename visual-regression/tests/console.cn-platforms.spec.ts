@@ -37,6 +37,21 @@ async function openCreateAccount(page: Page) {
   await expect(page.locator('form#create-account-form')).toBeVisible()
 }
 
+async function openCreateChannel(page: Page) {
+  await page.goto(`${consoleOrigin}/admin/channels/pricing`)
+  const host = page.locator('#zero-one-provider-catalog-admin')
+  await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'channels')
+  await host.getByRole('button', { name: '创建渠道', exact: true }).first().click()
+}
+
+async function openCreateMonitor(page: Page) {
+  await page.goto(`${consoleOrigin}/admin/channels/monitor`)
+  const host = page.locator('#zero-one-provider-catalog-admin')
+  await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'channel-monitor')
+  await host.getByRole('tab', { name: /V1/ }).click()
+  await host.getByRole('button', { name: '新增监控', exact: true }).first().click()
+}
+
 test.describe('Recovered CN Provider management contracts', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     await page.clock.setFixedTime(new Date('2026-08-29T12:00:00+08:00'))
@@ -108,6 +123,57 @@ test.describe('Recovered CN Provider management contracts', () => {
       'color',
       'rgb(13, 148, 136)',
     )
+
+    expect(runtimeErrors).toEqual([])
+  })
+
+  test('Channels and monitoring expose every CN Provider platform', async ({ page }) => {
+    const runtimeErrors = collectRuntimeErrors(page)
+
+    await openCreateChannel(page)
+    for (const label of ['Kimi', 'Zhipu GLM', 'DeepSeek']) {
+      await expect(page.getByText(label, { exact: true }).last()).toBeVisible()
+    }
+    await page.getByText('DeepSeek', { exact: true }).last().scrollIntoViewIfNeeded()
+    await page.evaluate(() => document.fonts.ready)
+    await expect(page).toHaveScreenshot('console-channels-cn-platform-options.png')
+
+    await openCreateMonitor(page)
+    for (const platform of ['kimi', 'zhipu', 'deepseek']) {
+      await expect(page.getByTestId(`monitor-provider-${platform}`)).toBeVisible()
+    }
+    await page.evaluate(() => document.fonts.ready)
+    await expect(page).toHaveScreenshot('console-channel-monitor-cn-platform-options.png')
+
+    expect(runtimeErrors).toEqual([])
+  })
+
+  test('Operations and subscriptions expose the complete Provider Platform Catalog', async ({ page }) => {
+    const runtimeErrors = collectRuntimeErrors(page)
+
+    await page.goto(`${consoleOrigin}/admin/ops`)
+    let host = page.locator('#zero-one-provider-catalog-admin')
+    await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'ops')
+    await page.waitForTimeout(1_000)
+    expect(runtimeErrors).toEqual([])
+    await host.getByTestId('ops-platform-filter').locator('.select-trigger').click()
+    for (const label of ['Kimi', 'Zhipu GLM', 'DeepSeek']) {
+      await expect(page.getByRole('option', { name: label, exact: true })).toBeVisible()
+    }
+    await page.getByRole('option', { name: 'DeepSeek', exact: true }).scrollIntoViewIfNeeded()
+    await page.evaluate(() => document.fonts.ready)
+    await expect(page).toHaveScreenshot('console-ops-cn-platform-options.png')
+
+    await page.goto(`${consoleOrigin}/admin/subscriptions`)
+    host = page.locator('#zero-one-provider-catalog-admin')
+    await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'subscriptions')
+    await host.getByTestId('subscription-platform-filter').locator('.select-trigger').click()
+    for (const label of ['Kimi', 'Zhipu GLM', 'DeepSeek']) {
+      await expect(page.getByRole('option', { name: label, exact: true })).toBeVisible()
+    }
+    await page.getByRole('option', { name: 'DeepSeek', exact: true }).scrollIntoViewIfNeeded()
+    await page.evaluate(() => document.fonts.ready)
+    await expect(page).toHaveScreenshot('console-subscriptions-cn-platform-options.png')
 
     expect(runtimeErrors).toEqual([])
   })
@@ -295,6 +361,39 @@ test.describe('Recovered CN Provider management contracts', () => {
     expect(runtimeErrors).toEqual([])
   })
 
+  test('all Provider Platform Catalog routes preserve the approved document', async ({ page }) => {
+    const runtimeErrors = collectRuntimeErrors(page)
+    await page.goto(`${consoleOrigin}/admin/accounts`)
+    const continuityMarker = await page.evaluate(() => {
+      const marker = `provider-catalog-${Math.random()}`
+      ;(window as typeof window & { __PROVIDER_CATALOG_CONTINUITY__?: string })
+        .__PROVIDER_CATALOG_CONTINUITY__ = marker
+      return marker
+    })
+    const host = page.locator('#zero-one-provider-catalog-admin')
+    const routes = [
+      ['/admin/channels/pricing', 'channels'],
+      ['/admin/channels/monitor', 'channel-monitor'],
+      ['/admin/ops', 'ops'],
+      ['/admin/subscriptions', 'subscriptions'],
+    ] as const
+
+    await page.locator('aside button').filter({ hasText: '渠道管理' }).first()
+      .evaluate((button: HTMLButtonElement) => button.click())
+    for (const [path, surface] of routes) {
+      await page.locator(`aside a[href="${path}"]`).first()
+        .evaluate((link: HTMLAnchorElement) => link.click())
+      await expect(page).toHaveURL(`${consoleOrigin}${path}`)
+      await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', surface)
+      await expect(host).not.toBeEmpty()
+      expect(await page.evaluate(() => (
+        window as typeof window & { __PROVIDER_CATALOG_CONTINUITY__?: string }
+      ).__PROVIDER_CATALOG_CONTINUITY__)).toBe(continuityMarker)
+    }
+
+    expect(runtimeErrors).toEqual([])
+  })
+
   test('route adapter follows the approved shell language', async ({ page }) => {
     await page.goto(`${consoleOrigin}/admin/accounts`)
     await expect(page.getByRole('button', { name: '添加账号', exact: true })).toBeVisible()
@@ -314,16 +413,18 @@ test.describe('Recovered CN Provider management contracts', () => {
     const adapterAssets: string[] = []
     page.on('request', (request) => {
       const path = new URL(request.url()).pathname
-      if (path.startsWith('/assets/cn-provider-admin-v1/')) adapterAssets.push(path)
+      if (path.startsWith('/assets/cn-provider-admin-v2/')) adapterAssets.push(path)
     })
 
     await page.goto(`${consoleOrigin}/admin/dashboard`)
     await expect(page.locator('.app-shell')).toBeVisible()
     await expect.poll(() => adapterAssets).toEqual([
-      '/assets/cn-provider-admin-v1/cn-provider-admin.js',
+      '/assets/cn-provider-admin-v2/cn-provider-admin.js',
     ])
     await expect(page.locator('#zero-one-cn-provider-admin')).toHaveCount(0)
     await expect(page.locator('#zero-one-cn-provider-admin-style')).toHaveCount(0)
+    await expect(page.locator('#zero-one-provider-catalog-admin')).toHaveCount(0)
+    await expect(page.locator('#zero-one-provider-catalog-admin-style')).toHaveCount(0)
   })
 
   test('leaf load failure keeps the approved shell and a retry action', async ({ page }) => {
@@ -353,6 +454,29 @@ test.describe('Recovered CN Provider management contracts', () => {
       'accounts',
     )
     await expect(page.getByRole('button', { name: '添加账号', exact: true })).toBeVisible()
+    expect(leafRequests).toBe(2)
+    expect(pageErrors).toEqual([])
+  })
+
+  test('Provider catalog leaf load failure keeps the approved shell and retries', async ({ page }) => {
+    const pageErrors: string[] = []
+    let leafRequests = 0
+    page.on('pageerror', (error) => pageErrors.push(error.message))
+    await page.route('**/assets/cn-provider-admin-v2/cnProviderAdminLeaf-*.js', (route) => {
+      leafRequests += 1
+      if (leafRequests === 1) {
+        return route.fulfill({ status: 503, contentType: 'text/javascript', body: '' })
+      }
+      return route.continue()
+    })
+
+    await page.goto(`${consoleOrigin}/admin/channels/pricing`)
+    await expect(page.locator('.app-shell')).toBeVisible()
+    const host = page.locator('#zero-one-provider-catalog-admin')
+    await expect(host.getByRole('alert')).toContainText('管理页面加载失败')
+    await host.getByRole('button', { name: '重试', exact: true }).click()
+    await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'channels')
+    await expect(host.getByRole('button', { name: '创建渠道', exact: true }).first()).toBeVisible()
     expect(leafRequests).toBe(2)
     expect(pageErrors).toEqual([])
   })

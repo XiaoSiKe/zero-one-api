@@ -1,4 +1,4 @@
-type AdminSurface = 'accounts' | 'groups'
+type AdminSurface = 'channels' | 'channel-monitor' | 'ops' | 'subscriptions'
 type RunMode = 'standard' | 'simple'
 type LocaleCode = 'en' | 'zh'
 
@@ -37,12 +37,14 @@ interface PendingMount {
   revision: number
 }
 
-const HOST_ID = 'zero-one-cn-provider-admin'
-const STYLE_ID = 'zero-one-cn-provider-admin-style'
-const BODY_ACTIVE_CLASS = 'zero-one-cn-provider-admin-active'
+const HOST_ID = 'zero-one-provider-catalog-admin'
+const STYLE_ID = 'zero-one-provider-catalog-admin-style'
+const BODY_ACTIVE_CLASS = 'zero-one-provider-catalog-admin-active'
 const TARGET_PATHS: Record<AdminSurface, string> = {
-  accounts: '/admin/accounts',
-  groups: '/admin/groups',
+  channels: '/admin/channels/pricing',
+  'channel-monitor': '/admin/channels/monitor',
+  ops: '/admin/ops',
+  subscriptions: '/admin/subscriptions',
 }
 const hiddenRouteRoots = new Map<HTMLElement, HiddenRouteRootState>()
 let mountedSurface: AdminSurface | null = null
@@ -53,8 +55,10 @@ let failedSurface: AdminSurface | null = null
 let mountRevision = 0
 
 function requestedSurface(): AdminSurface | null {
-  if (window.location.pathname === TARGET_PATHS.accounts) return 'accounts'
-  if (window.location.pathname === TARGET_PATHS.groups) return 'groups'
+  if (window.location.pathname === TARGET_PATHS.channels) return 'channels'
+  if (window.location.pathname === TARGET_PATHS['channel-monitor']) return 'channel-monitor'
+  if (window.location.pathname === TARGET_PATHS.ops) return 'ops'
+  if (window.location.pathname === TARGET_PATHS.subscriptions) return 'subscriptions'
   return null
 }
 
@@ -74,18 +78,21 @@ function restoreApprovedRouteRoots() {
   for (const [element, state] of hiddenRouteRoots) {
     element.style.display = state.display
     element.inert = state.inert
-    delete element.dataset.zeroOneCnProviderHidden
+    delete element.dataset.zeroOneProviderCatalogHidden
   }
   hiddenRouteRoots.clear()
 }
 
 function ensureRouteStyles() {
   document.body.classList.add(BODY_ACTIVE_CLASS)
-  if (document.getElementById(STYLE_ID)) return
+  const href = '/assets/cn-provider-admin-v2/cn-provider-admin.css'
+  const existing = document.getElementById(STYLE_ID) as HTMLLinkElement | null
+  if (existing?.getAttribute('href') === href) return
+  existing?.remove()
   const stylesheet = document.createElement('link')
   stylesheet.id = STYLE_ID
   stylesheet.rel = 'stylesheet'
-  stylesheet.href = '/assets/cn-provider-admin-v1/cn-provider-admin.css'
+  stylesheet.href = href
   document.head.append(stylesheet)
 }
 
@@ -97,7 +104,7 @@ function hideApprovedRouteRoots(main: HTMLElement, host: HTMLElement) {
     }
     child.style.display = 'none'
     child.inert = true
-    child.dataset.zeroOneCnProviderHidden = 'true'
+    child.dataset.zeroOneProviderCatalogHidden = 'true'
   }
 }
 
@@ -110,8 +117,8 @@ function unmountCurrentSurface() {
   mountedHost = null
   const host = document.getElementById(HOST_ID)
   if (host instanceof HTMLElement) {
-    delete host.dataset.zeroOneCnProviderAdmin
-    if (host.dataset.zeroOneCnProviderPlaceholder !== 'true') host.remove()
+    delete host.dataset.zeroOneProviderCatalogAdmin
+    host.remove()
   }
   document.body.classList.remove(BODY_ACTIVE_CLASS)
   document.getElementById(STYLE_ID)?.remove()
@@ -129,8 +136,8 @@ function renderMountFailure(surface: AdminSurface, host: HTMLElement) {
   const description = document.createElement('p')
   description.className = 'mt-2 text-sm text-gray-500 dark:text-gray-400'
   description.textContent = isChinese
-    ? '原控制台外壳仍然可用，请重试加载账号或分组管理。'
-    : 'The approved Console shell is still available. Retry loading account or group management.'
+    ? '原控制台外壳仍然可用，请重试加载供应商管理页面。'
+    : 'The approved Console shell is still available. Retry loading the Provider management page.'
   const retry = document.createElement('button')
   retry.type = 'button'
   retry.className = 'btn btn-primary mt-4'
@@ -141,7 +148,7 @@ function renderMountFailure(surface: AdminSurface, host: HTMLElement) {
   })
   panel.append(title, description, retry)
   host.replaceChildren(panel)
-  host.dataset.zeroOneCnProviderAdmin = surface
+  host.dataset.zeroOneProviderCatalogAdmin = surface
 }
 
 async function mountSurface(surface: AdminSurface, main: HTMLElement) {
@@ -150,7 +157,7 @@ async function mountSurface(surface: AdminSurface, main: HTMLElement) {
   if (!(host instanceof HTMLElement)) {
     host = document.createElement('div')
     host.id = HOST_ID
-    host.dataset.zeroOneCnProviderAdmin = surface
+    host.dataset.zeroOneProviderCatalogAdmin = surface
     main.append(host)
   }
   hideApprovedRouteRoots(main, host)
@@ -184,7 +191,7 @@ async function mountSurface(surface: AdminSurface, main: HTMLElement) {
   mountedSurface = null
   mountedHost = null
   host.replaceChildren()
-  host.dataset.zeroOneCnProviderAdmin = surface
+  host.dataset.zeroOneProviderCatalogAdmin = surface
 
   let prepared: PreparedSurface | null = null
   try {
@@ -248,7 +255,11 @@ if (!reconciliation) {
 const seamWindow = window as typeof window & {
   __ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__?: () => void
 }
-seamWindow.__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__ = reconcile
+const previousShellMounted = seamWindow.__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__
+seamWindow.__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__ = () => {
+  previousShellMounted?.()
+  reconcile()
+}
 
-reconciliation.register('cn-provider-admin', reconcile)
+reconciliation.register('provider-catalog-admin', reconcile)
 reconciliation.request()
