@@ -76,6 +76,7 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 		return
 	}
 	reqModel := modelResult.String()
+	bindRequestedReasoningEffort(c, body, reqModel)
 	ensureCompositeTargetPlatform(c, apiKey, reqModel)
 	if !compositeTargetPlatformResolved(c, apiKey, reqModel) {
 		h.responsesErrorResponse(c, http.StatusBadRequest, "invalid_request_error", "Model is not supported by composite groups")
@@ -323,6 +324,7 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 
 		quotaPlatform := service.QuotaPlatform(c.Request.Context(), apiKey)
 		sessionID := service.ExtractClientSessionID(c)
+		stampForwardRequestedReasoningEffort(result, service.RequestedReasoningEffortFromContext(c.Request.Context()))
 		usageResult := service.HTTPUsageResult(c, result)
 		usageFields := clientRequestedUsageFields(c, channelMapping, reqModel, result.UpstreamModel)
 		h.submitUsageRecordTask(c.Request.Context(), func(ctx context.Context) {
