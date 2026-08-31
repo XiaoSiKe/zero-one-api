@@ -13,38 +13,186 @@
           document.documentElement.classList.add("dark")
         }
       } catch {}
-    </script>
-    <script type="module" nonce="hJm3vqvOCSJtMiorHL9OJA==">
-      await import("/assets/zero-one-local-preview-guard-v2.js")
-      await import("/assets/zero-one-custom-page-security-v1.js")
       try {
-        const response = await fetch("/api/v1/settings/public", { cache: "no-store" })
-        if (response.ok) {
-          const payload = await response.json()
-          if (payload?.data) {
-            window.__APP_CONFIG__ = payload.data
-            window.__ZERO_ONE_PUBLIC_SETTINGS__ = payload.data
+        if (window.location.pathname === "/register") {
+          // Start the existing RegisterView closure while the HTML is still parsing.
+          const settingsController = new AbortController()
+          const settingsTimeout = window.setTimeout(() => settingsController.abort(), 2000)
+          window.__ZERO_ONE_REGISTRATION_SETTINGS_PROMISE__ = fetch(
+            "/api/v1/settings/public",
+            { cache: "no-store", signal: settingsController.signal },
+          )
+            .then(async (response) => {
+              if (!response.ok) return null
+              const payload = await response.json()
+              return payload?.data ?? null
+            })
+            .catch(() => null)
+            .finally(() => window.clearTimeout(settingsTimeout))
+          const savedLocale = localStorage.getItem("sub2api_locale")
+          const locale = savedLocale === "en" || savedLocale === "zh"
+            ? savedLocale
+            : navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en"
+          const localeChunk = locale === "zh"
+            ? "/assets/cn-provider-shell-v3/index-BBEtrNVx.js"
+            : "/assets/cn-provider-shell-v3/index-6pKNrg32.js"
+          const registrationModulePreloads = [
+            "/assets/zero-one-local-preview-guard-v2.js",
+            "/assets/zero-one-navigation-reconciliation-v1.js?v=3",
+            "/assets/zero-one-header-custom-menu-v1.js?v=24",
+            "/assets/cn-provider-shell-v3/index-9xJBhx8B.js",
+            "/assets/cn-provider-shell-v3/RegisterView-CP_DoJ_R.js",
+            localeChunk,
+            "/assets/cn-provider-shell-v3/AppHeader.vue_vue_type_style_index_0_scoped_0aa3fa6b_lang-Cc861dBu.js",
+            "/assets/cn-provider-shell-v3/useClipboard-DuyDJtWH.js",
+            "/assets/cn-provider-shell-v3/AuthLayout.vue_vue_type_script_setup_true_lang-DghqD8r6.js",
+            "/assets/cn-provider-shell-v3/LoginAgreementPrompt-vDSqmtON.js",
+            "/assets/cn-provider-shell-v3/CaptchaChallenge.vue_vue_type_script_setup_true_lang-DJqyTVvj.js",
+            "/assets/cn-provider-shell-v3/authError-Ch9RozGZ.js",
+            "/assets/cn-provider-shell-v3/apiError-BcAuv_LF.js",
+            "/assets/cn-provider-shell-v3/registrationEmailPolicy-BIuq-4e8.js",
+            "/assets/cn-provider-shell-v3/oauthAffiliate-CrlUwkd1.js",
+          ]
+          const registrationStylePreloads = [
+            "/assets/v182-payment-refresh-20260825/AppHeader-p9PUzs49.css",
+            "/assets/v182-payment-refresh-20260825/vendor-misc-DB0Q8XAf.css",
+            "/assets/v182-payment-refresh-20260825/AuthLayout-DRKfLxvQ.css",
+            "/assets/v182-payment-refresh-20260825/LoginAgreementPrompt-DhEkaHwn.css",
+            "/assets/v182-payment-refresh-20260825/CaptchaChallenge-DXOSsY36.css",
+            "/assets/v182-payment-refresh-20260825/RegisterView-CyG5nZuA.css",
+            "/assets/v182-payment-refresh-20260825/LocaleSwitcher-CjvPxOhx.css",
+          ]
+          const optionalAdapterPreloads = [
+            "/assets/online-image-v10/online-image.js",
+            "/assets/online-image-v10/onlineImage-CVdGRNSC.js",
+            "/assets/cn-provider-admin-v1/cn-provider-admin.js",
+          ]
+          for (const href of registrationModulePreloads) {
+            const preload = document.createElement("link")
+            preload.rel = "modulepreload"
+            preload.crossOrigin = "anonymous"
+            preload.href = href
+            document.head.append(preload)
+          }
+          for (const href of registrationStylePreloads) {
+            const preload = document.createElement("link")
+            preload.rel = "preload"
+            preload.as = "style"
+            preload.crossOrigin = "anonymous"
+            preload.href = href
+            document.head.append(preload)
+          }
+          for (const href of optionalAdapterPreloads) {
+            const preload = document.createElement("link")
+            preload.rel = "modulepreload"
+            preload.crossOrigin = "anonymous"
+            preload.href = href
+            document.head.append(preload)
           }
         }
       } catch {}
-      await import("/assets/zero-one-navigation-reconciliation-v1.js?v=3")
-      await import("/assets/zero-one-console-parity-v1.js?v=6")
-      await import("/assets/zero-one-community-qr-v1.js?v=14")
-      await import("/assets/zero-one-header-custom-menu-v1.js?v=24")
-      await import("/assets/zero-one-settings-unified-save-v1.js")
-      await import("/assets/zero-one-redeem-actions-v1.js?v=1")
-      await import("/assets/zero-one-ccswitch-launch-v1.js?v=1")
-      await import("/assets/zero-one-affiliate-admin-v1.js?v=6")
-      await import("/assets/online-image-v10/online-image.js")
-      await import("/assets/cn-provider-admin-v1/cn-provider-admin.js")
-      await import("/assets/cn-provider-shell-v3/index-9xJBhx8B.js")
+    </script>
+    <script type="module" nonce="hJm3vqvOCSJtMiorHL9OJA==">
+      const isRegistrationEntry = window.location.pathname === "/register"
+
+      const applyPublicSettings = (settings) => {
+        if (!settings) return
+        window.__APP_CONFIG__ = settings
+        window.__ZERO_ONE_PUBLIC_SETTINGS__ = settings
+      }
+
+      const refreshPublicSettings = async (timeoutMs) => {
+        const controller = new AbortController()
+        const timeout = timeoutMs > 0
+          ? window.setTimeout(() => controller.abort(), timeoutMs)
+          : null
+        try {
+          const response = await fetch("/api/v1/settings/public", {
+            cache: "no-store",
+            signal: controller.signal,
+          })
+          if (response.ok) {
+            const payload = await response.json()
+            applyPublicSettings(payload?.data)
+          }
+        } catch {
+        } finally {
+          if (timeout !== null) window.clearTimeout(timeout)
+        }
+      }
+
+      if (isRegistrationEntry) {
+        const registrationSettings = window.__ZERO_ONE_REGISTRATION_SETTINGS_PROMISE__
+        delete window.__ZERO_ONE_REGISTRATION_SETTINGS_PROMISE__
+        const publicSettings = registrationSettings
+          ? registrationSettings.then(applyPublicSettings)
+          : refreshPublicSettings(2000)
+        await import("/assets/zero-one-local-preview-guard-v2.js")
+        await import("/assets/zero-one-navigation-reconciliation-v1.js?v=3")
+        let stopWaitingForRegistration = () => {}
+        const registrationMounted = new Promise((resolve) => {
+          stopWaitingForRegistration = window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.register(
+            "registration-entry-mounted",
+            () => {
+              const appRoot = document.getElementById("app")
+              if (!appRoot || appRoot.childElementCount === 0) return
+              stopWaitingForRegistration()
+              resolve()
+            },
+          )
+        })
+        await publicSettings
+        await import("/assets/zero-one-header-custom-menu-v1.js?v=24")
+        let pendingOnlineImageClient = null
+        if (!window.__ZERO_ONE_ONLINE_IMAGE_ACCESS__) {
+          window.__ZERO_ONE_ONLINE_IMAGE_ACCESS__ = {
+            setClient(client) {
+              pendingOnlineImageClient = client
+            },
+          }
+        }
+        // Start optional adapters before the shell without letting a stalled request block Auth.
+        void Promise.allSettled([
+          import("/assets/online-image-v10/online-image.js").then(() => {
+            if (pendingOnlineImageClient) {
+              window.__ZERO_ONE_ONLINE_IMAGE_ACCESS__?.setClient(pendingOnlineImageClient)
+            }
+          }),
+          import("/assets/cn-provider-admin-v1/cn-provider-admin.js"),
+        ])
+        await import("/assets/cn-provider-shell-v3/index-9xJBhx8B.js")
+        await registrationMounted
+        await import("/assets/zero-one-custom-page-security-v1.js")
+        await import("/assets/zero-one-console-parity-v1.js?v=6")
+        await import("/assets/zero-one-community-qr-v1.js?v=14")
+        await import("/assets/zero-one-settings-unified-save-v1.js")
+        await import("/assets/zero-one-redeem-actions-v1.js?v=1")
+        await import("/assets/zero-one-ccswitch-launch-v1.js?v=1")
+        await import("/assets/zero-one-affiliate-admin-v1.js?v=6")
+      } else {
+        await import("/assets/zero-one-local-preview-guard-v2.js")
+        await import("/assets/zero-one-custom-page-security-v1.js")
+        await refreshPublicSettings(0)
+        await import("/assets/zero-one-navigation-reconciliation-v1.js?v=3")
+        await import("/assets/zero-one-console-parity-v1.js?v=6")
+        await import("/assets/zero-one-community-qr-v1.js?v=14")
+        await import("/assets/zero-one-header-custom-menu-v1.js?v=24")
+        await import("/assets/zero-one-settings-unified-save-v1.js")
+        await import("/assets/zero-one-redeem-actions-v1.js?v=1")
+        await import("/assets/zero-one-ccswitch-launch-v1.js?v=1")
+        await import("/assets/zero-one-affiliate-admin-v1.js?v=6")
+        await import("/assets/online-image-v10/online-image.js")
+        await import("/assets/cn-provider-admin-v1/cn-provider-admin.js")
+        await import("/assets/cn-provider-shell-v3/index-9xJBhx8B.js")
+      }
+
       await import("/assets/zero-one-floating-panels-v1.js?v=2")
       await import("/assets/zero-one-login-recovery-v2.js?v=3")
     </script>
-    <link rel="modulepreload" crossorigin href="/assets/vendor-vue-iKpM1E08.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-i18n-k5VB7a-q.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-misc-DT6q4xNi.js">
-    <link rel="stylesheet" crossorigin href="/assets/vendor-misc-DB0Q8XAf.css">
+    <link rel="modulepreload" crossorigin href="/assets/cn-provider-shell-v3/vendor-vue-iKpM1E08.js">
+    <link rel="modulepreload" crossorigin href="/assets/cn-provider-shell-v3/vendor-i18n-k5VB7a-q.js">
+    <link rel="modulepreload" crossorigin href="/assets/cn-provider-shell-v3/vendor-misc-DT6q4xNi.js">
+    <link rel="stylesheet" crossorigin href="/assets/v182-payment-refresh-20260825/vendor-misc-DB0Q8XAf.css">
     <link rel="stylesheet" crossorigin href="/assets/index-MneVaLVB.css">
     <link rel="stylesheet" crossorigin href="/assets/TablePageLayout-layer-fix-9bab9fe9.css">
     <link rel="stylesheet" href="/assets/zero-one-console-parity-v1.css?v=4">

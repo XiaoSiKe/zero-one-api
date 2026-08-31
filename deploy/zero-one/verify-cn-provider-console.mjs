@@ -28,11 +28,26 @@ function requireMarkers(source, markers, label) {
 
 export function verifyCNProviderConsole(consoleDir) {
   const index = read(resolve(consoleDir, 'index.html'), 'Console entry')
-  const adapterMarker = 'await import("/assets/cn-provider-admin-v1/cn-provider-admin.js")'
-  const shellMarker = `await import("/assets/${CN_PROVIDER_SHELL_ASSET}")`
-  requireMarkers(index, [adapterMarker, shellMarker], 'Console entry')
-  if (index.indexOf(adapterMarker) > index.indexOf(shellMarker)) {
-    throw new Error('CN Provider route seam must load before the approved Console shell')
+  const registrationStart = index.indexOf('      if (isRegistrationEntry) {')
+  const standardStart = index.indexOf('      } else {', registrationStart)
+  const entryEnd = index.indexOf(
+    '      await import("/assets/zero-one-floating-panels-v1.js?v=2")',
+    standardStart,
+  )
+  if (registrationStart < 0 || standardStart < 0 || entryEnd < 0) {
+    throw new Error('Console entry registration and standard branches are missing')
+  }
+  const registrationEntry = index.slice(registrationStart, standardStart)
+  const standardEntry = index.slice(standardStart, entryEnd)
+  const adapterImport = 'import("/assets/cn-provider-admin-v1/cn-provider-admin.js")'
+  const shellImport = `import("/assets/${CN_PROVIDER_SHELL_ASSET}")`
+  requireMarkers(registrationEntry, [adapterImport, shellImport], 'Registration Console entry')
+  requireMarkers(standardEntry, [`await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
+  if (
+    registrationEntry.indexOf(adapterImport) > registrationEntry.indexOf(shellImport) ||
+    standardEntry.indexOf(adapterImport) > standardEntry.indexOf(shellImport)
+  ) {
+    throw new Error('CN Provider route seam must start before the approved Console shell')
   }
 
   const approvedShell = read(

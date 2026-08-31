@@ -101,6 +101,123 @@ test.describe('Console public auth contracts', () => {
     await expect(page.getByRole('heading', { name: '重置密码' })).toBeVisible()
   })
 
+  test('registration survives stalled settings and optional Console adapters', async ({ page }) => {
+    let enhancementRequested = false
+    let registrationVisibleWhenEnhancementStarted = false
+    let registrationChunkRequestedBeforeSettingsRelease = false
+    let onlineImageKeysRequested = false
+    const pageErrors: string[] = []
+    let settingsReleased = false
+    let onlineAdapterReleased = false
+    let releaseSettings!: () => void
+    let releaseOnlineAdapter!: () => void
+    const stalledSettings = new Promise<void>((resolve) => {
+      releaseSettings = () => {
+        settingsReleased = true
+        resolve()
+      }
+    })
+    const stalledOnlineAdapter = new Promise<void>((resolve) => {
+      releaseOnlineAdapter = () => {
+        onlineAdapterReleased = true
+        resolve()
+      }
+    })
+
+    page.on('pageerror', (error) => pageErrors.push(error.message))
+
+    await page.route('**/assets/online-image-v10/online-image.js', async (route) => {
+      await stalledOnlineAdapter
+      await route.fallback().catch(() => {})
+    })
+    await page.route('**/assets/cn-provider-admin-v1/cn-provider-admin.js', (route) =>
+      route.fulfill({ status: 503, contentType: 'text/plain', body: 'simulated outage' }),
+    )
+
+    await page.route('**/api/v1/settings/public*', async (route) => {
+      const url = new URL(route.request().url())
+      if (url.searchParams.get('scope') === 'logo') {
+        await route.fallback()
+        return
+      }
+      await stalledSettings
+      await route.fallback().catch(() => {})
+    })
+
+    page.on('request', (request) => {
+      const pathname = new URL(request.url()).pathname
+      if (pathname === '/assets/cn-provider-shell-v3/RegisterView-CP_DoJ_R.js') {
+        registrationChunkRequestedBeforeSettingsRelease ||= !settingsReleased
+      }
+      if (pathname === '/api/v1/keys') onlineImageKeysRequested = true
+    })
+
+    await page.route('**/assets/zero-one-custom-page-security-v1.js', async (route) => {
+      enhancementRequested = true
+      registrationVisibleWhenEnhancementStarted = await page.locator('form').isVisible()
+      await route.continue()
+    })
+
+    await page.goto('http://127.0.0.1:4173/register', { waitUntil: 'commit' })
+
+    try {
+      await expect(page.getByRole('heading', { name: '创建账户' })).toBeVisible({ timeout: 4_000 })
+      await expect(page.locator('form')).toBeVisible()
+      await expect(page.locator('#email')).toBeDisabled()
+      await expect(page.locator('#password')).toBeDisabled()
+      await expect(page.getByRole('button', { name: '创建账户', exact: true })).toBeDisabled()
+      expect(settingsReleased).toBe(false)
+      expect(onlineAdapterReleased).toBe(false)
+      expect(registrationChunkRequestedBeforeSettingsRelease).toBe(true)
+      await expect.poll(() => enhancementRequested).toBe(true)
+      expect(registrationVisibleWhenEnhancementStarted).toBe(true)
+      expect(pageErrors).toEqual([])
+      await page.evaluate((user) => {
+        const app = document.querySelector('#app') as HTMLElement & {
+          __vue_app__?: { config?: { globalProperties?: { $pinia?: { _s?: Map<string, unknown> } } } }
+        }
+        const authStore = app.__vue_app__?.config?.globalProperties?.$pinia?._s?.get('auth') as {
+          $patch?: (state: Record<string, unknown>) => void
+        } | undefined
+        if (!authStore?.$patch) throw new Error('visual auth store is unavailable')
+        authStore.$patch({ token: 'visual-fixture-token', user })
+        localStorage.setItem('auth_token', 'visual-fixture-token')
+        localStorage.setItem('auth_user', JSON.stringify(user))
+      }, regularUser)
+    } finally {
+      releaseSettings()
+      releaseOnlineAdapter()
+    }
+
+    await expect.poll(() => onlineImageKeysRequested).toBe(true)
+    await expect(page.locator('#username')).toBeEnabled()
+    await expect(page.locator('#email')).toBeEnabled()
+    await expect(page.locator('#password')).toBeEnabled()
+    await expect(page.locator('#promo_code')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '创建账户', exact: true })).toBeEnabled()
+    await expect(page.getByRole('link', { name: /已有账户？\s*登录/ })).toHaveAttribute(
+      'href',
+      '/login',
+    )
+  })
+
+  test('registration keeps the approved form', async ({ page }) => {
+    await page.unroute('**/setup/status')
+    await page.unroute('**/api/v1/**')
+    await seedConsole(page, 'v2', {
+      authenticated: false,
+      siteLogo: `data:image/png;base64,${communityQrPngBase64}`,
+    })
+    await page.goto('http://127.0.0.1:4173/register')
+
+    await expect(page.getByRole('heading', { name: '创建账户' })).toBeVisible()
+    await expect(page.locator('#username')).toBeEnabled()
+    await expect(page.locator('#email')).toBeEnabled()
+    await expect(page.locator('#password')).toBeEnabled()
+    await expect(page.getByRole('button', { name: '创建账户', exact: true })).toBeEnabled()
+    await expect(page).toHaveScreenshot('console-register.png')
+  })
+
   test('password recovery actions match the login button', async ({ page }) => {
     await page.goto('http://127.0.0.1:4173/login')
     const login = page.getByRole('button', { name: '登录', exact: true })

@@ -100,7 +100,10 @@ require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-
 require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=6"'
 require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=24")'
 require "$recovered_header_custom_menu" "style.setProperty('display', 'none', 'important')"
-require "$recovered_console_index" 'window.__ZERO_ONE_PUBLIC_SETTINGS__ = payload.data'
+require "$recovered_console_index" 'window.__ZERO_ONE_PUBLIC_SETTINGS__ = settings'
+require "$recovered_console_index" 'applyPublicSettings(payload?.data)'
+require "$recovered_console_index" 'registrationSettings.then(applyPublicSettings)'
+forbid "$recovered_console_index" 'new MutationObserver'
 require "$recovered_console_index" 'href="/assets/zero-one-header-custom-menu-v1.css?v=7"'
 require "$recovered_console_index" 'await import("/assets/zero-one-redeem-actions-v1.js?v=1")'
 require "$recovered_console_index" 'href="/assets/zero-one-redeem-actions-v1.css?v=1"'

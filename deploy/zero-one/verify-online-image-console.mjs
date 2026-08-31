@@ -14,11 +14,26 @@ function requireMarkers(source, markers, label) {
 
 export function verifyOnlineImageConsole(consoleDir) {
   const index = read(resolve(consoleDir, 'index.html'), 'Console entry')
-  const adapterMarker = 'await import("/assets/online-image-v10/online-image.js")'
-  const shellMarker = 'await import("/assets/cn-provider-shell-v3/index-9xJBhx8B.js")'
-  requireMarkers(index, [adapterMarker, shellMarker], 'Console entry')
-  if (index.indexOf(adapterMarker) > index.indexOf(shellMarker)) {
-    throw new Error('Online image route adapter must load before the approved Console shell')
+  const registrationStart = index.indexOf('      if (isRegistrationEntry) {')
+  const standardStart = index.indexOf('      } else {', registrationStart)
+  const entryEnd = index.indexOf(
+    '      await import("/assets/zero-one-floating-panels-v1.js?v=2")',
+    standardStart,
+  )
+  if (registrationStart < 0 || standardStart < 0 || entryEnd < 0) {
+    throw new Error('Console entry registration and standard branches are missing')
+  }
+  const registrationEntry = index.slice(registrationStart, standardStart)
+  const standardEntry = index.slice(standardStart, entryEnd)
+  const adapterImport = 'import("/assets/online-image-v10/online-image.js")'
+  const shellImport = 'import("/assets/cn-provider-shell-v3/index-9xJBhx8B.js")'
+  requireMarkers(registrationEntry, [adapterImport, shellImport], 'Registration Console entry')
+  requireMarkers(standardEntry, [`await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
+  if (
+    registrationEntry.indexOf(adapterImport) > registrationEntry.indexOf(shellImport) ||
+    standardEntry.indexOf(adapterImport) > standardEntry.indexOf(shellImport)
+  ) {
+    throw new Error('Online image route adapter must start before the approved Console shell')
   }
 
   const shell = read(
