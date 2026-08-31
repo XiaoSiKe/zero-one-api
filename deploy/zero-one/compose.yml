@@ -29,9 +29,12 @@ services:
     volumes:
       - ./state/caddy-data:/data
       - ./state/caddy-config:/config
-    depends_on:
-      sub2api:
-        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-T", "5", "--no-check-certificate", "--header", "Host: api.01yapi.com", "-O", "/dev/null", "https://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     networks:
       - gateway
 

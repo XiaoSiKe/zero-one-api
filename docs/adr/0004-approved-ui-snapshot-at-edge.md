@@ -44,6 +44,14 @@ failure must not prevent the form from mounting. The entry must reuse the shared
 navigation reconciliation owner, and its settled desktop and mobile visual
 contract must remain unchanged.
 
+The exact `/login` entry follows the same Auth-first loading boundary. It may
+preload the existing Approved `LoginView` closure, but the view remains the only
+login implementation and continues to own live Public Settings, authentication
+gating and all login actions. Route-specific Console Adapters load only after
+the form mounts, so a slow anonymous settings refresh or an unrelated Adapter
+cannot blank the login entry. The recovered login actions, settled desktop and
+mobile visuals, and post-login role routing remain unchanged.
+
 The Kimi, Zhipu GLM and DeepSeek administration controls use two immutable,
 versioned route-content Adapters. The approved v1 Adapter remains byte-stable
 for `/admin/groups` and `/admin/accounts`; the Provider Platform Catalog v2

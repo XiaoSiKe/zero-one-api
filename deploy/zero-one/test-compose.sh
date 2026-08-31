@@ -27,6 +27,10 @@ docker compose \
 
 jq -e '
   .services.edge.build.args.VITE_LOCAL_EDGE_PREVIEW == "false" and
+  (.services.edge | has("depends_on") | not) and
+  .services.edge.healthcheck.test[0] == "CMD" and
+  .services.edge.healthcheck.test[1] == "wget" and
+  .services.edge.healthcheck.test[-1] == "https://127.0.0.1/" and
   (.services.sub2api.extra_hosts | index("superapi-direct=host-gateway") != null)
 ' "$production_config" >/dev/null
 

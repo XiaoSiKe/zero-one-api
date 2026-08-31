@@ -108,6 +108,17 @@ wait_for_https() {
 	return 1
 }
 
+preflight_edge_image() {
+	docker run --rm -e ACME_EMAIL=preflight@example.invalid --entrypoint caddy "$new_image" \
+		validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null || return 1
+	docker run --rm --entrypoint /bin/sh "$new_image" -ec '
+		test -s /etc/caddy/Caddyfile
+		test -s /etc/caddy/Caddyfile.shared
+		test -s /srv/landing/index.html
+		test -s /srv/console/index.html
+	' >/dev/null || return 1
+}
+
 recreate_edge() {
 	compose up -d --no-build --no-deps --force-recreate edge
 }
@@ -134,6 +145,10 @@ rollback_and_fail() {
 switch_in_progress=false
 handle_interrupt() {
 	trap - HUP INT TERM
+	if [ "$switch_in_progress" = false ]; then
+		echo 'Edge switch interrupted before the running Edge changed' >&2
+		exit 130
+	fi
 	if [ "$switch_in_progress" = true ] && restore_old_edge; then
 		echo 'Edge switch interrupted; old Edge restored' >&2
 		exit 130
@@ -144,8 +159,9 @@ handle_interrupt() {
 trap handle_interrupt HUP INT TERM
 
 capture_dependency_ids || fail 'Sub2API, PostgreSQL, and Redis must all be healthy before switching Edge'
-switch_in_progress=true
-docker pull "$new_image" >/dev/null || rollback_and_fail 'could not pull the new Edge image'
+docker pull "$new_image" >/dev/null || fail 'could not pull the new Edge image; running Edge was not changed'
+preflight_edge_image || fail 'new Edge image failed Caddy and static asset preflight; running Edge was not changed'
+verify_dependencies_unchanged || fail 'a dependency changed or became unhealthy during Edge preflight'
 
 timestamp=$(date -u '+%Y%m%dT%H%M%SZ')
 backup_file=$(mktemp "${env_file}.before-edge-${timestamp}.XXXXXX") ||
@@ -154,6 +170,7 @@ if ! cp "$env_file" "$backup_file" || ! chmod 600 "$backup_file"; then
 	rm -f "$backup_file"
 	fail 'could not create the environment rollback copy'
 fi
+switch_in_progress=true
 if ! write_edge_image "$new_image"; then
 	switch_in_progress=false
 	fail 'could not atomically update EDGE_IMAGE'
