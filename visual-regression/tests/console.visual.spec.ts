@@ -317,6 +317,53 @@ test.describe('Console public auth contracts', () => {
     await expect(dashboardLink).toHaveClass(/sidebar-link-active/)
   })
 
+  test('administrator login redirect tolerates deferred navigation adapters', async ({ page }) => {
+    let adapterRequested = false
+    let releaseAdapter!: () => void
+    const stalledAdapter = new Promise<void>((resolve) => {
+      releaseAdapter = resolve
+    })
+    const consoleErrors: string[] = []
+    const pageErrors: string[] = []
+
+    page.on('console', (message) => {
+      if (message.type() === 'error') consoleErrors.push(message.text())
+    })
+    page.on('pageerror', (error) => pageErrors.push(error.message))
+    await page.route('**/assets/zero-one-community-qr-v1.js*', async (route) => {
+      adapterRequested = true
+      await stalledAdapter
+      await route.fallback().catch(() => {})
+    })
+
+    await page.goto('http://127.0.0.1:4173/login')
+    await page.locator('#email').fill('admin@01yapi.test')
+    await page.locator('#password').fill('preview-password')
+
+    try {
+      await page.getByRole('button', { name: '登录', exact: true }).click()
+      await expect(page).toHaveURL('http://127.0.0.1:4173/admin/dashboard')
+      await expect(page.locator('main').getByText('API 密钥', { exact: true }).first()).toBeVisible()
+      await expect.poll(() => adapterRequested).toBe(true)
+      await page.waitForTimeout(250)
+      expect(consoleErrors).toEqual([])
+      expect(pageErrors).toEqual([])
+    } finally {
+      releaseAdapter()
+    }
+
+    await expect.poll(() => page.evaluate(() => {
+      const reconciliation = (window as Window & {
+        __ZERO_ONE_NAVIGATION_RECONCILIATION__?: {
+          defaultSidebarOrders?: { admin?: string[] }
+        }
+      }).__ZERO_ONE_NAVIGATION_RECONCILIATION__
+      return Array.isArray(reconciliation?.defaultSidebarOrders?.admin)
+    })).toBe(true)
+    expect(consoleErrors).toEqual([])
+    expect(pageErrors).toEqual([])
+  })
+
   test('regular user login selects the user dashboard with matching card motion', async ({ page }, testInfo) => {
     await page.unroute('**/api/v1/**')
     await seedConsole(page, 'v2', { authenticated: false, user: regularUser })
