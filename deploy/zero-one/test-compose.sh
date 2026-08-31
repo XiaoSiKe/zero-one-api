@@ -28,9 +28,11 @@ docker compose \
 jq -e '
   .services.edge.build.args.VITE_LOCAL_EDGE_PREVIEW == "false" and
   (.services.edge | has("depends_on") | not) and
+  (.services.edge.extra_hosts | index("api.01yapi.com=127.0.0.1") != null) and
   .services.edge.healthcheck.test[0] == "CMD" and
   .services.edge.healthcheck.test[1] == "wget" and
-  .services.edge.healthcheck.test[-1] == "https://127.0.0.1/" and
+  (.services.edge.healthcheck.test | index("Host: api.01yapi.com") == null) and
+  .services.edge.healthcheck.test[-1] == "https://api.01yapi.com/" and
   (.services.sub2api.extra_hosts | index("superapi-direct=host-gateway") != null)
 ' "$production_config" >/dev/null
 

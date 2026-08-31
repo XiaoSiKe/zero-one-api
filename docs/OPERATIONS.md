@@ -781,6 +781,10 @@ maintenance window.
 - Edge 现在独立启动并用静态根页自检；后端初始化期间 Public Site 与登录 HTML 仍可提供。
   新 Edge 在改写镜像摘要前先验证 Caddy 配置及 Landing/Console 静态闭包。拉取、预检或
   预检期间依赖健康失败都保持旧 Edge 原地运行，不进入应用回滚或 `force-recreate`。
+- Edge Docker healthcheck 在容器内将 `api.01yapi.com` 固定到 loopback，并以规范域名
+  发起 TLS，使 SNI 与 HTTP Host 一致。不得用 `https://127.0.0.1` 加 `Host`
+  头代替 SNI。安全切换在 HTTPS readiness 后还必须等待新 Edge 的 Docker
+  health 变为 `healthy`，否则回滚到旧镜像。
 - `/login` 预加载既有 Approved `LoginView` 闭包和必要运行时，继续由原 View 读取实时
   Public Settings、控制验证码/OAuth/协议和登录动作；设置未完成时动作仍禁用。生图、
   Provider 管理等非登录 Adapter 只在真实表单挂载后进入 idle 加载，找回密码、浮层、

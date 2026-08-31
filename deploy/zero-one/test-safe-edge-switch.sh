@@ -72,7 +72,13 @@ if [ "$1" = inspect ]; then
 				edge-old) printf '%s\n' "$FAKE_OLD_IMAGE" ;;
 			esac
 			;;
-		*) printf '%s\n' healthy ;;
+		*)
+			if [ "$container_id" = edge-new ] && [ "${FAKE_NEW_HEALTH:-healthy}" != healthy ]; then
+				printf '%s\n' "$FAKE_NEW_HEALTH"
+			else
+				printf '%s\n' healthy
+			fi
+			;;
 	esac
 	exit
 fi
@@ -168,6 +174,14 @@ if run_switch "$rollback_dir" FAKE_NEW_READY_AFTER=0 >"$rollback_dir/output" 2>&
 fi
 grep -Fq "EDGE_IMAGE=$old_image" "$rollback_dir/.env" || fail 'timeout did not restore the old digest'
 grep -Fq 'old Edge restored' "$rollback_dir/output" || fail 'successful rollback was not reported'
+
+health_dir=$(make_fixture health-failure)
+install_fakes "$health_dir"
+if run_switch "$health_dir" FAKE_NEW_READY_AFTER=1 FAKE_NEW_HEALTH=unhealthy >"$health_dir/output" 2>&1; then
+	fail 'unhealthy new Edge unexpectedly succeeded'
+fi
+grep -Fq "EDGE_IMAGE=$old_image" "$health_dir/.env" || fail 'unhealthy new Edge did not restore the old digest'
+grep -Fq 'old Edge restored' "$health_dir/output" || fail 'unhealthy new Edge rollback was not reported'
 
 rollback_fail_dir=$(make_fixture rollback-fail)
 install_fakes "$rollback_fail_dir"
