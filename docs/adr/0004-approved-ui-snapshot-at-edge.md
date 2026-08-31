@@ -35,6 +35,15 @@ registers idempotent reconciliation instead of adding another global observer,
 history wrapper or navigation-time animation frame. This is an overlay change,
 not permission to replace or rewrite the approved recovered base package.
 
+The exact `/register` entry may prioritize the existing Approved `RegisterView`
+closure, but it must not substitute another page, skeleton, placeholder or
+simplified form. Public Settings remain authoritative and registration actions
+stay unavailable while their request is pending; the existing `RegisterView`
+continues to own its fallback behavior. Optional Console Adapter delay or
+failure must not prevent the form from mounting. The entry must reuse the shared
+navigation reconciliation owner, and its settled desktop and mobile visual
+contract must remain unchanged.
+
 The Kimi, Zhipu GLM and DeepSeek administration controls use one versioned
 route-content Adapter for `/admin/groups` and `/admin/accounts`. It registers
 with the existing navigation reconciliation asset, preserves the approved

@@ -650,14 +650,11 @@ HTTPS failures restore the previous digest and require the old Edge to pass the
 same HTTPS gate; a failed rollback is reported separately. Do not replace this
 entrypoint with a direct `docker compose up edge` during a release.
 
-The approved UI is a separate release boundary. The current protected snapshot
-is the `ui-approved-2026-08-30-r1` tag at commit
-`06349b7919439df60cdcb6d7d3776ac00d6b13bb`. All previous `ui-approved-*`
-tags remain immutable. The new snapshot passed two consecutive native Linux x86
-Playwright 1.55.1 / Ubuntu Noble runs: each completed 160 tests with 56 documented
-viewport exclusions and zero failures or retries. It clarifies that the Kimi,
-Zhipu GLM and DeepSeek Anthropic option is a provider-compatible protocol, fixes
-the provider API Key guidance, and records matching desktop/mobile evidence.
+The approved UI is a separate release boundary. The current immutable tag and
+commit are recorded only in `.github/scripts/ui-baseline.json`; do not duplicate
+that mutable pointer or its test totals in this manual. All previous
+`ui-approved-*` tags remain immutable, and the required Chromium visual
+regression job owns the corresponding desktop/mobile evidence.
 
 Visual fixtures must obtain the displayed server version from
 `backend/cmd/server/VERSION` and must fail when it differs from the release in
@@ -783,7 +780,7 @@ maintenance window.
 - With disposable users and no production orders, confirm manual Affiliate Attribution accepts only a human JWT administrator and rejects an Admin API Key. When the sensitive-operation step-up policy is enabled, confirm it rejects the operation until a recent TOTP step-up. Also confirm it rejects self/cyclic/second bindings, persists actor and binding time, and treats the retained binding time as a no-rebind tombstone after inviter deletion. Payments from before the binding must remain without rebate; only otherwise-eligible payments after the binding may earn one. Confirm the validity deadline still derives from the invitee affiliate profile creation time.
 - For any enabled group-level model card, compare the configured price with one low-cost usage record. Include a long-context boundary check and, when Batch Image or Model Plaza is enabled, verify group-card precedence and an explicit zero-price tier without using a production customer key.
 - `GET https://api.01yapi.com/` returns the React page; `POST /v1/messages` reaches API authentication rather than HTML.
-- `GET https://api.01yapi.com/dashboard`, `/keys` and `/monitor` return the Approved UI Snapshot, while `/v1/*` continues to reach Sub2API.
+- `GET https://api.01yapi.com/login`, `/register`, `/dashboard`, `/keys` and `/monitor` return the Approved UI Snapshot. `/register` reaches the real `RegisterView` instead of an empty document: enabled registration shows the `创建账户` form and disabled registration shows its native disabled state. `/v1/*` continues to reach Sub2API.
 - The public-settings release gate passes, and `/admin/settings` shows `frontend_url=https://api.01yapi.com`.
 - `GET`, `HEAD` and `POST` requests to representative `app.01yapi.com` paths return non-cacheable `308` responses to the same path and query on `https://api.01yapi.com`; the compatibility host never serves Console or model traffic directly.
 - SSE sends its first event promptly and continues without buffering; `/responses` and administrator operations WebSockets upgrade successfully.
