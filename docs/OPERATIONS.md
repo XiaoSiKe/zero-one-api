@@ -770,6 +770,37 @@ maintenance window.
 发布前必须运行新的桌面／移动兑换行为用例、source/recovered 一致性测试与原视觉门禁。
 不得以新截图覆盖差异、放宽阈值或把缺少外部条件的用例计为已执行通过。
 
+## 入口可用性与登录首屏优化验收（2026-08-31）
+
+本轮只交付源码、Approved UI Snapshot 启动顺序、测试与保护记录；没有发布镜像、
+修改生产 `.env`、重建线上容器或变更业务数据。截图中的根路径 HTTP 502 不是登录 API
+返回：规范域名的精确 `GET/HEAD /` 与 `/login` 都由 Edge 静态提供。生产 Compose
+此前却要求 Sub2API 先达到 healthy 才启动 Edge，安全切换脚本还会在新镜像拉取失败时
+无意义地重建健康旧 Edge；两者都会把服务端入口空窗误导成客户端换网问题。
+
+- Edge 现在独立启动并用静态根页自检；后端初始化期间 Public Site 与登录 HTML 仍可提供。
+  新 Edge 在改写镜像摘要前先验证 Caddy 配置及 Landing/Console 静态闭包。拉取、预检或
+  预检期间依赖健康失败都保持旧 Edge 原地运行，不进入应用回滚或 `force-recreate`。
+- `/login` 预加载既有 Approved `LoginView` 闭包和必要运行时，继续由原 View 读取实时
+  Public Settings、控制验证码/OAuth/协议和登录动作；设置未完成时动作仍禁用。生图、
+  Provider 管理等非登录 Adapter 只在真实表单挂载后进入 idle 加载，找回密码、浮层、
+  角色跳转及桌面/移动最终视觉不变。
+- 维护机经 TUN 访问当前生产的冷浏览器样本为导航到表单 `21,007 ms`，其中 HTML TTFB
+  `1,537 ms`；该值包含维护机网络，不能写成源站处理时间。同机固定 `300 ms` RTT、
+  `4 Mbps`、全新浏览器上下文的可重复 A/B 中，`origin/main` 三轮为
+  `11,219/11,178/11,174 ms`，候选为 `4,729/4,672/4,681 ms`，中位数缩短 `58.1%`，
+  表单前资源数从 `56` 降为 `45`，六轮均无 page error。
+- Console `1,857` 项、Landing `120` 项、部署/路由/保护合同和受保护 Adapter 零漂移
+  检查通过。Playwright 1.55.1 Ubuntu Noble 容器实际执行 `211` 项桌面/移动用例、
+  `73` 项既有 viewport 排除、`0` 失败，未更新任何 PNG；原生 GitHub x86 门禁仍是
+  合并前权威结果。
+
+当前生产仍是单主机、单 Edge 监听 80/443；成功的 `force-recreate` 存在短暂端口交接，
+不能宣称双活零停机。本轮消除的是后端启动等待、失败前重建和最长 90 秒失败回滚造成的
+可避免 502 窗口。若要求发布期间也具备严格零中断，必须另行设计稳定外层负载均衡和至少
+两个 Edge 实例，并更新 Coherent Release、证书、健康探测与回滚 ADR，不能用重试文案
+冒充高可用。
+
 ## Required Smoke Tests
 
 - For releases based on v0.1.184, confirm `schema_migrations` contains both `226_channel_monitor_quota_mode.sql` and `226_add_usage_log_effective_model_indexes_notx.sql`, followed by `227_composite_routes_add_cn_providers.sql`, `228_channel_pricing_multipliers.sql`, and the existing 229–230 product/plugin migrations. It must then contain `231_add_usage_log_native_compaction_v2.sql`, `231_add_usage_log_requested_reasoning_effort.sql`, and `231_user_restrict_public_groups.sql`; migration identity is the complete filename. Verify `usage_logs.native_compaction_v2` is non-null with default `false`, `usage_logs.requested_reasoning_effort` remains nullable for historical rows, and `users.restrict_public_groups` is non-null with default `false`. Also verify the two effective-model indexes are valid and ready, channel multiplier columns are nullable with positive-value constraints, `groups.long_context_pricing_enabled` remains non-null with default `true`, the group auth-cache trigger function still compares both pricing columns, and the Zero One group-and-account long-context billing gate is covered by the release tests.

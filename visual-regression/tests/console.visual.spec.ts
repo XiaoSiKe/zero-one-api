@@ -101,6 +101,73 @@ test.describe('Console public auth contracts', () => {
     await expect(page.getByRole('heading', { name: '重置密码' })).toBeVisible()
   })
 
+  test('login mounts before stalled settings and optional Console adapters settle', async ({ page }) => {
+    let settingsReleased = false
+    let adapterReleased = false
+    let loginChunkRequestedBeforeSettingsRelease = false
+    let adapterRequested = false
+    let releaseSettings!: () => void
+    let releaseAdapter!: () => void
+    const pageErrors: string[] = []
+    const stalledSettings = new Promise<void>((resolve) => {
+      releaseSettings = () => {
+        settingsReleased = true
+        resolve()
+      }
+    })
+    const stalledAdapter = new Promise<void>((resolve) => {
+      releaseAdapter = () => {
+        adapterReleased = true
+        resolve()
+      }
+    })
+
+    page.on('pageerror', (error) => pageErrors.push(error.message))
+    page.on('request', (request) => {
+      const pathname = new URL(request.url()).pathname
+      if (pathname === '/assets/cn-provider-shell-v4/LoginView-BbpS8aW1.js') {
+        loginChunkRequestedBeforeSettingsRelease ||= !settingsReleased
+      }
+      if (pathname === '/assets/cn-provider-admin-v1/cn-provider-admin.js') {
+        adapterRequested = true
+      }
+    })
+
+    await page.route('**/api/v1/settings/public*', async (route) => {
+      const url = new URL(route.request().url())
+      if (url.searchParams.get('scope') === 'logo') {
+        await route.fallback()
+        return
+      }
+      await stalledSettings
+      await route.fallback().catch(() => {})
+    })
+    await page.route('**/assets/cn-provider-admin-v1/cn-provider-admin.js', async (route) => {
+      await stalledAdapter
+      await route.fallback().catch(() => {})
+    })
+
+    await page.goto('http://127.0.0.1:4173/login', { waitUntil: 'commit' })
+
+    try {
+      await expect(page.locator('form')).toBeVisible({ timeout: 4_000 })
+      await expect(page.locator('input[type="email"]')).toBeVisible()
+      await expect(page.locator('input[type="password"]')).toBeVisible()
+      await expect(page.locator('[data-zero-one-login-recovery="true"]')).toBeVisible()
+      expect(settingsReleased).toBe(false)
+      expect(adapterReleased).toBe(false)
+      expect(loginChunkRequestedBeforeSettingsRelease).toBe(true)
+      await expect.poll(() => adapterRequested).toBe(true)
+      expect(pageErrors).toEqual([])
+    } finally {
+      releaseSettings()
+      releaseAdapter()
+    }
+
+    await expect(page.getByRole('button', { name: '登录', exact: true })).toBeEnabled()
+    expect(pageErrors).toEqual([])
+  })
+
   test('registration survives stalled settings and optional Console adapters', async ({ page }) => {
     let enhancementRequested = false
     let registrationVisibleWhenEnhancementStarted = false

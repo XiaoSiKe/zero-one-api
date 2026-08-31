@@ -58,6 +58,10 @@ if [ "$1" = pull ]; then
 	[ "${FAKE_PULL_FAIL_IMAGE:-}" != "$2" ]
 	exit
 fi
+if [ "$1" = run ]; then
+	[ "${FAKE_PREFLIGHT_FAIL:-false}" != true ]
+	exit
+fi
 if [ "$1" = inspect ]; then
 	format=$3
 	container_id=$4
@@ -151,6 +155,7 @@ grep -Fq "EDGE_IMAGE=$new_image" "$success_dir/.env" || fail 'success did not pe
 grep -Fq 'UNCHANGED_SECRET=keep-me' "$success_dir/.env" || fail 'success changed an unrelated env value'
 [ "$(cat "$success_dir/curl.count")" -eq 3 ] || fail 'HTTPS delay was not retried'
 grep -Fq -- '--no-deps --force-recreate edge' "$success_dir/docker.log" || fail 'Edge was not recreated without dependencies'
+grep -Fq -- '--entrypoint caddy' "$success_dir/docker.log" || fail 'new Edge Caddy configuration was not preflighted'
 success_backup=$(find "$success_dir" -name '.env.before-edge-*' -type f | head -n 1)
 [ -n "$success_backup" ] || fail 'success did not create an environment rollback copy'
 [ "$(stat -c '%a' "$success_backup" 2>/dev/null || stat -f '%Lp' "$success_backup")" = 600 ] ||
@@ -185,9 +190,19 @@ if run_switch "$pull_fail_dir" FAKE_PULL_FAIL_IMAGE="$new_image" >"$pull_fail_di
 	fail 'new Edge pull failure unexpectedly succeeded'
 fi
 grep -Fq "EDGE_IMAGE=$old_image" "$pull_fail_dir/.env" || fail 'pull failure changed the environment file'
-grep -Fq 'old Edge restored' "$pull_fail_dir/output" || fail 'pull failure did not report old Edge recovery'
-grep -Fq -- '--no-deps --force-recreate edge' "$pull_fail_dir/docker.log" ||
-	fail 'pull failure did not recreate the old Edge'
+if grep -Fq -- '--no-deps --force-recreate edge' "$pull_fail_dir/docker.log"; then
+	fail 'pull failure recreated the healthy old Edge'
+fi
+
+preflight_fail_dir=$(make_fixture preflight-fail)
+install_fakes "$preflight_fail_dir"
+if run_switch "$preflight_fail_dir" FAKE_PREFLIGHT_FAIL=true >"$preflight_fail_dir/output" 2>&1; then
+	fail 'new Edge preflight failure unexpectedly succeeded'
+fi
+grep -Fq "EDGE_IMAGE=$old_image" "$preflight_fail_dir/.env" || fail 'preflight failure changed the environment file'
+if grep -Fq -- '--no-deps --force-recreate edge' "$preflight_fail_dir/docker.log"; then
+	fail 'preflight failure recreated the healthy old Edge'
+fi
 
 dependency_dir=$(make_fixture dependency-change)
 install_fakes "$dependency_dir"

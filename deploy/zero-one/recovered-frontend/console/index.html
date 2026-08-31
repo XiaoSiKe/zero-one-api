@@ -90,17 +90,70 @@
             preload.href = href
             document.head.append(preload)
           }
+        } else if (window.location.pathname === "/login") {
+          const savedLocale = localStorage.getItem("sub2api_locale")
+          const locale = savedLocale === "en" || savedLocale === "zh"
+            ? savedLocale
+            : navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en"
+          const localeChunk = locale === "zh"
+            ? "/assets/cn-provider-shell-v4/index-BBEtrNVx.js"
+            : "/assets/cn-provider-shell-v4/index-6pKNrg32.js"
+          const loginModulePreloads = [
+            "/assets/zero-one-local-preview-guard-v2.js",
+            "/assets/zero-one-navigation-reconciliation-v1.js?v=3",
+            "/assets/zero-one-console-parity-v1.js?v=6",
+            "/assets/zero-one-header-custom-menu-v1.js?v=24",
+            "/assets/cn-provider-shell-v4/index-9xJBhx8B.js",
+            "/assets/cn-provider-shell-v4/LoginView-BbpS8aW1.js",
+            localeChunk,
+            "/assets/cn-provider-shell-v4/LocaleSwitcher-66qhYdZg.js",
+            "/assets/cn-provider-shell-v4/AppHeader.vue_vue_type_style_index_0_scoped_0aa3fa6b_lang-Cc861dBu.js",
+            "/assets/cn-provider-shell-v4/useClipboard-DuyDJtWH.js",
+            "/assets/cn-provider-shell-v4/AuthLayout.vue_vue_type_script_setup_true_lang-DghqD8r6.js",
+            "/assets/cn-provider-shell-v4/LoginAgreementPrompt-vDSqmtON.js",
+            "/assets/cn-provider-shell-v4/oauthAffiliate-CrlUwkd1.js",
+            "/assets/cn-provider-shell-v4/CaptchaChallenge.vue_vue_type_script_setup_true_lang-DJqyTVvj.js",
+            "/assets/cn-provider-shell-v4/apiError-BcAuv_LF.js",
+            "/assets/zero-one-login-recovery-v2.js?v=3",
+            "/assets/zero-one-floating-panels-v1.js?v=2",
+          ]
+          const loginStylePreloads = [
+            "/assets/cn-provider-shell-v4/AppHeader-p9PUzs49.css",
+            "/assets/cn-provider-shell-v4/AuthLayout-DRKfLxvQ.css",
+            "/assets/cn-provider-shell-v4/LoginAgreementPrompt-DhEkaHwn.css",
+            "/assets/cn-provider-shell-v4/CaptchaChallenge-DXOSsY36.css",
+            "/assets/cn-provider-shell-v4/LoginView-BDvSfXDJ.css",
+            "/assets/cn-provider-shell-v4/LocaleSwitcher-CjvPxOhx.css",
+          ]
+          for (const href of loginModulePreloads) {
+            const preload = document.createElement("link")
+            preload.rel = "modulepreload"
+            preload.crossOrigin = "anonymous"
+            preload.href = href
+            document.head.append(preload)
+          }
+          for (const href of loginStylePreloads) {
+            const preload = document.createElement("link")
+            preload.rel = "preload"
+            preload.as = "style"
+            preload.crossOrigin = "anonymous"
+            preload.href = href
+            document.head.append(preload)
+          }
         }
       } catch {}
     </script>
     <script type="module" nonce="hJm3vqvOCSJtMiorHL9OJA==">
       const isRegistrationEntry = window.location.pathname === "/register"
+      const isLoginEntry = window.location.pathname === "/login"
 
       const applyPublicSettings = (settings) => {
         if (!settings) return
         window.__APP_CONFIG__ = settings
         window.__ZERO_ONE_PUBLIC_SETTINGS__ = settings
       }
+
+      applyPublicSettings(window.__APP_CONFIG__)
 
       const refreshPublicSettings = async (timeoutMs, attempts = 1) => {
         for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -176,6 +229,48 @@
         await import("/assets/zero-one-redeem-actions-v1.js?v=1")
         await import("/assets/zero-one-ccswitch-launch-v1.js?v=1")
         await import("/assets/zero-one-affiliate-admin-v1.js?v=6")
+      } else if (isLoginEntry) {
+        await import("/assets/zero-one-local-preview-guard-v2.js")
+        await import("/assets/zero-one-navigation-reconciliation-v1.js?v=3")
+        let stopWaitingForLogin = () => {}
+        const loginMounted = new Promise((resolve) => {
+          stopWaitingForLogin = window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.register(
+            "login-entry-mounted",
+            () => {
+              if (!document.querySelector("form")) return
+              stopWaitingForLogin()
+              resolve()
+            },
+          )
+        })
+        await import("/assets/zero-one-console-parity-v1.js?v=6")
+        await import("/assets/zero-one-header-custom-menu-v1.js?v=24")
+        await import("/assets/cn-provider-shell-v4/index-9xJBhx8B.js")
+        await import("/assets/zero-one-floating-panels-v1.js?v=2")
+        void loginMounted.then(async () => {
+          await import("/assets/zero-one-login-recovery-v2.js?v=3")
+
+          // Login does not consume route-specific adapters. Load them after the
+          // existing LoginView mounts so a slow optional asset cannot blank Auth.
+          const loadOptionalLoginAdapters = () => {
+            void Promise.allSettled([
+              import("/assets/zero-one-custom-page-security-v1.js"),
+              import("/assets/zero-one-community-qr-v1.js?v=14"),
+              import("/assets/zero-one-settings-unified-save-v1.js"),
+              import("/assets/zero-one-redeem-actions-v1.js?v=1"),
+              import("/assets/zero-one-ccswitch-launch-v1.js?v=1"),
+              import("/assets/zero-one-affiliate-admin-v1.js?v=6"),
+              import("/assets/online-image-v10/online-image.js"),
+              import("/assets/cn-provider-admin-v1/cn-provider-admin.js")
+                .then(() => import("/assets/cn-provider-admin-v2/cn-provider-admin.js")),
+            ])
+          }
+          if ("requestIdleCallback" in window) {
+            window.requestIdleCallback(loadOptionalLoginAdapters, { timeout: 2000 })
+          } else {
+            window.setTimeout(loadOptionalLoginAdapters, 0)
+          }
+        })
       } else {
         await import("/assets/zero-one-local-preview-guard-v2.js")
         await import("/assets/zero-one-custom-page-security-v1.js")
@@ -194,8 +289,10 @@
         await import("/assets/cn-provider-shell-v4/index-9xJBhx8B.js")
       }
 
-      await import("/assets/zero-one-floating-panels-v1.js?v=2")
-      await import("/assets/zero-one-login-recovery-v2.js?v=3")
+      if (!isLoginEntry) {
+        await import("/assets/zero-one-floating-panels-v1.js?v=2")
+        await import("/assets/zero-one-login-recovery-v2.js?v=3")
+      }
     </script>
     <link rel="modulepreload" crossorigin href="/assets/cn-provider-shell-v4/vendor-vue-iKpM1E08.js">
     <link rel="modulepreload" crossorigin href="/assets/cn-provider-shell-v4/vendor-i18n-k5VB7a-q.js">
