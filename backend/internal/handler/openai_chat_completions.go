@@ -273,6 +273,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 			if res == nil {
 				return
 			}
+			stampOpenAIRequestedReasoningEffort(res, c)
 			res = service.OpenAIHTTPUsageResult(c, res)
 			userAgent := c.GetHeader("User-Agent")
 			clientIP := ip.GetClientIP(c)

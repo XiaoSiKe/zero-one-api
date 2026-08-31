@@ -12,8 +12,8 @@ const manifest = validateManifest(
 )
 
 test('validates the approved UI baseline manifest', () => {
-  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-31-r5')
-  assert.equal(manifest.baseline_commit, 'e6a393f9c039052646378e00e806657003ebfd18')
+  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-31-r7')
+  assert.equal(manifest.baseline_commit, '961832c76e288ee15cc3eea8c1cde946d78d7aeb')
   assert.equal(manifest.edge_build.console_source, 'deploy/zero-one/recovered-frontend/console')
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/redeem.behavior.spec.ts'))
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/version-baseline.spec.ts'))

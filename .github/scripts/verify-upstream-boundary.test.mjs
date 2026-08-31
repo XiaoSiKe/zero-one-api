@@ -724,6 +724,10 @@ test('allows named immutable exceptions while adjacent seam files still fail', (
     evaluateChangedPaths(
       [
         'frontend/src/api/admin/settings.ts',
+        'frontend/src/api/admin/accounts.ts',
+        'frontend/src/api/admin/dashboard.ts',
+        'frontend/src/api/admin/usage.ts',
+        'frontend/src/api/usage.ts',
         'frontend/src/api/admin/affiliates.ts',
         'frontend/src/api/__tests__/admin.affiliates.spec.ts',
         'frontend/src/api/__tests__/admin.users.spec.ts',
@@ -773,6 +777,30 @@ test('allows named immutable exceptions while adjacent seam files still fail', (
         name: 'public-capabilities-admin-settings-api',
         owner: 'Public Capabilities',
         path: 'frontend/src/api/admin/settings.ts',
+        immutable_path: 'frontend/src/api/',
+      },
+      {
+        name: 'public-capabilities-admin-accounts-api',
+        owner: 'Public Capabilities',
+        path: 'frontend/src/api/admin/accounts.ts',
+        immutable_path: 'frontend/src/api/',
+      },
+      {
+        name: 'public-capabilities-admin-dashboard-api',
+        owner: 'Public Capabilities',
+        path: 'frontend/src/api/admin/dashboard.ts',
+        immutable_path: 'frontend/src/api/',
+      },
+      {
+        name: 'public-capabilities-admin-usage-api',
+        owner: 'Public Capabilities',
+        path: 'frontend/src/api/admin/usage.ts',
+        immutable_path: 'frontend/src/api/',
+      },
+      {
+        name: 'public-capabilities-user-usage-api',
+        owner: 'Public Capabilities',
+        path: 'frontend/src/api/usage.ts',
         immutable_path: 'frontend/src/api/',
       },
       {

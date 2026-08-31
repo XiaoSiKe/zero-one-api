@@ -102,23 +102,28 @@
         window.__ZERO_ONE_PUBLIC_SETTINGS__ = settings
       }
 
-      const refreshPublicSettings = async (timeoutMs) => {
-        const controller = new AbortController()
-        const timeout = timeoutMs > 0
-          ? window.setTimeout(() => controller.abort(), timeoutMs)
-          : null
-        try {
-          const response = await fetch("/api/v1/settings/public", {
-            cache: "no-store",
-            signal: controller.signal,
-          })
-          if (response.ok) {
-            const payload = await response.json()
-            applyPublicSettings(payload?.data)
+      const refreshPublicSettings = async (timeoutMs, attempts = 1) => {
+        for (let attempt = 0; attempt < attempts; attempt += 1) {
+          const controller = new AbortController()
+          const timeout = timeoutMs > 0
+            ? window.setTimeout(() => controller.abort(), timeoutMs)
+            : null
+          try {
+            const response = await fetch("/api/v1/settings/public", {
+              cache: "no-store",
+              signal: controller.signal,
+            })
+            if (response.ok) {
+              const payload = await response.json()
+              if (payload?.data) {
+                applyPublicSettings(payload?.data)
+                return
+              }
+            }
+          } catch {
+          } finally {
+            if (timeout !== null) window.clearTimeout(timeout)
           }
-        } catch {
-        } finally {
-          if (timeout !== null) window.clearTimeout(timeout)
         }
       }
 
@@ -174,7 +179,7 @@
       } else {
         await import("/assets/zero-one-local-preview-guard-v2.js")
         await import("/assets/zero-one-custom-page-security-v1.js")
-        await refreshPublicSettings(0)
+        await refreshPublicSettings(0, 2)
         await import("/assets/zero-one-navigation-reconciliation-v1.js?v=3")
         await import("/assets/zero-one-console-parity-v1.js?v=6")
         await import("/assets/zero-one-community-qr-v1.js?v=14")
