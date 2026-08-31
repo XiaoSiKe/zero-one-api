@@ -22,6 +22,10 @@ services:
       - no-new-privileges:true
     environment:
       ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL is required}
+    extra_hosts:
+      # Keep the Edge health probe inside its own network namespace while
+      # preserving the canonical TLS SNI and HTTP Host name.
+      - api.01yapi.com:127.0.0.1
     ports:
       - "80:80"
       - "443:443"
@@ -30,7 +34,7 @@ services:
       - ./state/caddy-data:/data
       - ./state/caddy-config:/config
     healthcheck:
-      test: ["CMD", "wget", "-q", "-T", "5", "--no-check-certificate", "--header", "Host: api.01yapi.com", "-O", "/dev/null", "https://127.0.0.1/"]
+      test: ["CMD", "wget", "-q", "-T", "5", "--no-check-certificate", "-O", "/dev/null", "https://api.01yapi.com/"]
       interval: 10s
       timeout: 5s
       retries: 3

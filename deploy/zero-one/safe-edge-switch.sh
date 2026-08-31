@@ -108,6 +108,16 @@ wait_for_https() {
 	return 1
 }
 
+wait_for_edge_health() {
+	edge_container_id=$1
+	deadline=$(( $(date '+%s') + readiness_timeout_seconds ))
+	while [ "$(date '+%s')" -lt "$deadline" ]; do
+		[ "$(container_health "$edge_container_id")" = healthy ] && return 0
+		[ "$(date '+%s')" -lt "$deadline" ] && sleep 1
+	done
+	return 1
+}
+
 preflight_edge_image() {
 	docker run --rm -e ACME_EMAIL=preflight@example.invalid --entrypoint caddy "$new_image" \
 		validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null || return 1
@@ -183,6 +193,7 @@ configured_image=$(docker inspect --format '{{.Config.Image}}' "$edge_id")
 [ "$configured_image" = "$new_image" ] || rollback_and_fail 'new Edge container uses the wrong image'
 verify_dependencies_unchanged || rollback_and_fail 'a non-Edge service changed or became unhealthy'
 wait_for_https || rollback_and_fail 'HTTPS readiness did not pass within 90 seconds'
+wait_for_edge_health "$edge_id" || rollback_and_fail 'new Edge Docker health did not pass within 90 seconds'
 verify_dependencies_unchanged || rollback_and_fail 'a non-Edge service changed after HTTPS readiness'
 switch_in_progress=false
 trap - HUP INT TERM
