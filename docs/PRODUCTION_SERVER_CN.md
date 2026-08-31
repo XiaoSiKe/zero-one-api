@@ -75,7 +75,80 @@ docker compose \
 就声称得到同一镜像。只修改本项目需要的配置，不复制旧账号凭据、不改历史作者，
 也不因托管迁移而轮换 JWT、TOTP、数据库或其他业务密钥。
 
-## 当前生产基线（2026-08-28）
+## 当前生产基线（2026-08-31，v0.1.184）
+
+经所有者授权，已将
+[`PR #12`](https://github.com/XiaoSiKe/zero-one-api/pull/12) 以 merge commit
+合入 `main`，并按 Backend-first 流程完成生产原地升级。PR 12/12 检查、
+[main CI 33393806111](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33393806111)、
+[Security 33393806251](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33393806251)
+及 [Publish 33395180635](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33395180635)
+均成功：
+
+```text
+镜像源码 eae86034f035fa1c5b1ca24674a96d6183467d4f
+Sub2API ghcr.io/xiaosike/zero-one-sub2api@sha256:654942ef4ae2a1ad72efa0f773d3921def6caf52e519c1ce6e3d529725eba8c0
+Edge    ghcr.io/xiaosike/zero-one-edge@sha256:9d9b5fba4a692210a4aa85dcdaa4c8fc8857e7e5e900b8cc313555316f7709e5
+```
+
+两个 OCI index 均包含 amd64/arm64、SBOM 和 provenance；生产 x86_64 主机运行
+amd64 manifest。Sub2API `--version` 为 `0.1.184`，两个运行容器的 OCI revision
+均精确对应上述源码。当前批准 UI 为
+`ui-approved-2026-08-31-r7@961832c76e288ee15cc3eea8c1cde946d78d7aeb`；
+桌面及 390×844 真实生产浏览器验证首页和自定义生图教程，首次打开未出现“页面不存在”，
+iframe 可见、无横向溢出或 Console error。
+
+PostgreSQL `536cb90ab411...` 与 Redis `4e9f6ffcb22c...` 容器和 bind mount 未重建；
+新 Sub2API 为 `f150a927e6e9...`、新 Edge 为 `9aa60032bba1...`。业务环境字段
+（排除两个镜像引用）的 SHA-256 前后均为
+`659b4544ab65505d7983b1c983b3be3050bc43c06434721249f7a26c956c92a3`。
+Edge 通过仓库 `safe-edge-switch.sh` 唯一入口切换并通过本机 HTTPS readiness。
+
+迁移账本从 `274` 增至 `277`，按完整文件名新增：
+
+- `231_add_usage_log_native_compaction_v2.sql`
+- `231_add_usage_log_requested_reasoning_effort.sql`
+- `231_user_restrict_public_groups.sql`
+
+三项迁移先在新备份的隔离恢复库中由目标 Backend 的真实迁移器演练；迁移前后核心计数
+和全部财务聚合逐项一致。生产最终快照仍为 100 张表、197 个用户、210 个 API Key、
+1,186 个兑换码、193 条邀请关系、87,307 条 usage log、0 条支付订单、0 个无效索引。
+切换窗口新增 5 条正常用量，余额合计减少 `0.12626898`，`usage_actual_cost` 同额增加，
+两者精确对消；累计充值、Key 配额、冻结余额和返利聚合均未变化。
+
+本次恢复点：
+
+```text
+服务器 /srv/zero-one/.release-backups/20260831T125427Z-pre-v184-ad7646d65a.7ATMMy
+维护机 /Users/yangzi/Documents/关于实践/关于项目/零一中转站-production-backups/20260831T125427Z-pre-v184-ad7646d65a.7ATMMy
+```
+
+恢复点分别加密 PostgreSQL custom dump、Redis RDB、部署状态、旧源码和旧产品镜像；
+生产端/维护机端 SHA-256 均通过。维护机在无网络、无发布端口的 PostgreSQL 18 容器中
+执行 `pg_restore --exit-on-error` 成功，再用目标 Backend 演练 `274 → 277`；一次性容器、
+卷、网络和解密明文均已清理。四轮发布后观察均为 HTTPS 200、版本 0.1.184、容器重启
+次数 0、迁移 277、无效索引 0。正式 off-site 挂载和日备份任务仍未配置，不能把本次
+异机恢复点写成已完成自动日备份。
+
+### 本次直接回滚基线
+
+```text
+源码    ad7646d65a1a029d6e3e1f6aa9e198ea685d8b91
+Sub2API ghcr.io/xiaosike/zero-one-sub2api@sha256:536322b386c3e786b02ad2aeec105fb189f152696de8eac081d5b74f38789ca4
+Edge    ghcr.io/xiaosike/zero-one-edge@sha256:e47b9936dc538dc0e37425858211afc9da2658fb918c03cf4b65509d33d2d3b5
+```
+
+受限环境回滚副本为
+`deploy/zero-one/.env.before-backend-v184-20260831T132418Z.ws8CWR` 和
+`deploy/zero-one/.env.before-edge-20260831T132545Z.j2Wuq7`。三项 `231` 都是兼容的
+加列迁移；普通应用回滚保留 `277` 条账本，不恢复 PostgreSQL。只有证明数据库损坏且
+进入独立维护窗口后，才允许使用上述已验证恢复点执行数据库恢复。
+
+没有借用客户 Key 执行真实计费模型、SSE/WebSocket 101、在线生图或兑换码写入探针；
+匿名鉴权、路由、固定浏览器和完整离线/集成契约均已验证，缺少专用测试凭据的项目不得
+写成生产真实模型请求成功。
+
+## 历史生产基线（2026-08-28）
 
 同一源码的双镜像由
 [Zero One Publish 33172188926](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33172188926)
@@ -140,7 +213,7 @@ JSON 401、兼容域名 GET/HEAD/POST 的不可缓存 308 与完整 URI，以及
 本次加密异机恢复点不等于自动日备份已启用；需要所有者提供/批准异机存储目标后，
 再配置挂载、sentinel、公钥及受限定时任务，不能伪造挂载条件绕过 `backup-postgres.sh`。
 
-### 本次直接回滚基线
+### 2026-08-28 托管迁移前回滚基线
 
 切换前实际运行的是下述 v0.1.183 加固版，而不是更早文档中的首次部署：
 
@@ -237,7 +310,10 @@ Frontend、Landing、恢复资源及生产 Compose/Caddy/Dockerfile 等运行输
 6. 按 [`OPERATIONS.md` 的 Safe Edge switch](OPERATIONS.md#safe-edge-switch)
    唯一流程切换 Edge，随后再做兼容 308、SSE 与 WebSocket smoke test。
 
-迁移以 `schema_migrations.filename` 的完整文件名记账，不只看数字前缀。v0.1.181 会分别执行 `229_affiliate_manual_binding.sql`、`229_plugins.sql` 和 `230_plugin_artifacts.sql`；前两个同为 `229_` 不构成冲突。三项迁移均应先在生产备份的隔离恢复库上验证。
+迁移以 `schema_migrations.filename` 的完整文件名记账，不只看数字前缀。v0.1.184
+保留 `229_affiliate_manual_binding.sql`、`229_plugins.sql` 和
+`230_plugin_artifacts.sql`，并新增三个不同完整文件名的 `231_` 迁移；数字前缀相同
+不构成冲突。所有待执行迁移均应先在生产备份的隔离恢复库上由目标 Backend 验证。
 
 ## 发布后检查
 
@@ -261,9 +337,9 @@ curl -sS -o /dev/null -D - https://app.01yapi.com/dashboard
 
 ## 回滚
 
-应用回滚优先使用上文记录的直接上一组 Sub2API/Edge 镜像摘要并重建对应容器，默认不回滚
-数据库。本次两个 v0.1.183 版本之间没有 SQL 变化；若另行授权回到更早 v0.1.182，仍必须保持当前 `274` 条迁移
-账本不变。只有在隔离验证证明数据库本身损坏、且已进入维护窗口时，才允许从
+应用回滚优先使用上文 v0.1.184 直接回滚基线的 Sub2API/Edge 镜像摘要并重建对应
+容器，默认不回滚数据库。三个 `231_` 迁移只增加兼容列，应用回滚仍保持当前 `277`
+条迁移账本不变。只有在隔离验证证明数据库本身损坏、且已进入维护窗口时，才允许从
 已验证备份恢复数据库。
 
 回滚后重新执行全部路由、登录、API 鉴权和核心数据计数检查。任何数据库恢复都是独立的高风险操作，不能和普通容器回滚混在一起执行。
