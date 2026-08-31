@@ -379,9 +379,13 @@
     "docs/adr/0003-public-capabilities-and-coherent-release.md",
     "docs/adr/0005-canonical-product-domain.md",
     "frontend/src/api/__tests__/admin.redeem.spec.ts",
+    "frontend/src/api/admin/accounts.ts",
+    "frontend/src/api/admin/dashboard.ts",
     "frontend/src/api/admin/channels.ts",
     "frontend/src/api/admin/redeem.ts",
     "frontend/src/api/admin/settings.ts",
+    "frontend/src/api/admin/usage.ts",
+    "frontend/src/api/usage.ts",
     "frontend/src/types/index.ts",
     "tools/check_pnpm_audit_exceptions.py",
     "visual-regression/.gitignore",
@@ -861,11 +865,15 @@
         "docs/agents/triage-labels.md",
         "frontend/src/api/__tests__/admin.affiliates.spec.ts",
         "frontend/src/api/__tests__/admin.users.spec.ts",
+        "frontend/src/api/admin/accounts.ts",
+        "frontend/src/api/admin/dashboard.ts",
         "frontend/src/api/admin/settings.ts",
         "frontend/src/api/admin/affiliates.ts",
         "frontend/src/api/admin/users.ts",
         "frontend/src/api/__tests__/admin.redeem.spec.ts",
         "frontend/src/api/admin/redeem.ts",
+        "frontend/src/api/admin/usage.ts",
+        "frontend/src/api/usage.ts",
         "frontend/src/i18n/locales/en/admin/resources.ts",
         "frontend/src/i18n/locales/en/admin/settings.ts",
         "frontend/src/i18n/locales/en/common.ts",
@@ -1112,6 +1120,30 @@
       "name": "public-capabilities-admin-settings-api",
       "owner": "Public Capabilities",
       "path": "frontend/src/api/admin/settings.ts",
+      "immutable_path": "frontend/src/api/"
+    },
+    {
+      "name": "public-capabilities-admin-accounts-api",
+      "owner": "Public Capabilities",
+      "path": "frontend/src/api/admin/accounts.ts",
+      "immutable_path": "frontend/src/api/"
+    },
+    {
+      "name": "public-capabilities-admin-dashboard-api",
+      "owner": "Public Capabilities",
+      "path": "frontend/src/api/admin/dashboard.ts",
+      "immutable_path": "frontend/src/api/"
+    },
+    {
+      "name": "public-capabilities-admin-usage-api",
+      "owner": "Public Capabilities",
+      "path": "frontend/src/api/admin/usage.ts",
+      "immutable_path": "frontend/src/api/"
+    },
+    {
+      "name": "public-capabilities-user-usage-api",
+      "owner": "Public Capabilities",
+      "path": "frontend/src/api/usage.ts",
       "immutable_path": "frontend/src/api/"
     },
     {
