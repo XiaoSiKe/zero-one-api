@@ -12,11 +12,15 @@ const manifest = validateManifest(
 )
 
 test('validates the approved UI baseline manifest', () => {
-  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-31-r1')
-  assert.equal(manifest.baseline_commit, '5a8eac80ec9fd0dd5a45358d8d68a82dbe88c364')
+  assert.equal(manifest.baseline_ref, 'ui-approved-2026-08-31-r2')
+  assert.equal(manifest.baseline_commit, '9959d1965f0ca7620eed78a1b54bcf6b18703876')
   assert.equal(manifest.edge_build.console_source, 'deploy/zero-one/recovered-frontend/console')
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/redeem.behavior.spec.ts'))
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/version-baseline.spec.ts'))
+  const auth = manifest.protected_surfaces.find(({ name }) => name === 'auth')
+  assert.ok(auth.paths.includes('visual-regression/tests/__screenshots__/chromium-desktop/console-register.png'))
+  assert.ok(auth.paths.includes('visual-regression/tests/__screenshots__/chromium-mobile/console-register.png'))
+  assert.ok(auth.paths.includes('visual-regression/tests/console.visual.spec.ts'))
   const redeem = manifest.protected_surfaces.find(({ name }) => name === 'redeem-benefits-mystery-box')
   assert.ok(redeem.paths.includes('frontend/src/api/redeem.ts'))
   assert.ok(redeem.paths.includes('visual-regression/tests/redeem.behavior.spec.ts'))
