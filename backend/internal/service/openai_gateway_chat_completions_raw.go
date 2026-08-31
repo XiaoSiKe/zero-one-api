@@ -400,11 +400,12 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 	clientAborted := clientDisconnected ||
 		errors.Is(scanErr, context.Canceled) ||
 		errors.Is(scanErr, context.DeadlineExceeded)
+	idleTimedOut := errors.Is(scanErr, errAnthropicNativeStreamIdle)
 
 	// 上游在任何终止信号之前结束：连接被 reset（scanErr != nil）或干净 EOF。
 	// 两者都不能再记成功——此前统一返回 nil error，把上游截断伪装成
 	// `HTTP 200 + usage 0/0`，客户端收到半截回答且 Ops 侧完全无感。
-	if !clientAborted && terminal.IsTruncated(clientOutputStarted) {
+	if !clientAborted && !idleTimedOut && terminal.IsTruncated(clientOutputStarted) {
 		cause := scanErr
 		if cause == nil {
 			cause = ErrOpenAIUpstreamStreamTruncated
@@ -456,6 +457,9 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 		if err := flushHTTPStream(c, visibleOutputComplete); err != nil {
 			clientDisconnected = true
 		}
+	}
+	if clientAborted {
+		scanErr = nil
 	}
 	if scanErr != nil {
 		scanErr = fmt.Errorf("stream usage incomplete: %w", scanErr)
