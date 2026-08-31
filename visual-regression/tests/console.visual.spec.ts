@@ -323,6 +323,7 @@ test.describe('Console public auth contracts', () => {
     const stalledAdapter = new Promise<void>((resolve) => {
       releaseAdapter = resolve
     })
+    let headerAdapterVersion = ''
     const consoleErrors: string[] = []
     const pageErrors: string[] = []
 
@@ -330,6 +331,12 @@ test.describe('Console public auth contracts', () => {
       if (message.type() === 'error') consoleErrors.push(message.text())
     })
     page.on('pageerror', (error) => pageErrors.push(error.message))
+    page.on('request', (request) => {
+      const url = new URL(request.url())
+      if (url.pathname === '/assets/zero-one-header-custom-menu-v1.js') {
+        headerAdapterVersion = url.searchParams.get('v') || ''
+      }
+    })
     await page.route('**/assets/zero-one-community-qr-v1.js*', async (route) => {
       adapterRequested = true
       await stalledAdapter
@@ -345,6 +352,7 @@ test.describe('Console public auth contracts', () => {
       await expect(page).toHaveURL('http://127.0.0.1:4173/admin/dashboard')
       await expect(page.locator('main').getByText('API 密钥', { exact: true }).first()).toBeVisible()
       await expect.poll(() => adapterRequested).toBe(true)
+      await expect.poll(() => headerAdapterVersion).toBe('25')
       await page.waitForTimeout(250)
       expect(consoleErrors).toEqual([])
       expect(pageErrors).toEqual([])
@@ -3230,7 +3238,8 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=4')
     expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=14')
     expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=6')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=24')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=25')
+    expect(html).not.toContain('/assets/zero-one-header-custom-menu-v1.js?v=24')
     expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=7')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.js?v=1')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.css?v=1')

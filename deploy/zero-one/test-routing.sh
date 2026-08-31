@@ -98,7 +98,8 @@ require "$recovered_console_index" 'await import("/assets/zero-one-console-parit
 require "$recovered_console_index" 'href="/assets/zero-one-console-parity-v1.css?v=4"'
 require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=14")'
 require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=6"'
-require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=24")'
+require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=25")'
+forbid "$recovered_console_index" '/assets/zero-one-header-custom-menu-v1.js?v=24'
 require "$recovered_header_custom_menu" "style.setProperty('display', 'none', 'important')"
 require "$recovered_console_index" 'window.__ZERO_ONE_PUBLIC_SETTINGS__ = settings'
 require "$recovered_console_index" 'applyPublicSettings(payload?.data)'
