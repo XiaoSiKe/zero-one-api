@@ -2328,6 +2328,35 @@ test.describe('Console header custom iframe menu contracts', () => {
     await expect(frame).toHaveCSS('visibility', 'visible')
   })
 
+  test('recovers a regular-user custom page after the startup public settings request fails', async ({ page }) => {
+    const item = {
+      id: 'image-tutorial', label: '生图教程', icon_svg: '',
+      url: 'https://embed.01yapi.test/image-tutorial',
+      visibility: 'all' as const, placement: 'sidebar' as const, sort_order: 0,
+    }
+    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [item] })
+    let publicSettingsRequests = 0
+    await page.route('**/api/v1/settings/public', async (route) => {
+      publicSettingsRequests += 1
+      if (publicSettingsRequests === 1) {
+        await route.fulfill({ status: 503, contentType: 'application/json', body: '{"message":"unavailable"}' })
+        return
+      }
+      await route.fallback()
+    })
+    await page.route('https://embed.01yapi.test/image-tutorial*', (route) => route.fulfill({
+      contentType: 'text/html',
+      body: '<!doctype html><html><body>image tutorial ready</body></html>',
+    }))
+
+    await page.goto('http://127.0.0.1:4173/custom/image-tutorial')
+
+    await expect(page.getByTestId('sidebar-custom-menu-image-tutorial')).toBeVisible()
+    await expect(page.frameLocator('main iframe.custom-embed-frame').getByText('image tutorial ready'))
+      .toBeVisible()
+    expect(publicSettingsRequests).toBeGreaterThanOrEqual(2)
+  })
+
   test('loads administrator menus with one narrow settings request even when payment config is stalled', async ({ page }) => {
     const privatePage = {
       id: 'private-tool', label: '专用管理工具', icon_svg: '',
