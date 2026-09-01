@@ -75,7 +75,88 @@ docker compose \
 就声称得到同一镜像。只修改本项目需要的配置，不复制旧账号凭据、不改历史作者，
 也不因托管迁移而轮换 JWT、TOTP、数据库或其他业务密钥。
 
-## 当前生产基线（2026-08-31，v0.1.184）
+## 当前生产基线（2026-09-01，v0.1.185）
+
+经所有者授权，已将
+[`PR #18`](https://github.com/XiaoSiKe/zero-one-api/pull/18) 以 merge commit
+`9cd6ee29b9a88ef75e361c5dc78cbbff35413448` 合入 `main`，并按
+Backend-first 流程完成生产原地升级。[main CI 33475553190](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33475553190)、
+[Security 33475553171](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33475553171)
+和 [Publish 33476674634](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33476674634)
+均为同一精确源码 SHA 且成功：
+
+```text
+镜像源码 9cd6ee29b9a88ef75e361c5dc78cbbff35413448
+Sub2API ghcr.io/xiaosike/zero-one-sub2api@sha256:106d3ec27ce2123bb5d4fbe69b572ccc7a56adca933becae56fce70b4f441c49
+Edge    ghcr.io/xiaosike/zero-one-edge@sha256:75e94ee5c34e2875c13c273dd7a61bc02033a380517b7b1edb5b9cf42160ed32
+```
+
+两个 OCI index 均包含 amd64/arm64、SBOM 和 provenance；生产 x86_64 主机运行
+amd64 manifest。Sub2API 实际报告 `0.1.185` 和上述完整 commit，两张运行镜像的
+OCI revision/source 标签均精确匹配。当前批准 UI 为
+`ui-approved-2026-09-01-r12@1242dbfcb2f8226015e3a070ff734ac70f502419`；
+r12 只校准共享侧栏的 v0.1.185 版本徽标矩形，未改变矩形外像素或 Console 实现。
+
+本版本没有新增数据库迁移。生产保持 100 张 public 表和 277 条完整文件名迁移账本；
+账本 SHA-256 为 `bb4bd178161fcd5f423d72f1cc2bed540983ebb7c23f069dad7095b44af0b7c3`，
+必需的 229–231 迁移、字段和约束均存在，无效或未 ready 索引为 0。升级前恢复点为：
+
+```text
+服务器 /srv/zero-one/.release-backups/20260901T061807Z-pre-v185-5e83b3e0d2
+维护机 /Users/yangzi/Documents/关于实践/关于项目/零一中转站-production-backups/20260901T061807Z-pre-v185-5e83b3e0d2
+```
+
+恢复点以 age 分别加密 PostgreSQL custom dump、Redis RDB、部署/证书/应用状态、旧源码
+和旧双镜像；服务器与维护机 SHA-256 全部通过，未在服务器落地数据库明文。维护机使用
+PostgreSQL 18 的内部 Docker 网络和无发布端口临时卷实际执行 `pg_restore --exit-on-error`，
+恢复出 100 张表和 277 条迁移。目标 v0.1.185 Backend 随后在该隔离恢复库上健康启动；
+全部核心/财务聚合、非运行时表的逐表行数与双内容指纹、非运行时序列及迁移账本保持一致。
+Provider Account 与 Channel Monitor 行数不变，启动产生的状态刷新只命中已列明的运行时列；
+Ops、Dashboard、scheduler 与监控历史的运行态写入单独记录，临时容器、卷、网络和解密文件
+已清理。
+
+生产切换前快照为 206 个 User、17 个 Provider Account、218 个 API Key、1,189 个
+Redeem Code、202 个 Affiliate 档案（其中 14 条有效 inviter 关系）、8 个 Channel Monitor、
+87,986 条 usage log 和 0 个支付订单。Backend 切换和 Edge 最终验收时这些计数及全部财务
+聚合均未变化。三轮稳定性观察的最后一轮为 87,992 条 usage log；新增的正常使用使余额
+减少 `0.02036520`，`usage_actual_cost` 同额增加，三轮
+`balance + usage_actual_cost` 均为 `4424.8258920991`。累计充值、Key 配额、冻结余额、
+Affiliate 历史返利和订单聚合没有异常下降。
+
+PostgreSQL `536cb90ab411...`、Redis `4e9f6ffcb22c...` 在升级中未重建；新 Sub2API 为
+`a939c8ea39ef...`，新 Edge 为 `4db58d74fa1f...`，四个容器最终均 healthy、重启次数 0。
+业务环境字段（排除双镜像引用）的 SHA-256 前后均为
+`659b4544ab65505d7983b1c983b3be3050bc43c06434721249f7a26c956c92a3`。
+Edge 只通过仓库 `safe-edge-switch.sh` 切换，并通过真实 HTTPS 与 Docker health。
+
+22 项匿名线上检查覆盖规范域名 GET/HEAD、Landing、登录/注册、主要 Console 路由、
+Public Settings/Announcement、无 Key 的 Models/Messages/Responses JSON 401、受保护静态资产、
+Compatibility Domain GET/HEAD/POST 的不可缓存 308，以及 apex/www 的路径与查询保留 308。
+维护机 `agent-browser` 另行确认 Landing、登录和注册真实渲染、表单完整且 page errors 为 0。
+`01yapi-bridge-client.service` 和容器内 `superapi-direct:18181/health` 均正常。
+
+本次没有借用客户 API Key 执行真实计费模型、SSE/WebSocket 101、在线生图、Redeem Code
+核销或管理员写入探针；这些缺少专用测试凭据的项目不写成已执行成功。仓库完整离线、集成、
+固定 Linux 浏览器和路由门禁已通过，线上匿名路由证明 API 请求没有落到 HTML。
+
+### 本次直接回滚基线
+
+```text
+源码    5e83b3e0d2d8bc72178102c7395fa416cd85f4ff
+Sub2API ghcr.io/xiaosike/zero-one-sub2api@sha256:19e695453305edc4a234e2d5e12b720cf93c9066cf9a14cd9c3d0f5bc8527f6d
+Edge    ghcr.io/xiaosike/zero-one-edge@sha256:48a48d2fbdb8ee72ebfa7042f0d9da20e4797d19ea67813fc97edb3e61f14e32
+```
+
+受限环境回滚副本为
+`.release-backups/20260901T061807Z-pre-v185-5e83b3e0d2/env.before-backend-v185-20260901T065109Z.wspxyT`
+和 `deploy/zero-one/.env.before-edge-20260901T065227Z.FVWgCZ`，权限均为 `0600`。
+v0.1.185 没有新增迁移，普通应用回滚只恢复旧源码和双镜像，保留 277 条账本；只有隔离验证
+证明数据库损坏且进入独立维护窗口后，才允许使用上述恢复点恢复 PostgreSQL。
+
+正式 off-site 挂载和自动日备份仍未配置；本次受限服务器恢复点与维护机加密副本不能写成
+已经启用的自动备份制度。
+
+## 历史生产基线（2026-08-31，v0.1.184）
 
 经所有者授权，已将
 [`PR #12`](https://github.com/XiaoSiKe/zero-one-api/pull/12) 以 merge commit
