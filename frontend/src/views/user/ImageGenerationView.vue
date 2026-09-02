@@ -261,7 +261,7 @@
                   {{ t('imageGeneration.results.revisedPrompt') }}: {{ image.revisedPrompt }}
                 </p>
                 <div class="grid grid-cols-2 gap-2">
-                  <button type="button" class="btn btn-secondary btn-specular btn-sm" data-online-image-action @click="downloadImage(image)">
+                  <button type="button" class="btn btn-secondary btn-specular btn-sm" data-testid="result-download" data-online-image-action @click="downloadImage(image)">
                     <Icon name="download" size="sm" />
                     {{ t('imageGeneration.results.download') }}
                   </button>
@@ -317,7 +317,7 @@
                 <div v-for="image in entry.images" :key="image.id" class="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-800">
                   <img :src="image.src" :alt="image.prompt" class="aspect-square w-full object-contain" loading="lazy" />
                   <div class="grid grid-cols-2 gap-2 border-t border-gray-100 p-2 dark:border-dark-700">
-                    <button type="button" class="btn btn-secondary btn-specular btn-sm px-2" data-online-image-action :aria-label="t('imageGeneration.history.download')" @click="downloadImage(image)">
+                    <button type="button" class="btn btn-secondary btn-specular btn-sm px-2" data-testid="history-download" data-online-image-action :aria-label="t('imageGeneration.history.download')" @click="downloadImage(image)">
                       <Icon name="download" size="sm" />
                     </button>
                     <button type="button" class="btn btn-secondary btn-specular btn-sm px-2" data-online-image-action :aria-label="t('imageGeneration.history.open')" @click="openImage(image)">
@@ -418,6 +418,7 @@ import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { useAdminSettingsStore } from '@/stores/adminSettings'
 import { extractApiErrorMessage } from '@/utils/apiError'
+import { isMobileDevice } from '@/utils/device'
 import { resolveImageTutorialPath } from '@/utils/image-tutorial'
 
 interface ReferenceImage {
@@ -527,7 +528,7 @@ const qualityOptions: SelectOption[] = [
   { label: 'Medium', value: 'medium' }, { label: 'High', value: 'high' },
 ]
 const responseFormatOptions: SelectOption[] = [
-  { label: 'Base64', value: 'b64_json' }, { label: 'URL', value: 'url' },
+  { label: 'Base64', value: 'b64_json' },
 ]
 const modelHint = computed(() => {
   if (modelsError.value) return modelsError.value
@@ -750,7 +751,26 @@ async function submitGeneration() {
 }
 
 async function downloadImage(image: PreviewImage) {
+  if (/MicroMessenger/i.test(window.navigator.userAgent)) {
+    openImage(image)
+    appStore.showInfo(t('imageGeneration.messages.mobileSaveHint'))
+    return
+  }
   try {
+    if (isMobileDevice() && typeof navigator.share === 'function') {
+      const response = await fetch(image.src)
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const file = new File([await response.blob()], image.downloadName, { type: image.mimeType })
+      if (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file] })
+        } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') return
+          throw error
+        }
+        return
+      }
+    }
     if (image.src.startsWith('data:')) {
       const anchor = document.createElement('a')
       anchor.href = image.src
@@ -769,8 +789,13 @@ async function downloadImage(image: PreviewImage) {
     document.body.append(anchor)
     anchor.click()
     anchor.remove()
-    URL.revokeObjectURL(objectUrl)
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
   } catch (error) {
+    if (isMobileDevice()) {
+      openImage(image)
+      appStore.showInfo(t('imageGeneration.messages.mobileSaveHint'))
+      return
+    }
     appStore.showError(extractApiErrorMessage(error, t('imageGeneration.messages.downloadFailed')))
   }
 }

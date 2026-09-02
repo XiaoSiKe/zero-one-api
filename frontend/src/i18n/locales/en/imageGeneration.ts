@@ -37,6 +37,7 @@ export default {
       loadModelsFailed: 'Failed to load models for this key.', generateFailed: 'Image generation failed.',
       generated: 'Images generated.', noImages: 'The API returned no previewable images.',
       downloadFailed: 'Image download failed.', historyLoadFailed: 'Failed to load local history.',
+      mobileSaveHint: 'The image is open. Touch and hold it to save.',
       historySaveFailed: 'The image was generated, but local history could not be saved.',
       historyClearFailed: 'Failed to clear local history.', referenceImagesLimit: 'You can select up to four reference images.',
       referenceImageType: 'Reference images must be PNG, JPG, or WEBP.',

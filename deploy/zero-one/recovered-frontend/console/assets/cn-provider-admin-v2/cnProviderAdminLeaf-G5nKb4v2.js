@@ -8621,8 +8621,8 @@ if (__INTLIFY_PROD_DEVTOOLS__) {
   e.__INTLIFY__ = !0, B0(e.__INTLIFY_DEVTOOLS_GLOBAL_HOOK__);
 }
 const Kp = "sub2api_locale", Si = "en", qp = {
-  en: () => import("./index-Cd_2Lby2.js"),
-  zh: () => import("./index-DIg8WdAu.js")
+  en: () => import("./index-4Jkzw5bs.js"),
+  zh: () => import("./index-B9oV2R7j.js")
 };
 function zu(e) {
   return e === "en" || e === "zh";
@@ -12132,10 +12132,10 @@ const h2 = /* @__PURE__ */ mu("auth", () => {
     clearPendingAuthSession: H
   };
 }), m2 = {
-  channels: () => import("./ChannelsView-QXEcpt7W.js"),
-  "channel-monitor": () => import("./ChannelMonitorView-D471SbKl.js"),
-  ops: () => import("./OpsDashboard-T7IIvkZ1.js"),
-  subscriptions: () => import("./SubscriptionsView-7WDDmeCz.js")
+  channels: () => import("./ChannelsView-BmaP2bSv.js"),
+  "channel-monitor": () => import("./ChannelMonitorView-DOAYUR3L.js"),
+  ops: () => import("./OpsDashboard-TsdrU5MH.js"),
+  subscriptions: () => import("./SubscriptionsView-CkASEmNV.js")
 };
 function p2() {
   var t, n, r;

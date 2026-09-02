@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -425,6 +426,30 @@ func TestCollectOpenAIImagePointers_RecognizesDirectAssets(t *testing.T) {
 	require.True(t, sawBase64)
 	require.True(t, sawURL)
 	require.True(t, sawPointer)
+}
+
+func TestNormalizeOpenAIImagesB64JSON_ConvertsRemoteURL(t *testing.T) {
+	body := []byte(`{
+		"created":1710000007,
+		"data":[{"url":"https://files.example.com/image.png","revised_prompt":"draw a cat"}],
+		"usage":{"input_tokens":3,"output_tokens":4}
+	}`)
+	png := []byte("\x89PNG\r\n\x1a\nimage")
+
+	got, err := normalizeOpenAIImagesB64JSON(
+		context.Background(),
+		body,
+		func(_ context.Context, rawURL string) ([]byte, string, error) {
+			require.Equal(t, "https://files.example.com/image.png", rawURL)
+			return png, "image/png", nil
+		},
+	)
+	require.NoError(t, err)
+	require.Equal(t, base64.StdEncoding.EncodeToString(png), gjson.GetBytes(got, "data.0.b64_json").String())
+	require.Equal(t, "image/png", gjson.GetBytes(got, "data.0.mime_type").String())
+	require.False(t, gjson.GetBytes(got, "data.0.url").Exists())
+	require.Equal(t, "draw a cat", gjson.GetBytes(got, "data.0.revised_prompt").String())
+	require.Equal(t, int64(3), gjson.GetBytes(got, "usage.input_tokens").Int())
 }
 
 func TestResolveOpenAIImageBytes_PrefersInlineBase64(t *testing.T) {
