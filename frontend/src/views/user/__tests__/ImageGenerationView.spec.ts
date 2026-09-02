@@ -8,6 +8,7 @@ const harness = vi.hoisted(() => ({
   allowedImageKeys: null as ReturnType<typeof ref<ApiKey[]>> | null,
   refreshImageGenerationAccess: vi.fn(),
   listAccessibleImageModels: vi.fn(),
+  generateImage: vi.fn(),
   showError: vi.fn(),
   showInfo: vi.fn(),
   showSuccess: vi.fn(),
@@ -30,7 +31,7 @@ vi.mock('@/composables/useImageGenerationAccess', async () => {
 })
 
 vi.mock('@/features/online-image/api', () => ({
-  generateImage: vi.fn(),
+  generateImage: harness.generateImage,
   listAccessibleImageModels: harness.listAccessibleImageModels,
 }))
 
@@ -77,10 +78,13 @@ const messages: Record<string, string> = {
   'imageGeneration.results.title': '生成结果',
   'imageGeneration.results.empty': '还没有生成图片',
   'imageGeneration.results.emptyHint': '填写提示词后点击开始生成。',
+  'imageGeneration.results.download': '下载',
+  'imageGeneration.results.open': '打开',
   'imageGeneration.history.title': '历史记录',
   'imageGeneration.history.hint': '记录保存在当前浏览器，可随时下载。',
   'imageGeneration.history.clear': '清空历史',
   'imageGeneration.history.empty': '暂无历史记录',
+  'imageGeneration.messages.mobileSaveHint': '已打开图片，请长按图片保存。',
   'common.selectOption': '请选择',
   'common.loading': '加载中',
   'common.noOptionsFound': '无可用选项',
@@ -229,6 +233,7 @@ describe('ImageGenerationView', () => {
     ])
     harness.refreshImageGenerationAccess.mockReset().mockResolvedValue(undefined)
     harness.listAccessibleImageModels.mockReset().mockResolvedValue(['gpt-image-2', 'gpt-image-1.5'])
+    harness.generateImage.mockReset()
     harness.showError.mockReset()
     harness.showInfo.mockReset()
     harness.showSuccess.mockReset()
@@ -300,6 +305,83 @@ describe('ImageGenerationView', () => {
       'sk-second',
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     )
+  })
+
+  it('keeps Console generation on the browser-stable Base64 response format', async () => {
+    harness.generateImage.mockResolvedValue({
+      model: 'gpt-image-2',
+      data: [{ b64_json: 'aW1hZ2U=' }],
+    })
+    const wrapper = await mountView()
+
+    expect(wrapper.get('[data-testid="response-format-select"]').attributes('data-options'))
+      .toBe('[{"label":"Base64","value":"b64_json"}]')
+    await wrapper.get('textarea').setValue('draw a cat')
+    await wrapper.get('[data-testid="start-generation"]').trigger('click')
+    await flushPromises()
+
+    expect(harness.generateImage).toHaveBeenCalledWith(
+      'sk-first',
+      expect.objectContaining({ response_format: 'b64_json' }),
+    )
+  })
+
+  it('opens the image for long-press saving inside WeChat instead of fetching it', async () => {
+    harness.generateImage.mockResolvedValue({
+      model: 'gpt-image-2',
+      data: [{ url: 'https://files.example.com/image.png' }],
+    })
+    vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 MicroMessenger/8.0')
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    const fetch = vi.spyOn(globalThis, 'fetch')
+    const wrapper = await mountView()
+
+    await wrapper.get('textarea').setValue('draw a cat')
+    await wrapper.get('[data-testid="start-generation"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-testid="result-download"]').trigger('click')
+
+    expect(fetch).not.toHaveBeenCalled()
+    expect(open).toHaveBeenCalledWith('https://files.example.com/image.png', '_blank', 'noopener,noreferrer')
+    expect(harness.showInfo).toHaveBeenCalledWith('已打开图片，请长按图片保存。')
+    open.mockRestore()
+    fetch.mockRestore()
+  })
+
+  it('uses the native file share sheet on capable mobile browsers', async () => {
+    harness.generateImage.mockResolvedValue({
+      model: 'gpt-image-2',
+      data: [{ b64_json: 'aW1hZ2U=', mime_type: 'image/png' }],
+    })
+    vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)')
+    const share = vi.fn().mockResolvedValue(undefined)
+    const originalShare = Object.getOwnPropertyDescriptor(window.navigator, 'share')
+    const originalCanShare = Object.getOwnPropertyDescriptor(window.navigator, 'canShare')
+    Object.defineProperty(window.navigator, 'share', { configurable: true, value: share })
+    Object.defineProperty(window.navigator, 'canShare', { configurable: true, value: () => true })
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      blob: async () => new Blob(['image'], { type: 'image/png' }),
+    } as Response)
+
+    try {
+      const wrapper = await mountView()
+      await wrapper.get('textarea').setValue('draw a cat')
+      await wrapper.get('[data-testid="start-generation"]').trigger('click')
+      await flushPromises()
+      await wrapper.get('[data-testid="result-download"]').trigger('click')
+      await flushPromises()
+
+      expect(share).toHaveBeenCalledTimes(1)
+      expect(share.mock.calls[0][0].files).toHaveLength(1)
+      expect(share.mock.calls[0][0].files[0].name).toMatch(/^online-image-.*\.png$/)
+    } finally {
+      fetch.mockRestore()
+      if (originalShare) Object.defineProperty(window.navigator, 'share', originalShare)
+      else delete (window.navigator as Navigator & { share?: Navigator['share'] }).share
+      if (originalCanShare) Object.defineProperty(window.navigator, 'canShare', originalCanShare)
+      else delete (window.navigator as Navigator & { canShare?: Navigator['canShare'] }).canShare
+    }
   })
 
   it('keeps one primary generation action and uses neutral secondary actions elsewhere', async () => {

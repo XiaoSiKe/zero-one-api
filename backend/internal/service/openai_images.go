@@ -14,6 +14,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -21,6 +22,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/Wei-Shaw/sub2api/internal/util/responseheaders"
+	"github.com/Wei-Shaw/sub2api/internal/util/urlvalidator"
 	"github.com/gin-gonic/gin"
 	"github.com/imroc/req/v3"
 	"github.com/tidwall/gjson"
@@ -716,7 +718,9 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 			ImageOutputSizes: imageOutputSizes,
 		}, nil
 	} else {
-		nonStreamUsage, nonStreamCount, nonStreamSizes, err := s.handleOpenAIImagesNonStreamingResponse(resp, c)
+		nonStreamUsage, nonStreamCount, nonStreamSizes, err := s.handleOpenAIImagesNonStreamingResponse(
+			resp, c, parsed.ResponseFormat, proxyURL, account,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -887,10 +891,33 @@ func cloneMultipartHeader(src textproto.MIMEHeader) textproto.MIMEHeader {
 	return dst
 }
 
-func (s *OpenAIGatewayService) handleOpenAIImagesNonStreamingResponse(resp *http.Response, c *gin.Context) (OpenAIUsage, int, []string, error) {
+func (s *OpenAIGatewayService) handleOpenAIImagesNonStreamingResponse(
+	resp *http.Response,
+	c *gin.Context,
+	responseFormat string,
+	proxyURL string,
+	account *Account,
+) (OpenAIUsage, int, []string, error) {
 	body, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
 	if err != nil {
 		return OpenAIUsage{}, 0, nil, err
+	}
+	if strings.EqualFold(strings.TrimSpace(responseFormat), "b64_json") {
+		normalized, normalizeErr := normalizeOpenAIImagesB64JSON(
+			c.Request.Context(),
+			body,
+			func(ctx context.Context, rawURL string) ([]byte, string, error) {
+				return s.downloadOpenAIImagesAPIKeyResult(ctx, rawURL, proxyURL, account)
+			},
+		)
+		if normalizeErr == nil {
+			body = normalized
+		} else {
+			// The upstream generation already succeeded and may have been billed.
+			// Preserve its response instead of turning a best-effort format repair
+			// into a retry that could generate and charge for the image twice.
+			logger.LegacyPrintf("service.openai_gateway", "[OpenAI] image URL could not be normalized to b64_json; preserving upstream response")
+		}
 	}
 	responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
 	contentType := "application/json"
@@ -903,6 +930,111 @@ func (s *OpenAIGatewayService) handleOpenAIImagesNonStreamingResponse(resp *http
 
 	usage, _ := extractOpenAIUsageFromJSONBytes(body)
 	return usage, extractOpenAIImageCountFromJSONBytes(body), collectOpenAIResponseImageOutputSizesFromJSONBytes(body), nil
+}
+
+type openAIImageResultDownloader func(context.Context, string) ([]byte, string, error)
+
+func normalizeOpenAIImagesB64JSON(
+	ctx context.Context,
+	body []byte,
+	download openAIImageResultDownloader,
+) ([]byte, error) {
+	if len(body) == 0 || !gjson.ValidBytes(body) || download == nil {
+		return body, nil
+	}
+	items := gjson.GetBytes(body, "data")
+	if !items.IsArray() {
+		return body, nil
+	}
+
+	out := append([]byte(nil), body...)
+	for index, item := range items.Array() {
+		if strings.TrimSpace(item.Get("b64_json").String()) != "" {
+			continue
+		}
+		rawURL := strings.TrimSpace(item.Get("url").String())
+		if rawURL == "" {
+			continue
+		}
+		data, contentType, err := download(ctx, rawURL)
+		if err != nil {
+			return body, err
+		}
+		if len(data) == 0 || len(data) > openAIImageMaxDownloadBytes {
+			return body, fmt.Errorf("generated image payload has invalid size")
+		}
+		path := "data." + strconv.Itoa(index)
+		out, err = sjson.SetBytes(out, path+".b64_json", base64.StdEncoding.EncodeToString(data))
+		if err != nil {
+			return body, fmt.Errorf("encode generated image: %w", err)
+		}
+		out, err = sjson.SetBytes(out, path+".mime_type", contentType)
+		if err != nil {
+			return body, fmt.Errorf("encode generated image content type: %w", err)
+		}
+		out, err = sjson.DeleteBytes(out, path+".url")
+		if err != nil {
+			return body, fmt.Errorf("remove generated image url: %w", err)
+		}
+	}
+	return out, nil
+}
+
+func (s *OpenAIGatewayService) downloadOpenAIImagesAPIKeyResult(
+	ctx context.Context,
+	rawURL string,
+	proxyURL string,
+	account *Account,
+) ([]byte, string, error) {
+	if account == nil || s.httpUpstream == nil {
+		return nil, "", fmt.Errorf("image download transport is unavailable")
+	}
+
+	normalized, err := urlvalidator.ValidateHTTPSURL(rawURL, urlvalidator.ValidationOptions{AllowPrivate: false})
+	if err != nil {
+		return nil, "", fmt.Errorf("generated image URL is not a public HTTPS URL")
+	}
+	parsed, err := url.Parse(normalized)
+	if err != nil || parsed.Hostname() == "" {
+		return nil, "", fmt.Errorf("generated image URL is invalid")
+	}
+	if err := urlvalidator.ValidateResolvedIP(parsed.Hostname()); err != nil {
+		return nil, "", fmt.Errorf("generated image URL resolves to a blocked address")
+	}
+
+	requestCtx, cancel := context.WithTimeout(
+		WithHTTPUpstreamRedirectsDisabled(WithHTTPUpstreamProfile(ctx, HTTPUpstreamProfileOpenAI)),
+		60*time.Second,
+	)
+	defer cancel()
+	request, err := http.NewRequestWithContext(requestCtx, http.MethodGet, normalized, nil)
+	if err != nil {
+		return nil, "", fmt.Errorf("build generated image download request: %w", err)
+	}
+	request.Header.Set("Accept", "image/png,image/jpeg,image/webp")
+	request.Header.Set("User-Agent", openAIImageBackendUserAgent)
+	response, err := s.httpUpstream.Do(request, proxyURL, account.ID, account.Concurrency)
+	if err != nil {
+		return nil, "", fmt.Errorf("download generated image: %w", err)
+	}
+	defer func() { _ = response.Body.Close() }()
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return nil, "", fmt.Errorf("generated image download returned status %d", response.StatusCode)
+	}
+	data, err := io.ReadAll(io.LimitReader(response.Body, openAIImageMaxDownloadBytes+1))
+	if err != nil {
+		return nil, "", fmt.Errorf("read generated image: %w", err)
+	}
+	if len(data) == 0 || len(data) > openAIImageMaxDownloadBytes {
+		return nil, "", fmt.Errorf("generated image payload has invalid size")
+	}
+	contentType := strings.TrimSpace(strings.Split(http.DetectContentType(data), ";")[0])
+	switch contentType {
+	case "image/png", "image/jpeg", "image/webp":
+		return data, contentType, nil
+	default:
+		return nil, "", fmt.Errorf("generated image payload has unsupported content type")
+	}
 }
 
 func (s *OpenAIGatewayService) handleOpenAIImagesStreamingResponse(

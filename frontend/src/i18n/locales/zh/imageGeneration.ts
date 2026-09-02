@@ -66,6 +66,7 @@ export default {
       generated: '图片生成成功。',
       noImages: '接口没有返回可预览的图片。',
       downloadFailed: '图片下载失败。',
+      mobileSaveHint: '已打开图片，请长按图片保存。',
       historyLoadFailed: '加载本地历史失败。',
       historySaveFailed: '图片已生成，但保存本地历史失败。',
       historyClearFailed: '清空本地历史失败。',
