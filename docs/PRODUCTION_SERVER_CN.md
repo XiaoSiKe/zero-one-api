@@ -93,7 +93,9 @@ Edge    ghcr.io/xiaosike/zero-one-edge@sha256:65838f3eefcfce20e5dc0e205870f66fca
 
 两个 OCI index 均包含 amd64/arm64、SBOM 和 provenance；生产 x86_64 主机运行
 amd64 manifest。两张运行镜像的 OCI revision 均为上述完整 commit，Sub2API 实际报告
-`0.2.0`。本版本的批准 UI 为
+`0.2.0`。生产部署配置随后经下述健康检查修复更新到
+`e442cd5a8b68a69f3db4cfeb64b71cc4ebca3573`，镜像源码与摘要不变，没有重复发布。
+本版本的批准 UI 为
 `ui-approved-2026-09-02-r5@fd727f51f18fc14997c63dbc8f2fc04f836c58b6`；版本同步继续
 保护已登记的 490 个二开文件，未引入未经评审的上游 Console 控件。
 
@@ -135,12 +137,31 @@ Affiliate 历史返利等聚合没有异常下降。三轮稳定性观察中
 `balance + usage_actual_cost` 均为 `4719.8258920242`。
 
 PostgreSQL `536cb90ab411...`、Redis `4e9f6ffcb22c...` 在升级中未重建；新 Sub2API 为
-`fa5f7e5d99d4...`，新 Edge 为 `0596c5d9e706...`。四个容器最终均 healthy、重启次数 0，
+`fa5f7e5d99d4...`。Backend-first 切换后的首个 Edge 为 `0596c5d9e706...`，最终 Edge 为
+`02a381f3dffc...`。四个容器最终均 healthy、重启次数 0，
 业务环境字段（排除双镜像引用）的 SHA-256 前后均为
 `659b4544ab65505d7983b1c983b3be3050bc43c06434721249f7a26c956c92a3`。旧 Edge 在切换前
 因既有 healthcheck 进程记账泄漏达到 `pids.current=4605`，虽然真实 HTTPS 仍可用，Docker
-状态已为 unhealthy；仓库 `safe-edge-switch.sh` 重建后立即恢复 healthy，三轮观测为
-55、58、61，`pids.events max` 始终为 0。
+状态已为 unhealthy；仓库 `safe-edge-switch.sh` 首次重建后立即恢复 healthy。
+
+延时观测发现首次重建只重置了计数，没有消除原因：Caddy 始终只有 8–9 个真实线程，
+而 Edge 内的 TLS BusyBox `wget` 每 10 秒健康检查会额外启动 helper，`pids.current` 从
+61 继续增长到 364；同机 PostgreSQL、Redis 和 Sub2API 的非 TLS 健康检查没有该现象。
+纯 HTTP 读取 Caddy 本地管理端点前后计数不变。经
+[`PR #23`](https://github.com/XiaoSiKe/zero-one-api/pull/23) 合入
+`e442cd5a8b68a69f3db4cfeb64b71cc4ebca3573` 后，Edge 健康检查改为
+`http://127.0.0.1:2019/config/`，而 `safe-edge-switch.sh` 继续单独执行规范域名真实 HTTPS
+门禁。PR 的 [CI 33622632164](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33622632164)
+首轮唯一失败是 GitHub runner 的 Testcontainers Ryuk 60 秒启动超时；同一 integration
+test 在维护机固定 Go 1.27 容器通过，未改业务代码，CI attempt 2 全套通过。合并后的
+[main CI 33624999065](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33624999065)
+和 [Security 33624999098](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33624999098)
+也均成功。
+
+生产只切换到该配置提交并用原 Edge digest 重建 Edge；PostgreSQL、Redis、Sub2API
+容器 ID、281 条迁移账本和业务环境哈希均未变化。新 Edge 五轮 12 秒间隔观测为
+`7/7`、`8/8`、`8/8`、`8/8`、`8/8`（`pids.current/cgroup.threads`），延时复核仍为
+`8/8`，`pids.events max` 始终为 0，规范域名 HTTPS 持续正常。
 
 23 项匿名线上检查覆盖规范域名 GET/HEAD、`/home`、登录/注册和主要 Console 路由、
 Public Settings/Public Announcement、无 Key 的 Models/Messages/Responses JSON 401、
@@ -152,9 +173,11 @@ Public Settings/Public Announcement、无 Key 的 Models/Messages/Responses JSON
 环境下单独的 TCP connect 假阳性不作为公网开放证据。
 
 本次没有借用客户 API Key 执行真实计费模型、SSE/WebSocket 101、在线生图、Redeem Code
-核销或管理员写入探针；这些缺少专用测试凭据的项目不写成已执行成功。最终 89 项证据、
+核销或管理员写入探针；这些缺少专用测试凭据的项目不写成已执行成功。最终 102 项证据、
 实际运维脚本和三张浏览器截图已在上述双端恢复目录归档，并有独立
-`FINAL_EVIDENCE_SHA256`。
+`FINAL_EVIDENCE_SHA256`。修复脚本曾短暂把渲染后的 Compose 写入受限服务器恢复目录；
+该文件可能含展开的环境值，未被读取、未传出且未进入证据包，发现后已截断删除，脚本也
+改为管道内校验。
 
 ### 本次直接回滚基线
 
@@ -167,8 +190,11 @@ Edge    ghcr.io/xiaosike/zero-one-edge@sha256:75e94ee5c34e2875c13c273dd7a61bc020
 环境回滚副本为
 `.release-backups/20260902T100625Z-pre-v020-03b0e68f03/env.before-backend-v020-20260902T103023Z.SNO4a5`
 和 `deploy/zero-one/.env.before-edge-20260902T103110Z.LkTZkg`，权限均为 `0600`。四个新迁移
-只增加兼容列；普通应用回滚恢复上述旧源码和双镜像，但保留 281 条迁移账本。只有隔离验证
-证明数据库本身损坏且进入独立维护窗口后，才允许使用已验证恢复点恢复 PostgreSQL。
+只增加兼容列。健康检查修复前的 Compose 另存为
+`.release-backups/20260902T100625Z-pre-v020-03b0e68f03/compose.before-edge-healthcheck-20260902T113117Z.yml`。
+普通应用回滚恢复上述旧源码和双镜像，但保留 281 条迁移账本；配置回滚可单独使用该
+Compose 副本。只有隔离验证证明数据库本身损坏且进入独立维护窗口后，才允许使用已验证
+恢复点恢复 PostgreSQL。
 
 ## 历史生产基线（2026-09-01，v0.1.185）
 
