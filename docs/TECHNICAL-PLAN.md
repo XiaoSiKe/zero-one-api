@@ -3,7 +3,7 @@
 ## Baseline And Change Boundary
 
 项目的稳定技术基线为
-[`Wei-Shaw/sub2api v0.1.185@2ac784c51a5d0925b324efef2ba6b3446c364781`](https://github.com/Wei-Shaw/sub2api/tree/2ac784c51a5d0925b324efef2ba6b3446c364781)。
+[`Wei-Shaw/sub2api v0.2.0@aa236488351eb71e120fc2b6fb32e36b0374c918`](https://github.com/Wei-Shaw/sub2api/tree/aa236488351eb71e120fc2b6fb32e36b0374c918)。
 产品仓库 [`XiaoSiKe/zero-one-api`](https://github.com/XiaoSiKe/zero-one-api)
 配置为 `origin`，官方仓库 `Wei-Shaw/sub2api` 配置为只读
 `upstream`。`main` 是零一 API 唯一产品、CI 和发布分支；不保留第二产品分支。
@@ -142,22 +142,23 @@ edge image. Image rollback does not reverse a database migration; see
 合回 `main`。每次同步同时更新本节的 tag 与完整提交 SHA。
 主题改动保持集中，使新增上游页面继承设计系统，避免逐页分叉。
 
-当前 Upstream Baseline 是 `v0.1.185`，解引用源码提交为
-`2ac784c51a5d0925b324efef2ba6b3446c364781`。本次通过真实双父合并引入
-价格目录 JSON 覆写与目录驱动的长上下文阶梯、统一的账号统计定价、数据库启动
-瞬时错误重试、OpenAI WebSocket 空闲连接回收，以及 Codex priority service tier
-与图像能力目录修复。API Key instructions 合成、持续禁用账号筛选、WebSocket
-容量降载错误码和 delegation bootstrap 兼容修复也来自同一稳定标签。本版本没有
-新增数据库迁移。
+当前 Upstream Baseline 是 `v0.2.0`，解引用源码提交为
+`aa236488351eb71e120fc2b6fb32e36b0374c918`。本次通过真实双父合并引入分组
+OpenAI Fast 强制与免费策略、按模型限定的 reasoning effort 映射及超限拒绝、Kimi
+原生 Responses、Codex automation bootstrap、API Key 对话缓存身份隔离、
+Anthropic fallback 清理、WebSocket terminal-event 校验和 `model_not_found` 状态
+修复。数据库新增四个迁移，为渠道和账号统计定价增加可空 1h cache-write 单价，
+并为分组增加两个 Fast 开关及默认 `downgrade` 的 reasoning 超限策略。
 
-`v0.1.185` 继续保留 Zero One 自 `v0.1.179` 起验证的深拷贝隔离、分组定价
-快照 v20、创建默认值、复制/校验、durable cache invalidation、Batch Image 和
+`v0.2.0` 继续保留 Zero One 自 `v0.1.179` 起验证的深拷贝隔离、分组定价
+快照 v22、创建默认值、复制/校验、durable cache invalidation、Batch Image 和
 Model Plaza 传播修复。Zero One 为避免存量账号静默改变账单，继续采用分组与
 账号同时启用长上下文计费的口径，并兼容渠道区间倍率；每个模型请求也不得恢复
-输出完整会话关联信息的 `[DEBUG-STICKY]` 日志。后端临时权限仅限
+输出完整会话关联信息的 `[DEBUG-STICKY]` 日志。新增上游 Console 控件不进入
+Approved UI Snapshot；后台能力先通过管理 API 保持可用。后端临时权限仅限
 `.github/upstream-baseline.json` 的 `legacy_hotfixes` 区块所列精确文件。
 
-`v0.1.185` 使用 Go `1.27.0`，`.github/upstream-baseline.json` 的
+`v0.2.0` 使用 Go `1.27.0`，`.github/upstream-baseline.json` 的
 `approved_backports` 保持为空列表。每个 legacy hotfix 都必须以稳定 Tag 中的
 等价内容执行退出判定；不得因为一次同步或相近提交就删除保护，也不得将已经进入
 上游的重复补丁永久保留。

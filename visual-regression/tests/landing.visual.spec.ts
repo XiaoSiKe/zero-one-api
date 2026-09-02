@@ -273,6 +273,12 @@ test.describe('Landing visual contracts', () => {
     await expect(pricing.getByRole('group', { name: '按平台筛选' }).getByRole('button'))
       .toHaveText(['All', 'Claude', 'OpenAI'])
     await expect(pricing.getByRole('button', { name: 'Gemini' })).toHaveCount(0)
+    await pricing.evaluate(async (element) => {
+      const finiteAnimations = element.getAnimations({ subtree: true }).filter((animation) =>
+        Number.isFinite(animation.effect?.getComputedTiming().endTime),
+      )
+      await Promise.all(finiteAnimations.map((animation) => animation.finished.catch(() => undefined)))
+    })
     await page.addStyleTag({
       content: `
         .skip-link,

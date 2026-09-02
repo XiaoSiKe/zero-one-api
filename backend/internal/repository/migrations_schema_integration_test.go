@@ -55,11 +55,25 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	requireColumn(t, tx, "accounts", "session_window_status", "character varying", 20, true)
 	requireIndex(t, tx, "accounts", "idx_accounts_autopause_expiry_due")
 
-	// groups: OpenAI Live 默认关闭，管理员显式开启后才可访问。
+	// groups: OpenAI Live 与 Fast 策略都默认关闭，管理员显式开启后才生效。
 	requireColumn(t, tx, "groups", "allow_live", "boolean", 0, false)
 	requireColumn(t, tx, "groups", "long_context_pricing_enabled", "boolean", 0, false)
 	requireColumnDefaultContains(t, tx, "groups", "long_context_pricing_enabled", "true")
 	requireColumn(t, tx, "groups", "model_pricing", "jsonb", 0, true)
+	requireColumn(t, tx, "groups", "force_openai_fast", "boolean", 0, false)
+	requireColumn(t, tx, "groups", "free_openai_fast", "boolean", 0, false)
+	requireColumn(t, tx, "groups", "max_reasoning_effort_over_limit", "character varying", 20, false)
+	requireColumnDefaultContains(t, tx, "groups", "max_reasoning_effort_over_limit", "downgrade")
+
+	// channel pricing: 1h cache-write prices remain nullable for upgrade compatibility.
+	for _, table := range []string{
+		"channel_model_pricing",
+		"channel_pricing_intervals",
+		"channel_account_stats_model_pricing",
+		"channel_account_stats_pricing_intervals",
+	} {
+		requireColumn(t, tx, table, "cache_write_1h_price", "numeric", 0, true)
+	}
 
 	// api_keys: key length should be 128
 	requireColumn(t, tx, "api_keys", "key", "character varying", 128, false)
