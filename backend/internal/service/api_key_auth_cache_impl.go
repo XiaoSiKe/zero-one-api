@@ -14,7 +14,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 20 // v20: group long-context toggle and per-model pricing (force refresh of v19 snapshots)
+const apiKeyAuthSnapshotVersion = 22 // v22: group Fast and reasoning policy fields; retains v20 pricing isolation
 
 func cloneAPIKeyAuthModelPricing(pricing []ChannelModelPricing) []ChannelModelPricing {
 	if pricing == nil {
@@ -26,6 +26,7 @@ func cloneAPIKeyAuthModelPricing(pricing []ChannelModelPricing) []ChannelModelPr
 		cloned[i].InputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].InputPrice)
 		cloned[i].OutputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].OutputPrice)
 		cloned[i].CacheWritePrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].CacheWritePrice)
+		cloned[i].CacheWrite1hPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].CacheWrite1hPrice)
 		cloned[i].CacheReadPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].CacheReadPrice)
 		cloned[i].ImageInputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].ImageInputPrice)
 		cloned[i].ImageOutputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].ImageOutputPrice)
@@ -35,6 +36,7 @@ func cloneAPIKeyAuthModelPricing(pricing []ChannelModelPricing) []ChannelModelPr
 			cloned[i].Intervals[j].InputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].Intervals[j].InputPrice)
 			cloned[i].Intervals[j].OutputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].Intervals[j].OutputPrice)
 			cloned[i].Intervals[j].CacheWritePrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].Intervals[j].CacheWritePrice)
+			cloned[i].Intervals[j].CacheWrite1hPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].Intervals[j].CacheWrite1hPrice)
 			cloned[i].Intervals[j].CacheReadPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].Intervals[j].CacheReadPrice)
 			cloned[i].Intervals[j].PerRequestPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].Intervals[j].PerRequestPrice)
 		}
@@ -460,11 +462,14 @@ func (s *APIKeyService) snapshotFromAPIKey(ctx context.Context, apiKey *APIKey) 
 			SupportedModelScopes:            apiKey.Group.SupportedModelScopes,
 			AllowMessagesDispatch:           apiKey.Group.AllowMessagesDispatch,
 			AllowLive:                       apiKey.Group.AllowLive,
+			ForceOpenAIFast:                 apiKey.Group.ForceOpenAIFast,
+			FreeOpenAIFast:                  apiKey.Group.FreeOpenAIFast,
 			DefaultMappedModel:              apiKey.Group.DefaultMappedModel,
 			MessagesDispatchModelConfig:     apiKey.Group.MessagesDispatchModelConfig,
 			ModelsListConfig:                apiKey.Group.ModelsListConfig,
 			RPMLimit:                        apiKey.Group.RPMLimit,
 			MaxReasoningEffort:              apiKey.Group.MaxReasoningEffort,
+			MaxReasoningEffortOverLimit:     apiKey.Group.MaxReasoningEffortOverLimit,
 			ReasoningEffortMappings:         apiKey.Group.ReasoningEffortMappings,
 			PeakRateEnabled:                 apiKey.Group.PeakRateEnabled,
 			PeakStart:                       apiKey.Group.PeakStart,
@@ -558,11 +563,14 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 			SupportedModelScopes:            snapshot.Group.SupportedModelScopes,
 			AllowMessagesDispatch:           snapshot.Group.AllowMessagesDispatch,
 			AllowLive:                       snapshot.Group.AllowLive,
+			ForceOpenAIFast:                 snapshot.Group.ForceOpenAIFast,
+			FreeOpenAIFast:                  snapshot.Group.FreeOpenAIFast,
 			DefaultMappedModel:              snapshot.Group.DefaultMappedModel,
 			MessagesDispatchModelConfig:     snapshot.Group.MessagesDispatchModelConfig,
 			ModelsListConfig:                snapshot.Group.ModelsListConfig,
 			RPMLimit:                        snapshot.Group.RPMLimit,
 			MaxReasoningEffort:              snapshot.Group.MaxReasoningEffort,
+			MaxReasoningEffortOverLimit:     snapshot.Group.MaxReasoningEffortOverLimit,
 			ReasoningEffortMappings:         snapshot.Group.ReasoningEffortMappings,
 			PeakRateEnabled:                 snapshot.Group.PeakRateEnabled,
 			PeakStart:                       snapshot.Group.PeakStart,
