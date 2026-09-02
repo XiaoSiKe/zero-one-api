@@ -583,7 +583,7 @@ SSE/WebSocket upgrade；生产登录/核销/扣费探针未执行，不能计入
 探测未收到响应；其路由经过 TUN 代理，因此毫秒级 TCP connect 成功不能当成
 服务端公网开放的证据，也不把该测试写成独立直连网络的端到端验证。
 完整恢复点、容器时间、上一组真实摘要及剩余边界见
-[`PRODUCTION_SERVER_CN.md`](PRODUCTION_SERVER_CN.md#当前生产基线2026-08-28)。
+[`PRODUCTION_SERVER_CN.md`](PRODUCTION_SERVER_CN.md#当前生产基线2026-09-02v020)。
 当前没有配置 off-host 日备份挂载/定时任务；本次已验证的一次性加密异机备份不能
 替代它。恢复私钥留在维护机，临时明文 staging 已清理，历史恢复材料不动。
 
