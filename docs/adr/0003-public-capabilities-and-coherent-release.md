@@ -37,6 +37,16 @@ failure leaves the timeline empty without discarding current observations.
 Landing distinguishes initial loading, missing observations and failed refreshes,
 and explicitly labels a retained result when its refresh fails.
 
+Landing must distinguish an unreadable Public Settings Projection from a valid
+response with disabled capabilities. Failed reads keep controls closed, expose
+a retry action, and recover automatically while the page is visible. Returning
+from the browser's page cache, foregrounding the page, or restoring connectivity
+refreshes settings, public prices and channel status without requiring a document
+reload. Concurrent resume events do not duplicate in-flight requests, and unmount
+cancels requests, retries and event subscriptions. These reads remain anonymous
+even when Console credentials are present or expired; model-plaza authentication
+requirements and the independent public-status switch remain authoritative.
+
 Both anonymous responses follow an explicit field allowlist. Adding a field to
 an internal entity or Console DTO does not make that field public. Edge responses
 remain `Cache-Control: no-store`; bounded in-process aggregation caches do not

@@ -547,7 +547,17 @@
     "visual-regression/tests/__screenshots__/chromium-desktop/console-channels-cn-platform-options.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-groups-cn-platform-options.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-ops-cn-platform-options.png",
-    "visual-regression/tests/__screenshots__/chromium-desktop/console-subscriptions-cn-platform-options.png"
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-subscriptions-cn-platform-options.png",
+    "landing/src/App.tsx",
+    "landing/src/components/PricingSection.tsx",
+    "landing/src/components/PricingSection.test.tsx",
+    "landing/src/lib/publicSettings.ts",
+    "landing/src/lib/publicSettings.test.ts",
+    "landing/src/lib/pageResume.ts",
+    "landing/src/lib/pageResume.test.ts",
+    "landing/src/lib/usePublicSettings.ts",
+    "landing/src/lib/usePublicSettings.test.ts",
+    "visual-regression/tests/landing.public-data.spec.ts"
   ],
   "legacy_hotfixes": [
     {

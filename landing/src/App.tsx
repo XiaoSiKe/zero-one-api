@@ -12,12 +12,14 @@ import PublicAnnouncementsDialog from './components/PublicAnnouncementsDialog'
 import QuickStart from './components/QuickStart'
 import SiteHeader from './components/SiteHeader'
 import Threads from './components/Threads'
-import type { PublicSettings } from './lib/publicSettings'
+import { DEFAULT_PUBLIC_SETTINGS, type PublicSettings } from './lib/publicSettings'
+import { usePublicSettings } from './lib/usePublicSettings'
+import Action from './components/Action'
 import type { ModelPlazaData } from './lib/modelPlaza'
 import { canLoadBrandImage } from './siteConfig'
 
 interface AppProps {
-  initialSettings: PublicSettings
+  initialSettings: PublicSettings | null
 }
 
 function readConsoleHomePath(): '/dashboard' | '/admin/dashboard' | null {
@@ -33,7 +35,9 @@ function readConsoleHomePath(): '/dashboard' | '/admin/dashboard' | null {
   }
 }
 
-export default function App({ initialSettings: settings }: AppProps) {
+export default function App({ initialSettings }: AppProps) {
+  const { settings: resolvedSettings, retry: retrySettings } = usePublicSettings(initialSettings)
+  const settings = resolvedSettings ?? DEFAULT_PUBLIC_SETTINGS
   const [modelPlazaData, setModelPlazaData] = useState<ModelPlazaData | null>(null)
   const [failedLogoUrls, setFailedLogoUrls] = useState<ReadonlySet<string>>(() => new Set())
   const [publicAnnouncementsOpen, setPublicAnnouncementsOpen] = useState(false)
@@ -80,7 +84,7 @@ export default function App({ initialSettings: settings }: AppProps) {
     )
     elements.forEach((element) => observer.observe(element))
     return () => observer.disconnect()
-  }, [settings.publicChannelStatusEnabled])
+  }, [resolvedSettings === null, settings.publicChannelStatusEnabled])
 
   const configuredLogo =
     canLoadBrandImage(settings.siteLogo) && !failedLogoUrls.has(settings.siteLogo)
@@ -136,13 +140,24 @@ export default function App({ initialSettings: settings }: AppProps) {
             />
             <QuickStart docUrl={siteSettings.landingTutorialUrl || siteSettings.docUrl} />
           </div>
-          <PricingSection
+          {resolvedSettings === null ? (
+            <section id="pricing" className="section pricing-section" aria-label="官网数据读取失败">
+              <div className="pricing-message" role="status">
+                <span className="pricing-message-mark" aria-hidden="true" />
+                <div>
+                  <h2>官网数据暂时无法加载</h2>
+                  <p>实时价格和渠道状态暂时无法读取，正在自动重试。</p>
+                </div>
+                <Action type="button" onClick={retrySettings}>重新读取</Action>
+              </div>
+            </section>
+          ) : <PricingSection
             enabled={settings.modelPlazaEnabled}
             requireAuth={settings.modelPlazaRequireAuth}
             serverUtcOffset={settings.serverUtcOffset}
             onModelPlazaDataChange={setModelPlazaData}
-          />
-          <ValuePricingSection modelPlazaData={modelPlazaData} />
+          />}
+          <ValuePricingSection modelPlazaData={settings.modelPlazaEnabled && !settings.modelPlazaRequireAuth ? modelPlazaData : null} />
           {settings.publicChannelStatusEnabled ? (
             <StatusSection enabled={settings.publicChannelStatusEnabled} />
           ) : null}

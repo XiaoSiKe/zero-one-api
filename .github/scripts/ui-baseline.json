@@ -58,7 +58,8 @@
     "visual-regression/tests/__screenshots__/chromium-desktop/console-forgot-password.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-reset-password.png",
     "visual-regression/tests/__screenshots__/chromium-mobile/console-forgot-password.png",
-    "visual-regression/tests/__screenshots__/chromium-mobile/console-reset-password.png"
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-reset-password.png",
+    "visual-regression/tests/landing.public-data.spec.ts"
   ],
   "compatibility_paths": [
     "frontend/src/api/",
@@ -73,7 +74,8 @@
       "paths": [
         "landing/index.html",
         "landing/src/",
-        "deploy/zero-one/recovered-frontend/landing/"
+        "deploy/zero-one/recovered-frontend/landing/",
+        "visual-regression/tests/landing.public-data.spec.ts"
       ]
     },
     {

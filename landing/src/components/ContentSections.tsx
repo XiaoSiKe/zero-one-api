@@ -10,6 +10,7 @@ import type { ModelPlazaData } from "../lib/modelPlaza";
 import { consoleUrl, documentUrl } from "../siteConfig";
 import Action from "./Action";
 import ShinyText from "./ShinyText";
+import { subscribePageResume } from "../lib/pageResume";
 
 interface ValuePricingSectionProps {
   modelPlazaData: ModelPlazaData | null;
@@ -255,21 +256,19 @@ export function StatusSection({ enabled = true }: { enabled?: boolean }) {
       scheduleRefresh();
     };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible") return;
+    const unsubscribe = subscribePageResume(() => {
       if (controller !== null || retryTimer !== null) return;
       clearRefreshTimer();
       void loadStatus(false);
-    };
+    });
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
     void loadStatus(true);
     return () => {
       active = false;
       clearRefreshTimer();
       if (retryTimer !== null) window.clearTimeout(retryTimer);
       controller?.abort();
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      unsubscribe();
     };
   }, [attempt, enabled]);
 

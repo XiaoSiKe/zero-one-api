@@ -112,7 +112,7 @@ const success = (): ModelPlazaResult => ({ status: 'success', data: plazaData() 
 
 describe('PricingSection', () => {
   beforeEach(() => mocks.fetchModelPlaza.mockReset())
-  afterEach(cleanup)
+  afterEach(() => { cleanup(); vi.useRealTimers() })
 
   it('shows loading until the live model-plaza request resolves', async () => {
     let resolveRequest: (result: ModelPlazaResult) => void = () => {}
@@ -202,14 +202,15 @@ describe('PricingSection', () => {
     const user = userEvent.setup()
     mocks.fetchModelPlaza
       .mockResolvedValueOnce({ status: 'error', reason: 'timeout' })
+      .mockResolvedValueOnce({ status: 'error', reason: 'timeout' })
       .mockResolvedValueOnce(success())
 
     render(<PricingSection enabled requireAuth={false} serverUtcOffset="+08:00" />)
-    expect(await screen.findByText('读取价格超时')).toBeTruthy()
+    expect(await screen.findByText('读取价格超时', {}, { timeout: 2_000 })).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: '重新读取' }))
     expect((await screen.findAllByText('gpt-5.4')).length).toBeGreaterThan(0)
-    expect(mocks.fetchModelPlaza).toHaveBeenCalledTimes(2)
+    expect(mocks.fetchModelPlaza).toHaveBeenCalledTimes(3)
     const firstSignal = mocks.fetchModelPlaza.mock.calls[0]?.[0]?.signal
     const secondSignal = mocks.fetchModelPlaza.mock.calls[1]?.[0]?.signal
     expect(firstSignal).not.toBe(secondSignal)
@@ -226,6 +227,33 @@ describe('PricingSection', () => {
     expect(screen.getByText('请在约 12 秒后重试。')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: '重新读取' }))
     expect((await screen.findAllByText('deepseek-v3.2')).length).toBeGreaterThan(0)
+  })
+
+  it('recovers prices on a restored page without reloading the document', async () => {
+    mocks.fetchModelPlaza
+      .mockResolvedValueOnce({ status: 'error', reason: 'server' })
+      .mockResolvedValueOnce(success())
+    render(<PricingSection enabled requireAuth={false} serverUtcOffset="+08:00" />)
+    await act(async () => Promise.resolve())
+    await act(async () => {
+      window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))
+    })
+    expect(mocks.fetchModelPlaza).toHaveBeenCalledTimes(2)
+    expect(screen.getAllByText('gpt-5.4').length).toBeGreaterThan(0)
+  })
+
+  it('retries a transient failure once and cancels recovery after unmount', async () => {
+    vi.useFakeTimers()
+    mocks.fetchModelPlaza.mockResolvedValueOnce({ status: 'error', reason: 'network' }).mockResolvedValue(success())
+    const { unmount } = render(<PricingSection enabled requireAuth={false} serverUtcOffset="+08:00" />)
+    await act(async () => Promise.resolve())
+    expect(screen.getByText('正在读取实时价格')).toBeTruthy()
+    await act(async () => vi.advanceTimersByTimeAsync(1_000))
+    expect(screen.getAllByText('gpt-5.4').length).toBeGreaterThan(0)
+    expect(mocks.fetchModelPlaza).toHaveBeenCalledTimes(2)
+    unmount()
+    await act(async () => window.dispatchEvent(new Event('online')))
+    expect(mocks.fetchModelPlaza).toHaveBeenCalledTimes(2)
   })
 
   it('filters by platform, searches by model, and clears an empty result', async () => {

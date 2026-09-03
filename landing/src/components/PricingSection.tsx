@@ -11,6 +11,7 @@ import {
 } from '../lib/modelPlaza'
 import { consoleUrl } from '../siteConfig'
 import Action from './Action'
+import { subscribePageResume } from '../lib/pageResume'
 import ShinyText from './ShinyText'
 
 interface PricingSectionProps {
@@ -242,15 +243,35 @@ export default function PricingSection({
       return
     }
 
-    const controller = new AbortController()
+    // ZERO-ONE 二开保护：短暂失败重试一次，返回官网后重读；并发事件共享本次请求。
+    let active = true
+    let controller: AbortController | null = null
+    let retryTimer: number | undefined
     onModelPlazaDataChange?.(null)
     setState({ status: 'loading' })
-    void fetchModelPlaza({ enabled: true, timeoutMs: 3_000, signal: controller.signal }).then((result) => {
-      if (controller.signal.aborted) return
+    const load = async (mayRetry = true) => {
+      if (controller) return
+      window.clearTimeout(retryTimer)
+      const requestController = new AbortController()
+      controller = requestController
+      const result = await fetchModelPlaza({ enabled: true, timeoutMs: 3_000, signal: requestController.signal })
+      if (!active || requestController.signal.aborted) return
+      controller = null
+      if (mayRetry && result.status === 'error' && ['timeout', 'network', 'server'].includes(result.reason)) {
+        retryTimer = window.setTimeout(() => void load(false), 1_000)
+        return
+      }
       onModelPlazaDataChange?.(result.status === 'success' ? result.data : null)
       setState(result)
-    })
-    return () => controller.abort()
+    }
+    const unsubscribe = subscribePageResume(() => void load())
+    void load()
+    return () => {
+      active = false
+      window.clearTimeout(retryTimer)
+      controller?.abort()
+      unsubscribe()
+    }
   }, [attempt, enabled, onModelPlazaDataChange, requireAuth])
 
   useEffect(() => {
