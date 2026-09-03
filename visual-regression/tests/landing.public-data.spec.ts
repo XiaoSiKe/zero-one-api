@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url'
 for (const surface of ['source', 'recovered'] as const) {
   test.describe(surface, () => {
     test.beforeEach(async ({ page }) => {
+      // CI 用软件渲染 WebGL；数据恢复不应依赖持续动画的帧率，视觉由专门套件验证。
+      await page.emulateMedia({ reducedMotion: 'reduce' })
       if (surface !== 'recovered') return
       await page.route('http://127.0.0.1:4174/**', async (route) => {
         const pathname = new URL(route.request().url()).pathname
