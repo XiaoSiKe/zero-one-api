@@ -9,6 +9,7 @@
     "build": "vue-tsc -b && vite build",
     "build:cn-provider-admin": "vite build --config vite.cn-provider-admin.config.ts",
     "build:online-image": "vite build --config vite.online-image.config.ts",
+    "build:password-recovery": "vite build --config vite.password-recovery.config.mjs",
     "build:cn-provider-shell": "node ../deploy/zero-one/build-cn-provider-shell.mjs",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",

@@ -12,6 +12,7 @@ import {
   CN_PROVIDER_SHELL_ASSET,
   CN_PROVIDER_SHELL_DIRECTORY,
   patchApprovedShell,
+  recoveryShellOverrides,
 } from './build-cn-provider-shell.mjs'
 
 function read(path, label) {
@@ -40,7 +41,7 @@ export function verifyCNProviderConsole(consoleDir) {
   const registrationEntry = index.slice(registrationStart, standardStart)
   const standardEntry = index.slice(standardStart, entryEnd)
   const legacyAdapterImport = 'import("/assets/cn-provider-admin-v1/cn-provider-admin.js")'
-  const adapterImport = 'import("/assets/cn-provider-admin-v2/cn-provider-admin.js")'
+  const adapterImport = 'import("/assets/cn-provider-admin-v3/cn-provider-admin.js")'
   const shellImport = `import("/assets/${CN_PROVIDER_SHELL_ASSET}")`
   requireMarkers(registrationEntry, [legacyAdapterImport, adapterImport, shellImport], 'Registration Console entry')
   requireMarkers(standardEntry, [`await ${legacyAdapterImport}`, `await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
@@ -79,8 +80,15 @@ export function verifyCNProviderConsole(consoleDir) {
   if (actualShellEntries.join('\n') !== expectedShellEntries.join('\n')) {
     throw new Error('CN Provider approved shell namespace is missing or contains extra assets')
   }
+  const overrides = recoveryShellOverrides(assetsDirectory)
   for (const name of expectedLinks) {
     const linkPath = resolve(shellDirectory, name)
+    if (overrides.has(name)) {
+      if (lstatSync(linkPath).isSymbolicLink() || readFileSync(linkPath, 'utf8') !== overrides.get(name)) {
+        throw new Error(`Password recovery Console override differs from its canonical source: ${name}`)
+      }
+      continue
+    }
     if (!lstatSync(linkPath).isSymbolicLink() || readlinkSync(linkPath) !== `../${name}`) {
       throw new Error(`CN Provider approved shell asset is not the expected relative symlink: ${name}`)
     }
@@ -120,7 +128,7 @@ export function verifyCNProviderConsole(consoleDir) {
     'https://api.deepseek.com',
   ], 'Legacy CN Provider Admin route adapter')
 
-  const adapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v2')
+  const adapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v3')
   const adapterEntry = read(
     resolve(adapterDirectory, 'cn-provider-admin.js'),
     'CN Provider Admin route adapter',
@@ -162,7 +170,7 @@ export function verifyCNProviderConsole(consoleDir) {
     '/admin/ops', '/admin/subscriptions',
     '__ZERO_ONE_NAVIGATION_RECONCILIATION__', 'provider-catalog-admin',
     '__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__', 'Management page failed to load',
-    '/assets/cn-provider-admin-v2/cn-provider-admin.css',
+    '/assets/cn-provider-admin-v3/cn-provider-admin.css',
     'Kimi', 'Zhipu GLM', 'DeepSeek',
     'ops-platform-filter', 'subscription-platform-filter',
   ], 'CN Provider Admin route adapter')
@@ -176,8 +184,8 @@ export function verifyCNProviderConsole(consoleDir) {
   return {
     shell: `/assets/${CN_PROVIDER_SHELL_ASSET}`,
     legacyModule: '/assets/cn-provider-admin-v1/cn-provider-admin.js',
-    module: '/assets/cn-provider-admin-v2/cn-provider-admin.js',
-    stylesheet: '/assets/cn-provider-admin-v2/cn-provider-admin.css',
+    module: '/assets/cn-provider-admin-v3/cn-provider-admin.js',
+    stylesheet: '/assets/cn-provider-admin-v3/cn-provider-admin.css',
   }
 }
 

@@ -1165,3 +1165,7 @@ func cloneEmailBindUser(user *service.User) *service.User {
 	cloned := *user
 	return &cloned
 }
+
+func (s *emailBindCacheStub) ConsumePasswordResetToken(context.Context, string, string) (bool, error) {
+	return false, nil
+}

@@ -6,13 +6,21 @@
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
           {{ t('auth.forgotPasswordTitle') }}
         </h2>
-        <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
+        <p v-if="passwordResetEnabled" class="mt-2 text-sm text-gray-500 dark:text-dark-400">
           {{ t('auth.forgotPasswordHint') }}
         </p>
       </div>
 
+      <div v-if="!passwordResetEnabled" class="space-y-4 text-sm text-gray-500 dark:text-dark-400" role="status">
+        <p>{{ t(passwordResetStatusKey) }}</p>
+        <button v-if="passwordResetSettingsFailed" type="button" class="btn btn-secondary w-full"
+          data-testid="password-reset-settings-retry" @click="loadPasswordResetSettings">
+          {{ t('common.retry') }}
+        </button>
+      </div>
+
       <!-- Success State -->
-      <div v-if="isSubmitted" class="space-y-6">
+      <div v-else-if="isSubmitted" class="space-y-6">
         <div class="rounded-xl border border-zo-signal-200 bg-zo-signal-50 p-6 dark:border-zo-signal-800/50 dark:bg-zo-signal-900/20">
           <div class="flex flex-col items-center gap-4 text-center">
             <div class="flex h-12 w-12 items-center justify-center rounded-full bg-zo-signal-100 dark:bg-zo-signal-800/50">
@@ -133,13 +141,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive, onMounted, watch } from 'vue'
+import { computed, ref, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AuthLayout } from '@/components/layout'
 import Icon from '@/components/icons/Icon.vue'
 import TurnstileWidget from '@/components/CaptchaChallenge.vue'
 import { useAppStore } from '@/stores'
-import { getPublicSettings, forgotPassword } from '@/api/auth'
+import { forgotPassword } from '@/api/auth'
+import { usePasswordResetSettings } from '@/composables/usePasswordResetSettings'
+import { extractApiErrorCode } from '@/utils/apiError'
+import { passwordRecoveryErrorMessage } from '@/utils/passwordRecovery'
 
 const { t } = useI18n()
 
@@ -204,21 +215,19 @@ watch(validationToastMessage, (value, previousValue) => {
 
 // ==================== Lifecycle ====================
 
-onMounted(async () => {
-  try {
-    const settings = await getPublicSettings()
-    turnstileEnabled.value = settings.turnstile_enabled
-    turnstileSiteKey.value = settings.turnstile_site_key || ''
-    tencentCaptchaEnabled.value = settings.tencent_captcha_enabled === true
-    tencentCaptchaAppId.value = settings.tencent_captcha_app_id || ''
-    tencentCaptchaRegion.value = settings.tencent_captcha_region || 'cn'
-    aliyunCaptchaEnabled.value = settings.aliyun_captcha_enabled === true
-    aliyunCaptchaSceneId.value = settings.aliyun_captcha_scene_id || ''
-    aliyunCaptchaPrefix.value = settings.aliyun_captcha_prefix || ''
-    aliyunCaptchaRegion.value = settings.aliyun_captcha_region || 'cn'
-  } catch (error) {
-    console.error('Failed to load public settings:', error)
-  }
+const {
+  passwordResetEnabled, passwordResetSettingsFailed, passwordResetStatusKey,
+  loadPasswordResetSettings, disablePasswordReset
+} = usePasswordResetSettings((settings) => {
+  turnstileEnabled.value = settings.turnstile_enabled
+  turnstileSiteKey.value = settings.turnstile_site_key || ''
+  tencentCaptchaEnabled.value = settings.tencent_captcha_enabled === true
+  tencentCaptchaAppId.value = settings.tencent_captcha_app_id || ''
+  tencentCaptchaRegion.value = settings.tencent_captcha_region || 'cn'
+  aliyunCaptchaEnabled.value = settings.aliyun_captcha_enabled === true
+  aliyunCaptchaSceneId.value = settings.aliyun_captcha_scene_id || ''
+  aliyunCaptchaPrefix.value = settings.aliyun_captcha_prefix || ''
+  aliyunCaptchaRegion.value = settings.aliyun_captcha_region || 'cn'
 })
 
 // ==================== Turnstile Handlers ====================
@@ -288,19 +297,17 @@ function validateForm(): boolean {
 // ==================== Form Handlers ====================
 
 async function handleSubmit(): Promise<void> {
+  if (!passwordResetEnabled.value || isLoading.value) return
   errorMessage.value = ''
 
   if (!validateForm()) {
     return
   }
 
-  if (!(await acquireActionProof())) {
-    return
-  }
-
   isLoading.value = true
 
   try {
+    if (!(await acquireActionProof()) || !passwordResetEnabled.value) return
     await forgotPassword({
       email: formData.email,
       turnstile_token:
@@ -312,16 +319,8 @@ async function handleSubmit(): Promise<void> {
     isSubmitted.value = true
     appStore.showSuccess(t('auth.resetEmailSent'))
   } catch (error: unknown) {
-    const err = error as { message?: string; response?: { data?: { detail?: string } } }
-
-    if (err.response?.data?.detail) {
-      errorMessage.value = err.response.data.detail
-    } else if (err.message) {
-      errorMessage.value = err.message
-    } else {
-      errorMessage.value = t('auth.sendResetLinkFailed')
-    }
-
+    if (extractApiErrorCode(error) === 'PASSWORD_RESET_DISABLED') disablePasswordReset()
+    errorMessage.value = passwordRecoveryErrorMessage(error, t, 'auth.sendResetLinkFailed')
     appStore.showError(errorMessage.value)
   } finally {
     if (captchaEnabled.value) {

@@ -278,6 +278,11 @@ test.describe('Landing visual contracts', () => {
         Number.isFinite(animation.effect?.getComputedTiming().endTime),
       )
       await Promise.all(finiteAnimations.map((animation) => animation.finished.catch(() => undefined)))
+      // 数据异步挂载后再加载实际使用的字体，避免首次字形取样落在回退字体阶段。
+      await Promise.all([...element.querySelectorAll('strong,small,.model-name')].map((node) =>
+        document.fonts.load(getComputedStyle(node).font, node.textContent || ''),
+      ))
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
     })
     await page.addStyleTag({
       content: `
@@ -287,6 +292,8 @@ test.describe('Landing visual contracts', () => {
         .site-header,
         .announcement-bar,
         .specular-effects-canvas { display: none !important; }
+        /* 异步状态区更新后，固定截图的滚动取样位置。 */
+        html { scroll-behavior: auto !important; }
         #pricing { background: #000 !important; }
       `,
     })

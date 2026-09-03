@@ -385,6 +385,8 @@ export async function seedConsole(
   mode: 'v1' | 'v2' = 'v2',
   options: {
     authenticated?: boolean
+    passwordResetEnabled?: boolean
+    registrationEnabled?: boolean
     user?: typeof adminUser
     authMeUsers?: Array<typeof adminUser>
     communityQrEnabled?: boolean
@@ -423,6 +425,8 @@ export async function seedConsole(
   const theme = options.theme ?? 'light'
   const settings = {
     ...publicSettings(mode),
+    password_reset_enabled: options.passwordResetEnabled ?? true,
+    registration_enabled: options.registrationEnabled ?? true,
     community_qr_enabled: options.communityQrEnabled ?? false,
     community_qr_title: options.communityQrTitle ?? '交流群',
     community_qr_description:

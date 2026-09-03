@@ -52,6 +52,16 @@ the form mounts, so a slow anonymous settings refresh or an unrelated Adapter
 cannot blank the login entry. The recovered login actions, settled desktop and
 mobile visuals, and post-login role routing remain unchanged.
 
+The `/forgot-password` and `/reset-password` entries follow the Auth-first
+boundary too: their loading or unavailable state mounts before Public Settings
+settle. Both views are built from maintained Vue source and reuse the approved
+Vue, Router, API client and App Store instances. A new versioned namespace keeps
+the preceding shell byte-identical and replaces only the two declared password
+route modules and the built-in header documentation vnode. Generation and
+verification reject any change outside these exact seams. The login recovery
+overlay derives availability from the native LoginView link, including later
+removal, and remains independent of the registration footer.
+
 The Kimi, Zhipu GLM and DeepSeek administration controls use two immutable,
 versioned route-content Adapters. The approved v1 Adapter remains byte-stable
 for `/admin/groups` and `/admin/accounts`; the Provider Platform Catalog v2

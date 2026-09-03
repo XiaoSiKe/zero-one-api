@@ -183,24 +183,14 @@ func (s *ChannelMonitorService) GetPublicChannelStatusSummary(ctx context.Contex
 		return nil, fmt.Errorf("compute monitor availability: %w", err)
 	}
 
-	summary := buildPublicChannelStatusSummaryV1(monitors, primaryByID, latestByMonitor, availabilityByMonitor)
-	if summary.State != PublicChannelStatusUnknown {
-		historyByMonitor, historyErr := s.repo.ListRecentHistoryForMonitors(
-			ctx,
-			ids,
-			primaryByID,
-			monitorTimelineMaxPoints,
-		)
-		if historyErr == nil {
-			summary.Items = buildPublicChannelStatusItemsV1(
-				monitors,
-				primaryByID,
-				latestByMonitor,
-				availabilityByMonitor,
-				historyByMonitor,
-			)
-		}
-	}
+	// 汇总仍要求全部监控就绪，但逐渠道展示不受其他渠道缺样本影响。
+	// 时间轴失败只影响历史展示，复用已有批量读取及告警路径。
+	now := time.Now().UTC()
+	summary := buildPublicChannelStatusSummaryV1At(monitors, primaryByID, latestByMonitor, availabilityByMonitor, now)
+	summary.Items = buildPublicChannelStatusItemsV1(
+		monitors, primaryByID, latestByMonitor, availabilityByMonitor,
+		s.batchTimeline(ctx, ids, primaryByID), now,
+	)
 	return &summary, nil
 }
 
@@ -210,34 +200,33 @@ func buildPublicChannelStatusItemsV1(
 	latestByMonitor map[int64][]*ChannelMonitorLatest,
 	availabilityByMonitor map[int64][]*ChannelMonitorAvailability,
 	historyByMonitor map[int64][]*ChannelMonitorHistoryEntry,
+	now time.Time,
 ) []PublicChannelStatusItem {
 	items := make([]PublicChannelStatusItem, 0, len(monitors))
 	for _, monitor := range monitors {
 		if monitor == nil || strings.TrimSpace(monitor.Name) == "" {
-			return nil
+			continue
 		}
 		primaryModel := primaryByID[monitor.ID]
 		latest := pickLatest(latestByMonitor[monitor.ID], primaryModel)
 		availability := indexAvailabilityByModel(availabilityByMonitor[monitor.ID])[primaryModel]
-		if latest == nil || latest.CheckedAt.IsZero() || availability == nil || availability.TotalChecks <= 0 {
-			return nil
-		}
-
-		operationalChecks := availability.OperationalChecks
-		if operationalChecks < 0 {
-			operationalChecks = 0
-		}
-		if operationalChecks > availability.TotalChecks {
-			operationalChecks = availability.TotalChecks
-		}
-		availability7d := float64(operationalChecks) / float64(availability.TotalChecks) * 100
-		observedAt := latest.CheckedAt.UTC()
 		item := PublicChannelStatusItem{
-			Name:           strings.TrimSpace(monitor.Name),
-			State:          publicChannelStatusItemState(latest.Status),
-			Availability7d: &availability7d,
-			ObservedAt:     &observedAt,
-			Timeline:       publicChannelStatusTimeline(historyByMonitor[monitor.ID]),
+			Name:     strings.TrimSpace(monitor.Name),
+			State:    PublicChannelStatusUnknown,
+			Timeline: publicChannelStatusTimeline(historyByMonitor[monitor.ID]),
+		}
+		if availability != nil && availability.TotalChecks > 0 {
+			operationalChecks := max(0, min(availability.OperationalChecks, availability.TotalChecks))
+			availability7d := float64(operationalChecks) / float64(availability.TotalChecks) * 100
+			item.Availability7d = &availability7d
+		}
+		if latest != nil && !latest.CheckedAt.IsZero() {
+			observedAt := latest.CheckedAt.UTC()
+			item.ObservedAt = &observedAt
+			// 保留真实的历史可用率与采样时间，过期样本不能继续显示为运行正常。
+			if item.Availability7d != nil && !isPublicChannelStatusSampleStale(monitor, latest.CheckedAt, now) {
+				item.State = publicChannelStatusItemState(latest.Status)
+			}
 		}
 		items = append(items, item)
 	}
@@ -277,24 +266,9 @@ func publicChannelStatusTimelineState(status string) string {
 	}
 }
 
-// buildPublicChannelStatusSummaryV1 is kept pure so status semantics can be
+// buildPublicChannelStatusSummaryV1At is kept pure so status semantics can be
 // tested without a database. Every enabled monitor must have a primary-model
 // sample before the public page is allowed to report a health state.
-func buildPublicChannelStatusSummaryV1(
-	monitors []*ChannelMonitor,
-	primaryByID map[int64]string,
-	latestByMonitor map[int64][]*ChannelMonitorLatest,
-	availabilityByMonitor map[int64][]*ChannelMonitorAvailability,
-) PublicChannelStatusSummary {
-	return buildPublicChannelStatusSummaryV1At(
-		monitors,
-		primaryByID,
-		latestByMonitor,
-		availabilityByMonitor,
-		time.Now().UTC(),
-	)
-}
-
 func buildPublicChannelStatusSummaryV1At(
 	monitors []*ChannelMonitor,
 	primaryByID map[int64]string,

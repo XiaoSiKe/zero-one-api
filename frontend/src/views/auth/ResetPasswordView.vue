@@ -6,13 +6,21 @@
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
           {{ t('auth.resetPasswordTitle') }}
         </h2>
-        <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
+        <p v-if="passwordResetEnabled" class="mt-2 text-sm text-gray-500 dark:text-dark-400">
           {{ t('auth.resetPasswordHint') }}
         </p>
       </div>
 
+      <div v-if="!passwordResetEnabled" class="space-y-4 text-sm text-gray-500 dark:text-dark-400" role="status">
+        <p>{{ t(passwordResetStatusKey) }}</p>
+        <button v-if="passwordResetSettingsFailed" type="button" class="btn btn-secondary w-full"
+          data-testid="password-reset-settings-retry" @click="loadPasswordResetSettings">
+          {{ t('common.retry') }}
+        </button>
+      </div>
+
       <!-- Invalid Link State -->
-      <div v-if="isInvalidLink" class="space-y-6">
+      <div v-else-if="isInvalidLink" class="space-y-6">
         <div class="rounded-xl border border-zo-alert-200 bg-zo-alert-50 p-6 dark:border-zo-alert-800/50 dark:bg-zo-alert-900/20">
           <div class="flex flex-col items-center gap-4 text-center">
             <div class="flex h-12 w-12 items-center justify-center rounded-full bg-zo-alert-100 dark:bg-zo-alert-800/50">
@@ -207,6 +215,9 @@ import { AuthLayout } from '@/components/layout'
 import Icon from '@/components/icons/Icon.vue'
 import { useAppStore } from '@/stores'
 import { resetPassword } from '@/api/auth'
+import { usePasswordResetSettings } from '@/composables/usePasswordResetSettings'
+import { extractApiErrorCode } from '@/utils/apiError'
+import { passwordRecoveryErrorMessage } from '@/utils/passwordRecovery'
 
 const { t } = useI18n()
 
@@ -214,6 +225,10 @@ const { t } = useI18n()
 
 const route = useRoute()
 const appStore = useAppStore()
+const {
+  passwordResetEnabled, passwordResetSettingsFailed, passwordResetStatusKey,
+  loadPasswordResetSettings, disablePasswordReset
+} = usePasswordResetSettings()
 
 // ==================== State ====================
 
@@ -294,6 +309,7 @@ function validateForm(): boolean {
 // ==================== Form Handlers ====================
 
 async function handleSubmit(): Promise<void> {
+  if (!passwordResetEnabled.value || isLoading.value || isInvalidLink.value) return
   errorMessage.value = ''
 
   if (!validateForm()) {
@@ -312,19 +328,8 @@ async function handleSubmit(): Promise<void> {
     isSuccess.value = true
     appStore.showSuccess(t('auth.passwordResetSuccess'))
   } catch (error: unknown) {
-    const err = error as { message?: string; response?: { data?: { detail?: string; code?: string } } }
-
-    // Check for invalid/expired token error
-    if (err.response?.data?.code === 'INVALID_RESET_TOKEN') {
-      errorMessage.value = t('auth.invalidOrExpiredToken')
-    } else if (err.response?.data?.detail) {
-      errorMessage.value = err.response.data.detail
-    } else if (err.message) {
-      errorMessage.value = err.message
-    } else {
-      errorMessage.value = t('auth.resetPasswordFailed')
-    }
-
+    if (extractApiErrorCode(error) === 'PASSWORD_RESET_DISABLED') disablePasswordReset()
+    errorMessage.value = passwordRecoveryErrorMessage(error, t, 'auth.resetPasswordFailed')
     appStore.showError(errorMessage.value)
   } finally {
     isLoading.value = false

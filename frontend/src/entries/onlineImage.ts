@@ -223,7 +223,7 @@ function ensureRouteStyles() {
   const stylesheet = document.createElement('link')
   stylesheet.id = STYLE_ID
   stylesheet.rel = 'stylesheet'
-  stylesheet.href = '/assets/online-image-v10/online-image.css'
+  stylesheet.href = '/assets/online-image-v11/online-image.css'
   document.head.append(stylesheet)
 }
 

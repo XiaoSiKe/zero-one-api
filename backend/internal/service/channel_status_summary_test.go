@@ -94,6 +94,94 @@ func TestPublicChannelStatusSummaryCacheSingleflightsConcurrentLoads(t *testing.
 	require.Equal(t, int32(1), calls.Load())
 }
 
+type publicStatusRepositoryStub struct {
+	ChannelMonitorRepository
+	monitors     []*ChannelMonitor
+	latest       map[int64][]*ChannelMonitorLatest
+	availability map[int64][]*ChannelMonitorAvailability
+	historyError error
+}
+
+func (r *publicStatusRepositoryStub) ListEnabled(context.Context) ([]*ChannelMonitor, error) {
+	return r.monitors, nil
+}
+
+func (r *publicStatusRepositoryStub) ListLatestForMonitorIDs(context.Context, []int64) (map[int64][]*ChannelMonitorLatest, error) {
+	return r.latest, nil
+}
+
+func (r *publicStatusRepositoryStub) ComputeAvailabilityForMonitors(context.Context, []int64, int) (map[int64][]*ChannelMonitorAvailability, error) {
+	return r.availability, nil
+}
+
+func (r *publicStatusRepositoryStub) ListRecentHistoryForMonitors(context.Context, []int64, map[int64]string, int) (map[int64][]*ChannelMonitorHistoryEntry, error) {
+	return nil, r.historyError
+}
+
+func TestPublicChannelStatusKeepsRowsWhenOneMonitorHasIncompleteData(t *testing.T) {
+	for _, scenario := range []string{"missing-sample", "stale-sample", "missing-availability", "empty-status"} {
+		t.Run(scenario, func(t *testing.T) {
+			now := time.Now().UTC()
+			repo := &publicStatusRepositoryStub{
+				monitors: []*ChannelMonitor{
+					{ID: 1, Name: "正常渠道", PrimaryModel: "primary", IntervalSeconds: 60},
+					{ID: 2, Name: "等待渠道", PrimaryModel: "primary", IntervalSeconds: 60},
+				},
+				latest: map[int64][]*ChannelMonitorLatest{
+					1: {{Model: "primary", Status: MonitorStatusOperational, CheckedAt: now}},
+					2: {{Model: "primary", Status: MonitorStatusOperational, CheckedAt: now}},
+				},
+				availability: map[int64][]*ChannelMonitorAvailability{
+					1: {{Model: "primary", TotalChecks: 10, OperationalChecks: 9}},
+					2: {{Model: "primary", TotalChecks: 10, OperationalChecks: 10}},
+				},
+			}
+			switch scenario {
+			case "missing-sample":
+				delete(repo.latest, 2)
+			case "stale-sample":
+				repo.latest[2][0].CheckedAt = now.Add(-time.Hour)
+			case "missing-availability":
+				delete(repo.availability, 2)
+			case "empty-status":
+				repo.latest[2][0].Status = ""
+			}
+			svc := &ChannelMonitorService{repo: repo}
+			summary, err := svc.GetPublicChannelStatusSummary(context.Background())
+			require.NoError(t, err)
+			require.Equal(t, PublicChannelStatusUnknown, summary.State, "不完整的汇总不能宣称全部正常")
+			require.Len(t, summary.Items, 2, "单个监控未就绪不能清空其他渠道")
+			require.Equal(t, "正常渠道", summary.Items[0].Name)
+			require.Equal(t, PublicChannelStatusOperational, summary.Items[0].State)
+			require.InDelta(t, 90, *summary.Items[0].Availability7d, 0.001)
+			require.Equal(t, "等待渠道", summary.Items[1].Name)
+			require.Equal(t, PublicChannelStatusUnknown, summary.Items[1].State)
+			require.NotNil(t, summary.Items[1].Timeline, "空时间轴仍应符合公开数组契约")
+		})
+	}
+}
+
+func TestPublicChannelStatusKeepsCurrentRowsWhenHistoryFails(t *testing.T) {
+	repo := &publicStatusRepositoryStub{
+		monitors: []*ChannelMonitor{{ID: 1, Name: "当前渠道", PrimaryModel: "primary"}},
+		latest: map[int64][]*ChannelMonitorLatest{
+			1: {{Model: "primary", Status: MonitorStatusOperational, CheckedAt: time.Now().UTC()}},
+		},
+		availability: map[int64][]*ChannelMonitorAvailability{
+			1: {{Model: "primary", TotalChecks: 10, OperationalChecks: 10}},
+		},
+		historyError: errors.New("history temporarily unavailable"),
+	}
+	svc := &ChannelMonitorService{repo: repo}
+	summary, err := svc.GetPublicChannelStatusSummary(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, PublicChannelStatusOperational, summary.State)
+	require.Len(t, summary.Items, 1)
+	require.Equal(t, PublicChannelStatusOperational, summary.Items[0].State)
+	require.NotNil(t, summary.Items[0].Timeline)
+	require.Empty(t, summary.Items[0].Timeline)
+}
+
 func TestBuildPublicChannelStatusSummaryV1AggregatesOnlyCompleteMonitorData(t *testing.T) {
 	newest := time.Date(2026, 8, 16, 9, 0, 0, 0, time.UTC)
 	oldest := newest.Add(-time.Minute)

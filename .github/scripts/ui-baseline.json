@@ -53,7 +53,12 @@
     "visual-regression/tests/fixtures/api.ts",
     "visual-regression/tests/redeem.behavior.spec.ts",
     "visual-regression/tests/landing.visual.spec.ts",
-    "visual-regression/tests/version-baseline.spec.ts"
+    "visual-regression/tests/version-baseline.spec.ts",
+    "visual-regression/tests/auth-recovery.behavior.spec.ts",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-forgot-password.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-reset-password.png",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-forgot-password.png",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-reset-password.png"
   ],
   "compatibility_paths": [
     "frontend/src/api/",
@@ -62,7 +67,9 @@
   "protected_surfaces": [
     {
       "name": "landing-home",
-      "routes": ["/home"],
+      "routes": [
+        "/home"
+      ],
       "paths": [
         "landing/index.html",
         "landing/src/",
@@ -71,14 +78,30 @@
     },
     {
       "name": "auth",
-      "routes": ["/login", "/register"],
+      "routes": [
+        "/login",
+        "/register",
+        "/forgot-password",
+        "/reset-password"
+      ],
       "paths": [
         "frontend/src/views/auth/LoginView.vue",
         "frontend/src/views/auth/RegisterView.vue",
         "deploy/zero-one/recovered-frontend/console/",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-register.png",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-register.png",
-        "visual-regression/tests/console.visual.spec.ts"
+        "visual-regression/tests/console.visual.spec.ts",
+        "frontend/src/views/auth/ForgotPasswordView.vue",
+        "frontend/src/views/auth/ResetPasswordView.vue",
+        "frontend/src/composables/usePasswordResetSettings.ts",
+        "frontend/src/utils/passwordRecovery.ts",
+        "frontend/src/i18n/passwordRecovery.ts",
+        "frontend/vite.password-recovery.config.mjs",
+        "visual-regression/tests/auth-recovery.behavior.spec.ts",
+        "visual-regression/tests/__screenshots__/chromium-desktop/console-forgot-password.png",
+        "visual-regression/tests/__screenshots__/chromium-desktop/console-reset-password.png",
+        "visual-regression/tests/__screenshots__/chromium-mobile/console-forgot-password.png",
+        "visual-regression/tests/__screenshots__/chromium-mobile/console-reset-password.png"
       ]
     },
     {
@@ -108,7 +131,10 @@
     },
     {
       "name": "header-navigation-entries",
-      "routes": ["/dashboard", "/admin/settings"],
+      "routes": [
+        "/dashboard",
+        "/admin/settings"
+      ],
       "paths": [
         "frontend/src/utils/navigation-order.ts",
         "frontend/src/stores/adminSettings.ts",
@@ -214,7 +240,11 @@
     },
     {
       "name": "online-recharge-and-custom-pages",
-      "routes": ["/dashboard", "/redeem", "/custom/{id}"],
+      "routes": [
+        "/dashboard",
+        "/redeem",
+        "/custom/{id}"
+      ],
       "paths": [
         "deploy/zero-one/recovered-frontend/console/assets/CustomPageView-CDztmpKe.js",
         "deploy/zero-one/recovered-frontend/console/assets/zero-one-custom-page-security-v1.js",
@@ -252,7 +282,14 @@
     },
     {
       "name": "cn-provider-management",
-      "routes": ["/admin/groups", "/admin/accounts", "/admin/channels/pricing", "/admin/channels/monitor", "/admin/ops", "/admin/subscriptions"],
+      "routes": [
+        "/admin/groups",
+        "/admin/accounts",
+        "/admin/channels/pricing",
+        "/admin/channels/monitor",
+        "/admin/ops",
+        "/admin/subscriptions"
+      ],
       "paths": [
         "frontend/src/constants/platforms.ts",
         "frontend/src/constants/__tests__/platforms.spec.ts",
@@ -315,12 +352,17 @@
         "visual-regression/tests/__screenshots__/chromium-desktop/console-ops-cn-platform-options.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-subscriptions-cn-platform-options.png",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-ops-cn-platform-options.png",
-        "visual-regression/tests/__screenshots__/chromium-mobile/console-subscriptions-cn-platform-options.png"
+        "visual-regression/tests/__screenshots__/chromium-mobile/console-subscriptions-cn-platform-options.png",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v3/"
       ]
     },
     {
       "name": "online-image-generation",
-      "routes": ["/images", "/custom/image-tutorial"],
+      "routes": [
+        "/images",
+        "/custom/image-tutorial"
+      ],
       "paths": [
         "frontend/src/features/online-image/",
         "frontend/src/composables/keyCapabilityAccess.ts",
@@ -352,12 +394,17 @@
         "deploy/zero-one/test-routing.sh",
         "deploy/zero-one/test-live-routing.sh",
         "visual-regression/tests/console.online-image.spec.ts",
-        "visual-regression/tests/fixtures/api.ts"
+        "visual-regression/tests/fixtures/api.ts",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5/",
+        "deploy/zero-one/recovered-frontend/console/assets/online-image-v11/"
       ]
     },
     {
       "name": "model-plaza-pricing",
-      "routes": ["/model-plaza", "#pricing"],
+      "routes": [
+        "/model-plaza",
+        "#pricing"
+      ],
       "paths": [
         "landing/src/components/ContentSections.tsx",
         "landing/src/components/PricingSection.tsx",
@@ -375,7 +422,11 @@
     },
     {
       "name": "redeem-benefits-mystery-box",
-      "routes": ["/redeem", "/admin/redeem", "/admin/promo-codes"],
+      "routes": [
+        "/redeem",
+        "/admin/redeem",
+        "/admin/promo-codes"
+      ],
       "paths": [
         "frontend/src/features/redeem/",
         "frontend/src/api/redeem.ts",

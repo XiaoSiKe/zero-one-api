@@ -1,5 +1,5 @@
 const DEFAULT_ENDPOINT = "/api/v1/channel-status/summary";
-const DEFAULT_TIMEOUT_MS = 3_000;
+export const CHANNEL_STATUS_TIMEOUT_MS = 8_000;
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -194,7 +194,7 @@ export async function fetchChannelStatus(
 
   const request = options.request ?? fetch;
   const controller = new AbortController();
-  const timeoutMs = Math.max(0, options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+  const timeoutMs = Math.max(0, options.timeoutMs ?? CHANNEL_STATUS_TIMEOUT_MS);
   let timedOut = false;
   const handleCallerAbort = () => controller.abort(options.signal?.reason);
   if (options.signal?.aborted) return { status: "error", reason: "aborted" };
