@@ -134,6 +134,16 @@ describe("StatusSection", () => {
     expect(mocks.fetchChannelStatus).not.toHaveBeenCalled();
   });
 
+  it("refreshes a restored page immediately instead of waiting for the suspended timer", async () => {
+    mocks.fetchChannelStatus.mockResolvedValue(success());
+    render(<StatusSection />);
+    await act(async () => Promise.resolve());
+    await act(async () => {
+      window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
+    });
+    expect(mocks.fetchChannelStatus).toHaveBeenCalledTimes(2);
+  });
+
   it("does not invent a channel row when the response has only an aggregate", async () => {
     mocks.fetchChannelStatus.mockResolvedValue(
       success({

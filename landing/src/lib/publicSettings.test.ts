@@ -129,21 +129,56 @@ describe('public settings normalization', () => {
     })
   })
 
-  it('falls back when the public settings request fails', async () => {
+  it('distinguishes a failed request from valid disabled capabilities', async () => {
     const failedRequest = async () => {
       throw new TypeError('network unavailable')
     }
 
     await expect(fetchPublicSettings(failedRequest as typeof fetch)).resolves.toEqual(
-      DEFAULT_PUBLIC_SETTINGS,
+      null,
     )
   })
 
-  it('falls back when the public settings response is not successful', async () => {
+  it('reports an unsuccessful response as unavailable', async () => {
     const rejectedResponse = async () => new Response(null, { status: 503 })
 
     await expect(fetchPublicSettings(rejectedResponse as typeof fetch)).resolves.toEqual(
-      DEFAULT_PUBLIC_SETTINGS,
+      null,
     )
+  })
+
+  it.each([{ code: 1, data: {} }, { code: 0, data: null }, '<html>'])('rejects an invalid envelope: %j', async (payload) => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(Response.json(payload))
+    await expect(fetchPublicSettings(request)).resolves.toBeNull()
+  })
+
+  it('keeps a valid disabled response distinct from request failure', async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ code: 0, data: {} }))
+    await expect(fetchPublicSettings(request)).resolves.toEqual(DEFAULT_PUBLIC_SETTINGS)
+  })
+
+  it('cancels the actual settings request when its caller unmounts', async () => {
+    const request = vi.fn<typeof fetch>((_url, options) => new Promise((_resolve, reject) => {
+      options?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))
+    }))
+    const controller = new AbortController()
+    const result = fetchPublicSettings(request, undefined, controller.signal)
+    controller.abort()
+    await expect(result).resolves.toBeNull()
+    expect(request.mock.calls[0]?.[1]?.signal?.aborted).toBe(true)
+  })
+
+  it('reports the three-second timeout as unavailable so the page can recover', async () => {
+    vi.useFakeTimers()
+    try {
+      const request = vi.fn<typeof fetch>((_url, options) => new Promise((_resolve, reject) => {
+        options?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))
+      }))
+      const result = fetchPublicSettings(request)
+      await vi.advanceTimersByTimeAsync(3_000)
+      await expect(result).resolves.toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

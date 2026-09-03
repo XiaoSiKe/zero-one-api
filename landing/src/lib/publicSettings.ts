@@ -166,8 +166,12 @@ export function normalizePublicSettings(payload: unknown): PublicSettings {
 export async function fetchPublicSettings(
   request: typeof fetch = fetch,
   endpoint = '/api/v1/settings/public?scope=landing',
-): Promise<PublicSettings> {
+  signal?: AbortSignal,
+): Promise<PublicSettings | null> {
   const controller = new AbortController()
+  if (signal?.aborted) return null
+  const abort = () => controller.abort()
+  signal?.addEventListener('abort', abort, { once: true })
   const timeoutId = globalThis.setTimeout(() => controller.abort(), 3_000)
 
   try {
@@ -178,11 +182,15 @@ export async function fetchPublicSettings(
       headers: { Accept: 'application/json' },
     })
 
-    if (!response.ok) return { ...DEFAULT_PUBLIC_SETTINGS }
-    return normalizePublicSettings(await response.json())
+    // ZERO-ONE：失败不能伪装成管理员关闭功能，调用者必须能重试。
+    if (!response.ok) return null
+    const payload = asRecord(await response.json())
+    if (payload?.code !== 0 || !asRecord(payload.data)) return null
+    return normalizePublicSettings(payload)
   } catch {
-    return { ...DEFAULT_PUBLIC_SETTINGS }
+    return null
   } finally {
     globalThis.clearTimeout(timeoutId)
+    signal?.removeEventListener('abort', abort)
   }
 }

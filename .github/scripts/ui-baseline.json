@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-04-r1",
-  "baseline_commit": "f187e0c1b9f5fb78fba5c297026cddaf089d4c96",
+  "baseline_ref": "ui-approved-2026-09-04-r3",
+  "baseline_commit": "01c637dfb710011602836d6f1950ab86d89fbd88",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -58,7 +58,8 @@
     "visual-regression/tests/__screenshots__/chromium-desktop/console-forgot-password.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-reset-password.png",
     "visual-regression/tests/__screenshots__/chromium-mobile/console-forgot-password.png",
-    "visual-regression/tests/__screenshots__/chromium-mobile/console-reset-password.png"
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-reset-password.png",
+    "visual-regression/tests/landing.public-data.spec.ts"
   ],
   "compatibility_paths": [
     "frontend/src/api/",
@@ -73,7 +74,8 @@
       "paths": [
         "landing/index.html",
         "landing/src/",
-        "deploy/zero-one/recovered-frontend/landing/"
+        "deploy/zero-one/recovered-frontend/landing/",
+        "visual-regression/tests/landing.public-data.spec.ts"
       ]
     },
     {
