@@ -75,7 +75,106 @@ docker compose \
 就声称得到同一镜像。只修改本项目需要的配置，不复制旧账号凭据、不改历史作者，
 也不因托管迁移而轮换 JWT、TOTP、数据库或其他业务密钥。
 
-## 当前生产基线（2026-09-02，v0.2.0）
+## 当前生产基线（2026-09-03，渠道状态与密码找回修复）
+
+[`PR #25`](https://github.com/XiaoSiKe/zero-one-api/pull/25) 的最终提交通过全部 12 项
+必需检查后，以 merge commit `d83760688df34a55dc0f495ccc0b09129373e46d` 合入 `main`。
+继续使用上游 v0.2.0 基线；本次修复首页渠道缺样本时整组消失、密码找回入口与能力开关
+不一致，以及控制台顶部多余的内置知识库入口。
+
+[main CI 33728320490](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33728320490)
+的完整 attempt 2、[Security 33728320560](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33728320560)
+和唯一一次 [Publish 33731105576](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33731105576)
+均已成功。CI attempt 1 的部署作业遇到 Go 模块代理下载超时，因此重跑整个工作流，
+没有拼接不同 attempt 的检查结果。发布工作流按同一精确源码 SHA 构建并验证两张镜像：
+
+```text
+源码    d83760688df34a55dc0f495ccc0b09129373e46d
+Sub2API ghcr.io/xiaosike/zero-one-sub2api@sha256:7c7b008864a6d44d6c43169d935102a8c89be0bfbf9ef1ceacb563e2a6b567c0
+Edge    ghcr.io/xiaosike/zero-one-edge@sha256:48b594eea3a75c23e90e0a5745350e7ce9572bfe54023512b242717f03a77770
+```
+
+两个 OCI index 均含 amd64/arm64、SBOM 和 provenance。生产主机实际运行 amd64，
+两张镜像的 revision 均匹配上述 SHA，Backend 版本仍为 `0.2.0`。生产部署源码停留在
+该提交；后续文档归档提交不改变运行镜像，也不重复发布镜像。
+
+批准 UI 为不可移动的
+`ui-approved-2026-09-03-r1@c6fc07816e9fda7739397350a89122da1fc91277`。
+升级保护登记 531 个二开文件，并覆盖两条密码路由及新增回归用例。实际发布的恢复版
+使用 `cn-provider-shell-v5`、`cn-provider-admin-v3`、`password-recovery-v1` 和
+`online-image-v11`；入口、预加载与资源闭包检查均通过。Vue 源码与密码恢复发布资源
+共用实现，旧资源命名空间保留。
+
+本地固定 Linux 工具链验证包括：Landing 124 项、Console 1,870 项、Playwright
+235 项通过（73 项为已有视口跳过），以及 Go 普通、unit、integration 全套测试。
+类型检查、lint、构建、104 项策略测试和 UI/上游边界检查均通过。真实 SMTP、收信、
+打开重置链接、新密码登录、旧密码/旧令牌失效及链接重复使用拒绝，在独立数据库、
+Redis 和 Mailpit 环境中完成；该流程同时进入必需的部署 CI 作业。
+
+发布前恢复点：
+
+```text
+服务器 /srv/zero-one/.release-backups/20260903T073622Z-pre-recovery-d83760688d
+维护机 /Users/yangzi/Documents/关于实践/关于项目/零一中转站-production-backups/20260903T073622Z-pre-recovery-d83760688d
+```
+
+PostgreSQL custom dump、Redis RDB、部署/证书/应用配置、旧源码和旧双镜像分别用 age
+加密，五个密文的双端 SHA-256 一致。维护机在独立网络和临时卷中完成 PostgreSQL 18
+实际恢复、Redis checksum 和全部归档解密校验。持续写入的文件系统诊断日志没有纳入
+这次部署状态归档，已在恢复点明确记录；生产原始日志未删除。早先因日志持续追加而
+中断的 `20260903T073340Z-pre-recovery-d83760688d` 没有完成标记，不作为有效恢复点。
+
+先只重建 Backend，通过健康、业务计数与账本检查后，再执行仓库的
+`safe-edge-switch.sh`。PostgreSQL `536cb90ab411...` 和 Redis `4e9f6ffcb22c...`
+均未重建；新 Backend 为 `0f8934fa98e4...`，新 Edge 为 `bc6afbc4ab1f...`。
+四个容器均 healthy、重启次数 0。没有数据库结构迁移：100 张表、281 条迁移、
+无效索引 0，完整账本 SHA-256 仍为
+`2e550c883e9db6aee6f275f38372075a4f1560834d03393fabc79e4a0dfe7945`。
+除双镜像引用外的业务环境哈希仍为
+`659b4544ab65505d7983b1c983b3be3050bc43c06434721249f7a26c956c92a3`。
+
+28 项匿名 HTTP 检查覆盖主域名、兼容跳转、找回/重置路由、新版静态资源、公开渠道摘要，
+以及 Models/Messages/Responses 的 JSON 401。三轮间隔观察均无重启或致命日志，
+Edge 的 `pids.current` 保持 8，`pids.events max` 为 0。Provider bridge 保持 active，
+Backend 可访问且未新增公网监听；数据库计数和财务聚合检查通过。
+
+固定 Playwright 1.55.1 的 Linux Chromium 在桌面和手机视口均展示 9 条真实渠道记录，
+保留官网知识库入口，并确认登录页找回链接、可提交的邮箱表单和无效重置链接的中文状态。
+两种视口的 page error、console error 均为 0，八张线上截图已归档。维护机 TUN 的虚拟
+DNS 影响容器直连，因此浏览器验收复用已有 SSH 的本机 SOCKS 通道；请求仍使用规范域名
+并完整校验 HTTPS 证书。已登录 Chrome 另行确认控制台只有一个 Header 和 Main，
+指定知识库链接为 0 个，在线充值与两个二维码入口均保留。
+
+生产 SMTP 连接测试成功后，通过已有管理员会话和现有设置 API 保存：
+
+| 设置 | 保存前 | 保存后 |
+|---|---|---|
+| `password_reset_enabled` | `false` | `true` |
+| `frontend_url` | `https://app.01yapi.com` | `https://api.01yapi.com` |
+
+完整回读比较 312 个后台字段，实际差异只有上表两项；SMTP 凭据、发件人、邮件验证、
+验证码、限流、知识库链接和自定义导航保持原值。既有保存流程附带补全的两份侧栏排序
+已通过同一设置 API 恢复，临时请求拦截随后清除。数据库原有 291 个设置键中仅上表两键
+变化，未删除键；保存协议新增落库 `openai_ttft_mode=semantic`，与保存前的有效默认值
+一致。公开设置回读确认找回能力已开启。生产没有向真实用户发送测试重置邮件，也没有
+更改任何用户密码；真实邮件及改密闭环使用上述隔离验收环境。
+
+### 本次直接回滚基线
+
+```text
+部署源码 e442cd5a8b68a69f3db4cfeb64b71cc4ebca3573
+镜像源码 03b0e68f034c30c11279892bf032d3b3aba48358
+Sub2API ghcr.io/xiaosike/zero-one-sub2api@sha256:26d742ae2c5d7dbab788551525dd6067fdbf23203da3d15dccd48d4df672e241
+Edge    ghcr.io/xiaosike/zero-one-edge@sha256:65838f3eefcfce20e5dc0e205870f66fca4c1aaa878f47ae598c2df1094e0dd0
+```
+
+Backend 环境副本为恢复点中的
+`env.before-backend-recovery-20260903T081439Z.Im9w3J`；Edge 环境副本为
+`deploy/zero-one/.env.before-edge-20260903T081529Z.87rEj6`，权限均为 `0600`。
+回滚应用时恢复旧源码和双镜像，并通过现有设置 API 恢复本次两项设置，保留其他业务
+配置及持久化数据。普通应用回滚不恢复数据库、不清空 Redis，也不删除生产未跟踪文件。
+
+## 历史生产基线（2026-09-02，v0.2.0）
 
 经所有者授权，已将
 [`PR #21`](https://github.com/XiaoSiKe/zero-one-api/pull/21) 以 merge commit

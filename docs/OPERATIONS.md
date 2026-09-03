@@ -29,6 +29,10 @@ node deploy/zero-one/test-password-recovery.mjs <candidate-backend-image> <candi
 认证入口读取设置期间保持不可提交，关闭能力时不显示可用的找回入口。按错误码显示
 中文提示；找回请求的成功响应不透露邮箱是否注册。每个重置令牌必须原子核销。
 
+2026-09-03 已按此流程完成 PR #25 对应源码 `d83760688df34a55dc0f495ccc0b09129373e46d`
+的生产发布，找回能力已开启，链接域名已统一为规范域名。镜像摘要、恢复点、设置差异和
+回滚入口见 [`PRODUCTION_SERVER_CN.md`](PRODUCTION_SERVER_CN.md#当前生产基线2026-09-03渠道状态与密码找回修复)。
+
 ## Initial Deployment
 
 1. Keep the public DNS records unpointed. Copy `deploy/zero-one/.env.example` to `deploy/zero-one/.env`, replace every placeholder secret and replace all four runtime image values with approved registry digests.
