@@ -52,6 +52,20 @@ the form mounts, so a slow anonymous settings refresh or an unrelated Adapter
 cannot blank the login entry. The recovered login actions, settled desktop and
 mobile visuals, and post-login role routing remain unchanged.
 
+Native and recovered Console login responses consume the same configured run
+mode before the first dashboard paint. A same-document logout and login must
+not inherit the preceding identity's mode, and the persisted auth snapshot must
+retain the mode so reload does not change sidebar visibility.
+
+CC-Switch imports launch through a temporary `ccswitch://` link inside the
+originating user gesture, matching the desktop application's documented link
+contract without retaining the API Key in the DOM. Because browsers cannot
+reliably report whether the operating system registered or accepted a native
+protocol, the Console shows a neutral launch acknowledgement with installation,
+external-application permission and manual-copy guidance instead of inferring
+success or failure from page focus. Synchronous launch failures keep the
+existing error path.
+
 The `/forgot-password` and `/reset-password` entries follow the Auth-first
 boundary too: their loading or unavailable state mounts before Public Settings
 settle. Both views are built from maintained Vue source and reuse the approved

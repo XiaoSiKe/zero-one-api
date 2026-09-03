@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
@@ -18,17 +19,20 @@ import (
 )
 
 type PasskeyHandler struct {
+	cfg         *config.Config
 	passkeys    *service.PasskeyService
 	authService *service.AuthService
 	settingSvc  *service.SettingService
 }
 
 func NewPasskeyHandler(
+	cfg *config.Config,
 	passkeys *service.PasskeyService,
 	authService *service.AuthService,
 	settingService *service.SettingService,
 ) *PasskeyHandler {
 	return &PasskeyHandler{
+		cfg:         cfg,
 		passkeys:    passkeys,
 		authService: authService,
 		settingSvc:  settingService,
@@ -121,7 +125,7 @@ func (h *PasskeyHandler) FinishLogin(c *gin.Context) {
 	middleware2.SetAuditActor(c, user.ID, user.Email)
 	c.Set("auth_method", service.AuditAuthMethodPasskey)
 	h.authService.RecordSuccessfulLogin(c.Request.Context(), user.ID)
-	respondWithTokenPair(c, h.authService, user)
+	respondWithTokenPair(c, h.authService, user, authRunMode(h.cfg))
 }
 
 func (h *PasskeyHandler) BeginRegistration(c *gin.Context) {

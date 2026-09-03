@@ -131,7 +131,7 @@ async function Z(e, t) {
   l == null || l.unmount(), l = null, E = null, t.replaceChildren(), d = (async () => {
     let r = null;
     try {
-      if (r = await (await import("./onlineImageLeaf-RnFHpnvv.js")).prepareOnlineImageSurface(w()), n !== p || window.location.pathname !== c || !e.isConnected || !t.isConnected || t.parentElement !== e) {
+      if (r = await (await import("./onlineImageLeaf-DRRY7_ik.js")).prepareOnlineImageSurface(w()), n !== p || window.location.pathname !== c || !e.isConnected || !t.isConnected || t.parentElement !== e) {
         r.unmount(), queueMicrotask(L);
         return;
       }

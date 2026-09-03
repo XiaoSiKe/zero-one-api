@@ -911,6 +911,7 @@ const t = {
     ipBlacklistHint: "每行一个 IP 或 CIDR，这些 IP 将被禁止使用此密钥",
     ipRestrictionEnabled: "已配置 IP 限制",
     ccSwitchNotInstalled: "未检测到 CC-Switch 自动打开。请确认已安装并允许浏览器打开外部应用，或手动复制 API 密钥。",
+    ccSwitchLaunchRequested: "正在尝试打开 CC-Switch。如果没有启动，请确认已安装并允许浏览器打开外部应用，或手动复制 API 密钥。",
     ccsClientSelect: {
       title: "选择客户端",
       description: "请选择您要导入到 CC-Switch 的客户端类型：",

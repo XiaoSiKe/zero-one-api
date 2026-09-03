@@ -388,6 +388,7 @@ export async function seedConsole(
     passwordResetEnabled?: boolean
     registrationEnabled?: boolean
     user?: typeof adminUser
+    loginUser?: typeof adminUser
     authMeUsers?: Array<typeof adminUser>
     communityQrEnabled?: boolean
     communityQrImage?: string
@@ -449,6 +450,7 @@ export async function seedConsole(
   }
   let communityQrImage = options.communityQrImage ?? ''
   let authMeRequestIndex = 0
+  let activeAuthUser = user
   const affiliateUsers = [
     { id: 10, email: 'inviter@01yapi.test', username: '邀请人甲', role: 'user', status: 'active', created_at: '2026-02-01T00:00:00+08:00' },
     { id: 20, email: 'missed@01yapi.test', username: '遗漏客户乙', role: 'user', status: 'active', created_at: '2026-03-01T00:00:00+08:00' },
@@ -494,16 +496,20 @@ export async function seedConsole(
     const requestUrl = new URL(route.request().url())
     const path = requestUrl.pathname.replace(/^\/api\/v1/, '')
     if (path === '/auth/login') {
+      activeAuthUser = options.loginUser ?? user
       return fulfill(route, {
         access_token: 'visual-fixture-token',
         refresh_token: 'visual-fixture-refresh-token',
         expires_in: 3600,
-        user,
+        user: activeAuthUser,
       })
+    }
+    if (path === '/auth/logout') {
+      return fulfill(route, null)
     }
     if (path === '/auth/me') {
       const sequence = options.authMeUsers ?? []
-      const responseUser = sequence[Math.min(authMeRequestIndex, Math.max(0, sequence.length - 1))] ?? user
+      const responseUser = sequence[Math.min(authMeRequestIndex, Math.max(0, sequence.length - 1))] ?? activeAuthUser
       authMeRequestIndex += 1
       return fulfill(route, responseUser)
     }

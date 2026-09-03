@@ -211,6 +211,7 @@ export default {
     ipBlacklistHint: 'One IP or CIDR per line. These IPs will be blocked from using this key.',
     ipRestrictionEnabled: 'IP restriction enabled',
     ccSwitchNotInstalled: 'CC-Switch did not open automatically. Make sure it is installed and allow the browser to open external applications, or manually copy the API key.',
+    ccSwitchLaunchRequested: 'Opening CC-Switch. If it does not start, make sure it is installed and allow the browser to open external applications, or manually copy the API key.',
     ccsClientSelect: {
       title: 'Select Client',
       description: 'Please select the client type to import to CC-Switch:',

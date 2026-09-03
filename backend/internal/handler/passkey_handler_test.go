@@ -85,7 +85,7 @@ func TestPasskeyBeginLoginRejectsDisabledAdminSwitch(t *testing.T) {
 	settings := service.NewSettingService(repo, &config.Config{
 		WebAuthn: config.WebAuthnConfig{Enabled: true},
 	})
-	handler := NewPasskeyHandler(nil, nil, settings)
+	handler := NewPasskeyHandler(nil, nil, nil, settings)
 	recorder := httptest.NewRecorder()
 	ginContext, _ := gin.CreateTestContext(recorder)
 	ginContext.Request = httptest.NewRequest(http.MethodPost, "/api/v1/auth/passkey/login/begin", nil)
@@ -102,7 +102,7 @@ func TestPasskeyBeginLoginReportsSettingStoreFailure(t *testing.T) {
 		&passkeySwitchSettingRepo{err: errors.New("database unavailable")},
 		&config.Config{WebAuthn: config.WebAuthnConfig{Enabled: true}},
 	)
-	handler := NewPasskeyHandler(nil, nil, settings)
+	handler := NewPasskeyHandler(nil, nil, nil, settings)
 	recorder := httptest.NewRecorder()
 	ginContext, _ := gin.CreateTestContext(recorder)
 	ginContext.Request = httptest.NewRequest(http.MethodPost, "/api/v1/auth/passkey/login/begin", nil)
@@ -138,7 +138,7 @@ func newTencentProtectedPasskeyHandler(t *testing.T) (*PasskeyHandler, *passkeyC
 	sessions := &passkeyBeginSessionStoreStub{}
 	passkeys, err := service.NewPasskeyService(cfg, nil, sessions, nil)
 	require.NoError(t, err)
-	return NewPasskeyHandler(passkeys, authService, settings), verifier, sessions
+	return NewPasskeyHandler(cfg, passkeys, authService, settings), verifier, sessions
 }
 
 func newPasskeyBeginLoginContext(body string) (*gin.Context, *httptest.ResponseRecorder) {
@@ -183,7 +183,7 @@ func TestPasskeyBeginLoginAcceptsTencentCaptchaProofBeforeCeremony(t *testing.T)
 
 func TestPasskeyCredentialListRemainsAvailableWhenSignInDisabled(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	handler := NewPasskeyHandler(nil, nil, nil)
+	handler := NewPasskeyHandler(nil, nil, nil, nil)
 	recorder := httptest.NewRecorder()
 	ginContext, _ := gin.CreateTestContext(recorder)
 	ginContext.Request = httptest.NewRequest(http.MethodGet, "/api/v1/user/passkeys", nil)

@@ -389,6 +389,44 @@ test.describe('Console public auth contracts', () => {
     await expectConsoleCardMotion(page, testInfo.project.name)
   })
 
+  test('same-document relogin applies the response run mode before rendering the dashboard sidebar', async ({ page }) => {
+    await page.unroute('**/api/v1/**')
+    await seedConsole(page, 'v2', {
+      user: { ...regularUser, run_mode: 'simple' },
+      loginUser: { ...regularUser, run_mode: 'standard' },
+    })
+    await page.goto('http://127.0.0.1:4173/dashboard')
+    await expect(page.locator('aside a.sidebar-link[href="/usage"]')).toHaveCount(0)
+
+    await page.getByRole('button', { name: '用户菜单' }).click()
+    await page.getByRole('button', { name: '退出登录' }).click()
+    await expect(page).toHaveURL('http://127.0.0.1:4173/login')
+
+    await page.locator('#email').fill(regularUser.email)
+    await page.locator('#password').fill('preview-password')
+    const loginResponsePromise = page.waitForResponse((response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname === '/api/v1/auth/login',
+    )
+    await page.getByRole('button', { name: '登录', exact: true }).click()
+    const loginPayload = await (await loginResponsePromise).json()
+
+    expect(loginPayload.data.user.run_mode).toBe('standard')
+    await expect(page).toHaveURL('http://127.0.0.1:4173/dashboard')
+    const authMode = await page.evaluate(() => {
+      const app = (document.querySelector('#app') as HTMLElement & {
+        __vue_app__?: {
+          config?: { globalProperties?: { $pinia?: { _s?: Map<string, Record<string, unknown>> } } }
+        }
+      }).__vue_app__
+      const auth = app?.config?.globalProperties?.$pinia?._s?.get('auth')
+      return { runMode: auth?.runMode, isSimpleMode: auth?.isSimpleMode }
+    })
+    expect(authMode).toEqual({ runMode: 'standard', isSimpleMode: false })
+    await expect(page.locator('aside a.sidebar-link[href="/usage"]')).toBeVisible()
+    await expect(page.locator('aside a.sidebar-link[href="/redeem"]')).toBeVisible()
+  })
+
   test('local preview allows external iframe content but still blocks top-level links', async ({ page }) => {
     await page.route('https://embed.01yapi.test/**', (route) =>
       route.fulfill({
@@ -3145,6 +3183,20 @@ test.describe('Console CC-Switch launch compatibility', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
     await page.addInitScript(() => {
+      const nativeClick = HTMLAnchorElement.prototype.click
+      HTMLAnchorElement.prototype.click = function patchedAnchorClick() {
+        if (this.href.startsWith('ccswitch://')) {
+          const state = window as Window & {
+            __ccSwitchLaunches?: string[]
+            __throwCcSwitchOpen?: boolean
+          }
+          if (state.__throwCcSwitchOpen) throw new Error('protocol launch blocked')
+          state.__ccSwitchLaunches?.push(this.getAttribute('href') || '')
+          return
+        }
+        return nativeClick.call(this)
+      }
+      ;(window as Window & { __ccSwitchLaunches?: string[] }).__ccSwitchLaunches = []
       window.open = () => {
         if ((window as Window & { __throwCcSwitchOpen?: boolean }).__throwCcSwitchOpen) {
           throw new Error('protocol launch blocked')
@@ -3156,30 +3208,51 @@ test.describe('Console CC-Switch launch compatibility', () => {
     await page.goto('http://127.0.0.1:4173/keys')
   })
 
-  test('drops only the legacy focus probe and preserves synchronous failures', async ({ page }) => {
+  test('uses a real protocol link, acknowledges the request, and preserves synchronous failures', async ({ page }) => {
     await expect.poll(() => page.evaluate(() =>
       (window as Window & { __ZERO_ONE_CCSWITCH_LAUNCH_GUARD__?: boolean })
         .__ZERO_ONE_CCSWITCH_LAUNCH_GUARD__,
     )).toBe(true)
 
-    const probeSource = await page.evaluate(() => {
+    await page.evaluate(() => {
+      const trigger = document.createElement('button')
+      trigger.dataset.testid = 'ccswitch-launch-fixture'
+      trigger.textContent = 'Import to CC-Switch'
+      Object.assign(trigger.style, {
+        position: 'fixed', top: '80px', left: '300px', zIndex: '2147483647',
+      })
+      trigger.addEventListener('click', () => {
+        window.open('ccswitch://v1/import?resource=provider&app=claude&apiKey=sk-test', '_self')
+        const legacyProbe = () => {
+          const messageKey = 'keys.ccSwitchNotInstalled'
+          const fallback = document.createElement('div')
+          fallback.dataset.testid = 'ccswitch-fallback-fixture'
+          fallback.textContent = messageKey
+          document.body.append(fallback)
+        }
+        window.setTimeout(legacyProbe, 100)
+      })
+      document.body.append(trigger)
+    })
+    await page.getByTestId('ccswitch-launch-fixture').click()
+
+    const launchState = await page.evaluate(() => {
       Object.defineProperty(document, 'hasFocus', {
         configurable: true,
         value: () => true,
       })
-      window.open('ccswitch://v1/import?resource=provider', '_self')
-      const legacyProbe = () => {
-        const messageKey = 'keys.ccSwitchNotInstalled'
-        const fallback = document.createElement('div')
-        fallback.dataset.testid = 'ccswitch-fallback-fixture'
-        fallback.textContent = messageKey
-        document.body.append(fallback)
+      return {
+        launches: (window as Window & { __ccSwitchLaunches?: string[] }).__ccSwitchLaunches,
+        retainedLinks: document.querySelectorAll('a[href^="ccswitch://"]').length,
       }
-      window.setTimeout(legacyProbe, 100)
-      return Function.prototype.toString.call(legacyProbe)
     })
 
-    expect(probeSource).toContain('keys.ccSwitchNotInstalled')
+    expect(launchState.launches).toHaveLength(1)
+    expect(launchState.launches?.[0]).toMatch(/^ccswitch:\/\/v1\/import\?/)
+    expect(launchState.retainedLinks).toBe(0)
+    await expect(page.locator('[data-zero-one-ccswitch-launch-notice]')).toContainText(
+      '正在尝试打开 CC-Switch',
+    )
     await page.waitForTimeout(500)
     await expect(page.getByTestId('ccswitch-fallback-fixture')).toHaveCount(0)
 
@@ -3244,7 +3317,7 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=7')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.js?v=1')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.css?v=1')
-    expect(html).toContain('/assets/zero-one-ccswitch-launch-v1.js?v=1')
+    expect(html).toContain('/assets/zero-one-ccswitch-launch-v1.js?v=2')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.js?v=6')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.css?v=3')
     expect(html).toContain('/assets/zero-one-floating-panels-v1.js?v=2')

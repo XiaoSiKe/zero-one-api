@@ -82,3 +82,17 @@ export function buildCcSwitchImportDeeplink(input: CcSwitchImportDeeplinkInput):
 
   return `ccswitch://v1/import?${new URLSearchParams(entries).toString()}`
 }
+
+/** Launch from the active click stack using the link form documented by CC-Switch. */
+export function launchCcSwitchImport(deeplink: string): void {
+  const link = document.createElement('a')
+  link.href = deeplink
+  link.hidden = true
+  link.setAttribute('aria-hidden', 'true')
+  document.body.append(link)
+  try {
+    link.click()
+  } finally {
+    link.remove()
+  }
+}
