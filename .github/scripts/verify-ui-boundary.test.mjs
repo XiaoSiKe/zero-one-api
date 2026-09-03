@@ -12,12 +12,15 @@ const manifest = validateManifest(
 )
 
 test('validates the approved UI baseline manifest', () => {
-  assert.equal(manifest.baseline_ref, 'ui-approved-2026-09-02-r5')
-  assert.equal(manifest.baseline_commit, 'fd727f51f18fc14997c63dbc8f2fc04f836c58b6')
+  assert.equal(manifest.baseline_ref, 'ui-approved-2026-09-03-r1')
+  assert.equal(manifest.baseline_commit, 'c6fc07816e9fda7739397350a89122da1fc91277')
   assert.equal(manifest.edge_build.console_source, 'deploy/zero-one/recovered-frontend/console')
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/redeem.behavior.spec.ts'))
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/version-baseline.spec.ts'))
   const auth = manifest.protected_surfaces.find(({ name }) => name === 'auth')
+  assert.ok(auth.routes.includes('/forgot-password'))
+  assert.ok(auth.routes.includes('/reset-password'))
+  assert.ok(auth.paths.includes('visual-regression/tests/auth-recovery.behavior.spec.ts'))
   assert.ok(auth.paths.includes('visual-regression/tests/__screenshots__/chromium-desktop/console-register.png'))
   assert.ok(auth.paths.includes('visual-regression/tests/__screenshots__/chromium-mobile/console-register.png'))
   assert.ok(auth.paths.includes('visual-regression/tests/console.visual.spec.ts'))
