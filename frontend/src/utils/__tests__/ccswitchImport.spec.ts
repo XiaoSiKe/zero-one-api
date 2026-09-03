@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   GROK_CC_SWITCH_MODEL,
   OPENAI_CC_SWITCH_CODEX_MODEL,
-  buildCcSwitchImportDeeplink
+  buildCcSwitchImportDeeplink,
+  launchCcSwitchImport
 } from '@/utils/ccswitchImport'
 import type { GroupPlatform } from '@/types'
 
@@ -92,5 +93,36 @@ describe('ccswitchImport utils', () => {
     expect(params.get('app')).toBe('gemini')
     expect(params.get('endpoint')).toBe(`${baseInput.baseUrl}/antigravity`)
     expect(params.has('model')).toBe(false)
+  })
+
+  it('launches CC-Switch through a temporary protocol link and removes the API key from the DOM', () => {
+    const deeplink = 'ccswitch://v1/import?resource=provider&app=claude&apiKey=sk-secret'
+    let launchedHref = ''
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function () {
+      launchedHref = this.getAttribute('href') || ''
+    })
+
+    try {
+      launchCcSwitchImport(deeplink)
+
+      expect(launchedHref).toBe(deeplink)
+      expect(document.querySelector(`a[href="${deeplink}"]`)).toBeNull()
+    } finally {
+      click.mockRestore()
+    }
+  })
+
+  it('removes the temporary protocol link when browser launch throws', () => {
+    const deeplink = 'ccswitch://v1/import?resource=provider&app=claude&apiKey=sk-secret'
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {
+      throw new Error('protocol launch blocked')
+    })
+
+    try {
+      expect(() => launchCcSwitchImport(deeplink)).toThrow('protocol launch blocked')
+      expect(document.querySelector(`a[href="${deeplink}"]`)).toBeNull()
+    } finally {
+      click.mockRestore()
+    }
   })
 })

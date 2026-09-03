@@ -13,6 +13,7 @@ const {
   getUserGroupRates,
   showError,
   showSuccess,
+  showInfo,
   copyToClipboard,
   isCurrentStep,
   nextStep,
@@ -24,6 +25,7 @@ const {
   getUserGroupRates: vi.fn(),
   showError: vi.fn(),
   showSuccess: vi.fn(),
+  showInfo: vi.fn(),
   copyToClipboard: vi.fn(),
   isCurrentStep: vi.fn(),
   nextStep: vi.fn(),
@@ -46,6 +48,7 @@ const messages: Record<string, string> = {
   'keys.currentConcurrency': 'Current Concurrency',
   'keys.importToCcSwitch': 'Import to CC-Switch',
   'keys.ccSwitchNotInstalled': 'CC-Switch did not open',
+  'keys.ccSwitchLaunchRequested': 'Opening CC-Switch. If it does not start, check the installation.',
   'keys.lastUsedAt': 'Last Used',
   'keys.lastUsedIP': 'Last Used IP',
   'keys.rateLimitColumn': 'Rate Limit',
@@ -81,6 +84,7 @@ vi.mock('@/stores/app', () => ({
   useAppStore: () => ({
     showError,
     showSuccess,
+    showInfo,
   }),
 }))
 
@@ -270,6 +274,7 @@ describe('user KeysView column settings', () => {
     getUserGroupRates.mockReset()
     showError.mockReset()
     showSuccess.mockReset()
+    showInfo.mockReset()
     copyToClipboard.mockReset()
     isCurrentStep.mockReset()
     nextStep.mockReset()
@@ -442,30 +447,30 @@ describe('user KeysView column settings', () => {
     )
   })
 
-  it('does not infer CC-Switch failure from a focused page', async () => {
-    vi.useFakeTimers()
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
-    const hasFocus = vi.spyOn(document, 'hasFocus').mockReturnValue(true)
+  it('launches CC-Switch with a temporary protocol link and acknowledges the request', async () => {
+    let launchedHref = ''
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function () {
+      launchedHref = this.getAttribute('href') || ''
+    })
     let wrapper: VueWrapper | null = null
 
     try {
       wrapper = await mountView()
       await getButtonByText(wrapper, 'Import to CC-Switch').trigger('click')
-      await vi.advanceTimersByTimeAsync(5000)
 
-      expect(open).toHaveBeenCalledWith(expect.stringMatching(/^ccswitch:\/\/v1\/import\?/), '_self')
-      expect(hasFocus).not.toHaveBeenCalled()
+      expect(launchedHref).toMatch(/^ccswitch:\/\/v1\/import\?/)
       expect(showError).not.toHaveBeenCalled()
+      expect(showInfo).toHaveBeenCalledWith(
+        'Opening CC-Switch. If it does not start, check the installation.'
+      )
     } finally {
       wrapper?.unmount()
-      open.mockRestore()
-      hasFocus.mockRestore()
-      vi.useRealTimers()
+      click.mockRestore()
     }
   })
 
   it('retains the error fallback when opening the CC-Switch protocol throws', async () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => {
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {
       throw new Error('protocol launch blocked')
     })
     const wrapper = await mountView()
@@ -474,9 +479,10 @@ describe('user KeysView column settings', () => {
       await getButtonByText(wrapper, 'Import to CC-Switch').trigger('click')
 
       expect(showError).toHaveBeenCalledWith('CC-Switch did not open')
+      expect(showInfo).not.toHaveBeenCalled()
     } finally {
       wrapper.unmount()
-      open.mockRestore()
+      click.mockRestore()
     }
   })
 })

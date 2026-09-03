@@ -23,6 +23,8 @@ const AUTO_REFRESH_INTERVAL = 60 * 1000 // 60 seconds for user data refresh
 const TOKEN_REFRESH_BUFFER = 120 * 1000 // 120 seconds before expiry to refresh token
 
 type PendingAuthTokenField = 'pending_auth_token' | 'pending_oauth_token'
+type RunMode = 'standard' | 'simple'
+type AuthUserSnapshot = User & { run_mode?: RunMode }
 
 interface PendingAuthSessionSummary {
   token: string
@@ -81,7 +83,7 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(null)
   const refreshTokenValue = ref<string | null>(null)
   const tokenExpiresAt = ref<number | null>(null) // 过期时间戳（毫秒）
-  const runMode = ref<'standard' | 'simple'>('standard')
+  const runMode = ref<RunMode>('standard')
   const pendingAuthSession = ref<PendingAuthSessionSummary | null>(null)
   let refreshIntervalId: ReturnType<typeof setInterval> | null = null
   let tokenRefreshTimeoutId: ReturnType<typeof setTimeout> | null = null
@@ -101,8 +103,19 @@ export const useAuthStore = defineStore('auth', () => {
 
   // ==================== Actions ====================
 
+  function applyUserSnapshot(snapshot: AuthUserSnapshot, runModeOverride?: RunMode): User {
+    const { run_mode: responseRunMode, ...userData } = snapshot
+    runMode.value = runModeOverride ?? (responseRunMode === 'simple' ? 'simple' : 'standard')
+    user.value = userData as User
+    localStorage.setItem(
+      AUTH_USER_KEY,
+      JSON.stringify({ ...userData, run_mode: runMode.value })
+    )
+    return user.value
+  }
+
   /** Restore a read-only session snapshot without network requests or timers. */
-  function hydrateAuthSnapshot(runModeOverride?: 'standard' | 'simple'): boolean {
+  function hydrateAuthSnapshot(runModeOverride?: RunMode): boolean {
     const savedToken = localStorage.getItem(AUTH_TOKEN_KEY)
     const savedUser = localStorage.getItem(AUTH_USER_KEY)
     const savedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
@@ -111,11 +124,9 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (savedToken && savedUser) {
       try {
-        const parsedUser = JSON.parse(savedUser) as User & { run_mode?: 'standard' | 'simple' }
-        const { run_mode: persistedRunMode, ...userData } = parsedUser
+        const parsedUser = JSON.parse(savedUser) as AuthUserSnapshot
         token.value = savedToken
-        user.value = userData as User
-        runMode.value = runModeOverride ?? persistedRunMode ?? 'standard'
+        applyUserSnapshot(parsedUser, runModeOverride)
         refreshTokenValue.value = savedRefreshToken
         tokenExpiresAt.value = savedExpiresAt ? parseInt(savedExpiresAt, 10) : null
         return true
@@ -127,7 +138,7 @@ export const useAuthStore = defineStore('auth', () => {
     return false
   }
 
-  function setRunModeSnapshot(mode: 'standard' | 'simple'): void {
+  function setRunModeSnapshot(mode: RunMode): void {
     runMode.value = mode
   }
 
@@ -316,16 +327,10 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token)
     }
 
-    // Extract run_mode if present
-    if (response.user.run_mode) {
-      runMode.value = response.user.run_mode
-    }
-    const { run_mode: _run_mode, ...userData } = response.user
-    user.value = userData
+    applyUserSnapshot(response.user)
 
     // Persist to localStorage
     localStorage.setItem(AUTH_TOKEN_KEY, response.access_token)
-    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData))
     clearPendingAuthSession()
 
     // Start auto-refresh interval for user data
@@ -371,6 +376,7 @@ export const useAuthStore = defineStore('auth', () => {
     stopTokenRefresh()
     token.value = null
     user.value = null
+    runMode.value = 'standard'
 
     token.value = newToken
     localStorage.setItem(AUTH_TOKEN_KEY, newToken)
@@ -449,16 +455,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const response = await authAPI.getCurrentUser()
-      if (response.data.run_mode) {
-        runMode.value = response.data.run_mode
-      }
-      const { run_mode: _run_mode, ...userData } = response.data
-      user.value = userData
-
-      // Update localStorage
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData))
-
-      return userData
+      return applyUserSnapshot(response.data)
     } catch (error) {
       // If refresh fails with 401, clear auth state
       if ((error as { status?: number }).status === 401) {
@@ -482,6 +479,7 @@ export const useAuthStore = defineStore('auth', () => {
     refreshTokenValue.value = null
     tokenExpiresAt.value = null
     user.value = null
+    runMode.value = 'standard'
     localStorage.removeItem(AUTH_TOKEN_KEY)
     localStorage.removeItem(AUTH_USER_KEY)
     localStorage.removeItem(REFRESH_TOKEN_KEY)

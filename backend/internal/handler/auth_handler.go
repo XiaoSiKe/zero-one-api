@@ -93,11 +93,32 @@ func captchaProof(turnstileToken, tencentTicket, tencentRandstr string) service.
 
 // AuthResponse 认证响应格式（匹配前端期望）
 type AuthResponse struct {
-	AccessToken  string    `json:"access_token"`
-	RefreshToken string    `json:"refresh_token,omitempty"` // 新增：Refresh Token
-	ExpiresIn    int       `json:"expires_in,omitempty"`    // 新增：Access Token有效期（秒）
-	TokenType    string    `json:"token_type"`
-	User         *dto.User `json:"user"`
+	AccessToken  string           `json:"access_token"`
+	RefreshToken string           `json:"refresh_token,omitempty"` // 新增：Refresh Token
+	ExpiresIn    int              `json:"expires_in,omitempty"`    // 新增：Access Token有效期（秒）
+	TokenType    string           `json:"token_type"`
+	User         AuthResponseUser `json:"user"`
+}
+
+// AuthResponseUser keeps login aligned with GET /auth/me so the Console can
+// render the configured navigation mode before its first dashboard paint.
+type AuthResponseUser struct {
+	*dto.User
+	RunMode string `json:"run_mode"`
+}
+
+func newAuthResponseUser(user *service.User, runMode string) AuthResponseUser {
+	return AuthResponseUser{
+		User:    dto.UserFromService(user),
+		RunMode: config.NormalizeRunMode(runMode),
+	}
+}
+
+func authRunMode(cfg *config.Config) string {
+	if cfg == nil {
+		return config.RunModeStandard
+	}
+	return config.NormalizeRunMode(cfg.RunMode)
 }
 
 func ensureLoginUserActive(user *service.User) error {
@@ -113,10 +134,10 @@ func ensureLoginUserActive(user *service.User) error {
 // respondWithTokenPair 生成 Token 对并返回认证响应
 // 如果 Token 对生成失败，回退到只返回 Access Token（向后兼容）
 func (h *AuthHandler) respondWithTokenPair(c *gin.Context, user *service.User) {
-	respondWithTokenPair(c, h.authService, user)
+	respondWithTokenPair(c, h.authService, user, authRunMode(h.cfg))
 }
 
-func respondWithTokenPair(c *gin.Context, authService *service.AuthService, user *service.User) {
+func respondWithTokenPair(c *gin.Context, authService *service.AuthService, user *service.User, runMode string) {
 	if err := ensureLoginUserActive(user); err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -134,7 +155,7 @@ func respondWithTokenPair(c *gin.Context, authService *service.AuthService, user
 		response.Success(c, AuthResponse{
 			AccessToken: token,
 			TokenType:   "Bearer",
-			User:        dto.UserFromService(user),
+			User:        newAuthResponseUser(user, runMode),
 		})
 		return
 	}
@@ -143,7 +164,7 @@ func respondWithTokenPair(c *gin.Context, authService *service.AuthService, user
 		RefreshToken: tokenPair.RefreshToken,
 		ExpiresIn:    tokenPair.ExpiresIn,
 		TokenType:    "Bearer",
-		User:         dto.UserFromService(user),
+		User:         newAuthResponseUser(user, runMode),
 	})
 }
 

@@ -1145,6 +1145,7 @@ import { maskApiKey } from '@/utils/maskApiKey'
 import { DEFAULT_SITE_NAME } from '@/utils/branding'
 import {
   buildCcSwitchImportDeeplink,
+  launchCcSwitchImport,
   type CcSwitchClientType
 } from '@/utils/ccswitchImport'
 
@@ -1913,7 +1914,8 @@ const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType) => {
   })
 
   try {
-    window.open(deeplink, '_self')
+    launchCcSwitchImport(deeplink)
+    appStore.showInfo(t('keys.ccSwitchLaunchRequested'))
   } catch {
     appStore.showError(t('keys.ccSwitchNotInstalled'))
   }
