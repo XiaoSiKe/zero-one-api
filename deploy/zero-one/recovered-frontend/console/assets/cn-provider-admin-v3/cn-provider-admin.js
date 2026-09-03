@@ -68,7 +68,7 @@ async function T(t, n) {
   l = { surface: t, host: e, revision: a }, r == null || r.unmount(), r = null, s = null, d = null, e.replaceChildren(), e.dataset.zeroOneProviderCatalogAdmin = t;
   let o = null;
   try {
-    if (o = await (await import("./cnProviderAdminLeaf-sWhKJbfh.js").then((c) => c.a8)).prepareCNProviderSurface(t, h()), a !== f || v() !== t || !n.isConnected || !e.isConnected || e.parentElement !== n) {
+    if (o = await (await import("./cnProviderAdminLeaf-DkKZCNPa.js").then((c) => c.a8)).prepareCNProviderSurface(t, h()), a !== f || v() !== t || !n.isConnected || !e.isConnected || e.parentElement !== n) {
       o.unmount(), queueMicrotask(C);
       return;
     }
