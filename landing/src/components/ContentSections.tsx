@@ -1,6 +1,7 @@
 import { Layers, ReceiptText, RefreshCw, ShieldCheck, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
+  CHANNEL_STATUS_TIMEOUT_MS,
   fetchChannelStatus,
   type ChannelStatusItem,
   type ChannelStatusResult,
@@ -121,10 +122,10 @@ const CHANNEL_STATUS_STATE_ORDER: Record<ChannelStatusItem["state"], number> = {
   unknown: 2,
 };
 
-function statusLabel(state: ChannelStatusItem["state"]): string {
-  if (state === "operational") return "正常";
-  if (state === "degraded") return "降级";
-  return "等待数据";
+function statusLabel(item: ChannelStatusItem): string {
+  if (item.state === "operational") return "正常";
+  if (item.state === "degraded") return "降级";
+  return item.observedAt ? "待更新" : "等待数据";
 }
 
 function statusNote(state: ChannelStatusViewState): string {
@@ -133,7 +134,7 @@ function statusNote(state: ChannelStatusViewState): string {
     if ((state.data.items ?? []).length > 0) return "";
     if (state.data.mode === "traffic") return "当前监控模式未提供逐渠道检测记录。";
     if (state.data.reason === "no_monitors") return "管理员尚未配置可公开展示的监控渠道。";
-    if (state.data.reason === "insufficient_data") return "监控已配置，正在等待足够的真实检测数据。";
+    if (state.data.reason === "insufficient_data") return "暂无检测数据，请稍后查看。";
     if (state.data.reason === "disabled") return "当前站点未开启渠道监控。";
     return "";
   }
@@ -146,9 +147,9 @@ function statusNote(state: ChannelStatusViewState): string {
     return "当前站点未公开渠道状态汇总。";
   }
   if (state.status === "error" && state.reason === "timeout") {
-    return "读取超时，页面没有显示缓存或示例状态。";
+    return "读取渠道状态超时，请重新读取。";
   }
-  return "暂时无法读取真实渠道状态，页面没有显示缓存或示例状态。";
+  return "暂时无法读取渠道状态，请稍后重试。";
 }
 
 function formatAvailability(value: number | null): string {
@@ -181,6 +182,7 @@ function timelineLabel(item: ChannelStatusItem): string {
 
 export function StatusSection({ enabled = true }: { enabled?: boolean }) {
   const [attempt, setAttempt] = useState(0);
+  const [refreshFailed, setRefreshFailed] = useState(false);
   const [state, setState] = useState<ChannelStatusViewState>(() =>
     enabled ? { status: "loading" } : { status: "disabled" },
   );
@@ -188,12 +190,14 @@ export function StatusSection({ enabled = true }: { enabled?: boolean }) {
   useEffect(() => {
     if (!enabled) {
       setState({ status: "disabled" });
+      setRefreshFailed(false);
       return;
     }
 
     let active = true;
     let controller: AbortController | null = null;
     let refreshTimer: number | null = null;
+    let retryTimer: number | null = null;
 
     const clearRefreshTimer = () => {
       if (refreshTimer === null) return;
@@ -212,21 +216,39 @@ export function StatusSection({ enabled = true }: { enabled?: boolean }) {
       }, CHANNEL_STATUS_REFRESH_MS);
     };
 
-    const loadStatus = async (showLoading: boolean) => {
+    const loadStatus = async (showLoading: boolean, mayRetry = true) => {
+      if (!active) return;
+      clearRefreshTimer();
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+      retryTimer = null;
       controller?.abort();
       const requestController = new AbortController();
       controller = requestController;
-      if (showLoading) setState({ status: "loading" });
+      if (showLoading) {
+        setState((current) => current.status === "success" ? current : { status: "loading" });
+      }
 
       const result = await fetchChannelStatus({
         enabled: true,
-        timeoutMs: 3_000,
+        timeoutMs: CHANNEL_STATUS_TIMEOUT_MS,
         signal: requestController.signal,
       });
       if (!active || requestController.signal.aborted || controller !== requestController) return;
+      controller = null;
 
+      if (mayRetry && result.status === "error" &&
+        ["timeout", "network", "server"].includes(result.reason)) {
+        retryTimer = window.setTimeout(() => {
+          retryTimer = null;
+          void loadStatus(showLoading, false);
+        }, 1_000);
+        return;
+      }
+
+      const failed = result.status === "error" || result.status === "rate-limited";
+      setRefreshFailed(failed);
       setState((current) =>
-        !showLoading && current.status === "success" && result.status !== "success"
+        current.status === "success" && failed
           ? current
           : result,
       );
@@ -235,6 +257,7 @@ export function StatusSection({ enabled = true }: { enabled?: boolean }) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState !== "visible") return;
+      if (controller !== null || retryTimer !== null) return;
       clearRefreshTimer();
       void loadStatus(false);
     };
@@ -244,13 +267,17 @@ export function StatusSection({ enabled = true }: { enabled?: boolean }) {
     return () => {
       active = false;
       clearRefreshTimer();
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
       controller?.abort();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [attempt, enabled]);
 
-  const shouldRetry = state.status === "error" || state.status === "rate-limited";
-  const note = statusNote(state);
+  const shouldRetry = state.status === "error" || state.status === "rate-limited" ||
+    (state.status === "success" && refreshFailed);
+  const note = state.status === "success" && refreshFailed
+    ? "更新暂时失败，正在显示上次成功读取的渠道状态。"
+    : statusNote(state);
   const items =
     state.status === "success"
       ? [...(state.data.items ?? [])].sort(
@@ -296,6 +323,16 @@ export function StatusSection({ enabled = true }: { enabled?: boolean }) {
               <span className="status-legend-boundary">不可用</span>
             </div>
           </div>
+          {state.status === "loading" ? (
+            <div className="status-skeleton" data-testid="channel-status-skeleton" aria-hidden="true">
+              {[0, 1, 2].map((row) => (
+                <div className="status-monitor-row" key={row}>
+                  <span className="status-skeleton-name" />
+                  <span className="status-skeleton-timeline" />
+                </div>
+              ))}
+            </div>
+          ) : null}
           {items.map((item) => {
             const observedAt = formatObservedAt(item.observedAt);
             return (
@@ -304,7 +341,7 @@ export function StatusSection({ enabled = true }: { enabled?: boolean }) {
                   <div className="status-monitor-name">
                     <span className={`status-state-dot status-state-dot--${item.state}`} aria-hidden="true" />
                     <strong>{item.name}</strong>
-                    <span className={`status-value--${item.state}`}>{statusLabel(item.state)}</span>
+                    <span className={`status-value--${item.state}`}>{statusLabel(item)}</span>
                   </div>
                   <div className="status-monitor-metrics">
                     <strong>
@@ -322,6 +359,7 @@ export function StatusSection({ enabled = true }: { enabled?: boolean }) {
                   {item.timeline.map((point, index) => (
                     <span aria-hidden="true" className={`is-${point.status}`} key={`${point.checkedAt}-${index}`} />
                   ))}
+                  {item.timeline.length === 0 ? <small className="status-history-empty">暂无检测记录</small> : null}
                 </div>
               </div>
             );

@@ -63,6 +63,7 @@ describe('忘记密码腾讯验证码门禁', () => {
     verifyActionMock.mockReset()
     captchaResetMock.mockReset()
     getPublicSettingsMock.mockResolvedValue({
+      password_reset_enabled: true,
       turnstile_enabled: false,
       turnstile_site_key: '',
       tencent_captcha_enabled: true,

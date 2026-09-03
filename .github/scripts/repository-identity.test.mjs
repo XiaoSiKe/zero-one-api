@@ -19,7 +19,7 @@ test('manual releases publish both product images under the authorized current o
 
 test('the served recovered Console uses the current product repository link', () => {
   const html = read('deploy/zero-one/recovered-frontend/console/index.html')
-  const entry = '/assets/cn-provider-shell-v4/index-9xJBhx8B.js'
+  const entry = '/assets/cn-provider-shell-v5/index-9xJBhx8B.js'
   assert.ok(html.includes(`await import("${entry}")`), 'the recovered Console must load its approved shell seam')
   const source = read(`deploy/zero-one/recovered-frontend/console${entry}`)
   assert.ok(source.includes('https://github.com/XiaoSiKe/zero-one-api'))
@@ -28,7 +28,7 @@ test('the served recovered Console uses the current product repository link', ()
 
 test('the migrated Console gets a fresh immutable asset namespace and retains historical aliases', () => {
   const html = read('deploy/zero-one/recovered-frontend/console/index.html')
-  assert.ok(html.includes('await import("/assets/cn-provider-shell-v4/index-9xJBhx8B.js")'))
+  assert.ok(html.includes('await import("/assets/cn-provider-shell-v5/index-9xJBhx8B.js")'))
   assert.ok(read('deploy/zero-one/recovered-frontend/console/assets/index-9xJBhx8B.js').includes('https://github.com/XiaoSiKe/zero-one-api'))
   for (const alias of ['navigation-loading-20260827', 'redeem-ttft-20260828', 'github-migration-20260828']) {
     assert.equal(readlinkSync(new URL(`deploy/zero-one/recovered-frontend/console/assets/${alias}`, repositoryRoot)), '.')

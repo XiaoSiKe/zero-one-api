@@ -82,6 +82,16 @@ describe('AppHeader custom header navigation', () => {
     wrapper = undefined
   })
 
+  it('omits only the built-in documentation link while retaining its configuration', () => {
+    const appStore = useAppStore()
+    useAuthStore().user = signedInUser
+    appStore.docUrl = 'https://docs.example.com/start'
+    const mounted = mountHeader()
+    expect(mounted.find('a[href="https://docs.example.com/start"]').exists()).toBe(false)
+    expect(appStore.docUrl).toBe('https://docs.example.com/start')
+    expect(mounted.findComponent({ name: 'AnnouncementBell' }).exists()).toBe(true)
+  })
+
   it('renders configured header QR entries instead of legacy header links', () => {
     const appStore = useAppStore()
     const authStore = useAuthStore()

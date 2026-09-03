@@ -106,6 +106,20 @@ func (c *emailCache) DeletePasswordResetToken(ctx context.Context, email string)
 	return c.rdb.Del(ctx, key).Err()
 }
 
+// 比较与删除在同一 Redis 脚本中执行：并发请求只能成功一次，旧请求不能删除新邮件的令牌。
+var consumePasswordResetTokenScript = redis.NewScript(`
+local raw = redis.call('GET', KEYS[1])
+if not raw then return 0 end
+local ok, data = pcall(cjson.decode, raw)
+if not ok or type(data) ~= 'table' or data.Token ~= ARGV[1] then return 0 end
+return redis.call('DEL', KEYS[1])
+`)
+
+func (c *emailCache) ConsumePasswordResetToken(ctx context.Context, email, token string) (bool, error) {
+	consumed, err := consumePasswordResetTokenScript.Run(ctx, c.rdb, []string{passwordResetKey(email)}, token).Int()
+	return consumed == 1, err
+}
+
 // Password reset email cooldown methods
 
 func (c *emailCache) IsPasswordResetEmailInCooldown(ctx context.Context, email string) bool {

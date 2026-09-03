@@ -156,8 +156,8 @@ function renameKnowledgeBaseLinks() {
     const hint = label.parentElement?.querySelector('p')
     if (hint) {
       const hintText = localText(
-        '用于官网和控制台顶部导航的“开源知识库”入口。留空则隐藏该入口。',
-        'Used by the Open-source Knowledge Base links on the public site and Console header. Leave empty to hide them.',
+        '用于官网等页面的“开源知识库”入口。留空则隐藏这些入口。',
+        'Used by the Open-source Knowledge Base links on the public site and other documentation entry points. Leave empty to hide those links.',
       )
       if (hint.textContent !== hintText) hint.textContent = hintText
     }

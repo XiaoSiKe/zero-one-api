@@ -13,8 +13,36 @@ export const APPROVED_SHELL_SOURCE = 'index-9xJBhx8B.js'
 export const LEGACY_CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v1'
 export const PREVIOUS_CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v2'
 export const PRIOR_CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v3'
-export const CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v4'
+export const PRE_RECOVERY_SHELL_DIRECTORY = 'cn-provider-shell-v4'
+export const CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v5'
 export const CN_PROVIDER_SHELL_ASSET = `${CN_PROVIDER_SHELL_DIRECTORY}/${APPROVED_SHELL_SOURCE}`
+export const APPROVED_LAYOUT_SOURCE = 'AppLayout.vue_vue_type_script_setup_true_lang-gmb2csy1.js'
+export const PASSWORD_RECOVERY_PAGES = {
+  'ForgotPasswordView-DfgTg0iM.js': 'password-recovery-v1/ForgotPasswordView.js',
+  'ResetPasswordView-CMRDA6OL.js': 'password-recovery-v1/ResetPasswordView.js',
+}
+
+const headerDocsPattern = /L\.value\?\(t\(\),r\("a",\{key:1,href:L\.value,[\s\S]*?n\(m\)\("nav\.docs"\)\),1\)\],8,\$n\)\):_\("",!0\)/g
+
+export function patchApprovedHeader(source) {
+  const matches = [...source.matchAll(headerDocsPattern)]
+  if (matches.length !== 1 || !matches[0][0].includes('name:"book"')) {
+    throw new Error('approved header documentation seam changed')
+  }
+  return source.replace(headerDocsPattern, '_("",!0)')
+}
+
+export function recoveryShellOverrides(assetsDirectory) {
+  const overrides = new Map([
+    [APPROVED_LAYOUT_SOURCE, patchApprovedHeader(readFileSync(resolve(assetsDirectory, APPROVED_LAYOUT_SOURCE), 'utf8'))],
+  ])
+  for (const [name, target] of Object.entries(PASSWORD_RECOVERY_PAGES)) {
+    // 生成入口前先验证两条源码路由已构建，缺失资源时禁止形成可发布命名空间。
+    readFileSync(resolve(assetsDirectory, target), 'utf8')
+    overrides.set(name, `export { default } from '../${target}';\n`)
+  }
+  return overrides
+}
 
 const bootstrapNeedle = 'await Na(),e.use(ae),e.use(D),await ae.isReady(),e.mount("#app")'
 const onlineImageAccessClient =
@@ -138,10 +166,20 @@ export function buildCNProviderShell(consoleAssetsDirectory) {
   )
   const targetPath = writeShellVariant(
     consoleAssetsDirectory,
-    CN_PROVIDER_SHELL_DIRECTORY,
+    PRE_RECOVERY_SHELL_DIRECTORY,
     patchApprovedShell(source),
   )
-  return { sourcePath, legacyTargetPath, previousTargetPath, priorTargetPath, targetPath }
+  const overrides = recoveryShellOverrides(consoleAssetsDirectory)
+  const recoveryTargetPath = writeShellVariant(
+    consoleAssetsDirectory,
+    CN_PROVIDER_SHELL_DIRECTORY,
+    patchApprovedShell(source),
+    new Set(overrides.keys()),
+  )
+  for (const [name, content] of overrides) {
+    writeFileSync(resolve(consoleAssetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, name), content)
+  }
+  return { sourcePath, legacyTargetPath, previousTargetPath, priorTargetPath, preRecoveryTargetPath: targetPath, targetPath: recoveryTargetPath }
 }
 
 const invokedPath = process.argv[1] ? resolve(process.argv[1]) : ''

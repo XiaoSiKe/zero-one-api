@@ -2081,6 +2081,16 @@ button { color: inherit; }
 .status-availability-meter .is-failed, .status-availability-meter .is-error { background: #f04461; }
 .status-availability-meter .is-unknown { background: rgba(255, 255, 255, 0.18); }
 .status-note { margin: 0; color: #898990; font-size: 12px; line-height: 1.65; }
+.status-skeleton-name,
+.status-skeleton-timeline {
+  display: block;
+  height: 14px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+}
+.status-skeleton-name { width: 32%; }
+.status-skeleton-timeline { width: 100%; margin-top: 16px; }
+.status-history-empty { align-self: center; margin: 0; color: #898990; font-size: 12px; }
 .status-actions { width: 100%; display: flex; }
 
 .site-footer { min-height: 0; padding: 56px 0 46px; grid-template-columns: minmax(260px, 1fr) repeat(3, max-content); row-gap: 32px; }

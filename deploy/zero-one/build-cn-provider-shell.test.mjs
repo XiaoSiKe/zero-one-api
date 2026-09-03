@@ -10,6 +10,10 @@ import {
   LEGACY_CN_PROVIDER_SHELL_DIRECTORY,
   PREVIOUS_CN_PROVIDER_SHELL_DIRECTORY,
   PRIOR_CN_PROVIDER_SHELL_DIRECTORY,
+  PRE_RECOVERY_SHELL_DIRECTORY,
+  APPROVED_LAYOUT_SOURCE,
+  patchApprovedHeader,
+  recoveryShellOverrides,
   patchApprovedShell,
   patchLegacyApprovedShell,
   patchPriorApprovedShell,
@@ -63,4 +67,21 @@ test('CN Provider shell differs from the approved shell only at the router seam'
 
 test('CN Provider shell generation fails closed when the approved bootstrap changes', () => {
   assert.throws(() => patchApprovedShell('unrelated shell'), /bootstrap seam count changed/)
+})
+
+test('password recovery namespace preserves the previous shell and changes only three declared modules', () => {
+  const current = readFileSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_ASSET), 'utf8')
+  const previous = readFileSync(resolve(assetsDirectory, PRE_RECOVERY_SHELL_DIRECTORY, APPROVED_SHELL_SOURCE), 'utf8')
+  assert.equal(current, previous, '认证修复不能重写原来的 Router 或业务路由')
+  const overrides = recoveryShellOverrides(assetsDirectory)
+  assert.equal(overrides.size, 3)
+  for (const [name, content] of overrides) {
+    assert.equal(readFileSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, name), 'utf8'), content)
+    assert.equal(readlinkSync(resolve(assetsDirectory, PRE_RECOVERY_SHELL_DIRECTORY, name)), `../${name}`)
+  }
+  const source = readFileSync(resolve(assetsDirectory, APPROVED_LAYOUT_SOURCE), 'utf8')
+  const result = patchApprovedHeader(source)
+  assert.equal(result.includes('nav.docs'), false)
+  assert.ok(source.includes('nav.docs'), '原批准外壳继续保留')
+  assert.throws(() => patchApprovedHeader(result), /documentation seam changed/)
 })

@@ -669,7 +669,7 @@ export default {
         contactInfoPlaceholder: '例如：QQ: 123456789',
         contactInfoHint: '填写客服联系方式，将展示在兑换页面、个人资料等位置',
         docUrl: '开源知识库链接',
-        docUrlHint: '用于官网和控制台顶部导航的“开源知识库”入口。留空则隐藏该入口。',
+        docUrlHint: '用于官网等页面的“开源知识库”入口。留空则隐藏这些入口。',
         docUrlPlaceholder: 'https://docs.example.com',
         imageTutorialMenu: '生图教程（特殊自定义菜单）',
         imageTutorialMenuPlaceholder: 'https://docs.example.com/image-generation',

@@ -6,8 +6,8 @@ production_caddyfile="$repo_root/deploy/zero-one/Caddyfile"
 preview_caddyfile="$repo_root/deploy/zero-one/Caddyfile.preview"
 shared_caddyfile="$repo_root/deploy/zero-one/Caddyfile.shared"
 recovered_console_index="$repo_root/deploy/zero-one/recovered-frontend/console/index.html"
-recovered_console_entry='await import("/assets/cn-provider-shell-v4/index-9xJBhx8B.js")'
-recovered_console_entry_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v4/index-9xJBhx8B.js"
+recovered_console_entry='await import("/assets/cn-provider-shell-v5/index-9xJBhx8B.js")'
+recovered_console_entry_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5/index-9xJBhx8B.js"
 recovered_pricing_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/useKeyedDebouncedSearch-BrW9dWBu.js"
 recovered_console_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-B-81-jXj.js"
 recovered_console_admin_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-Bn5PLb3-.js"
@@ -31,8 +31,8 @@ recovered_ccswitch_launch="$repo_root/deploy/zero-one/recovered-frontend/console
 recovered_affiliate_admin="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-affiliate-admin-v1.js"
 recovered_affiliate_admin_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-affiliate-admin-v1.css"
 recovered_login_recovery="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-login-recovery-v2.js"
-recovered_online_image="$repo_root/deploy/zero-one/recovered-frontend/console/assets/online-image-v10/online-image.js"
-recovered_online_image_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/online-image-v10/online-image.css"
+recovered_online_image="$repo_root/deploy/zero-one/recovered-frontend/console/assets/online-image-v11/online-image.js"
+recovered_online_image_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/online-image-v11/online-image.css"
 
 require() {
 	file=$1
@@ -94,7 +94,7 @@ require "$recovered_console_index" "$recovered_console_entry"
 require "$recovered_console_index" 'await import("/assets/zero-one-local-preview-guard-v2.js")'
 require "$recovered_console_index" 'await import("/assets/zero-one-custom-page-security-v1.js")'
 require "$recovered_console_index" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=3")'
-require "$recovered_console_index" 'await import("/assets/zero-one-console-parity-v1.js?v=6")'
+require "$recovered_console_index" 'await import("/assets/zero-one-console-parity-v1.js?v=7")'
 require "$recovered_console_index" 'href="/assets/zero-one-console-parity-v1.css?v=4"'
 require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=14")'
 require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=6"'
@@ -110,11 +110,11 @@ require "$recovered_console_index" 'await import("/assets/zero-one-redeem-action
 require "$recovered_console_index" 'href="/assets/zero-one-redeem-actions-v1.css?v=1"'
 require "$recovered_console_index" 'await import("/assets/zero-one-ccswitch-launch-v1.js?v=1")'
 require "$recovered_console_index" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=6")'
-require "$recovered_console_index" 'await import("/assets/online-image-v10/online-image.js")'
+require "$recovered_console_index" 'await import("/assets/online-image-v11/online-image.js")'
 require "$recovered_console_index" 'await import("/assets/zero-one-settings-unified-save-v1.js")'
 require "$recovered_console_index" 'href="/assets/zero-one-affiliate-admin-v1.css?v=3"'
 require "$recovered_console_index" 'await import("/assets/zero-one-floating-panels-v1.js?v=2")'
-require "$recovered_console_index" 'await import("/assets/zero-one-login-recovery-v2.js?v=3")'
+require "$recovered_console_index" 'await import("/assets/zero-one-login-recovery-v2.js?v=4")'
 forbid "$recovered_pricing_chunk" 'getModelDefaultPricing('
 require "$recovered_console_redeem_chunk" 'redeem'
 require "$recovered_console_admin_redeem_chunk" 'box'
@@ -246,8 +246,9 @@ require "$recovered_affiliate_admin_css" 'display: none !important;'
 require "$recovered_affiliate_admin_css" '.zero-one-affiliate-dialog-overlay'
 require "$recovered_login_recovery" "const RECOVERY_PATH = '/forgot-password'"
 require "$recovered_login_recovery" 'a[href="/register"].btn.btn-secondary'
-require "$recovered_login_recovery" 'recoveryLink.className = registrationLink.className'
-require "$recovered_login_recovery" 'registrationLink.after(recoveryLink)'
+require "$recovered_login_recovery" "const className = registrationLink?.className || 'btn btn-secondary w-full'"
+require "$recovered_login_recovery" 'placement.after(recoveryLink)'
+require "$recovered_login_recovery" 'recoveryLink?.remove()'
 require "$recovered_login_recovery" "const LOGIN_BUTTON_CLASS = 'btn btn-primary btn-specular w-full'"
 require "$recovered_login_recovery" "window.location.pathname === '/forgot-password'"
 require "$recovered_login_recovery" 'sendResetLink.className = LOGIN_BUTTON_CLASS'

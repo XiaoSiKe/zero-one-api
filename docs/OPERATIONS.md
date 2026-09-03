@@ -4,6 +4,31 @@
 [`PRODUCTION_SERVER_CN.md`](PRODUCTION_SERVER_CN.md)。私钥正文和任何运行时 secret
 不得写入仓库。
 
+## 密码找回发布验收
+
+密码找回同时依赖 `email_verify_enabled`、`password_reset_enabled`、可用的 SMTP
+发件配置和正确的 `frontend_url`。生产地址使用 `https://api.01yapi.com`。管理设置
+API 的发件地址字段是 `smtp_from_email`，其内部存储键是 `smtp_from`，不可混用。
+先通过 `POST /api/v1/admin/settings/test-smtp` 核验连接，再按现有设置保存协议启用
+找回；回读设置并确认其他能力、导航和邮件配置保持原值。
+
+本地与 CI 使用同一个完整验收入口：
+
+```bash
+npm ci --prefix visual-regression
+node deploy/zero-one/test-password-recovery.mjs <candidate-backend-image> <candidate-edge-image>
+```
+
+该命令创建独立的 PostgreSQL、Redis、Backend、Edge 和 Mailpit，使用临时测试管理员
+与普通用户，通过真实 SMTP 收取邮件，再在固定 Playwright 浏览器中提交重置并验证
+链接重复使用、旧密码和旧令牌均被拒绝。测试结束清理本次容器、卷和网络，不连接生产
+数据库，也不向外部邮箱发信。连接探测成功不能替代收信与改密流程的验证。
+
+恢复版的两条密码路由从维护中的 Vue 源码生成；更新时运行
+`pnpm --dir frontend run build:password-recovery`，再生成 Console 命名空间。
+认证入口读取设置期间保持不可提交，关闭能力时不显示可用的找回入口。按错误码显示
+中文提示；找回请求的成功响应不透露邮箱是否注册。每个重置令牌必须原子核销。
+
 ## Initial Deployment
 
 1. Keep the public DNS records unpointed. Copy `deploy/zero-one/.env.example` to `deploy/zero-one/.env`, replace every placeholder secret and replace all four runtime image values with approved registry digests.

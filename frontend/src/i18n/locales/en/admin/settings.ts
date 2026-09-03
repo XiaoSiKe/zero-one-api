@@ -678,7 +678,7 @@ export default {
         contactInfoHint: 'Customer support contact info, displayed on redeem page, profile, etc.',
         docUrl: 'Open-source Knowledge Base URL',
         docUrlPlaceholder: 'https://docs.example.com',
-        docUrlHint: 'Used by the “Open-source Knowledge Base” links on the public site and Console header. Leave empty to hide them.',
+        docUrlHint: 'Used by the “Open-source Knowledge Base” links on the public site and other documentation entry points. Leave empty to hide those links.',
         imageTutorialMenu: 'Image Tutorial (Special Custom Menu)',
         imageTutorialMenuPlaceholder: 'https://docs.example.com/image-generation',
         imageTutorialMenuHint: 'This is still a standard custom-menu page. It is fixed in the sidebar, and the Online Images tutorial button opens the same /custom/image-tutorial iframe page. The target must allow iframe embedding; clear the field to remove the menu.',

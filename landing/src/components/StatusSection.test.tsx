@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ChannelStatusResult } from "../lib/channelStatus";
+import type { ChannelStatusResult, ChannelStatusSummary } from "../lib/channelStatus";
 import { StatusSection } from "./ContentSections";
 
 const mocks = vi.hoisted(() => ({
@@ -15,7 +15,7 @@ vi.mock("../lib/channelStatus", async (importOriginal) => {
 });
 
 const success = (
-  overrides: Partial<ChannelStatusResult & { data: object }> = {},
+  overrides: { status?: "success"; data?: Partial<ChannelStatusSummary> } = {},
 ): ChannelStatusResult => ({
   status: "success",
   data: {
@@ -58,7 +58,7 @@ describe("StatusSection", () => {
     expect(mocks.fetchChannelStatus).toHaveBeenCalledWith(
       expect.objectContaining({
         enabled: true,
-        timeoutMs: 3_000,
+        timeoutMs: 8_000,
         signal: expect.any(AbortSignal),
       }),
     );
@@ -91,7 +91,7 @@ describe("StatusSection", () => {
   it("retries without retaining a failed or illustrative status", async () => {
     const user = userEvent.setup();
     mocks.fetchChannelStatus
-      .mockResolvedValueOnce({ status: "error", reason: "timeout" })
+      .mockResolvedValueOnce({ status: "error", reason: "invalid-response" })
       .mockResolvedValueOnce(
         success({
           status: "success",
@@ -115,7 +115,7 @@ describe("StatusSection", () => {
 
     render(<StatusSection />);
     expect(
-      await screen.findByText("读取超时，页面没有显示缓存或示例状态。"),
+      await screen.findByText("暂时无法读取渠道状态，请稍后重试。"),
     ).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "重新读取" }));
     expect(await screen.findByText("OpenAI 主线路")).toBeTruthy();
@@ -273,5 +273,65 @@ describe("StatusSection", () => {
     expect(screen.queryByText("正在读取渠道状态。")).toBeNull();
 
     await act(async () => resolveRefresh(success()));
+  });
+
+  it("retries a transient first read once after one second and keeps loading", async () => {
+    vi.useFakeTimers();
+    mocks.fetchChannelStatus
+      .mockResolvedValueOnce({ status: "error", reason: "timeout" })
+      .mockResolvedValueOnce(success());
+    render(<StatusSection />);
+    await act(async () => Promise.resolve());
+    expect(screen.getByLabelText("渠道状态数据").getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByTestId("channel-status-skeleton")).toBeTruthy();
+    await act(async () => vi.advanceTimersByTimeAsync(999));
+    expect(mocks.fetchChannelStatus).toHaveBeenCalledTimes(1);
+    await act(async () => vi.advanceTimersByTimeAsync(1));
+    expect(mocks.fetchChannelStatus).toHaveBeenCalledTimes(2);
+    expect(screen.queryByTestId("channel-status-skeleton")).toBeNull();
+    expect(screen.queryByRole("button", { name: "重新读取" })).toBeNull();
+  });
+
+  it("marks the retained result when refresh fails, then clears it when disabled", async () => {
+    vi.useFakeTimers();
+    mocks.fetchChannelStatus
+      .mockResolvedValueOnce(success({ status: "success", data: {
+        items: [{ name: "现有渠道", state: "operational", availability7d: 99, observedAt: "2026-08-16T08:25:00Z", timeline: [] }],
+      } }))
+      .mockResolvedValue({ status: "error", reason: "server" });
+    const { rerender } = render(<StatusSection />);
+    await act(async () => Promise.resolve());
+    await act(async () => vi.advanceTimersByTimeAsync(31_000));
+    expect(screen.getByText("现有渠道")).toBeTruthy();
+    expect(screen.getByText("更新暂时失败，正在显示上次成功读取的渠道状态。" )).toBeTruthy();
+    expect(mocks.fetchChannelStatus).toHaveBeenCalledTimes(3);
+    rerender(<StatusSection enabled={false} />);
+    expect(screen.queryByText("现有渠道")).toBeNull();
+    expect(screen.getByText("当前站点未公开渠道状态汇总。")).toBeTruthy();
+  });
+
+  it("cancels a scheduled retry when the section unmounts", async () => {
+    vi.useFakeTimers();
+    mocks.fetchChannelStatus.mockResolvedValue({ status: "error", reason: "network" });
+    const { unmount } = render(<StatusSection />);
+    await act(async () => Promise.resolve());
+    unmount();
+    await act(async () => vi.advanceTimersByTimeAsync(60_000));
+    expect(mocks.fetchChannelStatus).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows real rows alongside incomplete rows without claiming all channels are healthy", async () => {
+    mocks.fetchChannelStatus.mockResolvedValue(success({ status: "success", data: {
+      state: "unknown", reason: "insufficient_data", items: [
+        { name: "有效渠道", state: "operational", availability7d: 99, observedAt: "2026-08-16T08:25:00Z", timeline: [] },
+        { name: "缺样本渠道", state: "unknown", availability7d: null, observedAt: null, timeline: [] },
+        { name: "过期渠道", state: "unknown", availability7d: 97, observedAt: "2026-08-16T05:00:00Z", timeline: [] },
+      ],
+    } }));
+    render(<StatusSection />);
+    expect(await screen.findByText("有效渠道")).toBeTruthy();
+    expect(screen.getByText("等待数据")).toBeTruthy();
+    expect(screen.getByText("待更新")).toBeTruthy();
+    expect(screen.getAllByText("暂无检测记录")).toHaveLength(3);
   });
 });

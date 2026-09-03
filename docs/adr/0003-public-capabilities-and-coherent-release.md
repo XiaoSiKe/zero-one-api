@@ -25,8 +25,17 @@ Console-targeted announcements public.
 Public Channel Status has its own `public_channel_status_enabled` setting. It is
 off by default and fails closed when settings cannot be read. When enabled,
 `GET /api/v1/channel-status/summary` aggregates all enabled monitoring targets
-but returns only the documented health summary. It never returns channel,
-provider, model, group, request-volume, error-detail, or credential data.
+but returns only the documented health summary and its existing display rows:
+display name, state, availability and check timestamps. Internal identifiers,
+provider configuration, models, groups, request volumes, raw errors and
+credentials remain private.
+
+Display rows are evaluated independently. A missing or stale probe keeps its
+own row unknown while other valid rows remain visible; the overall aggregate
+still requires complete samples before declaring a health state. A history-read
+failure leaves the timeline empty without discarding current observations.
+Landing distinguishes initial loading, missing observations and failed refreshes,
+and explicitly labels a retained result when its refresh fails.
 
 Both anonymous responses follow an explicit field allowlist. Adding a field to
 an internal entity or Console DTO does not make that field public. Edge responses

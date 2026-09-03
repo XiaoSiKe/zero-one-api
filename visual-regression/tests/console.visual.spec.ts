@@ -125,7 +125,7 @@ test.describe('Console public auth contracts', () => {
     page.on('pageerror', (error) => pageErrors.push(error.message))
     page.on('request', (request) => {
       const pathname = new URL(request.url()).pathname
-      if (pathname === '/assets/cn-provider-shell-v4/LoginView-BbpS8aW1.js') {
+      if (pathname === '/assets/cn-provider-shell-v5/LoginView-BbpS8aW1.js') {
         loginChunkRequestedBeforeSettingsRelease ||= !settingsReleased
       }
       if (pathname === '/assets/cn-provider-admin-v1/cn-provider-admin.js') {
@@ -153,7 +153,7 @@ test.describe('Console public auth contracts', () => {
       await expect(page.locator('form')).toBeVisible({ timeout: 4_000 })
       await expect(page.locator('input[type="email"]')).toBeVisible()
       await expect(page.locator('input[type="password"]')).toBeVisible()
-      await expect(page.locator('[data-zero-one-login-recovery="true"]')).toBeVisible()
+      await expect(page.locator('[data-zero-one-login-recovery="true"]')).toHaveCount(0)
       expect(settingsReleased).toBe(false)
       expect(adapterReleased).toBe(false)
       expect(loginChunkRequestedBeforeSettingsRelease).toBe(true)
@@ -165,6 +165,7 @@ test.describe('Console public auth contracts', () => {
     }
 
     await expect(page.getByRole('button', { name: '登录', exact: true })).toBeEnabled()
+    await expect(page.locator('[data-zero-one-login-recovery="true"]')).toBeVisible()
     expect(pageErrors).toEqual([])
   })
 
@@ -193,11 +194,11 @@ test.describe('Console public auth contracts', () => {
 
     page.on('pageerror', (error) => pageErrors.push(error.message))
 
-    await page.route('**/assets/online-image-v10/online-image.js', async (route) => {
+    await page.route('**/assets/online-image-v11/online-image.js', async (route) => {
       await stalledOnlineAdapter
       await route.fallback().catch(() => {})
     })
-    await page.route('**/assets/cn-provider-admin-v2/cn-provider-admin.js', (route) =>
+    await page.route('**/assets/cn-provider-admin-v3/cn-provider-admin.js', (route) =>
       route.fulfill({ status: 503, contentType: 'text/plain', body: 'simulated outage' }),
     )
 
@@ -213,7 +214,7 @@ test.describe('Console public auth contracts', () => {
 
     page.on('request', (request) => {
       const pathname = new URL(request.url()).pathname
-      if (pathname === '/assets/cn-provider-shell-v4/RegisterView-CP_DoJ_R.js') {
+      if (pathname === '/assets/cn-provider-shell-v5/RegisterView-CP_DoJ_R.js') {
         registrationChunkRequestedBeforeSettingsRelease ||= !settingsReleased
       }
       if (pathname === '/api/v1/keys') onlineImageKeysRequested = true
@@ -1612,7 +1613,7 @@ test.describe('Console header navigation settings contracts', () => {
     await expect(page.getByTestId('profile-navigation-toggle')).toBeChecked()
     await expect(page.getByTestId('subscription-navigation-toggle')).toBeChecked()
     await expect(page.getByTestId('model-plaza-placement')).toHaveValue('header')
-    await expect(page.locator('header a[href="https://docs.01yapi.test/start"]')).toHaveText('开源知识库')
+    await expect(page.locator('header a[href="https://docs.01yapi.test/start"]')).toHaveCount(0)
     await expect(page.getByText('开源知识库链接', { exact: true })).toBeVisible()
     await expect(page.getByTestId('image-tutorial-menu-url')).toHaveValue('')
     await expect(page.getByTestId('user-sidebar-order-list').locator('[data-sidebar-path]').first()).toHaveAttribute('data-sidebar-path', '/keys')
@@ -3227,14 +3228,14 @@ test.describe('Console visual contracts', () => {
     const response = await page.goto('http://127.0.0.1:4173/login')
     expect(response?.status()).toBe(200)
     const html = await response!.text()
-    expect(html).toContain('/assets/cn-provider-admin-v2/cn-provider-admin.js')
-    expect(html).toContain('/assets/cn-provider-shell-v4/index-9xJBhx8B.js')
-    expect(html).toContain('/assets/online-image-v10/online-image.js')
+    expect(html).toContain('/assets/cn-provider-admin-v3/cn-provider-admin.js')
+    expect(html).toContain('/assets/cn-provider-shell-v5/index-9xJBhx8B.js')
+    expect(html).toContain('/assets/online-image-v11/online-image.js')
     expect(html).toContain('/assets/zero-one-settings-unified-save-v1.js')
     expect(html).toContain('/assets/zero-one-local-preview-guard-v2.js')
     expect(html).toContain('/assets/zero-one-custom-page-security-v1.js')
     expect(html).toContain('/assets/zero-one-navigation-reconciliation-v1.js?v=3')
-    expect(html).toContain('/assets/zero-one-console-parity-v1.js?v=6')
+    expect(html).toContain('/assets/zero-one-console-parity-v1.js?v=7')
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=4')
     expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=14')
     expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=6')
