@@ -132,7 +132,19 @@ function installConsoleCardMotion(surface) {
 
 function enhanceConsoleCards() {
   const surface = document.querySelector('.app-shell main')
-  if (surface instanceof HTMLElement) installConsoleCardMotion(surface)
+  if (!(surface instanceof HTMLElement)) return
+  installConsoleCardMotion(surface)
+  // Scope phone layout to dashboard routes; the shell survives navigation.
+  const dashboardLayout = window.location.pathname === USER_DASHBOARD_PATH
+    ? 'user'
+    : window.location.pathname === ADMIN_DASHBOARD_PATH ? 'admin' : null
+  if (dashboardLayout) {
+    if (surface.dataset.zeroOneDashboardLayout !== dashboardLayout) {
+      surface.dataset.zeroOneDashboardLayout = dashboardLayout
+    }
+  } else if (surface.hasAttribute('data-zero-one-dashboard-layout')) {
+    surface.removeAttribute('data-zero-one-dashboard-layout')
+  }
 }
 
 function renameKnowledgeBaseLinks() {

@@ -557,7 +557,8 @@
     "landing/src/lib/pageResume.test.ts",
     "landing/src/lib/usePublicSettings.ts",
     "landing/src/lib/usePublicSettings.test.ts",
-    "visual-regression/tests/landing.public-data.spec.ts"
+    "visual-regression/tests/landing.public-data.spec.ts",
+    "visual-regression/tests/mobile-layout.behavior.spec.ts"
   ],
   "legacy_hotfixes": [
     {
