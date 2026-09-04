@@ -233,7 +233,7 @@ test.describe('Landing visual contracts', () => {
     expect(await readHeroGeometry()).toEqual(geometryBeforeHover)
   })
 
-  test('footer shine layers overlap at the larger, slower typography', async ({ page }) => {
+  test('footer shine layers overlap at the device-specific typography', async ({ page }, testInfo) => {
     await seedLanding(page)
     await page.goto('http://127.0.0.1:4174')
     await expect(page.locator('[data-visual-ready="true"]')).toBeVisible()
@@ -258,7 +258,7 @@ test.describe('Landing visual contracts', () => {
 
     expect(result).toEqual([
       expect.objectContaining({ speed: '2.6s', fontSize: '24px' }),
-      expect.objectContaining({ speed: '2.6s', fontSize: '16px' }),
+      expect.objectContaining({ speed: '2.6s', fontSize: testInfo.project.name === 'chromium-mobile' ? '14px' : '16px' }),
     ])
     for (const item of result) expect(item.shineRect).toEqual(item.baseRect)
   })
