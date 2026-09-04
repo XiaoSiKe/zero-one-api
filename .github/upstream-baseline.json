@@ -591,7 +591,9 @@
     "backend/internal/service/ops_histograms.go",
     "backend/internal/service/ops_trends.go",
     "Makefile",
-    "backend/Makefile"
+    "backend/Makefile",
+    "backend/internal/integration/e2e_user_flow_test.go",
+    "backend/internal/integration/e2e_helpers_test.go"
   ],
   "legacy_hotfixes": [
     {
@@ -1137,7 +1139,9 @@
         "backend/internal/service/ops_histograms.go",
         "backend/internal/service/ops_trends.go",
         "Makefile",
-        "backend/Makefile"
+        "backend/Makefile",
+        "backend/internal/integration/e2e_user_flow_test.go",
+        "backend/internal/integration/e2e_helpers_test.go"
       ]
     },
     {
