@@ -1,4 +1,4 @@
-.PHONY: build build-backend build-frontend test test-backend test-frontend test-frontend-critical
+.PHONY: build build-backend build-frontend test test-backend test-frontend test-frontend-critical test-landing
 
 FRONTEND_CRITICAL_VITEST := \
 	src/api/__tests__/client.spec.ts \
@@ -26,8 +26,8 @@ build-backend:
 build-frontend:
 	@pnpm --dir frontend run build
 
-# 运行测试（后端 + 前端）
-test: test-backend test-frontend
+# 运行完整测试（后端 + 控制台 + 官网）；关键子集仅供快速诊断。
+test: test-backend test-frontend test-landing
 
 test-backend:
 	@$(MAKE) -C backend test
@@ -35,7 +35,11 @@ test-backend:
 test-frontend:
 	@pnpm --dir frontend run lint:check
 	@pnpm --dir frontend run typecheck
-	@$(MAKE) test-frontend-critical
+	@pnpm --dir frontend run test:run
 
 test-frontend-critical:
 	@pnpm --dir frontend exec vitest run $(FRONTEND_CRITICAL_VITEST)
+
+test-landing:
+	@npm --prefix landing run typecheck
+	@npm --prefix landing test

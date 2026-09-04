@@ -272,52 +272,6 @@ func ExtractResponsesReasoningEffortFromBody(body []byte, modelCandidates ...str
 	return &normalized
 }
 
-func mergeAnthropicUsage(dst *ClaudeUsage, src apicompat.AnthropicUsage) {
-	if dst == nil {
-		return
-	}
-
-	// Some Anthropic-compatible providers retain OpenAI-style prompt/cache
-	// fields. Prefer those authoritative totals or hit/miss buckets over the
-	// overloaded input_tokens field. This covers Kimi's changing stream
-	// semantics as well as GLM/DeepSeek cache aliases.
-	if src.PromptTokens > 0 || src.PromptCacheHitTokens != nil || src.PromptCacheMissTokens != nil {
-		cacheReadTokens := src.CacheReadInputTokens
-		if cacheReadTokens == 0 && src.CachedTokens > 0 {
-			cacheReadTokens = src.CachedTokens
-		}
-		if cacheReadTokens == 0 && src.PromptTokensDetails != nil && src.PromptTokensDetails.CachedTokens > 0 {
-			cacheReadTokens = src.PromptTokensDetails.CachedTokens
-		}
-		if cacheReadTokens == 0 && src.PromptCacheHitTokens != nil {
-			cacheReadTokens = max(*src.PromptCacheHitTokens, 0)
-		}
-
-		if src.PromptCacheMissTokens != nil {
-			dst.InputTokens = max(*src.PromptCacheMissTokens, 0)
-		} else {
-			dst.InputTokens = max(src.PromptTokens-cacheReadTokens-src.CacheCreationInputTokens, 0)
-		}
-		dst.CacheReadInputTokens = cacheReadTokens
-		dst.CacheCreationInputTokens = src.CacheCreationInputTokens
-	} else {
-		if src.InputTokens > 0 {
-			dst.InputTokens = src.InputTokens
-		}
-		if src.CacheReadInputTokens > 0 {
-			dst.CacheReadInputTokens = src.CacheReadInputTokens
-		} else if src.CachedTokens > 0 {
-			dst.CacheReadInputTokens = src.CachedTokens
-		}
-		if src.CacheCreationInputTokens > 0 {
-			dst.CacheCreationInputTokens = src.CacheCreationInputTokens
-		}
-	}
-	if src.OutputTokens > 0 {
-		dst.OutputTokens = src.OutputTokens
-	}
-}
-
 // parseAnthropicSSEField parses an SSE field line in the form "field:value" or "field: value".
 // According to the SSE spec (https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation),
 // the space after the colon is optional. This function handles both formats.
@@ -350,9 +304,7 @@ func (s *GatewayService) handleResponsesBufferedStreamingResponse(
 	}
 	scanner.Buffer(make([]byte, 0, 64*1024), maxLineSize)
 
-	// Accumulate the final Anthropic response from streaming events
-	var finalResp *apicompat.AnthropicResponse
-	var usage ClaudeUsage
+	var buffered anthropicBufferedResponse
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -381,39 +333,7 @@ func (s *GatewayService) handleResponsesBufferedStreamingResponse(
 			continue
 		}
 
-		// message_start carries the initial response structure
-		if event.Type == "message_start" && event.Message != nil {
-			finalResp = event.Message
-			mergeAnthropicUsage(&usage, event.Message.Usage)
-		}
-
-		// message_delta carries final usage and stop_reason
-		if event.Type == "message_delta" {
-			if event.Usage != nil {
-				mergeAnthropicUsage(&usage, *event.Usage)
-			}
-			if event.Delta != nil && event.Delta.StopReason != "" && finalResp != nil {
-				finalResp.StopReason = apicompat.AnthropicStopReasonPtr(event.Delta.StopReason)
-			}
-		}
-
-		// Accumulate content blocks
-		if event.Type == "content_block_start" && event.ContentBlock != nil && finalResp != nil {
-			finalResp.Content = append(finalResp.Content, *event.ContentBlock)
-		}
-		if event.Type == "content_block_delta" && event.Delta != nil && finalResp != nil && event.Index != nil {
-			idx := *event.Index
-			if idx < len(finalResp.Content) {
-				switch event.Delta.Type {
-				case "text_delta":
-					finalResp.Content[idx].Text += event.Delta.Text
-				case "thinking_delta":
-					finalResp.Content[idx].Thinking += event.Delta.Thinking
-				case "input_json_delta":
-					finalResp.Content[idx].Input = appendRawJSON(finalResp.Content[idx].Input, event.Delta.PartialJSON)
-				}
-			}
-		}
+		buffered.add(event)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -425,19 +345,10 @@ func (s *GatewayService) handleResponsesBufferedStreamingResponse(
 		}
 	}
 
+	finalResp, usage := buffered.finish()
 	if finalResp == nil {
 		writeResponsesError(c, http.StatusBadGateway, "server_error", "Upstream stream ended without a response")
 		return nil, fmt.Errorf("upstream stream ended without response")
-	}
-
-	// Update usage from accumulated delta
-	if usage.InputTokens > 0 || usage.OutputTokens > 0 {
-		finalResp.Usage = apicompat.AnthropicUsage{
-			InputTokens:              usage.InputTokens,
-			OutputTokens:             usage.OutputTokens,
-			CacheCreationInputTokens: usage.CacheCreationInputTokens,
-			CacheReadInputTokens:     usage.CacheReadInputTokens,
-		}
 	}
 
 	// Convert to Responses format
@@ -632,19 +543,6 @@ func (s *GatewayService) handleResponsesStreamingResponse(
 	}
 
 	return finalizeStream()
-}
-
-// appendRawJSON appends a JSON fragment string to existing raw JSON.
-func appendRawJSON(existing json.RawMessage, fragment string) json.RawMessage {
-	// Anthropic initializes tool_use.input to {} in content_block_start, then
-	// streams the actual input through input_json_delta events. Treat that empty
-	// object as a placeholder instead of prefixing it to the streamed JSON.
-	var existingObject map[string]json.RawMessage
-	isEmptyObject := json.Unmarshal(existing, &existingObject) == nil && existingObject != nil && len(existingObject) == 0
-	if len(existing) == 0 || isEmptyObject {
-		return json.RawMessage(fragment)
-	}
-	return json.RawMessage(string(existing) + fragment)
 }
 
 // writeResponsesError writes an error response in OpenAI Responses API format.

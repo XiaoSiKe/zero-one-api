@@ -579,7 +579,19 @@
     "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-summary.png",
     "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-trends.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-summary.png",
-    "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-trends.png"
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-trends.png",
+    "backend/internal/handler/admin/ops_dashboard_handler.go",
+    "backend/internal/handler/admin/ops_dashboard_handler_test.go",
+    "backend/internal/handler/admin/ops_snapshot_v2_handler.go",
+    "backend/internal/service/anthropic_buffered_response.go",
+    "backend/internal/service/anthropic_buffered_response_test.go",
+    "backend/internal/service/ops_dashboard.go",
+    "backend/internal/service/ops_dashboard_validation_test.go",
+    "backend/internal/service/ops_errors.go",
+    "backend/internal/service/ops_histograms.go",
+    "backend/internal/service/ops_trends.go",
+    "Makefile",
+    "backend/Makefile"
   ],
   "legacy_hotfixes": [
     {
@@ -1113,7 +1125,19 @@
         "backend/internal/handler/user_handler_test.go",
         "backend/internal/repository/email_cache.go",
         "backend/internal/service/auth_service_email_bind_test.go",
-        "backend/internal/service/email_service.go"
+        "backend/internal/service/email_service.go",
+        "backend/internal/handler/admin/ops_dashboard_handler.go",
+        "backend/internal/handler/admin/ops_dashboard_handler_test.go",
+        "backend/internal/handler/admin/ops_snapshot_v2_handler.go",
+        "backend/internal/service/anthropic_buffered_response.go",
+        "backend/internal/service/anthropic_buffered_response_test.go",
+        "backend/internal/service/ops_dashboard.go",
+        "backend/internal/service/ops_dashboard_validation_test.go",
+        "backend/internal/service/ops_errors.go",
+        "backend/internal/service/ops_histograms.go",
+        "backend/internal/service/ops_trends.go",
+        "Makefile",
+        "backend/Makefile"
       ]
     },
     {
