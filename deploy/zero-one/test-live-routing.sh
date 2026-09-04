@@ -117,7 +117,7 @@ assert_text "$console" 'await import("/assets/cn-provider-shell-v5/index-9xJBhx8
 assert_text "$console" 'await import("/assets/zero-one-local-preview-guard-v2.js")' 'recovered console local preview guard is missing'
 assert_text "$console" 'await import("/assets/zero-one-custom-page-security-v1.js")' 'recovered console custom page security guard is missing'
 assert_text "$console" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=3")' 'recovered Console navigation reconciliation is missing'
-assert_text "$console" 'await import("/assets/zero-one-console-parity-v1.js?v=7")' 'recovered console parity overlay is missing'
+assert_text "$console" 'await import("/assets/zero-one-console-parity-v1.js?v=8")' 'recovered console parity overlay is missing'
 assert_text "$console" 'await import("/assets/zero-one-community-qr-v1.js?v=14")' 'recovered console header-navigation settings adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=25")' 'recovered console header custom-menu adapter is missing'
 case "$console" in

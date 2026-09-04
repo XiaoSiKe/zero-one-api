@@ -95,8 +95,8 @@ function billingLabel(row: LandingPriceRow): string {
 
 function PriceTable({ rows, onClear }: { rows: LandingPriceRow[]; onClear: () => void }) {
   return (
-      <div className="price-table-wrap" tabIndex={0} aria-label="模型价格横向滚动区域">
-        <table className="price-table">
+      <div className="price-table-wrap" tabIndex={0} aria-label="模型价格">
+        <table className="price-table" role="table">
           <thead>
             <tr>
               <th scope="col">模型</th>
@@ -115,15 +115,15 @@ function PriceTable({ rows, onClear }: { rows: LandingPriceRow[]; onClear: () =>
                   <span className="model-name">{row.model}</span>
                   <small>{row.groupName}</small>
                 </th>
-                <td><span className={`provider-mark provider-${row.platformFilter}`} />{row.platform}</td>
-                <td>
+                <td data-label="提供商"><span className={`provider-mark provider-${row.platformFilter}`} />{row.platform}</td>
+                <td data-label="计费">
                   <span>{billingLabel(row)}</span>
                   <small>{row.unit}</small>
                 </td>
-                <td><OfficialPrice value={row.officialInput} cache={row.officialCacheRead} /></td>
-                <td><OfficialPrice value={row.officialOutput} cache="—" /></td>
-                <td className="paid-price-column paid-price-column--start"><PlatformPrice row={row} field="input" /></td>
-                <td className="paid-price-column paid-price-column--end"><PlatformPrice row={row} field="output" />{row.peakNote ? <small className="peak-note">{row.peakNote}</small> : null}</td>
+                <td data-label="输入 · 官方参考"><OfficialPrice value={row.officialInput} cache={row.officialCacheRead} /></td>
+                <td data-label="输出 · 官方参考"><OfficialPrice value={row.officialOutput} cache="—" /></td>
+                <td data-label="输入 · 零一 API" className="paid-price-column paid-price-column--start"><PlatformPrice row={row} field="input" /></td>
+                <td data-label="输出 · 零一 API" className="paid-price-column paid-price-column--end"><PlatformPrice row={row} field="output" />{row.peakNote ? <small className="peak-note">{row.peakNote}</small> : null}</td>
               </tr>
             )) : (
               <tr className="price-empty-row">

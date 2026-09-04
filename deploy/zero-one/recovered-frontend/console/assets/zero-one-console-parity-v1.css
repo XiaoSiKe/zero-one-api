@@ -142,3 +142,86 @@ html {
     transform: none !important;
   }
 }
+
+/* Phone dashboard: retain the existing cards and actions, reflow only layout. */
+@media (max-width: 767px) {
+  [data-zero-one-dashboard-layout] > .space-y-6 > .grid.grid-cols-2 {
+    gap: 12px;
+  }
+
+  [data-zero-one-dashboard-layout] > .space-y-6 > .grid.grid-cols-2 > .card {
+    min-width: 0;
+    padding: 12px;
+  }
+
+  [data-zero-one-dashboard-layout] > .space-y-6 > .grid.grid-cols-2 > .card > .flex {
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  [data-zero-one-dashboard-layout] > .space-y-6 > .grid.grid-cols-2 > .card > .flex > :last-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  [data-zero-one-dashboard-layout] > .space-y-6 > .grid.grid-cols-2 .text-xl {
+    font-size: 18px;
+    line-height: 1.4;
+  }
+
+  [data-zero-one-dashboard-layout="user"] > .space-y-6 {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  [data-zero-one-dashboard-layout="user"] > .space-y-6 > :nth-child(n) {
+    min-width: 0;
+    margin-block: 0;
+    order: 2;
+  }
+
+  [data-zero-one-dashboard-layout="user"] > .space-y-6 > .grid.grid-cols-2 {
+    order: 0;
+  }
+
+  /* Expose the two existing children to the phone grid without remounting Vue. */
+  [data-zero-one-dashboard-layout="user"] > .space-y-6 > .lg\:grid-cols-3 {
+    display: contents;
+  }
+
+  [data-zero-one-dashboard-layout="user"] > .space-y-6 > .lg\:grid-cols-3 > .lg\:col-span-1 {
+    min-width: 0;
+    order: 1;
+  }
+
+  [data-zero-one-dashboard-layout="user"] > .space-y-6 > .lg\:grid-cols-3 > .lg\:col-span-2 {
+    min-width: 0;
+    order: 3;
+  }
+
+  [data-zero-one-dashboard-layout="user"] .lg\:col-span-1 > .card > .space-y-3 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 12px;
+  }
+
+  [data-zero-one-dashboard-layout="user"] .lg\:col-span-1 > .card > .space-y-3 > button {
+    min-width: 0;
+    margin: 0;
+    padding: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  [data-zero-one-dashboard-layout="user"] .lg\:col-span-1 > .card > .space-y-3 > button > .h-12 {
+    width: 32px;
+    height: 32px;
+  }
+
+  [data-zero-one-dashboard-layout="user"] .lg\:col-span-1 > .card > .space-y-3 > button > svg {
+    display: none;
+  }
+}
