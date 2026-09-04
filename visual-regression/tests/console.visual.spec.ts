@@ -3320,7 +3320,7 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/zero-one-ccswitch-launch-v1.js?v=2')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.js?v=6')
     expect(html).toContain('/assets/zero-one-affiliate-admin-v1.css?v=3')
-    expect(html).toContain('/assets/zero-one-floating-panels-v1.js?v=2')
+    expect(html).toContain('/assets/zero-one-floating-panels-v1.js?v=3')
     expect(html).not.toContain('/src/main.ts')
     expect(html).not.toMatch(/"site_logo"\s*:\s*"data:/)
     expect(
@@ -3415,7 +3415,8 @@ test.describe('Console visual contracts', () => {
     await expect(panel).toBeVisible()
     await expect(panel).toHaveCSS('position', 'fixed')
     await expect(panel).toHaveAttribute('data-zero-one-floating-panel', 'true')
-    expect(await panel.evaluate((element) => element.parentElement === document.body)).toBe(true)
+    expect(await panel.evaluate((element) => element.parentElement === document.body)).toBe(false)
+    expect(await panel.evaluate((element) => element.matches(':popover-open'))).toBe(true)
 
     const panelOwnsTopmostPoint = await panel.evaluate((element) => {
       const rect = element.getBoundingClientRect()
@@ -3456,7 +3457,7 @@ test.describe('Console visual contracts', () => {
     for (let index = 0; index < 4; index += 1) {
       const panel = panels.nth(index)
       await expect(panel).toHaveCSS('position', 'fixed')
-      expect(await panel.evaluate((element) => element.parentElement === document.body)).toBe(true)
+      expect(await panel.evaluate((element) => element.parentElement === document.body)).toBe(!(await panel.evaluate(element => element.matches('.date-picker-dropdown'))))
     }
   })
 

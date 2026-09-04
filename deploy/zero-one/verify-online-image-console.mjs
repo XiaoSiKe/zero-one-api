@@ -17,7 +17,7 @@ export function verifyOnlineImageConsole(consoleDir) {
   const registrationStart = index.indexOf('      if (isRegistrationEntry) {')
   const standardStart = index.indexOf('      } else {', registrationStart)
   const entryEnd = index.indexOf(
-    '      await import("/assets/zero-one-floating-panels-v1.js?v=2")',
+    '      await import("/assets/zero-one-floating-panels-v1.js?v=3")',
     standardStart,
   )
   if (registrationStart < 0 || standardStart < 0 || entryEnd < 0) {

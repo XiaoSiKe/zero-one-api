@@ -558,7 +558,18 @@
     "landing/src/lib/usePublicSettings.ts",
     "landing/src/lib/usePublicSettings.test.ts",
     "visual-regression/tests/landing.public-data.spec.ts",
-    "visual-regression/tests/mobile-layout.behavior.spec.ts"
+    "visual-regression/tests/mobile-layout.behavior.spec.ts",
+    "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v1/data.js",
+    "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v1/dashboard-finance.js",
+    "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v1/dashboard-finance.css",
+    "deploy/zero-one/dashboard-finance.test.mjs",
+    "deploy/zero-one/test-dashboard-finance-live.mjs",
+    "visual-regression/tests/dashboard-finance.behavior.spec.ts",
+    "docs/adr/0010-admin-billing-finance-and-date-panels.md",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-summary.png",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-trends.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-summary.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-trends.png"
   ],
   "legacy_hotfixes": [
     {
@@ -1139,7 +1150,8 @@
         "frontend/pnpm-workspace.yaml",
         "frontend/src/api/admin/channels.ts",
         "frontend/.eslintignore",
-        "tools/check_pnpm_audit_exceptions.py"
+        "tools/check_pnpm_audit_exceptions.py",
+        "docs/adr/0010-admin-billing-finance-and-date-panels.md"
       ]
     },
     {

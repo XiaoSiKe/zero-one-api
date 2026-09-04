@@ -746,6 +746,7 @@ export async function seedConsole(
         total_tokens: 0,
         total_cost: 0,
         total_actual_cost: 0,
+        total_account_cost: 0,
         avg_duration_ms: 0,
       })
     }

@@ -113,7 +113,7 @@ require "$recovered_console_index" 'await import("/assets/zero-one-affiliate-adm
 require "$recovered_console_index" 'await import("/assets/online-image-v11/online-image.js")'
 require "$recovered_console_index" 'await import("/assets/zero-one-settings-unified-save-v1.js")'
 require "$recovered_console_index" 'href="/assets/zero-one-affiliate-admin-v1.css?v=3"'
-require "$recovered_console_index" 'await import("/assets/zero-one-floating-panels-v1.js?v=2")'
+require "$recovered_console_index" 'await import("/assets/zero-one-floating-panels-v1.js?v=3")'
 require "$recovered_console_index" 'await import("/assets/zero-one-login-recovery-v2.js?v=4")'
 forbid "$recovered_pricing_chunk" 'getModelDefaultPricing('
 require "$recovered_console_redeem_chunk" 'redeem'

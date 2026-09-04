@@ -9,6 +9,7 @@ const PANEL_Z_INDEX = '100000020'
 const panelSpecs = [
   {
     selector: '.date-picker-dropdown',
+    keepComponentParent: true,
     triggerSelector: '.date-picker-trigger',
     width: 320,
     comfortableHeight: 260,
@@ -73,6 +74,19 @@ function positionPanel(entry) {
     overflowY: 'auto',
   })
 
+  if (spec.keepComponentParent) {
+    // 真实日期组件自带 min-width:320px，必须解除它才能在 320px 屏内限宽。
+    panel.style.transitionProperty = 'opacity'
+    panel.style.minWidth = '0'
+    const custom = panel.querySelector('.date-picker-custom')
+    const separator = panel.querySelector('.date-picker-separator')
+    if (custom instanceof HTMLElement) {
+      custom.style.flexDirection = width < 320 ? 'column' : ''
+      custom.style.alignItems = width < 320 ? 'stretch' : ''
+    }
+    if (separator instanceof HTMLElement) separator.style.display = width < 320 ? 'none' : ''
+  }
+
   const desiredHeight = Math.min(
     panel.scrollHeight || panel.getBoundingClientRect().height,
     Math.max(0, viewportHeight - VIEWPORT_MARGIN * 2),
@@ -124,7 +138,16 @@ function registerPanel(panel, spec) {
   trigger.setAttribute('aria-haspopup', spec.role)
   trigger.setAttribute('aria-expanded', 'true')
   panel.addEventListener('click', (event) => event.stopPropagation())
-  document.body.append(panel)
+  // 二开保护：日期节点的 v-if 锚点归 Vue 所有。移动到 body 会让下一次
+  // 打开的节点脱离组件观察范围，失去定位；保留父节点并使用顶层浮层。
+  if (spec.keepComponentParent) {
+    if (typeof panel.showPopover === 'function') {
+      panel.setAttribute('popover', 'manual')
+      panel.showPopover()
+    }
+  } else {
+    document.body.append(panel)
+  }
 
   const entry = { panel, trigger, spec }
   activePanels.add(entry)
@@ -159,7 +182,16 @@ window.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return
   const entry = [...activePanels].at(-1)
   if (!entry) return
-  requestAnimationFrame(() => entry.trigger.focus())
-})
+  requestAnimationFrame(() => {
+    // 先让 Vue 原 Escape 处理完成；仅在下一帧仍展开时才走原按钮兜底关闭，
+    // 避免快速重开与原监听器竞争。不能直接隐藏 DOM 导致 isOpen 失配。
+    const dateEntry = [...activePanels].reverse().find(item =>
+      item.spec.keepComponentParent && item.panel.isConnected && item.trigger.isConnected &&
+      item.trigger.classList.contains('date-picker-trigger-open'))
+    if (dateEntry) dateEntry.trigger.click()
+    const focusTarget = dateEntry?.trigger || entry.trigger
+    if (focusTarget.isConnected) focusTarget.focus()
+  })
+}, true)
 
 window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.register('floating-panels', scanForPanels)

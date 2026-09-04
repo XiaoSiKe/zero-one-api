@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-04-r5",
-  "baseline_commit": "2c0ed81dd1b28150af17eac9c6fdf012e882256b",
+  "baseline_ref": "ui-approved-2026-09-04-r7",
+  "baseline_commit": "c1a3685e99f2786006e419466ef0507e81c75f57",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -59,7 +59,12 @@
     "visual-regression/tests/__screenshots__/chromium-desktop/console-reset-password.png",
     "visual-regression/tests/__screenshots__/chromium-mobile/console-forgot-password.png",
     "visual-regression/tests/__screenshots__/chromium-mobile/console-reset-password.png",
-    "visual-regression/tests/landing.public-data.spec.ts"
+    "visual-regression/tests/landing.public-data.spec.ts",
+    "visual-regression/tests/dashboard-finance.behavior.spec.ts",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-summary.png",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-trends.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-summary.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-trends.png"
   ],
   "compatibility_paths": [
     "frontend/src/api/",
@@ -439,6 +444,27 @@
         "frontend/src/views/admin/PromoCodesView.vue",
         "deploy/zero-one/recovered-frontend/console/",
         "visual-regression/tests/redeem.behavior.spec.ts"
+      ]
+    },
+    {
+      "name": "admin-billing-finance-and-date-panels",
+      "routes": [
+        "/admin/dashboard",
+        "/dashboard",
+        "/admin/usage",
+        "/usage"
+      ],
+      "paths": [
+        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v1/data.js",
+        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v1/dashboard-finance.js",
+        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v1/dashboard-finance.css",
+        "deploy/zero-one/recovered-frontend/console/assets/zero-one-floating-panels-v1.js",
+        "deploy/zero-one/recovered-frontend/console/index.html",
+        "visual-regression/tests/dashboard-finance.behavior.spec.ts",
+        "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-summary.png",
+        "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-trends.png",
+        "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-summary.png",
+        "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-trends.png"
       ]
     }
   ],

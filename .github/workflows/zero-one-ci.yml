@@ -160,6 +160,7 @@ jobs:
           node --check deploy/zero-one/verify-marketing-sources.mjs
           node --check deploy/zero-one/verify-public-settings.mjs
           node --test deploy/zero-one/benchmark-ttft.test.mjs
+          node --test deploy/zero-one/dashboard-finance.test.mjs
       - name: Verify Caddy routing contract
         run: sh deploy/zero-one/test-routing.sh
       - name: Verify direct-upstream contract
@@ -216,6 +217,11 @@ jobs:
       - name: Verify password recovery with an isolated mailbox
         run: >-
           node deploy/zero-one/test-password-recovery.mjs
+          zero-one-sub2api:sha-${{ github.sha }}
+          zero-one-edge:sha-${{ github.sha }}
+      - name: Verify live dashboard billing in an isolated database
+        run: >-
+          node deploy/zero-one/test-dashboard-finance-live.mjs
           zero-one-sub2api:sha-${{ github.sha }}
           zero-one-edge:sha-${{ github.sha }}
 
