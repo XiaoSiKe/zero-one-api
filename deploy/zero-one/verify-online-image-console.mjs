@@ -25,7 +25,7 @@ export function verifyOnlineImageConsole(consoleDir) {
   }
   const registrationEntry = index.slice(registrationStart, standardStart)
   const standardEntry = index.slice(standardStart, entryEnd)
-  const adapterImport = 'import("/assets/online-image-v11/online-image.js")'
+  const adapterImport = 'import("/assets/online-image-v12/online-image.js")'
   const shellImport = 'import("/assets/cn-provider-shell-v5/index-9xJBhx8B.js")'
   requireMarkers(registrationEntry, [adapterImport, shellImport], 'Registration Console entry')
   requireMarkers(standardEntry, [`await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
@@ -58,7 +58,7 @@ export function verifyOnlineImageConsole(consoleDir) {
     '__ZERO_ONE_ONLINE_IMAGE_SHELL_MOUNTED__',
   ], 'Online image route placeholder')
 
-  const adapterDirectory = resolve(consoleDir, 'assets/online-image-v11')
+  const adapterDirectory = resolve(consoleDir, 'assets/online-image-v12')
   const entry = read(resolve(adapterDirectory, 'online-image.js'), 'Online image route adapter')
   const stylesheet = read(resolve(adapterDirectory, 'online-image.css'), 'Online image stylesheet')
   if (Buffer.byteLength(entry, 'utf8') > 50_000) {
@@ -84,8 +84,8 @@ export function verifyOnlineImageConsole(consoleDir) {
 
   return {
     route: '/images',
-    module: '/assets/online-image-v11/online-image.js',
-    stylesheet: '/assets/online-image-v11/online-image.css',
+    module: '/assets/online-image-v12/online-image.js',
+    stylesheet: '/assets/online-image-v12/online-image.css',
   }
 }
 

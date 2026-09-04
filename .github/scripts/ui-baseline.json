@@ -48,6 +48,10 @@
     "visual-regression/tests/__screenshots__/chromium-mobile/console-register.png",
     "visual-regression/tests/__screenshots__/chromium-mobile/landing-mobile-token-discount.png",
     "visual-regression/tests/console.cn-platforms.spec.ts",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-online-image-new-user-sidebar.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-online-image-new-user-empty.png",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-online-image-new-user-sidebar.png",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-online-image-new-user-empty.png",
     "visual-regression/tests/console.online-image.spec.ts",
     "visual-regression/tests/console.visual.spec.ts",
     "visual-regression/tests/fixtures/api.ts",
@@ -403,7 +407,8 @@
         "visual-regression/tests/console.online-image.spec.ts",
         "visual-regression/tests/fixtures/api.ts",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5/",
-        "deploy/zero-one/recovered-frontend/console/assets/online-image-v11/"
+        "deploy/zero-one/recovered-frontend/console/assets/online-image-v11/",
+        "deploy/zero-one/recovered-frontend/console/assets/online-image-v12/"
       ]
     },
     {

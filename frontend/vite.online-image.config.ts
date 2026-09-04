@@ -20,7 +20,7 @@ export default defineConfig({
     'process.env.NODE_ENV': JSON.stringify('production'),
   },
   build: {
-    outDir: resolve(frontendRoot, '../deploy/zero-one/recovered-frontend/console/assets/online-image-v11'),
+    outDir: resolve(frontendRoot, '../deploy/zero-one/recovered-frontend/console/assets/online-image-v12'),
     emptyOutDir: true,
     cssCodeSplit: false,
     lib: {

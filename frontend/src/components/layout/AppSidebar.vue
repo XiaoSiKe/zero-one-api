@@ -215,7 +215,6 @@ import { sanitizeSvg } from '@/utils/sanitize'
 import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, isFeatureFlagEnabled, makeSidebarFlag } from '@/utils/featureFlags'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
-import { useImageGenerationAccess } from '@/composables/useImageGenerationAccess'
 import { sortNavItems } from '@/utils/navigation-order'
 import { findImageTutorialMenuItem } from '@/utils/image-tutorial'
 import type { CustomMenuItem } from '@/types'
@@ -265,7 +264,6 @@ const authStore = useAuthStore()
 const onboardingStore = useOnboardingStore()
 const adminSettingsStore = useAdminSettingsStore()
 const { canUseBatchImage, refreshBatchImageAccess } = useBatchImageAccess()
-const { canUseImageGeneration, refreshImageGenerationAccess } = useImageGenerationAccess()
 
 const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)
 const mobileOpen = computed(() => appStore.mobileOpen)
@@ -737,7 +735,6 @@ const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
 const flagAdminPayment = () => adminSettingsStore.paymentEnabled
 const flagBatchImageAccess = () => canUseBatchImage.value
-const flagImageGenerationAccess = () => canUseImageGeneration.value
 const flagProfileNavigation = () => profileNavigationEnabled.value
 const flagSubscriptionNavigation = () => subscriptionNavigationEnabled.value
 const flagModelPlazaInSidebar = () =>
@@ -764,7 +761,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
     { path: '/purchase', label: t('nav.buySubscription'), icon: RechargeSubscriptionIcon, hideInSimpleMode: true, featureFlag: flagPayment },
     { path: '/orders', label: t('nav.myOrders'), icon: OrderListIcon, hideInSimpleMode: true, featureFlag: flagPayment },
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
-    { path: '/images', label: t('nav.onlineImageGeneration'), icon: BatchImageIcon, hideInSimpleMode: true, featureFlag: flagImageGenerationAccess },
+    { path: '/images', label: t('nav.onlineImageGeneration'), icon: BatchImageIcon, hideInSimpleMode: true },
     { path: '/affiliate', label: t('nav.affiliate'), icon: UsersIcon, hideInSimpleMode: true, featureFlag: flagAffiliate },
     { path: '/profile', label: t('nav.profile'), icon: UserIcon, featureFlag: flagProfileNavigation },
     ...(withDashboard ? customMenuItemsForUser.value : []).map((item): NavItem => ({
@@ -1008,7 +1005,6 @@ watch(
 
 onMounted(() => {
   void refreshBatchImageAccess()
-  void refreshImageGenerationAccess()
   if (isAdmin.value) {
     adminSettingsStore.fetch()
   }
