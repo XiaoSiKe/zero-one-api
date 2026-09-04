@@ -127,7 +127,7 @@ case "$console" in
 esac
 assert_text "$console" 'await import("/assets/zero-one-redeem-actions-v1.js?v=1")' 'recovered console redeem actions adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=6")' 'recovered console affiliate administration adapter is missing'
-assert_text "$console" 'await import("/assets/online-image-v11/online-image.js")' 'recovered console online image adapter is missing'
+assert_text "$console" 'await import("/assets/online-image-v12/online-image.js")' 'recovered console online image adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-settings-unified-save-v1.js")' 'recovered console unified settings save adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-floating-panels-v1.js?v=3")' 'recovered console floating overlay is missing'
 
@@ -165,10 +165,10 @@ for cn_provider_version in cn-provider-admin-v1 cn-provider-admin-v3; do
 		assert_text "$cn_provider_asset_headers" 'Cache-Control: public, max-age=31536000, immutable' 'versioned CN Provider route asset is missing or not immutable'
 	done
 done
-for online_image_asset_path in "$test_dir"/console/assets/online-image-v11/*; do
+for online_image_asset_path in "$test_dir"/console/assets/online-image-v12/*; do
 	[ -f "$online_image_asset_path" ] || continue
 	online_image_asset=$(basename "$online_image_asset_path")
-	online_image_asset_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/online-image-v11/$online_image_asset")
+	online_image_asset_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/online-image-v12/$online_image_asset")
 	assert_text "$online_image_asset_headers" 'Cache-Control: public, max-age=31536000, immutable' 'versioned online image asset is missing or not immutable'
 done
 floating_overlay_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-floating-panels-v1.js")

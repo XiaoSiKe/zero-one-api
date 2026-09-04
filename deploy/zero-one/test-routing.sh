@@ -31,8 +31,8 @@ recovered_ccswitch_launch="$repo_root/deploy/zero-one/recovered-frontend/console
 recovered_affiliate_admin="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-affiliate-admin-v1.js"
 recovered_affiliate_admin_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-affiliate-admin-v1.css"
 recovered_login_recovery="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-login-recovery-v2.js"
-recovered_online_image="$repo_root/deploy/zero-one/recovered-frontend/console/assets/online-image-v11/online-image.js"
-recovered_online_image_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/online-image-v11/online-image.css"
+recovered_online_image="$repo_root/deploy/zero-one/recovered-frontend/console/assets/online-image-v12/online-image.js"
+recovered_online_image_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/online-image-v12/online-image.css"
 
 require() {
 	file=$1
@@ -110,7 +110,7 @@ require "$recovered_console_index" 'await import("/assets/zero-one-redeem-action
 require "$recovered_console_index" 'href="/assets/zero-one-redeem-actions-v1.css?v=1"'
 require "$recovered_console_index" 'await import("/assets/zero-one-ccswitch-launch-v1.js?v=2")'
 require "$recovered_console_index" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=6")'
-require "$recovered_console_index" 'await import("/assets/online-image-v11/online-image.js")'
+require "$recovered_console_index" 'await import("/assets/online-image-v12/online-image.js")'
 require "$recovered_console_index" 'await import("/assets/zero-one-settings-unified-save-v1.js")'
 require "$recovered_console_index" 'href="/assets/zero-one-affiliate-admin-v1.css?v=3"'
 require "$recovered_console_index" 'await import("/assets/zero-one-floating-panels-v1.js?v=3")'
@@ -254,7 +254,8 @@ require "$recovered_login_recovery" "window.location.pathname === '/forgot-passw
 require "$recovered_login_recovery" 'sendResetLink.className = LOGIN_BUTTON_CLASS'
 require "$recovered_login_recovery" 'backWrapper.replaceChildren(backToLogin)'
 require "$recovered_console_entry_asset" 'zero-one-online-image-route-placeholder-v1.js'
-require "$recovered_online_image" 'import "./onlineImage-'
+require "$recovered_online_image" './onlineImageLeaf-'
+require "$recovered_online_image" '__ZERO_ONE_ONLINE_IMAGE_ACCESS__'
 require "$recovered_online_image_css" 'online-image-control'
 
 if [ "$(readlink "$recovered_asset_alias")" != '.' ]; then

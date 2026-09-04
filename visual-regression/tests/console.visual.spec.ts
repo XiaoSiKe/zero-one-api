@@ -173,7 +173,6 @@ test.describe('Console public auth contracts', () => {
     let enhancementRequested = false
     let registrationVisibleWhenEnhancementStarted = false
     let registrationChunkRequestedBeforeSettingsRelease = false
-    let onlineImageKeysRequested = false
     const pageErrors: string[] = []
     let settingsReleased = false
     let onlineAdapterReleased = false
@@ -194,7 +193,7 @@ test.describe('Console public auth contracts', () => {
 
     page.on('pageerror', (error) => pageErrors.push(error.message))
 
-    await page.route('**/assets/online-image-v11/online-image.js', async (route) => {
+    await page.route('**/assets/online-image-v12/online-image.js', async (route) => {
       await stalledOnlineAdapter
       await route.fallback().catch(() => {})
     })
@@ -217,7 +216,6 @@ test.describe('Console public auth contracts', () => {
       if (pathname === '/assets/cn-provider-shell-v5/RegisterView-CP_DoJ_R.js') {
         registrationChunkRequestedBeforeSettingsRelease ||= !settingsReleased
       }
-      if (pathname === '/api/v1/keys') onlineImageKeysRequested = true
     })
 
     await page.route('**/assets/zero-one-custom-page-security-v1.js', async (route) => {
@@ -257,7 +255,9 @@ test.describe('Console public auth contracts', () => {
       releaseOnlineAdapter()
     }
 
-    await expect.poll(() => onlineImageKeysRequested).toBe(true)
+    await expect.poll(() => page.evaluate(() => Boolean(
+      (window as typeof window & { __ZERO_ONE_ONLINE_IMAGE_ACCESS__?: unknown }).__ZERO_ONE_ONLINE_IMAGE_ACCESS__,
+    ))).toBe(true)
     await expect(page.locator('#username')).toBeEnabled()
     await expect(page.locator('#email')).toBeEnabled()
     await expect(page.locator('#password')).toBeEnabled()
@@ -397,10 +397,12 @@ test.describe('Console public auth contracts', () => {
     })
     await page.goto('http://127.0.0.1:4173/dashboard')
     await expect(page.locator('aside a.sidebar-link[href="/usage"]')).toHaveCount(0)
+    await expect(page.locator('aside a[href="/images"]')).toHaveCount(0)
 
     await page.getByRole('button', { name: '用户菜单' }).click()
     await page.getByRole('button', { name: '退出登录' }).click()
     await expect(page).toHaveURL('http://127.0.0.1:4173/login')
+    await expect(page.locator('aside a[href="/images"]')).toHaveCount(0)
 
     await page.locator('#email').fill(regularUser.email)
     await page.locator('#password').fill('preview-password')
@@ -422,6 +424,7 @@ test.describe('Console public auth contracts', () => {
       const auth = app?.config?.globalProperties?.$pinia?._s?.get('auth')
       return { runMode: auth?.runMode, isSimpleMode: auth?.isSimpleMode }
     })
+    await expect(page.locator('aside a[href="/images"]')).toHaveCount(1)
     expect(authMode).toEqual({ runMode: 'standard', isSimpleMode: false })
     await expect(page.locator('aside a.sidebar-link[href="/usage"]')).toBeVisible()
     await expect(page.locator('aside a.sidebar-link[href="/redeem"]')).toBeVisible()
@@ -3303,7 +3306,7 @@ test.describe('Console visual contracts', () => {
     const html = await response!.text()
     expect(html).toContain('/assets/cn-provider-admin-v3/cn-provider-admin.js')
     expect(html).toContain('/assets/cn-provider-shell-v5/index-9xJBhx8B.js')
-    expect(html).toContain('/assets/online-image-v11/online-image.js')
+    expect(html).toContain('/assets/online-image-v12/online-image.js')
     expect(html).toContain('/assets/zero-one-settings-unified-save-v1.js')
     expect(html).toContain('/assets/zero-one-local-preview-guard-v2.js')
     expect(html).toContain('/assets/zero-one-custom-page-security-v1.js')

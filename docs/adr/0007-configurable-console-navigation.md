@@ -69,6 +69,15 @@ idempotent work but must not create a competing observer, history wrapper or
 ordering owner. Unsaved custom items without a persisted valid ID do not enter
 the order arrays.
 
+Online Images discovery is available to authenticated standard-mode users before
+any API Key exists. Both the native sidebar and recovered adapter follow this
+rule, independent of key-list latency, failure or eligibility. Simple mode keeps
+the entry hidden. The image page owns eligible-key selection and the link to
+create a key; generation remains disabled without an eligible selected key, and
+the backend retains authorization, group capability and billing enforcement.
+Preserve this onboarding contract, its regression tests and versioned recovered
+adapter during upstream synchronization.
+
 The final reconciliation phase sorts complete top-level rows, including their
 Vue Fragment anchors and expandable subtree. Stable paths identify groups and
 the affiliate workspace alias independently of locale. Settings and rendering

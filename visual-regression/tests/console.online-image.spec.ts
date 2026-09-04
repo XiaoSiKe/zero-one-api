@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { adminUser, seedConsole } from './fixtures/api'
+import { adminUser, regularUser, seedConsole } from './fixtures/api'
 
 const consoleOrigin = 'http://127.0.0.1:4173'
 
@@ -215,23 +215,48 @@ test.describe('Recovered online image generation contracts', () => {
     expect(runtimeErrors).toEqual([])
   })
 
-  test('does not inject the online image link without an eligible API Key', async ({ page }) => {
-    await page.route('**/api/v1/keys**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json; charset=utf-8',
-        body: JSON.stringify({
-          code: 0,
-          message: 'ok',
-          data: { items: [], total: 0, page: 1, page_size: 100, pages: 1 },
-        }),
+  for (const keyState of ['empty', 'unavailable'] as const) {
+    test(`new user can discover Online Images with ${keyState} keys`, async ({ page }, testInfo) => {
+      await page.unroute('**/api/v1/**')
+      await seedConsole(page, 'v2', { user: regularUser, imageGenerationKeys: [] })
+      await page.route('**/api/v1/keys**', async (route) => {
+        await route.fulfill({
+          status: keyState === 'empty' ? 200 : 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ code: keyState === 'empty' ? 0 : 503,
+            data: { items: [], total: 0, page: 1, page_size: 100, pages: 1 } }),
+        })
       })
+      let generations = 0
+      page.on('request', (request) => {
+        if (request.url().includes('/v1/images/')) generations += 1
+      })
+      await page.goto(`${consoleOrigin}/dashboard`)
+      const link = page.locator('aside a[href="/images"]')
+      await expect(link).toHaveCount(1)
+      await page.reload()
+      await expect(link).toHaveCount(1)
+      if (testInfo.project.name === 'chromium-mobile') {
+        await page.getByRole('button', { name: '切换菜单' }).click()
+      }
+      if (keyState === 'empty') {
+        await expect(page.locator('aside')).toHaveScreenshot('console-online-image-new-user-sidebar.png')
+      }
+      await link.click()
+      await expect(page).toHaveURL(`${consoleOrigin}/images`)
+      const host = page.locator('#zero-one-online-image')
+      await expect(host.locator('[data-testid="create-image-api-key"]')).toBeVisible()
+      await expect(host.getByRole('button', { name: '开始生成', exact: true })).toBeDisabled()
+      expect(generations).toBe(0)
+      if (keyState === 'empty') {
+        await expect(host.getByRole('button', { name: '刷新密钥', exact: true })).toBeEnabled()
+        await page.evaluate(() => window.scrollTo(0, 0))
+        await expect(page).toHaveScreenshot('console-online-image-new-user-empty.png', { fullPage: true })
+      }
+      await host.locator('[data-testid="create-image-api-key"]').click()
+      await expect(page).toHaveURL(`${consoleOrigin}/keys`)
     })
-
-    await page.goto(`${consoleOrigin}/admin/dashboard`)
-    await page.waitForTimeout(1_000)
-    await expect(page.locator('aside a[href="/images"]')).toHaveCount(0)
-  })
+  }
 
   test('uses the custom page tutorial and only exposes the homepage tutorial setting', async ({ page }) => {
     const runtimeErrors = collectRuntimeErrors(page)

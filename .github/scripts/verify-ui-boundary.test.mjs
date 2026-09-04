@@ -12,8 +12,8 @@ const manifest = validateManifest(
 )
 
 test('validates the approved UI baseline manifest', () => {
-  assert.equal(manifest.baseline_ref, 'ui-approved-2026-09-04-r7')
-  assert.equal(manifest.baseline_commit, 'c1a3685e99f2786006e419466ef0507e81c75f57')
+  assert.equal(manifest.baseline_ref, 'ui-approved-2026-09-05')
+  assert.equal(manifest.baseline_commit, '8eb0d4fb118e7a7279c6d7559b0b89fd7c91e7f5')
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/landing.public-data.spec.ts'))
   assert.equal(manifest.edge_build.console_source, 'deploy/zero-one/recovered-frontend/console')
   assert.ok(manifest.protected_paths.includes('visual-regression/tests/redeem.behavior.spec.ts'))
@@ -52,6 +52,24 @@ test('validates the approved UI baseline manifest', () => {
   for (const path of finance.paths) assert.ok(registry.preserve_on_upstream_sync.includes(path), `缺少二开永久保护：${path}`)
   for (const path of ['deploy/zero-one/dashboard-finance.test.mjs', 'deploy/zero-one/test-dashboard-finance-live.mjs', 'docs/adr/0010-admin-billing-finance-and-date-panels.md']) {
     assert.ok(registry.preserve_on_upstream_sync.includes(path), `缺少二开验收/合同保护：${path}`)
+  }
+
+  const onlineImage = manifest.protected_surfaces.find(({ name }) => name === 'online-image-generation')
+  assert.ok(onlineImage.paths.includes('deploy/zero-one/recovered-frontend/console/assets/online-image-v12/'))
+  for (const path of [
+    'frontend/src/entries/onlineImage.ts',
+    'frontend/src/components/layout/AppSidebar.vue',
+    'frontend/src/components/layout/__tests__/AppSidebar.spec.ts',
+    'visual-regression/tests/console.online-image.spec.ts',
+    'deploy/zero-one/recovered-frontend/console/assets/online-image-v12/online-image.js',
+    'docs/adr/0007-configurable-console-navigation.md',
+  ]) assert.ok(registry.preserve_on_upstream_sync.includes(path), `缺少在线生图永久保护：${path}`)
+  for (const project of ['chromium-desktop', 'chromium-mobile']) {
+    for (const state of ['sidebar', 'empty']) {
+      const path = `visual-regression/tests/__screenshots__/${project}/console-online-image-new-user-${state}.png`
+      assert.ok(manifest.protected_paths.includes(path), `缺少在线生图截图保护：${path}`)
+      assert.ok(registry.preserve_on_upstream_sync.includes(path), `缺少在线生图永久保护：${path}`)
+    }
   }
 
   const cnProviderManagement = manifest.protected_surfaces.find(

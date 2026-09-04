@@ -1,4 +1,3 @@
-import { keyAllowsImageGeneration } from '@/features/online-image/access'
 import type { ApiKey } from '@/types'
 
 type LocaleCode = 'en' | 'zh'
@@ -12,6 +11,7 @@ interface NavigationReconciliation {
 interface ApprovedPinia {
   _s?: Map<string, {
     runMode?: unknown
+    setMobileOpen?(open: boolean): void
     token?: unknown
     user?: { id?: unknown; role?: unknown } | null
   }>
@@ -59,13 +59,6 @@ let mountedHost: HTMLElement | null = null
 let pendingMount: Promise<void> | null = null
 let failed = false
 let mountRevision = 0
-let keyAccessClient: KeyAccessClient | null = null
-let keyAccessIdentity = ''
-let keyAccessAllowed = false
-let keyAccessLoaded = false
-let keyAccessRevision = 0
-let keyAccessRequest: Promise<void> | null = null
-let keyAccessController: AbortController | null = null
 
 function localText(zh: string, en: string): string {
   return approvedState().locale === 'zh' ? zh : en
@@ -97,62 +90,6 @@ function approvedAuthStore() {
   return approvedApplication()?.__vue_app__?.config?.globalProperties?.$pinia?._s?.get('auth') || null
 }
 
-function currentKeyAccessIdentity(): string {
-  const auth = approvedAuthStore()
-  const id = auth?.user?.id
-  const role = auth?.user?.role
-  return auth?.token && id !== undefined && role ? `${String(id)}:${String(role)}` : ''
-}
-
-function resetKeyAccess(nextIdentity: string) {
-  if (keyAccessIdentity === nextIdentity) return
-  keyAccessIdentity = nextIdentity
-  keyAccessRevision += 1
-  keyAccessController?.abort()
-  keyAccessController = null
-  keyAccessRequest = null
-  keyAccessAllowed = false
-  keyAccessLoaded = false
-}
-
-function refreshKeyAccess() {
-  const identity = currentKeyAccessIdentity()
-  resetKeyAccess(identity)
-  if (!identity || !keyAccessClient || keyAccessLoaded || keyAccessRequest) return
-  const revision = ++keyAccessRevision
-  const controller = new AbortController()
-  keyAccessController = controller
-  const request = (async () => {
-    let page = 1
-    let allowed = false
-    while (!allowed) {
-      const response = await keyAccessClient!(page, controller.signal)
-      if (revision !== keyAccessRevision || identity !== keyAccessIdentity) return
-      const items = Array.isArray(response?.items) ? response.items : []
-      allowed = items.some(keyAllowsImageGeneration)
-      if (allowed || page >= Number(response?.pages || 1) || items.length === 0) break
-      page += 1
-    }
-    if (revision !== keyAccessRevision || identity !== keyAccessIdentity) return
-    keyAccessAllowed = allowed
-    keyAccessLoaded = true
-  })()
-    .catch(() => {
-      if (revision === keyAccessRevision && identity === keyAccessIdentity) {
-        keyAccessAllowed = false
-        keyAccessLoaded = true
-      }
-    })
-    .finally(() => {
-      if (keyAccessRequest === request) {
-        keyAccessRequest = null
-        keyAccessController = null
-        queueMicrotask(() => reconciliation?.request())
-      }
-    })
-  keyAccessRequest = request
-}
-
 function approvedRouter(): ApprovedRouter | null {
   return approvedApplication()?.__vue_app__?.config?.globalProperties?.$router || null
 }
@@ -177,8 +114,9 @@ function ensureSidebarLink() {
   if (!(navigation instanceof HTMLElement)) return
   const allTargetLinks = [...navigation.querySelectorAll<HTMLAnchorElement>('a[href="/images"]')]
   const native = allTargetLinks.find((link) => !link.hasAttribute(INJECTED_LINK_ATTRIBUTE))
-  refreshKeyAccess()
-  if (!keyAccessLoaded || !keyAccessAllowed) {
+  const auth = approvedAuthStore()
+  // Discovery must work before the first key exists; the leaf owns key eligibility.
+  if (!auth?.token || !auth.user || approvedState().runMode === 'simple') {
     allTargetLinks
       .filter((link) => link.hasAttribute(INJECTED_LINK_ATTRIBUTE))
       .forEach((link) => link.remove())
@@ -209,6 +147,7 @@ function ensureSidebarLink() {
       const router = approvedRouter()
       if (!router) return
       event.preventDefault()
+      approvedApplication()?.__vue_app__?.config?.globalProperties?.$pinia?._s?.get('app')?.setMobileOpen?.(false)
       void router.push(TARGET_PATH)
     })
     reference.after(link)
@@ -223,7 +162,7 @@ function ensureRouteStyles() {
   const stylesheet = document.createElement('link')
   stylesheet.id = STYLE_ID
   stylesheet.rel = 'stylesheet'
-  stylesheet.href = '/assets/online-image-v11/online-image.css'
+  stylesheet.href = '/assets/online-image-v12/online-image.css'
   document.head.append(stylesheet)
 }
 
@@ -353,10 +292,8 @@ if (!reconciliation) throw new Error('Online image generation requires the appro
 ;(window as typeof window & {
   __ZERO_ONE_ONLINE_IMAGE_ACCESS__?: { setClient(client: KeyAccessClient): void }
 }).__ZERO_ONE_ONLINE_IMAGE_ACCESS__ = {
-  setClient(client) {
-    keyAccessClient = client
-    keyAccessLoaded = false
-    void refreshKeyAccess()
+  // Preserve the immutable shell bridge without querying keys for navigation.
+  setClient() {
     reconciliation.request()
   },
 }

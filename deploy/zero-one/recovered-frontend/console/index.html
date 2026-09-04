@@ -63,8 +63,7 @@
             "/assets/v182-payment-refresh-20260825/LocaleSwitcher-CjvPxOhx.css",
           ]
           const optionalAdapterPreloads = [
-            "/assets/online-image-v11/online-image.js",
-            "/assets/online-image-v11/onlineImage-BtNZJcYH.js",
+            "/assets/online-image-v12/online-image.js",
             "/assets/cn-provider-admin-v1/cn-provider-admin.js",
             "/assets/cn-provider-admin-v3/cn-provider-admin.js",
           ]
@@ -213,7 +212,7 @@
         }
         // Start optional adapters before the shell without letting a stalled request block Auth.
         void Promise.allSettled([
-          import("/assets/online-image-v11/online-image.js").then(() => {
+          import("/assets/online-image-v12/online-image.js").then(() => {
             if (pendingOnlineImageClient) {
               window.__ZERO_ONE_ONLINE_IMAGE_ACCESS__?.setClient(pendingOnlineImageClient)
             }
@@ -263,7 +262,7 @@
               import("/assets/zero-one-redeem-actions-v1.js?v=1"),
               import("/assets/zero-one-ccswitch-launch-v1.js?v=2"),
               import("/assets/zero-one-affiliate-admin-v1.js?v=6"),
-              import("/assets/online-image-v11/online-image.js"),
+              import("/assets/online-image-v12/online-image.js"),
               import("/assets/cn-provider-admin-v1/cn-provider-admin.js")
                 .then(() => import("/assets/cn-provider-admin-v3/cn-provider-admin.js")),
             ])
@@ -287,7 +286,7 @@
         await import("/assets/zero-one-redeem-actions-v1.js?v=1")
         await import("/assets/zero-one-ccswitch-launch-v1.js?v=2")
         await import("/assets/zero-one-affiliate-admin-v1.js?v=6")
-        await import("/assets/online-image-v11/online-image.js")
+        await import("/assets/online-image-v12/online-image.js")
         await import("/assets/cn-provider-admin-v1/cn-provider-admin.js")
         await import("/assets/cn-provider-admin-v3/cn-provider-admin.js")
         await import("/assets/cn-provider-shell-v5/index-9xJBhx8B.js")

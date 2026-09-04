@@ -37,7 +37,7 @@ vi.mock('@/composables/useBatchImageAccess', () => ({
   useBatchImageAccess: () => ({ canUseBatchImage: { value: false }, refreshBatchImageAccess: vi.fn() }),
 }))
 vi.mock('@/composables/useImageGenerationAccess', () => ({
-  useImageGenerationAccess: () => ({ canUseImageGeneration: { value: true }, refreshImageGenerationAccess: vi.fn() }),
+  useImageGenerationAccess: () => ({ canUseImageGeneration: { value: false }, refreshImageGenerationAccess: vi.fn() }),
 }))
 vi.mock('@/utils/featureFlags', () => ({
   FeatureFlags: {},
@@ -283,6 +283,15 @@ describe('AppSidebar rendered ordering', () => {
       global: { plugins: [router], stubs: { VersionBadge: true } },
     }) }
   }
+
+  it('lets a standard user discover Online Images before creating an eligible key', async () => {
+    sidebarAuth.isAdmin = false
+    const { wrapper } = await renderSidebar()
+    expect(wrapper.find('a[href="/images"]').exists()).toBe(true)
+    sidebarAuth.isSimpleMode = true
+    await nextTick()
+    expect(wrapper.find('a[href="/images"]').exists()).toBe(false)
+  })
 
   it('keeps dashboard first with duplicate saved paths and moves complete expandable groups', async () => {
     sidebarApp.cachedPublicSettings.admin_sidebar_order = [
