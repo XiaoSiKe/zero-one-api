@@ -41,8 +41,18 @@ test('validates the approved UI baseline manifest', () => {
       'online-image-generation',
       'model-plaza-pricing',
       'redeem-benefits-mystery-box',
+      'admin-billing-finance-and-date-panels',
     ],
   )
+
+  // 二开财务与日期修复必须同时具有 UI 快照覆盖和逐文件永久保留。
+  const finance = manifest.protected_surfaces.find(({ name }) => name === 'admin-billing-finance-and-date-panels')
+  assert.deepEqual(finance.routes, ['/admin/dashboard', '/dashboard', '/admin/usage', '/usage'])
+  const registry = JSON.parse(readFileSync(new URL('../upstream-baseline.json', import.meta.url), 'utf8'))
+  for (const path of finance.paths) assert.ok(registry.preserve_on_upstream_sync.includes(path), `缺少二开永久保护：${path}`)
+  for (const path of ['deploy/zero-one/dashboard-finance.test.mjs', 'deploy/zero-one/test-dashboard-finance-live.mjs', 'docs/adr/0010-admin-billing-finance-and-date-panels.md']) {
+    assert.ok(registry.preserve_on_upstream_sync.includes(path), `缺少二开验收/合同保护：${path}`)
+  }
 
   const cnProviderManagement = manifest.protected_surfaces.find(
     ({ name }) => name === 'cn-provider-management',

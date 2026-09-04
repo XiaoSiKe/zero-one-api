@@ -129,7 +129,7 @@ assert_text "$console" 'await import("/assets/zero-one-redeem-actions-v1.js?v=1"
 assert_text "$console" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=6")' 'recovered console affiliate administration adapter is missing'
 assert_text "$console" 'await import("/assets/online-image-v11/online-image.js")' 'recovered console online image adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-settings-unified-save-v1.js")' 'recovered console unified settings save adapter is missing'
-assert_text "$console" 'await import("/assets/zero-one-floating-panels-v1.js?v=2")' 'recovered console floating overlay is missing'
+assert_text "$console" 'await import("/assets/zero-one-floating-panels-v1.js?v=3")' 'recovered console floating overlay is missing'
 
 for console_path in setup home login register email-verify forgot-password reset-password key-usage model-plaza dashboard keys images batch-image usage redeem affiliate available-channels profile subscriptions purchase orders admin monitor; do
 	console_variant=$(curl -fsS -H "Host: $request_host" "$edge_url/$console_path")

@@ -9,6 +9,7 @@ const PANEL_Z_INDEX = '100000020'
 const panelSpecs = [
   {
     selector: '.date-picker-dropdown',
+    keepComponentParent: true,
     triggerSelector: '.date-picker-trigger',
     width: 320,
     comfortableHeight: 260,
@@ -124,7 +125,16 @@ function registerPanel(panel, spec) {
   trigger.setAttribute('aria-haspopup', spec.role)
   trigger.setAttribute('aria-expanded', 'true')
   panel.addEventListener('click', (event) => event.stopPropagation())
-  document.body.append(panel)
+  // 二开保护：日期节点的 v-if 锚点归 Vue 所有。移动到 body 会让下一次
+  // 打开的节点脱离组件观察范围，失去定位；保留父节点并使用顶层浮层。
+  if (spec.keepComponentParent) {
+    if (typeof panel.showPopover === 'function') {
+      panel.setAttribute('popover', 'manual')
+      panel.showPopover()
+    }
+  } else {
+    document.body.append(panel)
+  }
 
   const entry = { panel, trigger, spec }
   activePanels.add(entry)
@@ -159,7 +169,12 @@ window.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return
   const entry = [...activePanels].at(-1)
   if (!entry) return
+  if (entry.spec.keepComponentParent && entry.trigger.classList.contains('date-picker-trigger-open')) {
+    // 通过 Vue 原按钮关闭，不能直接删除/隐藏浮层，否则 isOpen 与 DOM 不同步。
+    event.preventDefault()
+    entry.trigger.click()
+  }
   requestAnimationFrame(() => entry.trigger.focus())
-})
+}, true)
 
 window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.register('floating-panels', scanForPanels)
