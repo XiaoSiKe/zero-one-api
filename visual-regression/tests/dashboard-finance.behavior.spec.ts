@@ -206,6 +206,24 @@ test.describe('Dashboard finance and repeatable date selection', () => {
     expect(snapshots).toBe(2)
   })
 
+  test('the real date picker fits a 320px screen after reopening', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    await seedConsole(page)
+    await dailyFixture(page)
+    await page.goto('http://127.0.0.1:4173/admin/dashboard')
+    await choose(page, '昨天')
+    await page.locator('.date-picker-trigger').click()
+    const panel = page.locator('.date-picker-dropdown[data-zero-one-floating-panel="true"]')
+    const box = await panel.boundingBox()
+    expect(box!.x).toBeGreaterThanOrEqual(16)
+    expect(box!.x + box!.width).toBeLessThanOrEqual(304)
+    expect(await panel.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1)
+    await expect(panel.locator('.date-picker-custom')).toHaveCSS('flex-direction', 'column')
+    await panel.locator('.date-picker-input').first().fill('2026-08-01')
+    await panel.locator('.date-picker-apply').click()
+    await expect(panel).toHaveCount(0)
+  })
+
   test('live finance cards and daily curves retain the approved visual layout', async ({ page }) => {
     await seedConsole(page)
     await dailyFixture(page)

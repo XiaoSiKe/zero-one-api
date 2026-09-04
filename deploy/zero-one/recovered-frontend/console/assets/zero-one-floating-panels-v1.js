@@ -74,6 +74,19 @@ function positionPanel(entry) {
     overflowY: 'auto',
   })
 
+  if (spec.keepComponentParent) {
+    // 真实日期组件自带 min-width:320px，必须解除它才能在 320px 屏内限宽。
+    panel.style.transitionProperty = 'opacity'
+    panel.style.minWidth = '0'
+    const custom = panel.querySelector('.date-picker-custom')
+    const separator = panel.querySelector('.date-picker-separator')
+    if (custom instanceof HTMLElement) {
+      custom.style.flexDirection = width < 320 ? 'column' : ''
+      custom.style.alignItems = width < 320 ? 'stretch' : ''
+    }
+    if (separator instanceof HTMLElement) separator.style.display = width < 320 ? 'none' : ''
+  }
+
   const desiredHeight = Math.min(
     panel.scrollHeight || panel.getBoundingClientRect().height,
     Math.max(0, viewportHeight - VIEWPORT_MARGIN * 2),
@@ -169,12 +182,16 @@ window.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return
   const entry = [...activePanels].at(-1)
   if (!entry) return
-  if (entry.spec.keepComponentParent && entry.trigger.classList.contains('date-picker-trigger-open')) {
-    // 通过 Vue 原按钮关闭，不能直接删除/隐藏浮层，否则 isOpen 与 DOM 不同步。
-    event.preventDefault()
-    entry.trigger.click()
-  }
-  requestAnimationFrame(() => entry.trigger.focus())
+  requestAnimationFrame(() => {
+    // 先让 Vue 原 Escape 处理完成；仅在下一帧仍展开时才走原按钮兜底关闭，
+    // 避免快速重开与原监听器竞争。不能直接隐藏 DOM 导致 isOpen 失配。
+    const dateEntry = [...activePanels].reverse().find(item =>
+      item.spec.keepComponentParent && item.panel.isConnected && item.trigger.isConnected &&
+      item.trigger.classList.contains('date-picker-trigger-open'))
+    if (dateEntry) dateEntry.trigger.click()
+    const focusTarget = dateEntry?.trigger || entry.trigger
+    if (focusTarget.isConnected) focusTarget.focus()
+  })
 }, true)
 
 window.__ZERO_ONE_NAVIGATION_RECONCILIATION__.register('floating-panels', scanForPanels)
