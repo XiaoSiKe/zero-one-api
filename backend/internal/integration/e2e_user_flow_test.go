@@ -46,15 +46,15 @@ func TestAPIKeyLifecycle(t *testing.T) {
 
 	resp := e2eRequest(t, http.MethodGet, "/v1/models", key.Key, nil)
 	defer resp.Body.Close()
-	// A fresh user may have no balance or assigned group. These explicit denials
-	// are valid; authentication errors, server failures and HTML responses are not.
-	require.Contains(t, []int{http.StatusOK, http.StatusPaymentRequired, http.StatusForbidden}, resp.StatusCode)
+	// A fresh user may have no balance. Check the middleware's explicit denial;
+	// authentication errors, server failures and HTML responses are not valid.
+	require.Contains(t, []int{http.StatusOK, http.StatusForbidden}, resp.StatusCode)
 	var models map[string]any
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&models))
 	if resp.StatusCode == http.StatusOK {
 		require.Equal(t, "list", models["object"])
 	} else {
-		require.Contains(t, models, "error")
+		require.Equal(t, "INSUFFICIENT_BALANCE", models["code"])
 	}
 
 	var stats map[string]any
