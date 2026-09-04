@@ -11,24 +11,9 @@ import (
 )
 
 func (s *OpsService) GetDashboardOverview(ctx context.Context, filter *OpsDashboardFilter) (*OpsDashboardOverview, error) {
-	if err := s.RequireMonitoringEnabled(ctx); err != nil {
+	if err := s.prepareDashboardFilter(ctx, filter); err != nil {
 		return nil, err
 	}
-	if s.opsRepo == nil {
-		return nil, infraerrors.ServiceUnavailable("OPS_REPO_UNAVAILABLE", "Ops repository not available")
-	}
-	if filter == nil {
-		return nil, infraerrors.BadRequest("OPS_FILTER_REQUIRED", "filter is required")
-	}
-	if filter.StartTime.IsZero() || filter.EndTime.IsZero() {
-		return nil, infraerrors.BadRequest("OPS_TIME_RANGE_REQUIRED", "start_time/end_time are required")
-	}
-	if filter.StartTime.After(filter.EndTime) {
-		return nil, infraerrors.BadRequest("OPS_TIME_RANGE_INVALID", "start_time must be <= end_time")
-	}
-
-	// Resolve query mode (requested via query param, or DB default).
-	filter.QueryMode = s.resolveOpsQueryMode(ctx, filter.QueryMode)
 
 	overview, err := s.opsRepo.GetDashboardOverview(ctx, filter)
 	if err != nil && shouldFallbackOpsPreagg(filter, err) {
@@ -91,4 +76,26 @@ func (s *OpsService) resolveOpsQueryMode(ctx context.Context, requested OpsQuery
 		return OpsQueryModeRaw
 	}
 	return mode
+}
+
+// prepareDashboardFilter retains validation for direct service callers.
+func (s *OpsService) prepareDashboardFilter(ctx context.Context, filter *OpsDashboardFilter) error {
+	if err := s.RequireMonitoringEnabled(ctx); err != nil {
+		return err
+	}
+	if s.opsRepo == nil {
+		return infraerrors.ServiceUnavailable("OPS_REPO_UNAVAILABLE", "Ops repository not available")
+	}
+	if filter == nil {
+		return infraerrors.BadRequest("OPS_FILTER_REQUIRED", "filter is required")
+	}
+	if filter.StartTime.IsZero() || filter.EndTime.IsZero() {
+		return infraerrors.BadRequest("OPS_TIME_RANGE_REQUIRED", "start_time/end_time are required")
+	}
+	if filter.StartTime.After(filter.EndTime) {
+		return infraerrors.BadRequest("OPS_TIME_RANGE_INVALID", "start_time must be <= end_time")
+	}
+
+	filter.QueryMode = s.resolveOpsQueryMode(ctx, filter.QueryMode)
+	return nil
 }

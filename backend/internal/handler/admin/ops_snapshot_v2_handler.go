@@ -3,8 +3,6 @@ package admin
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
@@ -35,40 +33,15 @@ type opsDashboardSnapshotV2CacheKey struct {
 // GetDashboardSnapshotV2 returns ops dashboard core snapshot in one request.
 // GET /api/v1/admin/ops/dashboard/snapshot-v2
 func (h *OpsHandler) GetDashboardSnapshotV2(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
+	filter, ok := h.dashboardFilter(c)
+	if !ok {
 		return
 	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
-		return
-	}
-
-	startTime, endTime, err := parseOpsTimeRange(c, "1h")
-	if err != nil {
-		response.BadRequest(c, err.Error())
-		return
-	}
-
-	filter := &service.OpsDashboardFilter{
-		StartTime: startTime,
-		EndTime:   endTime,
-		Platform:  strings.TrimSpace(c.Query("platform")),
-		QueryMode: parseOpsQueryMode(c),
-	}
-	if v := strings.TrimSpace(c.Query("group_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid group_id")
-			return
-		}
-		filter.GroupID = &id
-	}
-	bucketSeconds := pickThroughputBucketSeconds(endTime.Sub(startTime))
+	bucketSeconds := pickThroughputBucketSeconds(filter.EndTime.Sub(filter.StartTime))
 
 	keyRaw, _ := json.Marshal(opsDashboardSnapshotV2CacheKey{
-		StartTime:    startTime.UTC().Format(time.RFC3339),
-		EndTime:      endTime.UTC().Format(time.RFC3339),
+		StartTime:    filter.StartTime.UTC().Format(time.RFC3339),
+		EndTime:      filter.EndTime.UTC().Format(time.RFC3339),
 		Platform:     filter.Platform,
 		GroupID:      filter.GroupID,
 		QueryMode:    filter.QueryMode,

@@ -169,9 +169,9 @@ function readRepositoryPath(path) {
 function baselineWithApprovedBackport() {
   const value = structuredClone(baseline)
   const files = {}
-  // Product runtime Dockerfiles now have permanent ownership. Keep the fixture
-  // on three untouched upstream files without weakening that ownership.
-  for (const path of ['backend/.golangci.yml', 'backend/Dockerfile', 'backend/Makefile']) {
+  // Product runtime Dockerfiles and local test Makefiles have permanent ownership.
+  // Keep the fixture on untouched upstream files without weakening that ownership.
+  for (const path of ['backend/.golangci.yml', 'backend/Dockerfile', 'backend/.dockerignore']) {
     const file = readRepositoryPath(path)
     files[path] = {
       sha256: createHash('sha256').update(file.content).digest('hex'),
@@ -949,10 +949,10 @@ test('rejects changed, missing, and non-regular approved backport files', () => 
   assert.match(changed[0], /backend\/Dockerfile content mismatch/)
 
   const missing = evaluateApprovedBackportContents(approvedBaseline, (path) => {
-    if (path === 'backend/Makefile') throw new Error('missing')
+    if (path === 'backend/.dockerignore') throw new Error('missing')
     return readRepositoryPath(path)
   })
-  assert.deepEqual(missing, ['approved backport backend/Makefile is missing'])
+  assert.deepEqual(missing, ['approved backport backend/.dockerignore is missing'])
 
   const nonRegular = evaluateApprovedBackportContents(approvedBaseline, (path) => {
     const file = readRepositoryPath(path)
@@ -1008,7 +1008,7 @@ test('rejects stale or malformed approved backport metadata', () => {
   }
   assert.throws(() => validateBaseline(traversal), /approved backport path is invalid/)
 
-  for (const path of ['README.md', 'Dockerfile', 'deploy/Dockerfile']) {
+  for (const path of ['README.md', 'Dockerfile', 'deploy/Dockerfile', 'backend/Makefile']) {
     const alreadyAllowed = clone()
     alreadyAllowed.approved_backports[0].files[path] = {
       sha256: '0'.repeat(64),

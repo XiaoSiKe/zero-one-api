@@ -232,8 +232,7 @@ func (s *GatewayService) handleCCBufferedFromAnthropic(
 	}
 	scanner.Buffer(make([]byte, 0, 64*1024), maxLineSize)
 
-	var finalResp *apicompat.AnthropicResponse
-	var usage ClaudeUsage
+	var buffered anthropicBufferedResponse
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -256,37 +255,7 @@ func (s *GatewayService) handleCCBufferedFromAnthropic(
 			continue
 		}
 
-		// message_start carries the initial response structure and cache usage
-		if event.Type == "message_start" && event.Message != nil {
-			finalResp = event.Message
-			mergeAnthropicUsage(&usage, event.Message.Usage)
-		}
-
-		// message_delta carries final usage and stop_reason
-		if event.Type == "message_delta" {
-			if event.Usage != nil {
-				mergeAnthropicUsage(&usage, *event.Usage)
-			}
-			if event.Delta != nil && event.Delta.StopReason != "" && finalResp != nil {
-				finalResp.StopReason = apicompat.AnthropicStopReasonPtr(event.Delta.StopReason)
-			}
-		}
-		if event.Type == "content_block_start" && event.ContentBlock != nil && finalResp != nil {
-			finalResp.Content = append(finalResp.Content, *event.ContentBlock)
-		}
-		if event.Type == "content_block_delta" && event.Delta != nil && finalResp != nil && event.Index != nil {
-			idx := *event.Index
-			if idx < len(finalResp.Content) {
-				switch event.Delta.Type {
-				case "text_delta":
-					finalResp.Content[idx].Text += event.Delta.Text
-				case "thinking_delta":
-					finalResp.Content[idx].Thinking += event.Delta.Thinking
-				case "input_json_delta":
-					finalResp.Content[idx].Input = appendRawJSON(finalResp.Content[idx].Input, event.Delta.PartialJSON)
-				}
-			}
-		}
+		buffered.add(event)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -298,19 +267,10 @@ func (s *GatewayService) handleCCBufferedFromAnthropic(
 		}
 	}
 
+	finalResp, usage := buffered.finish()
 	if finalResp == nil {
 		writeGatewayCCError(c, http.StatusBadGateway, "server_error", "Upstream stream ended without a response")
 		return nil, fmt.Errorf("upstream stream ended without response")
-	}
-
-	// Update usage from accumulated delta
-	if usage.InputTokens > 0 || usage.OutputTokens > 0 {
-		finalResp.Usage = apicompat.AnthropicUsage{
-			InputTokens:              usage.InputTokens,
-			OutputTokens:             usage.OutputTokens,
-			CacheCreationInputTokens: usage.CacheCreationInputTokens,
-			CacheReadInputTokens:     usage.CacheReadInputTokens,
-		}
 	}
 
 	// Chain: Anthropic → Responses → Chat Completions
