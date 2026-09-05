@@ -25,7 +25,7 @@ export function verifyOnlineImageConsole(consoleDir) {
   }
   const registrationEntry = index.slice(registrationStart, standardStart)
   const standardEntry = index.slice(standardStart, entryEnd)
-  const adapterImport = 'import("/assets/online-image-v13/online-image.js")'
+  const adapterImport = 'import("/assets/online-image-v14/online-image.js")'
   const shellImport = 'import("/assets/cn-provider-shell-v6/index-9xJBhx8B.js")'
   requireMarkers(registrationEntry, [adapterImport, shellImport], 'Registration Console entry')
   requireMarkers(standardEntry, [`await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
@@ -58,8 +58,9 @@ export function verifyOnlineImageConsole(consoleDir) {
     '__ZERO_ONE_ONLINE_IMAGE_SHELL_MOUNTED__',
   ], 'Online image route placeholder')
 
-  const adapterDirectory = resolve(consoleDir, 'assets/online-image-v13')
+  const adapterDirectory = resolve(consoleDir, 'assets/online-image-v14')
   const entry = read(resolve(adapterDirectory, 'online-image.js'), 'Online image route adapter')
+  requireMarkers(entry, ['/assets/online-image-v14/online-image.css'], 'Online image stylesheet namespace')
   const stylesheet = read(resolve(adapterDirectory, 'online-image.css'), 'Online image stylesheet')
   if (Buffer.byteLength(entry, 'utf8') > 50_000) {
     throw new Error('Online image route seam eagerly includes the leaf application runtime')
@@ -84,8 +85,8 @@ export function verifyOnlineImageConsole(consoleDir) {
 
   return {
     route: '/images',
-    module: '/assets/online-image-v13/online-image.js',
-    stylesheet: '/assets/online-image-v13/online-image.css',
+    module: '/assets/online-image-v14/online-image.js',
+    stylesheet: '/assets/online-image-v14/online-image.css',
   }
 }
 

@@ -19,7 +19,7 @@ export interface ImageGenerationData {
 }
 
 export interface ImageGenerationResponse {
-  data?: ImageGenerationData[]
+  data: ImageGenerationData[]
   model?: string
 }
 
@@ -27,31 +27,55 @@ interface RequestOptions {
   signal?: AbortSignal
 }
 
-async function gatewayError(response: Response): Promise<Error> {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function gatewayError(response: Response, message: string, code: string | number = response.status): Error {
+  return Object.assign(new Error(message), {
+    code,
+    status: response.status,
+    requestId: response.headers.get('X-Request-Id') || '',
+  })
+}
+
+async function readGatewayResponse(response: Response): Promise<unknown> {
+  let payload: unknown
   try {
-    const payload = await response.json() as {
-      error?: { message?: string; code?: string | number }
-      message?: string
-    }
-    const error = new Error(payload.error?.message || payload.message || response.statusText)
-    Object.assign(error, {
-      code: payload.error?.code || response.status,
-      status: response.status,
-      requestId: response.headers.get('X-Request-Id') || '',
-    })
-    return error
-  } catch {
-    return Object.assign(new Error(response.statusText || `HTTP ${response.status}`), {
-      code: response.status,
-      status: response.status,
-      requestId: response.headers.get('X-Request-Id') || '',
-    })
+    payload = await response.json()
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error
+    if (!response.ok) throw gatewayError(response, response.statusText || `HTTP ${response.status}`)
+    throw gatewayError(response, 'Invalid gateway response', 'INVALID_GATEWAY_RESPONSE')
   }
+  // Images keepalives commit HTTP 200 before the upstream result is known.
+  // The final JSON error is authoritative even when the HTTP status is OK.
+  const record = isRecord(payload) ? payload : null
+  if (!response.ok || record?.error != null) {
+    const error = isRecord(record?.error) ? record.error : null
+    const message = typeof error?.message === 'string' && error.message.trim()
+      ? error.message
+      : typeof record?.message === 'string' && record.message.trim()
+        ? record.message : response.ok ? 'Image generation failed' : response.statusText || `HTTP ${response.status}`
+    const code = typeof error?.code === 'string' || typeof error?.code === 'number'
+      ? error.code : response.status
+    throw gatewayError(response, message, code)
+  }
+  return payload
+}
+
+function isImageResponse(payload: unknown): payload is ImageGenerationResponse {
+  if (!isRecord(payload) || !Array.isArray(payload.data)) return false
+  if (payload.model != null && typeof payload.model !== 'string') return false
+  return payload.data.every(image => isRecord(image) &&
+    ['b64_json', 'url', 'revised_prompt', 'mime_type', 'output_format']
+      .every(field => image[field] == null || typeof image[field] === 'string') &&
+    [image.b64_json, image.url].some(source => typeof source === 'string' && source.trim()))
 }
 
 function modelIds(payload: unknown): string[] {
-  if (!payload || typeof payload !== 'object') return []
-  const record = payload as Record<string, unknown>
+  if (!isRecord(payload)) return []
+  const record = payload
   const candidates = Array.isArray(record.data)
     ? record.data
     : Array.isArray(record.models)
@@ -88,8 +112,7 @@ export async function listAccessibleImageModels(
     },
     signal: options.signal,
   })
-  if (!response.ok) throw await gatewayError(response)
-  return modelIds(await response.json())
+  return modelIds(await readGatewayResponse(response))
 }
 
 export async function generateImage(
@@ -121,6 +144,7 @@ export async function generateImage(
     buildGatewayUrl(editing ? '/v1/images/edits' : '/v1/images/generations'),
     { method: 'POST', headers, body, signal: options.signal },
   )
-  if (!response.ok) throw await gatewayError(response)
-  return response.json() as Promise<ImageGenerationResponse>
+  const result = await readGatewayResponse(response)
+  if (!isImageResponse(result)) throw gatewayError(response, 'Invalid image response', 'INVALID_IMAGE_RESPONSE')
+  return result
 }
