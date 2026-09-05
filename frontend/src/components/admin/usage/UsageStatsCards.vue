@@ -68,8 +68,8 @@
           ${{ (stats?.total_actual_cost || 0).toFixed(4) }}
         </p>
         <p class="text-xs text-gray-400">
-          <template v-if="showAccountCost && totalAccountCost != null">
-            <span class="text-zo-alert-500">{{ t('usage.accountCost') }} ${{ totalAccountCost.toFixed(4) }}</span>
+          <template v-if="showAccountCost">
+            <span class="text-zo-alert-500">{{ t('usage.accountCost') }} ${{ totalAccountCost == null ? '待确认' : totalAccountCost.toFixed(4) }}</span>
             <span> · </span>
           </template>
           <span>

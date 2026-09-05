@@ -101,12 +101,13 @@ func TestUsageLogFromService_IncludesServiceTierForUserAndAdmin(t *testing.T) {
 	inboundEndpoint := "/v1/chat/completions"
 	upstreamEndpoint := "/v1/responses"
 	log := &service.UsageLog{
-		RequestID:             "req_3",
-		Model:                 "gpt-5.4",
-		ServiceTier:           &serviceTier,
-		InboundEndpoint:       &inboundEndpoint,
-		UpstreamEndpoint:      &upstreamEndpoint,
-		AccountRateMultiplier: f64Ptr(1.5),
+		RequestID:              "req_3",
+		Model:                  "gpt-5.4",
+		ServiceTier:            &serviceTier,
+		InboundEndpoint:        &inboundEndpoint,
+		UpstreamEndpoint:       &upstreamEndpoint,
+		AccountRateMultiplier:  f64Ptr(1.5),
+		UpstreamRateMultiplier: f64Ptr(0.22),
 	}
 
 	userDTO := UsageLogFromService(log)
@@ -125,6 +126,8 @@ func TestUsageLogFromService_IncludesServiceTierForUserAndAdmin(t *testing.T) {
 	require.Equal(t, upstreamEndpoint, *adminDTO.UpstreamEndpoint)
 	require.NotNil(t, adminDTO.AccountRateMultiplier)
 	require.InDelta(t, 1.5, *adminDTO.AccountRateMultiplier, 1e-12)
+	require.NotNil(t, adminDTO.UpstreamRateMultiplier)
+	require.Equal(t, 0.22, *adminDTO.UpstreamRateMultiplier)
 }
 
 func TestUsageLogFromService_UsesRequestedModelAndKeepsUpstreamAdminOnly(t *testing.T) {
@@ -198,6 +201,7 @@ func TestUsageLogFromService_KeepsUserBillingAndIPWithoutAdminCostFields(t *test
 	require.NotContains(t, string(userJSON), "account_rate_multiplier")
 	require.NotContains(t, string(userJSON), "account_stats_cost")
 	require.NotContains(t, string(userJSON), "account_cost")
+	require.NotContains(t, string(userJSON), "upstream_rate_multiplier")
 }
 
 func TestUsageLogFromService_UsersSeeRequestedReasoningEffortOnly(t *testing.T) {

@@ -598,6 +598,7 @@ const formatNumber = (value: number | null | undefined): string => {
 }
 
 const formatCost = (value: number | null | undefined): string => {
+  if (value == null) return '待确认'
   const safeValue = toFiniteNumber(value)
   if (safeValue >= 1000) {
     return (safeValue / 1000).toFixed(2) + 'K'

@@ -101,6 +101,7 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 			sqlmock.AnyArg(), // account_stats_cost
 			sqlmock.AnyArg(), // session_id
 			log.NativeCompactionV2,
+			log.UpstreamRateMultiplier,
 			createdAt,
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(99), createdAt))
@@ -195,6 +196,7 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 			sqlmock.AnyArg(), // account_stats_cost
 			sqlmock.AnyArg(), // session_id
 			log.NativeCompactionV2,
+			log.UpstreamRateMultiplier,
 			createdAt,
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(100), createdAt))
@@ -276,8 +278,8 @@ func TestPrepareUsageLogInsert_PersistsNativeCompactionV2WithoutChangingRequestT
 	prepared := prepareUsageLogInsert(log)
 
 	require.Len(t, prepared.args, len(usageLogInsertArgTypes))
-	require.Equal(t, "boolean", usageLogInsertArgTypes[len(usageLogInsertArgTypes)-2])
-	require.Equal(t, true, prepared.args[len(prepared.args)-2])
+	require.Equal(t, "boolean", usageLogInsertArgTypes[len(usageLogInsertArgTypes)-3])
+	require.Equal(t, true, prepared.args[len(prepared.args)-3])
 	require.Equal(t, int16(service.RequestTypeStream), prepared.args[30])
 	require.Equal(t, service.RequestTypeStream, log.RequestType)
 	require.True(t, log.Stream)
@@ -711,10 +713,10 @@ func TestUsageLogRepositoryGetModelStatsAccountCostColumn(t *testing.T) {
 	require.Len(t, results, 2)
 	require.Equal(t, "claude-opus-4-6", results[0].Model)
 	require.Equal(t, 2.5, results[0].Cost)
-	require.Equal(t, 2.0, results[0].ActualCost)
-	require.Equal(t, 1.8, results[0].AccountCost)
+	require.Equal(t, 2.0, *results[0].ActualCost)
+	require.Equal(t, 1.8, *results[0].AccountCost)
 	require.Equal(t, "claude-sonnet-4-6", results[1].Model)
-	require.Equal(t, 0.7, results[1].AccountCost)
+	require.Equal(t, 0.7, *results[1].AccountCost)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -764,9 +766,9 @@ func TestUsageLogRepositoryGetGroupStatsAccountCostColumn(t *testing.T) {
 	require.Equal(t, "azure-cc", results[0].GroupName)
 	require.Equal(t, 10.0, results[0].Cost)
 	require.Equal(t, 8.5, results[0].ActualCost)
-	require.Equal(t, 7.2, results[0].AccountCost)
+	require.Equal(t, 7.2, *results[0].AccountCost)
 	require.Equal(t, int64(2), results[1].GroupID)
-	require.Equal(t, 3.5, results[1].AccountCost)
+	require.Equal(t, 3.5, *results[1].AccountCost)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -956,7 +958,8 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},
 			sql.NullFloat64{},
 			sql.NullString{},
-			false, // native_compaction_v2
+			false,             // native_compaction_v2
+			sql.NullFloat64{}, // upstream_rate_multiplier
 			now,
 		}})
 		require.NoError(t, err)
@@ -1036,6 +1039,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullFloat64{}, // account_stats_cost
 			sql.NullString{},  // session_id
 			false,             // native_compaction_v2
+			sql.NullFloat64{}, // upstream_rate_multiplier
 			now,
 		}})
 		require.NoError(t, err)
@@ -1098,6 +1102,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullFloat64{}, // account_stats_cost
 			sql.NullString{},  // session_id
 			true,              // native_compaction_v2
+			sql.NullFloat64{}, // upstream_rate_multiplier
 			now,
 		}})
 		require.NoError(t, err)
@@ -1161,6 +1166,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullFloat64{}, // account_stats_cost
 			sql.NullString{},  // session_id
 			false,             // native_compaction_v2
+			sql.NullFloat64{}, // upstream_rate_multiplier
 			now,
 		}})
 		require.NoError(t, err)

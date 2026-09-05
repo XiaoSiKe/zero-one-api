@@ -597,8 +597,9 @@ type AdminUsageLog struct {
 	// BillingTier 计费层级标签（per_request/image 模式）
 	BillingTier *string `json:"billing_tier,omitempty"`
 
-	// AccountRateMultiplier 账号计费倍率快照（nil 表示按 1.0 处理）
-	AccountRateMultiplier *float64 `json:"account_rate_multiplier"`
+	// AccountRateMultiplier 原本地账号倍率快照，保留审计；不作为上游成本来源
+	AccountRateMultiplier  *float64 `json:"account_rate_multiplier"`
+	UpstreamRateMultiplier *float64 `json:"upstream_rate_multiplier"`
 	// AccountStatsCost 自定义定价规则计算的账号统计费用（nil 表示使用默认公式）
 	AccountStatsCost *float64 `json:"account_stats_cost,omitempty"`
 

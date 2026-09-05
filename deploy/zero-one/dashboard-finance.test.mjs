@@ -26,3 +26,10 @@ test('bill-based totals are independent of rolling dashboard caches and share th
   assert.equal(dateInTimezone(new Date('2026-09-03T16:30:00Z'), 'Asia/Shanghai'), '2026-09-04')
   assert.equal(dateInTimezone(new Date('2026-09-03T16:30:00Z'), 'America/Los_Angeles'), '2026-09-03')
 })
+
+test('token consumption uses M below one billion and B at the boundary', async () => {
+  const { formatTokenConsumption } = await import('./recovered-frontend/console/assets/dashboard-finance-v1/data.js')
+  for (const [input, expected] of [[517683278, '517.68M'], [1e9, '1.00B'], [12.02e9, '12.02B'], [999999999, '1000.00M'], [5000, '0.01M'], [1, '0.000001M'], [0, '0.00M'], [null, '—'], [NaN, '—']]) {
+    assert.equal(formatTokenConsumption(input), expected)
+  }
+})

@@ -187,7 +187,7 @@
               <div class="flex items-center justify-between">
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('usage.accountBilled') }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white"
-                  >${{ formatCost(stats.summary.today?.cost || 0) }}</span
+                  >${{ formatCost(stats.summary.today ? stats.summary.today.cost : 0) }}</span
                 >
               </div>
               <div class="flex items-center justify-between">
@@ -242,7 +242,7 @@
               <div class="flex items-center justify-between">
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('usage.accountBilled') }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white"
-                  >${{ formatCost(stats.summary.highest_cost_day?.cost || 0) }}</span
+                  >${{ formatCost(stats.summary.highest_cost_day?.cost) }}</span
                 >
               </div>
               <div class="flex items-center justify-between">
@@ -297,7 +297,7 @@
               <div class="flex items-center justify-between">
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('usage.accountBilled') }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white"
-                  >${{ formatCost(stats.summary.highest_request_day?.cost || 0) }}</span
+                  >${{ formatCost(stats.summary.highest_request_day?.cost) }}</span
                 >
               </div>
               <div class="flex items-center justify-between">
@@ -407,7 +407,7 @@
               <div class="flex items-center justify-between">
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('usage.accountBilled') }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white"
-                  >${{ formatCost(stats.summary.today?.cost || 0) }}</span
+                  >${{ formatCost(stats.summary.today ? stats.summary.today.cost : 0) }}</span
                 >
               </div>
               <div class="flex items-center justify-between">
@@ -701,7 +701,8 @@ const handleClose = () => {
 }
 
 // Format helpers
-const formatCost = (value: number): string => {
+const formatCost = (value: number | null | undefined): string => {
+  if (value == null) return '待确认'
   if (value >= 1000) {
     return (value / 1000).toFixed(2) + 'K'
   } else if (value >= 1) {

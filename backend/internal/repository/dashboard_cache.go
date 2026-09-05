@@ -10,7 +10,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const dashboardStatsCacheKey = "dashboard:stats:v1"
+const dashboardStatsCacheKey = "dashboard:stats:v2-upstream-cost"
 
 type dashboardCache struct {
 	rdb       *redis.Client

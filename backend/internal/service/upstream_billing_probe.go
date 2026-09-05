@@ -1176,3 +1176,39 @@ func safeProbeError(err error) string {
 	}
 	return "probe_failed"
 }
+
+func freshUpstreamBillingRate(account *Account, now time.Time) (float64, bool) {
+	if !isUpstreamBillingProbeAccount(account) {
+		return 0, false
+	}
+	snapshot := decodeUpstreamBillingProbeSnapshot(account.Extra)
+	if snapshot == nil || (snapshot.Status != UpstreamBillingProbeStatusOK && snapshot.Status != UpstreamBillingProbeStatusFailed) ||
+		snapshot.ReceivedAt == nil || snapshot.ReceivedAt.IsZero() {
+		return 0, false
+	}
+	receivedAt := *snapshot.ReceivedAt
+	freshUntil := snapshot.FreshUntil
+	if freshUntil == nil && snapshot.Status == UpstreamBillingProbeStatusOK {
+		interval := snapshot.NextProbeAt.Sub(receivedAt)
+		if interval > 0 {
+			freshUntil = probeTimePtr(receivedAt.Add(2 * interval))
+		}
+	}
+	if freshUntil == nil || !freshUntil.After(receivedAt) || now.Before(receivedAt) || now.After(*freshUntil) {
+		return 0, false
+	}
+	return upstreamBillingRateAt(snapshot.Data, now)
+}
+
+// declaredUsageRate freezes a token-scoped upstream declaration for reporting.
+// Local account rate and sync/probe toggles do not authorize substitute costs.
+func declaredUsageRate(account *Account, log *UsageLog, at time.Time) *float64 {
+	if log == nil || (log.BillingMode != nil && *log.BillingMode != "" && *log.BillingMode != string(BillingModeToken)) {
+		return nil
+	}
+	rate, ok := freshUpstreamBillingRate(account, at)
+	if !ok {
+		return nil
+	}
+	return &rate
+}

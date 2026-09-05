@@ -623,6 +623,33 @@ func (_u *UsageLogUpdate) ClearAccountRateMultiplier() *UsageLogUpdate {
 	return _u
 }
 
+// SetUpstreamRateMultiplier sets the "upstream_rate_multiplier" field.
+func (_u *UsageLogUpdate) SetUpstreamRateMultiplier(v float64) *UsageLogUpdate {
+	_u.mutation.ResetUpstreamRateMultiplier()
+	_u.mutation.SetUpstreamRateMultiplier(v)
+	return _u
+}
+
+// SetNillableUpstreamRateMultiplier sets the "upstream_rate_multiplier" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableUpstreamRateMultiplier(v *float64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetUpstreamRateMultiplier(*v)
+	}
+	return _u
+}
+
+// AddUpstreamRateMultiplier adds value to the "upstream_rate_multiplier" field.
+func (_u *UsageLogUpdate) AddUpstreamRateMultiplier(v float64) *UsageLogUpdate {
+	_u.mutation.AddUpstreamRateMultiplier(v)
+	return _u
+}
+
+// ClearUpstreamRateMultiplier clears the value of the "upstream_rate_multiplier" field.
+func (_u *UsageLogUpdate) ClearUpstreamRateMultiplier() *UsageLogUpdate {
+	_u.mutation.ClearUpstreamRateMultiplier()
+	return _u
+}
+
 // SetBillingType sets the "billing_type" field.
 func (_u *UsageLogUpdate) SetBillingType(v int8) *UsageLogUpdate {
 	_u.mutation.ResetBillingType()
@@ -1281,6 +1308,15 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.AccountRateMultiplierCleared() {
 		_spec.ClearField(usagelog.FieldAccountRateMultiplier, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.UpstreamRateMultiplier(); ok {
+		_spec.SetField(usagelog.FieldUpstreamRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamRateMultiplier(); ok {
+		_spec.AddField(usagelog.FieldUpstreamRateMultiplier, field.TypeFloat64, value)
+	}
+	if _u.mutation.UpstreamRateMultiplierCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamRateMultiplier, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.BillingType(); ok {
 		_spec.SetField(usagelog.FieldBillingType, field.TypeInt8, value)
@@ -2137,6 +2173,33 @@ func (_u *UsageLogUpdateOne) ClearAccountRateMultiplier() *UsageLogUpdateOne {
 	return _u
 }
 
+// SetUpstreamRateMultiplier sets the "upstream_rate_multiplier" field.
+func (_u *UsageLogUpdateOne) SetUpstreamRateMultiplier(v float64) *UsageLogUpdateOne {
+	_u.mutation.ResetUpstreamRateMultiplier()
+	_u.mutation.SetUpstreamRateMultiplier(v)
+	return _u
+}
+
+// SetNillableUpstreamRateMultiplier sets the "upstream_rate_multiplier" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableUpstreamRateMultiplier(v *float64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetUpstreamRateMultiplier(*v)
+	}
+	return _u
+}
+
+// AddUpstreamRateMultiplier adds value to the "upstream_rate_multiplier" field.
+func (_u *UsageLogUpdateOne) AddUpstreamRateMultiplier(v float64) *UsageLogUpdateOne {
+	_u.mutation.AddUpstreamRateMultiplier(v)
+	return _u
+}
+
+// ClearUpstreamRateMultiplier clears the value of the "upstream_rate_multiplier" field.
+func (_u *UsageLogUpdateOne) ClearUpstreamRateMultiplier() *UsageLogUpdateOne {
+	_u.mutation.ClearUpstreamRateMultiplier()
+	return _u
+}
+
 // SetBillingType sets the "billing_type" field.
 func (_u *UsageLogUpdateOne) SetBillingType(v int8) *UsageLogUpdateOne {
 	_u.mutation.ResetBillingType()
@@ -2825,6 +2888,15 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if _u.mutation.AccountRateMultiplierCleared() {
 		_spec.ClearField(usagelog.FieldAccountRateMultiplier, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.UpstreamRateMultiplier(); ok {
+		_spec.SetField(usagelog.FieldUpstreamRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamRateMultiplier(); ok {
+		_spec.AddField(usagelog.FieldUpstreamRateMultiplier, field.TypeFloat64, value)
+	}
+	if _u.mutation.UpstreamRateMultiplierCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamRateMultiplier, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.BillingType(); ok {
 		_spec.SetField(usagelog.FieldBillingType, field.TypeInt8, value)
