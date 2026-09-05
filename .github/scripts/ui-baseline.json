@@ -112,7 +112,8 @@
         "visual-regression/tests/__screenshots__/chromium-desktop/console-forgot-password.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-reset-password.png",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-forgot-password.png",
-        "visual-regression/tests/__screenshots__/chromium-mobile/console-reset-password.png"
+        "visual-regression/tests/__screenshots__/chromium-mobile/console-reset-password.png",
+        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2/"
       ]
     },
     {
@@ -365,7 +366,9 @@
         "visual-regression/tests/__screenshots__/chromium-mobile/console-ops-cn-platform-options.png",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-subscriptions-cn-platform-options.png",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5/",
-        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v3/"
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v3/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v4/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/"
       ]
     },
     {
@@ -408,7 +411,9 @@
         "visual-regression/tests/fixtures/api.ts",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5/",
         "deploy/zero-one/recovered-frontend/console/assets/online-image-v11/",
-        "deploy/zero-one/recovered-frontend/console/assets/online-image-v12/"
+        "deploy/zero-one/recovered-frontend/console/assets/online-image-v12/",
+        "deploy/zero-one/recovered-frontend/console/assets/online-image-v13/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/"
       ]
     },
     {
@@ -469,7 +474,18 @@
         "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-summary.png",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-trends.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-summary.png",
-        "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-trends.png"
+        "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-trends.png",
+        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/dashboard-finance.css",
+        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/dashboard-finance.js",
+        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/data.js",
+        "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/AccountsView-CM4yOmZE.js",
+        "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/DashboardView-CYAPqspo.js",
+        "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/EndpointDistributionChart.vue_vue_type_script_setup_true_lang-DOhczKYp.js",
+        "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/GroupDistributionChart.vue_vue_type_script_setup_true_lang-DfCAq0pi.js",
+        "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/ModelDistributionChart.vue_vue_type_script_setup_true_lang-BkqQV0ng.js",
+        "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/UsageView-dsXbJO6P.js",
+        "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-6pKNrg32.js",
+        "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-BBEtrNVx.js"
       ]
     }
   ],

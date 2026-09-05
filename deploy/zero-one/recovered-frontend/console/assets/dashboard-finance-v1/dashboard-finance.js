@@ -1,6 +1,6 @@
 // 二开保护：管理员账单收益界面。原仪表盘只提供选中日期，
 // 金额全部读取绕过缓存的历史账单统计，禁止使用现倍率重算旧账。
-import { calendarDays, dailyValues, dateInTimezone, billedSummary, formatTokenConsumption } from './data.js'
+import { calendarDays, dailyValues, dateInTimezone, billedSummary } from './data.js'
 
 let Chart = null
 let initialRefreshRequested = false
@@ -99,18 +99,18 @@ function drawCharts(rows) {
       interaction: { intersect: false, mode: 'index' },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: context => `${metric.title}：${metric.key === 'tokens' ? formatTokenConsumption(context.parsed.y) : money(context.parsed.y)}` } },
+        tooltip: { callbacks: { label: context => `${metric.title}：${metric.key === 'tokens' ? context.parsed.y.toLocaleString('zh-CN') : money(context.parsed.y)}` } },
       },
       scales: {
         x: { ticks: { color: dark ? '#a1a1aa' : '#6b7280', maxTicksLimit: 5, maxRotation: 0, callback: (_value, index) => rows[index]?.date.slice(5) }, grid: { display: false } },
-        y: { beginAtZero: true, ticks: { color: dark ? '#a1a1aa' : '#6b7280', maxTicksLimit: 5, callback: value => metric.key === 'tokens' ? formatTokenConsumption(Number(value)) : `$${value}` }, grid: { color: dark ? '#ffffff12' : '#0000000c' } },
+        y: { beginAtZero: true, ticks: { color: dark ? '#a1a1aa' : '#6b7280', maxTicksLimit: 5, callback: value => metric.key === 'tokens' ? Intl.NumberFormat('en-US', { notation: 'compact' }).format(value) : `$${value}` }, grid: { color: dark ? '#ffffff12' : '#0000000c' } },
       },
     },
   }))
   const body = trends.querySelector('tbody')
   body.replaceChildren(...rows.map(row => {
     const tr = element('tr')
-    for (const value of [row.date, formatTokenConsumption(row.tokens), money(row.charged), row.earnings === null && row.charged !== null ? '待确认' : money(row.earnings)]) tr.append(element('td', '', value))
+    for (const value of [row.date, row.tokens === null ? '—' : row.tokens.toLocaleString('zh-CN'), money(row.charged), money(row.earnings)]) tr.append(element('td', '', value))
     return tr
   }))
 }
@@ -165,7 +165,7 @@ function mount() {
     head.append(row)
     table.append(head, element('tbody'))
     details.append(table)
-    trends.append(header, status, grid, element('p', 'dashboard-finance-caption', '收益按客户实际扣费减上游声明成本计算；成本使用请求时有效的上游声明倍率，缺少声明依据的历史账单标为待确认。不包含其他经营费用；总计统计全部保留账单。'), details)
+    trends.append(header, status, grid, element('p', 'dashboard-finance-caption', '收益按历史账单实际扣费减账号成本计算，体现结算时的分组与号池倍率差；不包含其他经营费用；总计统计全部保留账单，已被清理的明细无法回溯。'), details)
     dateCard.after(trends)
   }
   return true
@@ -239,7 +239,7 @@ async function loadDays() {
         if (job.kind === 'today' || (job.kind === 'day' && job.start === today)) todayStats = stats
         if (job.kind === 'day') {
           rows[job.index] = { date: job.start, ...dailyValues(stats) }
-          if (stats.total_tokens == null || stats.total_actual_cost == null) failed++
+          if (Object.values(dailyValues(stats)).some(value => value === null)) failed++
         }
       } catch {
         if (activeController.signal.aborted) return
@@ -253,19 +253,19 @@ async function loadDays() {
   if (controller !== activeController || activeController.signal.aborted || adminIdentity() !== token) return
   const values = billedSummary(todayStats, totalStats)
   cards.querySelectorAll('.dashboard-finance-value').forEach((node, index) => {
-    node.textContent = values[index] === null && index % 2 && (index === 1 ? todayStats : totalStats) ? '待确认' : money(values[index])
+    node.textContent = money(values[index])
     node.classList.toggle('is-negative', values[index] !== null && values[index] < 0)
   })
   cards.title = `今日：${today}（${current.timezone}）；总计：全部保留账单。`
   drawCharts(rows)
   trends.setAttribute('aria-busy', 'false')
-  if (failed || values[0] === null || values[2] === null || authFailed) {
+  if (failed || values.some(value => value === null) || authFailed) {
     status.textContent = authFailed ? '登录状态失效或没有权限，请重新登录。' : '部分账单未能完整读取，缺失处已留空；请重新读取。'
     trends.querySelector('.dashboard-finance-updated').textContent = lastUpdated ? `本次更新未完成 · 上次完整更新 ${lastUpdated}` : '本次未完整更新'
   } else {
     lastUpdated = new Date().toLocaleTimeString('zh-CN', { timeZone: current.timezone, hour12: false })
     trends.querySelector('.dashboard-finance-updated').textContent = `更新于 ${lastUpdated} · 页面可见时每 30 秒自动刷新`
-    status.textContent = values[1] === null || values[3] === null || rows.some(row => row.earnings === null) ? '部分账单缺少有效的历史上游声明倍率，成本与收益待确认；已确认日期正常显示。' : '金额来自已落库账单；点击或悬停曲线可查看数值。'
+    status.textContent = '金额来自已落库账单；点击或悬停曲线可查看数值。'
   }
   controller = null
   if (authFailed && !authRecoveryRequested) {

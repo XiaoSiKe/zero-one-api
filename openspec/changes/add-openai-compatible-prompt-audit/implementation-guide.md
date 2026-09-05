@@ -78,4 +78,3 @@
 - 后续每个 `response.create` 重新提取本轮输入并标记 `subsequent_turn`。
 - WS close reason 长度必须在协议限制内，只使用稳定短码；详细内部错误只进脱敏指标/日志。
 - Legacy moderation 同时 Block 时，继续使用其原错误/close 行为和文案。
-

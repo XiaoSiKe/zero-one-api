@@ -413,13 +413,13 @@ test.describe('Recovered CN Provider management contracts', () => {
     const adapterAssets: string[] = []
     page.on('request', (request) => {
       const path = new URL(request.url()).pathname
-      if (path.startsWith('/assets/cn-provider-admin-v3/')) adapterAssets.push(path)
+      if (path.startsWith('/assets/cn-provider-admin-v4/')) adapterAssets.push(path)
     })
 
     await page.goto(`${consoleOrigin}/admin/dashboard`)
     await expect(page.locator('.app-shell')).toBeVisible()
     await expect.poll(() => adapterAssets).toEqual([
-      '/assets/cn-provider-admin-v3/cn-provider-admin.js',
+      '/assets/cn-provider-admin-v4/cn-provider-admin.js',
     ])
     await expect(page.locator('#zero-one-cn-provider-admin')).toHaveCount(0)
     await expect(page.locator('#zero-one-cn-provider-admin-style')).toHaveCount(0)
@@ -462,7 +462,7 @@ test.describe('Recovered CN Provider management contracts', () => {
     const pageErrors: string[] = []
     let leafRequests = 0
     page.on('pageerror', (error) => pageErrors.push(error.message))
-    await page.route('**/assets/cn-provider-admin-v3/cnProviderAdminLeaf-*.js', (route) => {
+    await page.route('**/assets/cn-provider-admin-v4/cnProviderAdminLeaf-*.js', (route) => {
       leafRequests += 1
       if (leafRequests === 1) {
         return route.fulfill({ status: 503, contentType: 'text/javascript', body: '' })

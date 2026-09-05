@@ -53,7 +53,7 @@ try {
       (900001,900001,900001,900001,'finance-today','test-model',200,50,0,0,20,6,30,0.3,1,0.1,TIMESTAMPTZ '2026-09-04 12:00:00+08'),
       (900001,900001,900001,900001,'finance-old','test-model',300,10,0,0,100,40,60,0.4,1,0.25,TIMESTAMPTZ '2026-09-04 12:00:00+08'-interval '120 days');
   `)
-  const { dateInTimezone } = await import('./recovered-frontend/console/assets/dashboard-finance-v1/data.js')
+  const { dateInTimezone } = await import('./recovered-frontend/console/assets/dashboard-finance-v2/data.js')
   const today = dateInTimezone(new Date('2026-09-04T12:00:00+08:00'), 'Asia/Shanghai')
   const day = await api(`/admin/usage/stats?start_date=${today}&end_date=${today}&timezone=Asia%2FShanghai&nocache=true`, auth.access_token)
   assert.equal(day.total_actual_cost, 11)

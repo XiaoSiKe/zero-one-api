@@ -6,8 +6,8 @@ production_caddyfile="$repo_root/deploy/zero-one/Caddyfile"
 preview_caddyfile="$repo_root/deploy/zero-one/Caddyfile.preview"
 shared_caddyfile="$repo_root/deploy/zero-one/Caddyfile.shared"
 recovered_console_index="$repo_root/deploy/zero-one/recovered-frontend/console/index.html"
-recovered_console_entry='await import("/assets/cn-provider-shell-v5/index-9xJBhx8B.js")'
-recovered_console_entry_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5/index-9xJBhx8B.js"
+recovered_console_entry='await import("/assets/cn-provider-shell-v6/index-9xJBhx8B.js")'
+recovered_console_entry_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/index-9xJBhx8B.js"
 recovered_pricing_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/useKeyedDebouncedSearch-BrW9dWBu.js"
 recovered_console_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-B-81-jXj.js"
 recovered_console_admin_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-Bn5PLb3-.js"
@@ -31,8 +31,8 @@ recovered_ccswitch_launch="$repo_root/deploy/zero-one/recovered-frontend/console
 recovered_affiliate_admin="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-affiliate-admin-v1.js"
 recovered_affiliate_admin_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-affiliate-admin-v1.css"
 recovered_login_recovery="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-login-recovery-v2.js"
-recovered_online_image="$repo_root/deploy/zero-one/recovered-frontend/console/assets/online-image-v12/online-image.js"
-recovered_online_image_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/online-image-v12/online-image.css"
+recovered_online_image="$repo_root/deploy/zero-one/recovered-frontend/console/assets/online-image-v13/online-image.js"
+recovered_online_image_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/online-image-v13/online-image.css"
 
 require() {
 	file=$1
@@ -110,7 +110,7 @@ require "$recovered_console_index" 'await import("/assets/zero-one-redeem-action
 require "$recovered_console_index" 'href="/assets/zero-one-redeem-actions-v1.css?v=1"'
 require "$recovered_console_index" 'await import("/assets/zero-one-ccswitch-launch-v1.js?v=2")'
 require "$recovered_console_index" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=6")'
-require "$recovered_console_index" 'await import("/assets/online-image-v12/online-image.js")'
+require "$recovered_console_index" 'await import("/assets/online-image-v13/online-image.js")'
 require "$recovered_console_index" 'await import("/assets/zero-one-settings-unified-save-v1.js")'
 require "$recovered_console_index" 'href="/assets/zero-one-affiliate-admin-v1.css?v=3"'
 require "$recovered_console_index" 'await import("/assets/zero-one-floating-panels-v1.js?v=3")'

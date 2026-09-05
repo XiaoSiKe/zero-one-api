@@ -19,7 +19,7 @@ export default defineConfig({
     'process.env.NODE_ENV': JSON.stringify('production'),
   },
   build: {
-    outDir: resolve(frontendRoot, '../deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v3'),
+    outDir: resolve(frontendRoot, '../deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v4'),
     emptyOutDir: true,
     cssCodeSplit: false,
     lib: {

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { readFileSync, readlinkSync } from 'node:fs'
 import { resolve } from 'node:path'
 import test from 'node:test'
@@ -14,6 +15,10 @@ import {
   APPROVED_LAYOUT_SOURCE,
   patchApprovedHeader,
   recoveryShellOverrides,
+  declaredCostShellOverrides,
+  DECLARED_COST_OVERRIDE_FILES,
+  RECOVERY_SHELL_DIRECTORY,
+  CURRENT_PASSWORD_RECOVERY_DIRECTORY,
   patchApprovedShell,
   patchLegacyApprovedShell,
   patchPriorApprovedShell,
@@ -70,13 +75,13 @@ test('CN Provider shell generation fails closed when the approved bootstrap chan
 })
 
 test('password recovery namespace preserves the previous shell and changes only three declared modules', () => {
-  const current = readFileSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_ASSET), 'utf8')
+  const current = readFileSync(resolve(assetsDirectory, `${RECOVERY_SHELL_DIRECTORY}/${APPROVED_SHELL_SOURCE}`), 'utf8')
   const previous = readFileSync(resolve(assetsDirectory, PRE_RECOVERY_SHELL_DIRECTORY, APPROVED_SHELL_SOURCE), 'utf8')
   assert.equal(current, previous, '认证修复不能重写原来的 Router 或业务路由')
   const overrides = recoveryShellOverrides(assetsDirectory)
   assert.equal(overrides.size, 3)
   for (const [name, content] of overrides) {
-    assert.equal(readFileSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, name), 'utf8'), content)
+    assert.equal(readFileSync(resolve(assetsDirectory, RECOVERY_SHELL_DIRECTORY, name), 'utf8'), content)
     assert.equal(readlinkSync(resolve(assetsDirectory, PRE_RECOVERY_SHELL_DIRECTORY, name)), `../${name}`)
   }
   const source = readFileSync(resolve(assetsDirectory, APPROVED_LAYOUT_SOURCE), 'utf8')
@@ -84,4 +89,45 @@ test('password recovery namespace preserves the previous shell and changes only 
   assert.equal(result.includes('nav.docs'), false)
   assert.ok(source.includes('nav.docs'), '原批准外壳继续保留')
   assert.throws(() => patchApprovedHeader(result), /documentation seam changed/)
+})
+
+
+test('declared cost modules use a new namespace and leave the recovery namespace on its original assets', () => {
+  const overrides = declaredCostShellOverrides(assetsDirectory)
+  assert.equal(overrides.size, 3 + DECLARED_COST_OVERRIDE_FILES.length)
+  for (const name of DECLARED_COST_OVERRIDE_FILES) {
+    assert.equal(readFileSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, name), 'utf8'), overrides.get(name))
+    assert.equal(readlinkSync(resolve(assetsDirectory, RECOVERY_SHELL_DIRECTORY, name)), `../${name}`)
+    assert.notEqual(overrides.get(name), readFileSync(resolve(assetsDirectory, name), 'utf8'))
+  }
+})
+
+
+test('current password recovery imports the same Vue and application runtime as the current shell', () => {
+  for (const name of ['ForgotPasswordView.js', 'ResetPasswordView.js']) {
+    const module = readFileSync(resolve(assetsDirectory, CURRENT_PASSWORD_RECOVERY_DIRECTORY, name), 'utf8')
+    assert.ok(module.includes(`/assets/${CN_PROVIDER_SHELL_DIRECTORY}/vendor-vue-`))
+    assert.ok(!module.includes(`/assets/${RECOVERY_SHELL_DIRECTORY}/`))
+  }
+})
+
+
+// Original immutable URLs served by production revision 10da24948.
+const originalCostModuleDigests = {
+  "AccountsView-CM4yOmZE.js": "e754045e8a2d2bfb4c3e867db908fd3f07f4d29c715a84c018508bad99286b75",
+  "DashboardView-CYAPqspo.js": "583f4e19cda7b314377ddf7919afb007cbad2a0c16efbc2353c981cffb09fe17",
+  "EndpointDistributionChart.vue_vue_type_script_setup_true_lang-DOhczKYp.js": "497f12185df159112a78d7b13446f0b138348d7a1c743b04c238d95810732836",
+  "GroupDistributionChart.vue_vue_type_script_setup_true_lang-DfCAq0pi.js": "e29fc2335c04b850ab85cda770873fa51d19124b6d3a819544d417ea5e12d438",
+  "ModelDistributionChart.vue_vue_type_script_setup_true_lang-BkqQV0ng.js": "c9c8cdd7d0b44651d5bff2daa233587d705c3fd067cbb2847dfd35cd8e9ae379",
+  "UsageView-dsXbJO6P.js": "756968c3bf6e78a9c479d97c0686d62ec7182a5e9ab4941517c2060d90cb38ea",
+  "index-6pKNrg32.js": "9836d4754475c396d2c7ad1ea322a098314ff00c2989912c52a4d300f3c4b444",
+  "index-BBEtrNVx.js": "07dbea874de692bcf910270e5a5374ddced641907124a6308853097802119abe"
+}
+
+test('old immutable cost assets remain byte-identical after the new namespace is built', () => {
+  for (const [name, digest] of Object.entries(originalCostModuleDigests)) {
+    for (const directory of ['', RECOVERY_SHELL_DIRECTORY]) {
+      assert.equal(createHash('sha256').update(readFileSync(resolve(assetsDirectory, directory, name))).digest('hex'), digest)
+    }
+  }
 })

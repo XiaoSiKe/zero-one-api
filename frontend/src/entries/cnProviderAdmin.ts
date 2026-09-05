@@ -85,7 +85,7 @@ function restoreApprovedRouteRoots() {
 
 function ensureRouteStyles() {
   document.body.classList.add(BODY_ACTIVE_CLASS)
-  const href = '/assets/cn-provider-admin-v3/cn-provider-admin.css'
+  const href = '/assets/cn-provider-admin-v4/cn-provider-admin.css'
   const existing = document.getElementById(STYLE_ID) as HTMLLinkElement | null
   if (existing?.getAttribute('href') === href) return
   existing?.remove()

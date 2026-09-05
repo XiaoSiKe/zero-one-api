@@ -56,13 +56,3 @@ export function billedSummary(today, total) {
     total_account_cost: total?.total_account_cost,
   })
 }
-
-// Keep one formatter for the axis, tooltip and daily detail table.
-export function formatTokenConsumption(value) {
-  if (amount(value) === null || value < 0) return '—'
-  const billions = value >= 1e9
-  const scaled = value / (billions ? 1e9 : 1e6)
-  const precision = scaled > 0 && scaled < 0.005 ? 6 : 2
-  const formatted = precision === 6 ? scaled.toFixed(precision).replace(/0+$/, '') : scaled.toFixed(precision)
-  return `${formatted}${billions ? 'B' : 'M'}`
-}

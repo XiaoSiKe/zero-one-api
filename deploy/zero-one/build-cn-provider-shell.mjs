@@ -6,7 +6,7 @@ import {
   symlinkSync,
   writeFileSync,
 } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { basename, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const APPROVED_SHELL_SOURCE = 'index-9xJBhx8B.js'
@@ -14,9 +14,11 @@ export const LEGACY_CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v1'
 export const PREVIOUS_CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v2'
 export const PRIOR_CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v3'
 export const PRE_RECOVERY_SHELL_DIRECTORY = 'cn-provider-shell-v4'
-export const CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v5'
+export const RECOVERY_SHELL_DIRECTORY = 'cn-provider-shell-v5'
+export const CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v6'
 export const CN_PROVIDER_SHELL_ASSET = `${CN_PROVIDER_SHELL_DIRECTORY}/${APPROVED_SHELL_SOURCE}`
 export const APPROVED_LAYOUT_SOURCE = 'AppLayout.vue_vue_type_script_setup_true_lang-gmb2csy1.js'
+export const CURRENT_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v2'
 export const PASSWORD_RECOVERY_PAGES = {
   'ForgotPasswordView-DfgTg0iM.js': 'password-recovery-v1/ForgotPasswordView.js',
   'ResetPasswordView-CMRDA6OL.js': 'password-recovery-v1/ResetPasswordView.js',
@@ -40,6 +42,34 @@ export function recoveryShellOverrides(assetsDirectory) {
     // 生成入口前先验证两条源码路由已构建，缺失资源时禁止形成可发布命名空间。
     readFileSync(resolve(assetsDirectory, target), 'utf8')
     overrides.set(name, `export { default } from '../${target}';\n`)
+  }
+  return overrides
+}
+
+export const DECLARED_COST_OVERRIDE_FILES = [
+  "AccountsView-CM4yOmZE.js",
+  "DashboardView-CYAPqspo.js",
+  "EndpointDistributionChart.vue_vue_type_script_setup_true_lang-DOhczKYp.js",
+  "GroupDistributionChart.vue_vue_type_script_setup_true_lang-DfCAq0pi.js",
+  "ModelDistributionChart.vue_vue_type_script_setup_true_lang-BkqQV0ng.js",
+  "UsageView-dsXbJO6P.js",
+  "index-6pKNrg32.js",
+  "index-BBEtrNVx.js"
+]
+
+export function declaredCostShellOverrides(assetsDirectory) {
+  const overrides = recoveryShellOverrides(assetsDirectory)
+  const directory = resolve(assetsDirectory, '../overrides/declared-cost-v1')
+  if (readdirSync(directory).sort().join('\n') !== [...DECLARED_COST_OVERRIDE_FILES].sort().join('\n')) {
+    throw new Error('declared cost overrides differ from the reviewed module list')
+  }
+  for (const [name, target] of Object.entries(PASSWORD_RECOVERY_PAGES)) {
+    const currentTarget = `${CURRENT_PASSWORD_RECOVERY_DIRECTORY}/${basename(target)}`
+    readFileSync(resolve(assetsDirectory, currentTarget), 'utf8')
+    overrides.set(name, `export { default } from '../${currentTarget}';\n`)
+  }
+  for (const name of DECLARED_COST_OVERRIDE_FILES) {
+    overrides.set(name, readFileSync(resolve(directory, name), 'utf8'))
   }
   return overrides
 }
@@ -169,17 +199,21 @@ export function buildCNProviderShell(consoleAssetsDirectory) {
     PRE_RECOVERY_SHELL_DIRECTORY,
     patchApprovedShell(source),
   )
-  const overrides = recoveryShellOverrides(consoleAssetsDirectory)
-  const recoveryTargetPath = writeShellVariant(
-    consoleAssetsDirectory,
-    CN_PROVIDER_SHELL_DIRECTORY,
-    patchApprovedShell(source),
-    new Set(overrides.keys()),
-  )
+  const recoveryOverrides = recoveryShellOverrides(consoleAssetsDirectory)
+  const recoveryTargetPath = writeShellVariant(consoleAssetsDirectory, RECOVERY_SHELL_DIRECTORY,
+    patchApprovedShell(source), new Set(recoveryOverrides.keys()))
+  for (const [name, content] of recoveryOverrides) {
+    writeFileSync(resolve(consoleAssetsDirectory, RECOVERY_SHELL_DIRECTORY, name), content)
+  }
+  const overrides = declaredCostShellOverrides(consoleAssetsDirectory)
+  const currentTargetPath = writeShellVariant(consoleAssetsDirectory, CN_PROVIDER_SHELL_DIRECTORY,
+    patchApprovedShell(source), new Set(overrides.keys()))
   for (const [name, content] of overrides) {
     writeFileSync(resolve(consoleAssetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, name), content)
   }
-  return { sourcePath, legacyTargetPath, previousTargetPath, priorTargetPath, preRecoveryTargetPath: targetPath, targetPath: recoveryTargetPath }
+  return { sourcePath, legacyTargetPath, previousTargetPath, priorTargetPath,
+    preRecoveryTargetPath: targetPath, recoveryTargetPath, targetPath: currentTargetPath }
+
 }
 
 const invokedPath = process.argv[1] ? resolve(process.argv[1]) : ''

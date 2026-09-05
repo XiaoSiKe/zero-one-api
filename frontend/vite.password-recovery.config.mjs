@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { CN_PROVIDER_SHELL_DIRECTORY } from '../deploy/zero-one/build-cn-provider-shell.mjs'
+import { CN_PROVIDER_SHELL_DIRECTORY, CURRENT_PASSWORD_RECOVERY_DIRECTORY } from '../deploy/zero-one/build-cn-provider-shell.mjs'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
 const approved = `/assets/${CN_PROVIDER_SHELL_DIRECTORY}`
@@ -59,7 +59,7 @@ export default defineConfig({
   ],
   resolve: { alias: { '@': resolve(root, 'src') } },
   build: {
-    outDir: resolve(root, '../deploy/zero-one/recovered-frontend/console/assets/password-recovery-v1'),
+    outDir: resolve(root, '../deploy/zero-one/recovered-frontend/console/assets', CURRENT_PASSWORD_RECOVERY_DIRECTORY),
     emptyOutDir: true,
     rollupOptions: {
       preserveEntrySignatures: 'strict',

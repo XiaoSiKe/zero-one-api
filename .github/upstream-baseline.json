@@ -651,7 +651,29 @@
     "deploy/zero-one/recovered-frontend/console/assets/EndpointDistributionChart.vue_vue_type_script_setup_true_lang-DOhczKYp.js",
     "frontend/src/components/charts/EndpointDistributionChart.vue",
     "frontend/src/components/user/dashboard/UserDashboardCharts.vue",
-    "frontend/src/components/charts/__tests__/EndpointDistributionChart.spec.ts"
+    "frontend/src/components/charts/__tests__/EndpointDistributionChart.spec.ts",
+    "frontend/src/components/account/AccountTestModal.vue",
+    "frontend/src/components/account/ReAuthAccountModal.vue",
+    "frontend/src/components/layout/README.md",
+    "frontend/src/utils/__tests__/formatCompactCost.spec.ts",
+    "frontend/src/utils/format.ts",
+    "openspec/changes/add-openai-compatible-prompt-audit/implementation-guide.md",
+    "openspec/changes/add-openai-compatible-prompt-audit/tasks.md",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v4/cn-provider-admin.js",
+    "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/dashboard-finance.css",
+    "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/dashboard-finance.js",
+    "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/data.js",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v13/online-image.js",
+    "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2/ForgotPasswordView.js",
+    "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2/ResetPasswordView.js",
+    "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/AccountsView-CM4yOmZE.js",
+    "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/DashboardView-CYAPqspo.js",
+    "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/EndpointDistributionChart.vue_vue_type_script_setup_true_lang-DOhczKYp.js",
+    "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/GroupDistributionChart.vue_vue_type_script_setup_true_lang-DfCAq0pi.js",
+    "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/ModelDistributionChart.vue_vue_type_script_setup_true_lang-BkqQV0ng.js",
+    "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/UsageView-dsXbJO6P.js",
+    "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-6pKNrg32.js",
+    "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-BBEtrNVx.js"
   ],
   "legacy_hotfixes": [
     {
@@ -917,7 +939,8 @@
         "frontend/src/views/auth/__tests__/PasswordRecovery.spec.ts",
         "frontend/src/views/auth/__tests__/recoveredPasswordRecovery.spec.ts",
         "frontend/vite.password-recovery.config.mjs",
-        "frontend/src/views/auth/__tests__/TencentCaptchaForgotPassword.spec.ts"
+        "frontend/src/views/auth/__tests__/TencentCaptchaForgotPassword.spec.ts",
+        "frontend/src/utils/__tests__/formatCompactCost.spec.ts"
       ]
     },
     {
@@ -1282,7 +1305,9 @@
         "frontend/src/api/admin/channels.ts",
         "frontend/.eslintignore",
         "tools/check_pnpm_audit_exceptions.py",
-        "docs/adr/0010-admin-billing-finance-and-date-panels.md"
+        "docs/adr/0010-admin-billing-finance-and-date-panels.md",
+        "openspec/changes/add-openai-compatible-prompt-audit/implementation-guide.md",
+        "openspec/changes/add-openai-compatible-prompt-audit/tasks.md"
       ]
     },
     {

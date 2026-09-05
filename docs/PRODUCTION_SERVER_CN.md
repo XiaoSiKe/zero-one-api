@@ -92,7 +92,6 @@ docker compose \
 | 导航与加载修复验收（2026-08-27） | [完整记录](https://github.com/XiaoSiKe/zero-one-api/blob/10da249486895f287ef745fe6f5468db9ec77a2b/docs/OPERATIONS.md#L733-L760) |
 | 兑换码与首 Token 加固验收（2026-08-28） | [完整记录](https://github.com/XiaoSiKe/zero-one-api/blob/10da249486895f287ef745fe6f5468db9ec77a2b/docs/OPERATIONS.md#L761-L801) |
 | 入口可用性与登录首屏优化验收（2026-08-31） | [完整记录](https://github.com/XiaoSiKe/zero-one-api/blob/10da249486895f287ef745fe6f5468db9ec77a2b/docs/OPERATIONS.md#L802-L836) |
-
 | Repository Access Incidents | [完整记录](https://github.com/XiaoSiKe/zero-one-api/blob/10da249486895f287ef745fe6f5468db9ec77a2b/docs/OPERATIONS.md#L382-L397) |
 | Visual fixture diagnosis during migration acceptance | [完整记录](https://github.com/XiaoSiKe/zero-one-api/blob/10da249486895f287ef745fe6f5468db9ec77a2b/docs/OPERATIONS.md#L619-L656) |
 

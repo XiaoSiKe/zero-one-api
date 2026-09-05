@@ -27,9 +27,15 @@
 
 ## 长期保护与验收
 
-- 规范实现：`deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v1/`、`zero-one-floating-panels-v1.js` 及恢复版入口。
+- 规范实现：`deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/`、`zero-one-floating-panels-v1.js` 及恢复版入口。
 - 永久保留：这些规范文件、计算测试、浏览器行为测试、本 ADR 与真实 API 验收脚本逐文件登记在 `.github/upstream-baseline.json` 的 `preserve_on_upstream_sync` 中。
 - 视觉保护：管理员财务卡片、三条曲线和日期浮层通过 `.github/scripts/ui-baseline.json` 的受保护界面和不可移动批准标签锁定；普通上游同步不得覆盖。
 - `dashboard-finance.test.mjs` 覆盖历史成本、负收益、缺失字段、日界线和时区；Playwright 覆盖反复选日期、取消旧请求、自动刷新、后台暂停、恢复和登录不受可选模块影响。
 - `test-dashboard-finance-live.mjs` 只在新建的隔离 PostgreSQL/Redis/Backend/Edge 中造账，走真实 API 和浏览器，验证跨 UTC 午夜、120 天历史账单、修改当前倍率后历史值不变，以及新账单自动刷新可见。退出清理本次资源，不写入已有数据库。
 - CI 保留现有全部门禁，并新增以上计算和真实账单验收；不放宽截图阈值。
+
+## 不可变发布资源
+
+本次成本与格式修复使用 `dashboard-finance-v2` 和 `cn-provider-shell-v6`。八个获准修改的恢复版模块只在 `overrides/declared-cost-v1` 维护，由命名空间生成器写入 v6；原始批准模块及 v1–v5 命名空间保持原样。生成器校验精确覆盖清单，避免把额外 UI 变化混入发布。新版供应商和生图适配层分别使用 v4、v13，旧版本继续保留，满足不可变缓存和仍打开页面的资源引用。
+
+密码恢复同步生成到 `password-recovery-v2`，复用 v6 的 Vue、Router、API 和 Store；v5 继续引用原 v1，防止跨命名空间混用单例。
