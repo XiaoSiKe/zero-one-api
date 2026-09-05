@@ -125,7 +125,7 @@ test.describe('Console public auth contracts', () => {
     page.on('pageerror', (error) => pageErrors.push(error.message))
     page.on('request', (request) => {
       const pathname = new URL(request.url()).pathname
-      if (pathname === '/assets/cn-provider-shell-v6/LoginView-BbpS8aW1.js') {
+      if (pathname === '/assets/cn-provider-shell-v7/LoginView-BbpS8aW1.js') {
         loginChunkRequestedBeforeSettingsRelease ||= !settingsReleased
       }
       if (pathname === '/assets/cn-provider-admin-v1/cn-provider-admin.js') {
@@ -213,7 +213,7 @@ test.describe('Console public auth contracts', () => {
 
     page.on('request', (request) => {
       const pathname = new URL(request.url()).pathname
-      if (pathname === '/assets/cn-provider-shell-v6/RegisterView-CP_DoJ_R.js') {
+      if (pathname === '/assets/cn-provider-shell-v7/RegisterView-CP_DoJ_R.js') {
         registrationChunkRequestedBeforeSettingsRelease ||= !settingsReleased
       }
     })
@@ -351,7 +351,7 @@ test.describe('Console public auth contracts', () => {
     try {
       await page.getByRole('button', { name: '登录', exact: true }).click()
       await expect(page).toHaveURL('http://127.0.0.1:4173/admin/dashboard')
-      await expect(page.locator('main').getByText('API 密钥', { exact: true }).first()).toBeVisible()
+      await expect(page.locator('main').getByText('总消费', { exact: true }).first()).toBeVisible()
       await expect.poll(() => adapterRequested).toBe(true)
       await expect.poll(() => headerAdapterVersion).toBe('25')
       await page.waitForTimeout(250)
@@ -3305,7 +3305,7 @@ test.describe('Console visual contracts', () => {
     expect(response?.status()).toBe(200)
     const html = await response!.text()
     expect(html).toContain('/assets/cn-provider-admin-v4/cn-provider-admin.js')
-    expect(html).toContain('/assets/cn-provider-shell-v6/index-9xJBhx8B.js')
+    expect(html).toContain('/assets/cn-provider-shell-v7/index-9xJBhx8B.js')
     expect(html).toContain('/assets/online-image-v14/online-image.js')
     expect(html).toContain('/assets/zero-one-settings-unified-save-v1.js')
     expect(html).toContain('/assets/zero-one-local-preview-guard-v2.js')

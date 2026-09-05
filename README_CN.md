@@ -245,7 +245,7 @@ Nginx 默认会丢弃名称中含下划线的请求头（如 `session_id`），�
 
 一键安装脚本，自动从 GitHub Releases 下载预编译的二进制文件。
 
-#### 前置条件
+#### 脚本安装前置条件
 
 - Linux 服务器（amd64 或 arm64）
 - PostgreSQL 15+（已安装并运行）
@@ -283,7 +283,7 @@ sudo systemctl enable sub2api
 - Redis 配置
 - 管理员账号创建
 
-#### 升级
+#### 脚本安装升级
 
 可以直接在 **管理后台** 左上角点击 **检测更新** 按钮进行在线升级。
 
@@ -292,7 +292,7 @@ sudo systemctl enable sub2api
 - 一键下载并应用更新
 - 支持回滚
 
-#### 常用命令
+#### 脚本安装常用命令
 
 ```bash
 # 查看状态
@@ -314,7 +314,7 @@ curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install
 
 使用 Docker Compose 部署，包含 PostgreSQL 和 Redis 容器。
 
-#### 前置条件
+#### Docker 前置条件
 
 - Docker 20.10+
 - Docker Compose v2+
@@ -441,7 +441,7 @@ docker compose -f docker-compose.local.yml logs -f sub2api
 docker compose -f docker-compose.local.yml logs sub2api | grep "admin password"
 ```
 
-#### 升级
+#### Docker 升级
 
 ```bash
 # 拉取最新镜像并重建容器
@@ -468,7 +468,7 @@ cd sub2api-deploy/
 docker compose -f docker-compose.local.yml up -d
 ```
 
-#### 常用命令
+#### Docker 常用命令
 
 ```bash
 # 停止所有服务
@@ -507,7 +507,7 @@ cd sub2api/deploy
 
 从源码编译安装，适合开发或定制需求。
 
-#### 前置条件
+#### 源码编译前置条件
 
 - Go 1.21+
 - Node.js 18+

@@ -11,6 +11,7 @@ import {
   evaluateChangedPaths,
   evaluatePreservedPaths,
   evaluatePreserveRegistryContinuity,
+  evaluateRetiredPreservedPaths,
   evaluateProductReference,
   evaluateRecordedUpstreamSync,
   evaluateReleaseTag,
@@ -559,6 +560,53 @@ test('rejects same-HEAD product refs without disabling ordinary registry checks'
   ])
   assert.deepEqual(evaluateProductReference(null, headCommit), [])
   assert.deepEqual(parseArguments([]), { includeWorktree: false, productRef: null })
+})
+
+test('permits only decision-backed retirement of previously protected files', () => {
+  const protectedPath = 'visual-regression/tests/retired-dashboard.spec.ts'
+  const decision = 'docs/adr/0012-admin-dashboard-consumption.md'
+  const current = {
+    preserve_on_upstream_sync: [decision],
+    retired_preserved_paths: [{
+      owner: 'Visual Regression',
+      path: protectedPath,
+      decision,
+      reason: 'The superseding dashboard contract removes this UI.',
+    }],
+  }
+  assert.deepEqual(
+    evaluatePreserveRegistryContinuity(current, {
+      schema_version: 4,
+      preserve_on_upstream_sync: [protectedPath],
+    }),
+    [],
+  )
+  assert.deepEqual(
+    evaluatePreservedPaths([protectedPath], {
+      preserve_on_upstream_sync: [protectedPath],
+      retired_preserved_paths: current.retired_preserved_paths,
+    }),
+    [],
+  )
+  const files = new Map([[decision, {
+    content: Buffer.from(`Retired: ${protectedPath}`),
+    isRegularFile: true,
+  }]])
+  assert.deepEqual(
+    evaluateRetiredPreservedPaths(current, path => {
+      if (!files.has(path)) throw new Error(`missing ${path}`)
+      return files.get(path)
+    }),
+    [],
+  )
+  files.set(protectedPath, { content: Buffer.from('still here'), isRegularFile: true })
+  assert.deepEqual(
+    evaluateRetiredPreservedPaths(current, path => {
+      if (!files.has(path)) throw new Error(`missing ${path}`)
+      return files.get(path)
+    }),
+    [`${protectedPath} is retired but still exists`],
+  )
 })
 
 test('accepts a recorded merge with a real ancestor product ref and no protected overlap', (context) => {

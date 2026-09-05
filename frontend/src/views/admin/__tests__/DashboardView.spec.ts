@@ -50,7 +50,7 @@ const formatLocalDate = (date: Date): string => {
   return `${year}-${month}-${day}`
 }
 
-const createDashboardStats = (): DashboardStats => ({
+const createDashboardStats = (overrides: Partial<DashboardStats> = {}): DashboardStats => ({
   total_users: 0,
   today_new_users: 0,
   active_users: 0,
@@ -83,7 +83,8 @@ const createDashboardStats = (): DashboardStats => ({
   average_duration_ms: 0,
   uptime: 0,
   rpm: 0,
-  tpm: 0
+  tpm: 0,
+  ...overrides
 })
 
 describe('admin DashboardView', () => {
@@ -142,5 +143,45 @@ describe('admin DashboardView', () => {
       end_date: formatLocalDate(now),
       granularity: 'hour'
     }))
+  })
+
+  it('uses the existing API Key and Provider Account cards for total and today consumption', async () => {
+    getSnapshotV2.mockResolvedValue({
+      stats: createDashboardStats({
+        total_api_keys: 89,
+        total_accounts: 7,
+        total_actual_cost: 1940,
+        today_actual_cost: 57.091
+      }),
+      trend: [],
+      models: []
+    })
+
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          ModelDistributionChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    const cards = wrapper.findAll('.grid.grid-cols-2 > .card')
+    expect(cards[0].text()).toContain('admin.dashboard.totalCost')
+    expect(cards[0].text()).toContain('$1,940.00')
+    expect(cards[0].text()).not.toContain('admin.dashboard.apiKeys')
+    expect(cards[1].text()).toContain('admin.dashboard.todayCost')
+    expect(cards[1].text()).toContain('$57.09')
+    expect(cards[1].text()).not.toContain('admin.dashboard.accounts')
+    expect(cards[0].text()).toContain('admin.dashboard.actual')
+    expect(cards[1].text()).toContain('admin.dashboard.actual')
   })
 })

@@ -15,10 +15,12 @@ export const PREVIOUS_CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v2'
 export const PRIOR_CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v3'
 export const PRE_RECOVERY_SHELL_DIRECTORY = 'cn-provider-shell-v4'
 export const RECOVERY_SHELL_DIRECTORY = 'cn-provider-shell-v5'
-export const CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v6'
+export const DECLARED_COST_SHELL_DIRECTORY = 'cn-provider-shell-v6'
+export const CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v7'
 export const CN_PROVIDER_SHELL_ASSET = `${CN_PROVIDER_SHELL_DIRECTORY}/${APPROVED_SHELL_SOURCE}`
 export const APPROVED_LAYOUT_SOURCE = 'AppLayout.vue_vue_type_script_setup_true_lang-gmb2csy1.js'
-export const CURRENT_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v2'
+export const DECLARED_COST_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v2'
+export const CURRENT_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v3'
 export const PASSWORD_RECOVERY_PAGES = {
   'ForgotPasswordView-DfgTg0iM.js': 'password-recovery-v1/ForgotPasswordView.js',
   'ResetPasswordView-CMRDA6OL.js': 'password-recovery-v1/ResetPasswordView.js',
@@ -64,13 +66,78 @@ export function declaredCostShellOverrides(assetsDirectory) {
     throw new Error('declared cost overrides differ from the reviewed module list')
   }
   for (const [name, target] of Object.entries(PASSWORD_RECOVERY_PAGES)) {
-    const currentTarget = `${CURRENT_PASSWORD_RECOVERY_DIRECTORY}/${basename(target)}`
+    const currentTarget = `${DECLARED_COST_PASSWORD_RECOVERY_DIRECTORY}/${basename(target)}`
     readFileSync(resolve(assetsDirectory, currentTarget), 'utf8')
     overrides.set(name, `export { default } from '../${currentTarget}';\n`)
   }
   for (const name of DECLARED_COST_OVERRIDE_FILES) {
     overrides.set(name, readFileSync(resolve(directory, name), 'utf8'))
   }
+  return overrides
+}
+
+function replaceExactlyOnce(source, before, after, label) {
+  const occurrences = source.split(before).length - 1
+  if (occurrences !== 1) {
+    throw new Error(`${label} seam count changed: expected 1, found ${occurrences}`)
+  }
+  return source.replace(before, after)
+}
+
+export function patchDashboardSpendCards(source) {
+  const replacements = [
+    ['name:"key"', 'name:"dollar"', 'dashboard total-consumption icon'],
+    ['name:"server"', 'name:"dollar"', 'dashboard today-consumption icon'],
+    ['admin.dashboard.apiKeys', 'admin.dashboard.totalCost', 'dashboard total-consumption label'],
+    ['admin.dashboard.accounts', 'admin.dashboard.todayCost', 'dashboard today-consumption label'],
+    [
+      't("p",Zt,s(d.value.total_api_keys),1)',
+      't("p",Zt,"$"+s(W(d.value.total_actual_cost).toLocaleString(void 0,{minimumFractionDigits:2,maximumFractionDigits:2})),1)',
+      'dashboard total-consumption value',
+    ],
+    [
+      't("p",Jt,s(d.value.active_api_keys)+" "+s(o(r)("common.active")),1)',
+      't("p",Jt,s(o(r)("admin.dashboard.actual")),1)',
+      'dashboard total-consumption caption',
+    ],
+    [
+      't("p",ae,s(d.value.total_accounts),1)',
+      't("p",ae,"$"+s(W(d.value.today_actual_cost).toLocaleString(void 0,{minimumFractionDigits:2,maximumFractionDigits:2})),1)',
+      'dashboard today-consumption value',
+    ],
+    [
+      't("p",se,[t("span",re,s(d.value.normal_accounts)+" "+s(o(r)("common.active")),1),d.value.error_accounts>0?(_(),v("span",oe,s(d.value.error_accounts)+" "+s(o(r)("common.error")),1)):G("",!0)])',
+      't("p",se,s(o(r)("admin.dashboard.actual")),1)',
+      'dashboard today-consumption caption',
+    ],
+    [
+      'Jt={class:"text-xs text-zo-signal-600 dark:text-zo-signal-400"}',
+      'Jt={class:"text-xs text-gray-500 dark:text-gray-400"}',
+      'dashboard total-consumption caption style',
+    ],
+    [
+      'se={class:"text-xs"}',
+      'se={class:"text-xs text-gray-500 dark:text-gray-400"}',
+      'dashboard today-consumption caption style',
+    ],
+  ]
+  return replacements.reduce(
+    (output, [before, after, label]) => replaceExactlyOnce(output, before, after, label),
+    source,
+  )
+}
+
+export function dashboardSpendShellOverrides(assetsDirectory) {
+  const overrides = declaredCostShellOverrides(assetsDirectory)
+  for (const [name, target] of Object.entries(PASSWORD_RECOVERY_PAGES)) {
+    const currentTarget = `${CURRENT_PASSWORD_RECOVERY_DIRECTORY}/${basename(target)}`
+    readFileSync(resolve(assetsDirectory, currentTarget), 'utf8')
+    overrides.set(name, `export { default } from '../${currentTarget}';\n`)
+  }
+  overrides.set(
+    'DashboardView-CYAPqspo.js',
+    patchDashboardSpendCards(overrides.get('DashboardView-CYAPqspo.js')),
+  )
   return overrides
 }
 
@@ -205,14 +272,21 @@ export function buildCNProviderShell(consoleAssetsDirectory) {
   for (const [name, content] of recoveryOverrides) {
     writeFileSync(resolve(consoleAssetsDirectory, RECOVERY_SHELL_DIRECTORY, name), content)
   }
-  const overrides = declaredCostShellOverrides(consoleAssetsDirectory)
+  const declaredCostOverrides = declaredCostShellOverrides(consoleAssetsDirectory)
+  const declaredCostTargetPath = writeShellVariant(consoleAssetsDirectory, DECLARED_COST_SHELL_DIRECTORY,
+    patchApprovedShell(source), new Set(declaredCostOverrides.keys()))
+  for (const [name, content] of declaredCostOverrides) {
+    writeFileSync(resolve(consoleAssetsDirectory, DECLARED_COST_SHELL_DIRECTORY, name), content)
+  }
+  const currentOverrides = dashboardSpendShellOverrides(consoleAssetsDirectory)
   const currentTargetPath = writeShellVariant(consoleAssetsDirectory, CN_PROVIDER_SHELL_DIRECTORY,
-    patchApprovedShell(source), new Set(overrides.keys()))
-  for (const [name, content] of overrides) {
+    patchApprovedShell(source), new Set(currentOverrides.keys()))
+  for (const [name, content] of currentOverrides) {
     writeFileSync(resolve(consoleAssetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, name), content)
   }
   return { sourcePath, legacyTargetPath, previousTargetPath, priorTargetPath,
-    preRecoveryTargetPath: targetPath, recoveryTargetPath, targetPath: currentTargetPath }
+    preRecoveryTargetPath: targetPath, recoveryTargetPath, declaredCostTargetPath,
+    targetPath: currentTargetPath }
 
 }
 

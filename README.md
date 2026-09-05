@@ -248,7 +248,7 @@ Nginx drops headers containing underscores by default (e.g. `session_id`), which
 
 One-click installation script that downloads pre-built binaries from GitHub Releases.
 
-#### Prerequisites
+#### Script Prerequisites
 
 - Linux server (amd64 or arm64)
 - PostgreSQL 15+ (installed and running)
@@ -286,7 +286,7 @@ The Setup Wizard will guide you through:
 - Redis configuration
 - Admin account creation
 
-#### Upgrade
+#### Script Upgrade
 
 You can upgrade directly from the **Admin Dashboard** by clicking the **Check for Updates** button in the top-left corner.
 
@@ -295,7 +295,7 @@ The web interface will:
 - Download and apply updates with one click
 - Support rollback if needed
 
-#### Useful Commands
+#### Script Commands
 
 ```bash
 # Check status
@@ -317,7 +317,7 @@ curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install
 
 Deploy with Docker Compose, including PostgreSQL and Redis containers.
 
-#### Prerequisites
+#### Docker Prerequisites
 
 - Docker 20.10+
 - Docker Compose v2+
@@ -432,7 +432,7 @@ If admin password was auto-generated, find it in logs:
 docker compose -f docker-compose.local.yml logs sub2api | grep "admin password"
 ```
 
-#### Upgrade
+#### Docker Upgrade
 
 ```bash
 # Pull latest image and recreate container
@@ -459,7 +459,7 @@ cd sub2api-deploy/
 docker compose -f docker-compose.local.yml up -d
 ```
 
-#### Useful Commands
+#### Docker Commands
 
 ```bash
 # Stop all services
@@ -498,7 +498,7 @@ This is an operator-managed local workflow; Docker Compose remains the recommend
 
 Build and run from source code for development or customization.
 
-#### Prerequisites
+#### Source Build Prerequisites
 
 - Go 1.21+
 - Node.js 18+

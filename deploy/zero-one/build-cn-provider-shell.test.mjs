@@ -8,6 +8,7 @@ import {
   APPROVED_SHELL_SOURCE,
   CN_PROVIDER_SHELL_ASSET,
   CN_PROVIDER_SHELL_DIRECTORY,
+  DECLARED_COST_SHELL_DIRECTORY,
   LEGACY_CN_PROVIDER_SHELL_DIRECTORY,
   PREVIOUS_CN_PROVIDER_SHELL_DIRECTORY,
   PRIOR_CN_PROVIDER_SHELL_DIRECTORY,
@@ -16,6 +17,8 @@ import {
   patchApprovedHeader,
   recoveryShellOverrides,
   declaredCostShellOverrides,
+  dashboardSpendShellOverrides,
+  patchDashboardSpendCards,
   DECLARED_COST_OVERRIDE_FILES,
   RECOVERY_SHELL_DIRECTORY,
   CURRENT_PASSWORD_RECOVERY_DIRECTORY,
@@ -96,10 +99,29 @@ test('declared cost modules use a new namespace and leave the recovery namespace
   const overrides = declaredCostShellOverrides(assetsDirectory)
   assert.equal(overrides.size, 3 + DECLARED_COST_OVERRIDE_FILES.length)
   for (const name of DECLARED_COST_OVERRIDE_FILES) {
-    assert.equal(readFileSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, name), 'utf8'), overrides.get(name))
+    assert.equal(readFileSync(resolve(assetsDirectory, DECLARED_COST_SHELL_DIRECTORY, name), 'utf8'), overrides.get(name))
     assert.equal(readlinkSync(resolve(assetsDirectory, RECOVERY_SHELL_DIRECTORY, name)), `../${name}`)
     assert.notEqual(overrides.get(name), readFileSync(resolve(assetsDirectory, name), 'utf8'))
   }
+})
+
+test('current shell changes only the two existing dashboard cards', () => {
+  const previous = declaredCostShellOverrides(assetsDirectory)
+  const current = dashboardSpendShellOverrides(assetsDirectory)
+  assert.equal(current.size, previous.size)
+  assert.equal(
+    current.get('DashboardView-CYAPqspo.js'),
+    patchDashboardSpendCards(previous.get('DashboardView-CYAPqspo.js')),
+  )
+  for (const name of DECLARED_COST_OVERRIDE_FILES) {
+    if (name === 'DashboardView-CYAPqspo.js') continue
+    assert.equal(current.get(name), previous.get(name), `${name} changed outside the dashboard seam`)
+  }
+  const dashboard = current.get('DashboardView-CYAPqspo.js')
+  assert.match(dashboard, /admin\.dashboard\.totalCost/)
+  assert.match(dashboard, /admin\.dashboard\.todayCost/)
+  assert.match(dashboard, /minimumFractionDigits:2,maximumFractionDigits:2/)
+  assert.doesNotMatch(dashboard, /admin\.dashboard\.(?:apiKeys|accounts)/)
 })
 
 

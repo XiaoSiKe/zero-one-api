@@ -27,7 +27,7 @@ node scripts/sub2api-admin.js <command>
 
 ## Accounts
 
-### 只读
+### 账号只读
 
 ```bash
 node scripts/sub2api-admin.js accounts list --page-size 20
@@ -131,7 +131,7 @@ node scripts/sub2api-admin.js proxies all
 
 兑换码类型包括 `balance`、`concurrency`、`subscription`、`invitation`。状态常用 `unused`、`used`、`expired`。
 
-### 只读
+### 兑换码只读
 
 ```bash
 node scripts/sub2api-admin.js redeem-codes list --page-size 20

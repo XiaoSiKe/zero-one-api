@@ -42,16 +42,27 @@ test('validates the approved UI baseline manifest', () => {
       'online-image-generation',
       'model-plaza-pricing',
       'redeem-benefits-mystery-box',
-      'admin-billing-finance-and-date-panels',
+      'admin-consumption-and-date-panels',
     ],
   )
 
-  // 二开财务与日期修复必须同时具有 UI 快照覆盖和逐文件永久保留。
-  const finance = manifest.protected_surfaces.find(({ name }) => name === 'admin-billing-finance-and-date-panels')
-  assert.deepEqual(finance.routes, ['/admin/dashboard', '/dashboard', '/admin/usage', '/usage'])
+  // 二开消费卡片与日期修复必须同时具有 UI 快照覆盖和逐文件永久保留。
+  const consumption = manifest.protected_surfaces.find(({ name }) => name === 'admin-consumption-and-date-panels')
+  assert.deepEqual(consumption.routes, ['/admin/dashboard', '/dashboard', '/admin/usage', '/usage'])
   const registry = JSON.parse(readFileSync(new URL('../upstream-baseline.json', import.meta.url), 'utf8'))
-  for (const path of finance.paths) assert.ok(registry.preserve_on_upstream_sync.includes(path), `缺少二开永久保护：${path}`)
-  for (const path of ['deploy/zero-one/dashboard-finance.test.mjs', 'deploy/zero-one/test-dashboard-finance-live.mjs', 'docs/adr/0010-admin-billing-finance-and-date-panels.md']) {
+  for (const path of [
+    'frontend/src/views/admin/DashboardView.vue',
+    'frontend/src/views/admin/__tests__/DashboardView.spec.ts',
+    'deploy/zero-one/build-cn-provider-shell.mjs',
+    'deploy/zero-one/build-cn-provider-shell.test.mjs',
+    'deploy/zero-one/recovered-frontend/console/assets/zero-one-floating-panels-v1.js',
+    'deploy/zero-one/recovered-frontend/console/index.html',
+    'visual-regression/tests/dashboard-spend.behavior.spec.ts',
+    'visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-cards.png',
+    'visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-cards.png',
+    'docs/adr/0010-admin-billing-finance-and-date-panels.md',
+    'docs/adr/0012-admin-dashboard-consumption.md',
+  ]) {
     assert.ok(registry.preserve_on_upstream_sync.includes(path), `缺少二开验收/合同保护：${path}`)
   }
 

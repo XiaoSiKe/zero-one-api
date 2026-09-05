@@ -12,7 +12,7 @@ import {
   CN_PROVIDER_SHELL_ASSET,
   CN_PROVIDER_SHELL_DIRECTORY,
   patchApprovedShell,
-  declaredCostShellOverrides,
+  dashboardSpendShellOverrides,
 } from './build-cn-provider-shell.mjs'
 
 function read(path, label) {
@@ -80,12 +80,12 @@ export function verifyCNProviderConsole(consoleDir) {
   if (actualShellEntries.join('\n') !== expectedShellEntries.join('\n')) {
     throw new Error('CN Provider approved shell namespace is missing or contains extra assets')
   }
-  const overrides = declaredCostShellOverrides(assetsDirectory)
+  const overrides = dashboardSpendShellOverrides(assetsDirectory)
   for (const name of expectedLinks) {
     const linkPath = resolve(shellDirectory, name)
     if (overrides.has(name)) {
       if (lstatSync(linkPath).isSymbolicLink() || readFileSync(linkPath, 'utf8') !== overrides.get(name)) {
-        throw new Error(`Password recovery Console override differs from its canonical source: ${name}`)
+        throw new Error(`Console override differs from its canonical source: ${name}`)
       }
       continue
     }

@@ -44,6 +44,9 @@
     ".github/workflows/zero-one-publish.yml",
     "AGENTS.md",
     "DEV_GUIDE.md",
+    "README_JA.md",
+    "deploy/README.md",
+    "skills/sub2api-admin/references/admin-cli.md",
     "backend/internal/handler/admin/affiliate_handler.go",
     "backend/internal/handler/admin/affiliate_handler_test.go",
     "backend/internal/handler/admin/user_handler.go",
@@ -572,14 +575,12 @@
     "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v1/data.js",
     "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v1/dashboard-finance.js",
     "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v1/dashboard-finance.css",
-    "deploy/zero-one/dashboard-finance.test.mjs",
-    "deploy/zero-one/test-dashboard-finance-live.mjs",
-    "visual-regression/tests/dashboard-finance.behavior.spec.ts",
     "docs/adr/0010-admin-billing-finance-and-date-panels.md",
-    "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-summary.png",
-    "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-trends.png",
-    "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-summary.png",
-    "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-trends.png",
+    "docs/adr/0012-admin-dashboard-consumption.md",
+    "frontend/src/views/admin/__tests__/DashboardView.spec.ts",
+    "visual-regression/tests/dashboard-spend.behavior.spec.ts",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-cards.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-cards.png",
     "backend/internal/handler/admin/ops_dashboard_handler.go",
     "backend/internal/handler/admin/ops_dashboard_handler_test.go",
     "backend/internal/handler/admin/ops_snapshot_v2_handler.go",
@@ -706,6 +707,50 @@
     "backend/internal/config/config.go",
     "backend/internal/config/migration.go",
     "backend/internal/config/migration_test.go"
+  ],
+  "retired_preserved_paths": [
+    {
+      "owner": "Supported Preview",
+      "path": "deploy/zero-one/dashboard-finance.test.mjs",
+      "decision": "docs/adr/0012-admin-dashboard-consumption.md",
+      "reason": "The current Console no longer loads or exposes the retired finance adapter."
+    },
+    {
+      "owner": "Supported Preview",
+      "path": "deploy/zero-one/test-dashboard-finance-live.mjs",
+      "decision": "docs/adr/0012-admin-dashboard-consumption.md",
+      "reason": "The current Console no longer has the live profit surface this isolated test exercised."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "visual-regression/tests/dashboard-finance.behavior.spec.ts",
+      "decision": "docs/adr/0012-admin-dashboard-consumption.md",
+      "reason": "The superseding consumption-card test owns the surviving dashboard and date-panel behavior."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-summary.png",
+      "decision": "docs/adr/0012-admin-dashboard-consumption.md",
+      "reason": "The four-card finance summary is no longer a product surface."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-trends.png",
+      "decision": "docs/adr/0012-admin-dashboard-consumption.md",
+      "reason": "The daily finance trends are no longer a product surface."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-summary.png",
+      "decision": "docs/adr/0012-admin-dashboard-consumption.md",
+      "reason": "The four-card finance summary is no longer a product surface."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-trends.png",
+      "decision": "docs/adr/0012-admin-dashboard-consumption.md",
+      "reason": "The daily finance trends are no longer a product surface."
+    }
   ],
   "legacy_hotfixes": [
     {
@@ -980,7 +1025,8 @@
         "frontend/src/i18n/__tests__/usageServiceTierLocales.spec.ts",
         "frontend/src/utils/__tests__/usageServiceTier.spec.ts",
         "frontend/src/utils/usageServiceTier.ts",
-        "frontend/src/views/admin/__tests__/AccountsView.lite.spec.ts"
+        "frontend/src/views/admin/__tests__/AccountsView.lite.spec.ts",
+        "frontend/src/views/admin/__tests__/DashboardView.spec.ts"
       ]
     },
     {
@@ -1339,7 +1385,9 @@
         "DEV_GUIDE.md",
         "README.md",
         "README_CN.md",
+        "README_JA.md",
         "THIRD_PARTY_NOTICES.md",
+        "deploy/README.md",
         "deploy/docker-compose.dev.yml",
         "deploy/docker-compose.preview.yml",
         "deploy/.gitignore",
@@ -1363,8 +1411,10 @@
         "openspec/changes/add-openai-compatible-prompt-audit/implementation-guide.md",
         "openspec/changes/add-openai-compatible-prompt-audit/tasks.md",
         "docs/adr/0011-online-image-result-errors.md",
+        "docs/adr/0012-admin-dashboard-consumption.md",
         "docs/upgrades/v0.2.1.md",
-        "docs/upgrades/v0.2.1-change-map.json"
+        "docs/upgrades/v0.2.1-change-map.json",
+        "skills/sub2api-admin/references/admin-cli.md"
       ]
     },
     {
