@@ -1,7 +1,7 @@
 > [!NOTE]
 > **零一 API** 产品仓库为 [XiaoSiKe/zero-one-api](https://github.com/XiaoSiKe/zero-one-api)，
 > 其中 `XiaoSiKe` 是 GitHub 登录名，`01-Yang` 是显示名；托管迁移不改写原作者、
-> 许可证或历史发布证据，验收见[运维清单](docs/OPERATIONS.md#repository-hosting-migration-2026-08-28)。
+> 许可证或历史发布证据，验收见[运维清单](docs/PRODUCTION_SERVER_CN.md#历史发布索引)。
 > 本项目是基于 `Wei-Shaw/sub2api` 的独立维护发行版；当前 GitHub 托管为独立仓库，
 > 不是平台原生 fork。完整上游历史与只读 `upstream` 保留其来源，见
 > [上游关系说明](docs/OPERATIONS.md#upstream-provenance-and-github-fork-metadata)。

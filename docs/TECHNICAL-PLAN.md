@@ -11,7 +11,7 @@
 `XiaoSiKe` 是 GitHub 登录名，`01-Yang` 是显示名。此次仅迁移源码托管与未来
 发布归属；历史提交作者、上游许可证、旧 PR/Actions 链接和真实部署镜像摘要不改写。
 新仓库权限、Secrets、分支保护和包访问权限必须分别核验，不能视为已从旧仓库继承；
-导入及远端验收记录见[运维清单](OPERATIONS.md#repository-hosting-migration-2026-08-28)。
+导入及远端验收记录见[运维清单](PRODUCTION_SERVER_CN.md#历史发布索引)。
 
 `.github/upstream-baseline.json` 是 schema v4 Overlay Registry，所有常规回放路径必须唯一归属 `Console Skin`、`Public Capabilities`、`Supported Preview`、`Visual Regression` 或 `Marketing Source Assets`。Registry 只接受精确文件或精确目录，不接受 glob 或未命名的顺带改动。Product Change Protection 会对固定 Upstream Baseline 后的全部产品差异做闭包检查：每个差异必须由 `preserve_on_upstream_sync`、Approved UI Snapshot、带退出条件的 legacy hotfix 或精确 backport 之一保留，仅有 Overlay 归属会使 readiness 失败。`preserve_on_upstream_sync` 禁止目录和 glob，每一项必须唯一归属一个 Overlay，且从 schema v4 开始只能新增、不能在上游同步时删除。`upstream_sync` 持久绑定旧 upstream Tag/commit、合并前 product tip 和真实双亲 merge commit，CI 与 publish 会重放 product-to-merge 差异并拒绝任一受保护文件被覆盖。临时生产正确性修补保留在带退出条件的独立 legacy hotfix 区块；安全 backport 继续锁定逐文件 SHA-256 与 Git mode。`frontend/src/api/` 与 `frontend/src/types/` 默认不可变，只有 Registry 中精确命名并绑定 owner 且逐文件进入 `preserve_on_upstream_sync` 的兼容文件例外可以通过，相邻文件仍被拒绝。v179 的渠道定价 API 例外只把数据库可空的 multiplier 字段表达为可选且可空，使已批准 Console 能继续构建，不改变请求或响应字段。
 
