@@ -413,7 +413,8 @@
         "deploy/zero-one/recovered-frontend/console/assets/online-image-v11/",
         "deploy/zero-one/recovered-frontend/console/assets/online-image-v12/",
         "deploy/zero-one/recovered-frontend/console/assets/online-image-v13/",
-        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/"
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/",
+        "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/"
       ]
     },
     {
@@ -488,7 +489,10 @@
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/ModelDistributionChart.vue_vue_type_script_setup_true_lang-BkqQV0ng.js",
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/UsageView-dsXbJO6P.js",
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-6pKNrg32.js",
-        "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-BBEtrNVx.js"
+        "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-BBEtrNVx.js",
+        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v4/dashboard-finance.js",
+        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v4/data.js",
+        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v4/dashboard-finance.css"
       ]
     }
   ],
