@@ -673,7 +673,9 @@
     "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/ModelDistributionChart.vue_vue_type_script_setup_true_lang-BkqQV0ng.js",
     "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/UsageView-dsXbJO6P.js",
     "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-6pKNrg32.js",
-    "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-BBEtrNVx.js"
+    "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-BBEtrNVx.js",
+    "deploy/zero-one/deduplicate-console-assets.mjs",
+    "deploy/zero-one/deduplicate-console-assets.test.mjs"
   ],
   "legacy_hotfixes": [
     {

@@ -165,6 +165,17 @@ for cn_provider_version in cn-provider-admin-v1 cn-provider-admin-v4; do
 		assert_text "$cn_provider_asset_headers" 'Cache-Control: public, max-age=31536000, immutable' 'versioned CN Provider route asset is missing or not immutable'
 	done
 done
+# Deduplication changes storage only: cached old URLs must return identical bytes.
+for namespace_dir in "$test_dir"/console/assets/cn-provider-admin-v* "$test_dir"/console/assets/online-image-v*; do
+	[ -d "$namespace_dir" ] || continue
+	for alias_file in "$namespace_dir"/*.js; do
+		[ -L "$alias_file" ] || continue
+		alias_url="/assets/$(basename "$namespace_dir")/$(basename "$alias_file")"
+		curl -fsS -H "Host: $request_host" "$edge_url$alias_url" > "$test_dir/alias-response.js"
+		cmp -s "$alias_file" "$test_dir/alias-response.js" || fail "immutable alias changed bytes: $alias_url"
+	done
+done
+
 for online_image_asset_path in "$test_dir"/console/assets/online-image-v13/*; do
 	[ -f "$online_image_asset_path" ] || continue
 	online_image_asset=$(basename "$online_image_asset_path")

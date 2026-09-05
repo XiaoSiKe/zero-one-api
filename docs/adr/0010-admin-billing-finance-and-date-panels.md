@@ -39,3 +39,5 @@
 本次成本与格式修复使用 `dashboard-finance-v2` 和 `cn-provider-shell-v6`。八个获准修改的恢复版模块只在 `overrides/declared-cost-v1` 维护，由命名空间生成器写入 v6；原始批准模块及 v1–v5 命名空间保持原样。生成器校验精确覆盖清单，避免把额外 UI 变化混入发布。新版供应商和生图适配层分别使用 v4、v13，旧版本继续保留，满足不可变缓存和仍打开页面的资源引用。
 
 密码恢复同步生成到 `password-recovery-v2`，复用 v6 的 Vue、Router、API 和 Store；v5 继续引用原 v1，防止跨命名空间混用单例。
+
+版本化适配包中 SHA-256 完全相同的 JavaScript 内容由 `shared-immutable` 保存一份，原 URL 使用相对文件链接，保留各自的模块 URL 与相对导入语义。去重在在线生图构建后的规范步骤执行；闭包与真实 Caddy 响应逐字节验证，不删除旧 URL。
