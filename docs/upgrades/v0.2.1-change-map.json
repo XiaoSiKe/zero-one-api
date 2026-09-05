@@ -1191,5 +1191,23 @@
       "path": "frontend/src/views/admin/groupsReasoningEffort.ts",
       "decision": "preserve-approved-ui"
     }
+  ],
+  "additional_test_repairs": [
+    {
+      "path": "backend/internal/service/channel_monitor_checker_body_test.go",
+      "reason": "Synchronize asynchronous test adapter state confirmed by the race detector."
+    },
+    {
+      "path": "backend/internal/service/grok_free_quota_gate_test.go",
+      "reason": "Synchronize asynchronous test adapter state confirmed by the race detector."
+    },
+    {
+      "path": "backend/internal/handler/admin/grok_import_probe_test.go",
+      "reason": "Synchronize asynchronous test adapter state confirmed by the race detector."
+    },
+    {
+      "path": "backend/internal/handler/admin/grok_oauth_handler_test.go",
+      "reason": "Synchronize asynchronous test adapter state confirmed by the race detector."
+    }
   ]
 }
