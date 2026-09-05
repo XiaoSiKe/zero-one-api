@@ -42,12 +42,12 @@ try {
   assert.equal(sql("SELECT md5(jsonb_agg(to_jsonb(m) ORDER BY filename)::text) FROM schema_migrations m"), ledger)
   const conflicting = spawnSync('docker', [...args, '--migrate-only', '--setup'], { encoding: 'utf8', timeout: 30000 })
   assert.equal(conflicting.status, 1)
-  assert.match(conflicting.stderr, /cannot be combined/)
+  assert.match(`${conflicting.stdout}\n${conflicting.stderr}`, /cannot be combined/)
   // A checksum failure must remain fatal without rewriting business rows.
   sql("UPDATE schema_migrations SET checksum=repeat('0',64) WHERE filename='234_group_codex_models_manifest_config.sql'")
   const invalid = spawnSync('docker', [...args, '--migrate-only'], { encoding: 'utf8', timeout: 30000 })
   assert.equal(invalid.status, 1)
-  assert.match(invalid.stderr, /checksum mismatch/)
+  assert.match(`${invalid.stdout}\n${invalid.stderr}`, /checksum mismatch/)
   assert.equal(sql("SELECT md5(jsonb_agg(to_jsonb(u) ORDER BY id)::text) FROM users u"), before)
   console.log('Migration-only passed: isolated network, no setup/services, full filename identity, repeatability and fail-closed checksums.')
 } finally {
