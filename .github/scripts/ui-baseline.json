@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-05-v021metadata",
-  "baseline_commit": "f130f1a161715a22f3fd5c5057c727ddad7d677b",
+  "baseline_ref": "ui-approved-2026-09-06-dashboardspendr2",
+  "baseline_commit": "deee8041f4b005ce98e27a926d1ee1d451c8516d",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -64,11 +64,9 @@
     "visual-regression/tests/__screenshots__/chromium-mobile/console-forgot-password.png",
     "visual-regression/tests/__screenshots__/chromium-mobile/console-reset-password.png",
     "visual-regression/tests/landing.public-data.spec.ts",
-    "visual-regression/tests/dashboard-finance.behavior.spec.ts",
-    "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-summary.png",
-    "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-trends.png",
-    "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-summary.png",
-    "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-trends.png"
+    "visual-regression/tests/dashboard-spend.behavior.spec.ts",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-cards.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-cards.png"
   ],
   "compatibility_paths": [
     "frontend/src/api/",
@@ -113,7 +111,8 @@
         "visual-regression/tests/__screenshots__/chromium-desktop/console-reset-password.png",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-forgot-password.png",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-reset-password.png",
-        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2/"
+        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2/",
+        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v3/"
       ]
     },
     {
@@ -368,7 +367,8 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v3/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v4/",
-        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/"
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/"
       ]
     },
     {
@@ -414,6 +414,7 @@
         "deploy/zero-one/recovered-frontend/console/assets/online-image-v12/",
         "deploy/zero-one/recovered-frontend/console/assets/online-image-v13/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
         "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/"
       ]
     },
@@ -458,7 +459,7 @@
       ]
     },
     {
-      "name": "admin-billing-finance-and-date-panels",
+      "name": "admin-consumption-and-date-panels",
       "routes": [
         "/admin/dashboard",
         "/dashboard",
@@ -466,22 +467,12 @@
         "/usage"
       ],
       "paths": [
-        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v1/data.js",
-        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v1/dashboard-finance.js",
-        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v1/dashboard-finance.css",
         "deploy/zero-one/recovered-frontend/console/assets/zero-one-floating-panels-v1.js",
         "deploy/zero-one/recovered-frontend/console/index.html",
-        "visual-regression/tests/dashboard-finance.behavior.spec.ts",
-        "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-summary.png",
-        "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-trends.png",
-        "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-summary.png",
-        "visual-regression/tests/__screenshots__/chromium-desktop/console-finance-trends.png",
-        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/dashboard-finance.css",
-        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/dashboard-finance.js",
-        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/data.js",
-        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v3/dashboard-finance.css",
-        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v3/dashboard-finance.js",
-        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v3/data.js",
+        "frontend/src/views/admin/DashboardView.vue",
+        "frontend/src/views/admin/__tests__/DashboardView.spec.ts",
+        "deploy/zero-one/build-cn-provider-shell.mjs",
+        "deploy/zero-one/build-cn-provider-shell.test.mjs",
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/AccountsView-CM4yOmZE.js",
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/DashboardView-CYAPqspo.js",
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/EndpointDistributionChart.vue_vue_type_script_setup_true_lang-DOhczKYp.js",
@@ -490,9 +481,10 @@
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/UsageView-dsXbJO6P.js",
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-6pKNrg32.js",
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-BBEtrNVx.js",
-        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v4/dashboard-finance.js",
-        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v4/data.js",
-        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v4/dashboard-finance.css"
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
+        "visual-regression/tests/dashboard-spend.behavior.spec.ts",
+        "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-cards.png",
+        "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-cards.png"
       ]
     }
   ],

@@ -29,8 +29,8 @@ _Avoid_: 删除原作者、统一标成 MIT、附许可证即全项目合规认�
 _Avoid_: 最新前端、自动构建产物、临时截图
 
 **Product Change Protection（产品变更保护）**:
-对固定 Upstream Baseline 之后的每个产品差异逐路径证明保留策略的发布门禁；每个差异必须由 `preserve_on_upstream_sync`、Approved UI Snapshot、带退出条件的临时修补或精确 backport 之一覆盖，仅有 Overlay 归属不代表更新时会保留。
-_Avoid_: Overlay 允许清单、人工记忆、测试通过即代表不会被覆盖
+对固定 Upstream Baseline 之后的每个产品差异逐路径证明保留策略的发布门禁；每个差异必须由 `preserve_on_upstream_sync`、Approved UI Snapshot、带退出条件的临时修补或精确 backport 之一覆盖，仅有 Overlay 归属不代表更新时会保留。后续明确取代旧产品行为时，只能通过逐文件、绑定 owner 与受保护 ADR 的 `retired_preserved_paths` 墓碑退役旧保护，不能静默删除。
+_Avoid_: Overlay 允许清单、人工记忆、测试通过即代表不会被覆盖、删除保护记录却不留退役决策
 
 **Public Settings Projection（公开设置投影）**:
 匿名 Console 设置接口与 HTML 首帧注入共同使用的显式安全字段集合；新增字段属于公开授权决定，Landing 只读取它所需的更窄投影，Header Navigation QR 原图等鉴权资源不进入其中。
@@ -134,6 +134,6 @@ _Avoid_: Console 渠道监控、渠道明细、公开监控数据
 由 `email_verify_enabled` 和 `password_reset_enabled` 共同授权的邮件找回流程。登录入口与两条密码路由遵循服务端公开能力，设置读取中或失败时不开放提交。成功确认不透露邮箱是否注册；令牌经过校验后原子核销，同一链接仅能成功一次，密码变更使旧登录凭据失效。生产重置链接使用 Canonical Product Domain。
 _Avoid_: 从注册按钮推断权限、隐藏后端错误即启用、先读取再无条件删除令牌
 
-**Admin Billing Finance（管理员账单收益）**：
-管理员消费与收益 UI 对全部保留账单的实际扣费和依据每笔账单冻结的上游声明倍率计算账号成本。收益只在同一批已核算账单内以实际扣费减账号成本；缺少声明依据的账单单独计为待核算，不遮住已核算结果。上游账号最后一次成功声明持续用于后续新账，直到同一账号取得新声明；账号身份变化会清除旧声明。历史账单不按当前倍率重算，负收益保留，金额统一显示两位小数；这些数值不等于充值流水或包含全部经营费用的净利润。可见页面约 30 秒刷新，显示完整更新时间及读取失败状态；今日与每日图使用相同 IANA 时区。实现、保留边界与日期浮层修复均为长期二开保护内容，见 [ADR 0010](docs/adr/0010-admin-billing-finance-and-date-panels.md)。
-_Avoid_: 用标准价计算真实收益、用现倍率回算旧账、以缓存窗口冒充全部账单、失败补零、宣称未入库请求已经计费。
+**Admin Dashboard Consumption（管理员仪表盘消费）**：
+管理员仪表盘第一行用原 API Key 卡片显示总消费、原 Provider Account 卡片显示今日消费，均读取原生 `DashboardStats` 的客户实际扣费并固定显示美元两位小数。当前 Console 不提供今日收益、总收益、每日收益趋势、独立财务明细或第二套财务刷新。上游成本证据、账单接口兼容字段和历史不可变资源继续保留，但不拥有当前仪表盘展示。实现与保护边界见 [ADR 0012](docs/adr/0012-admin-dashboard-consumption.md)，历史成本与日期浮层缘由见 [ADR 0010](docs/adr/0010-admin-billing-finance-and-date-panels.md)。
+_Avoid_: 新增财务卡片区、在前端重算收益、额外逐日请求、用标准价代替实际扣费、删除旧账单证据或已发布资源。

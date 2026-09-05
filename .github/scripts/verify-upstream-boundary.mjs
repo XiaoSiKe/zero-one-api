@@ -48,6 +48,10 @@ function preservedOverlayPaths(baseline) {
   return new Set(baseline.preserve_on_upstream_sync)
 }
 
+function retiredPreservedPaths(baseline) {
+  return new Set((baseline.retired_preserved_paths || []).map(({ path }) => path))
+}
+
 export function validateBaseline(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('upstream baseline must be a JSON object')
@@ -147,6 +151,42 @@ export function validateBaseline(value) {
       )
     }
     preservedPaths.add(path)
+  }
+
+  const retirements = value.retired_preserved_paths ?? []
+  if (!Array.isArray(retirements)) {
+    throw new Error('upstream baseline retired_preserved_paths must be an array')
+  }
+  const retiredPaths = new Set()
+  for (const retirement of retirements) {
+    if (!retirement || typeof retirement !== 'object' || Array.isArray(retirement)) {
+      throw new Error('retired preserved path must be an object')
+    }
+    validatePathRule(retirement.path, 'retired preserved', { allowDirectory: false })
+    validatePathRule(retirement.decision, `retired preserved ${retirement.path} decision`, {
+      allowDirectory: false,
+    })
+    if (retiredPaths.has(retirement.path)) {
+      throw new Error(`duplicate retired preserved path: ${retirement.path}`)
+    }
+    if (preservedPaths.has(retirement.path)) {
+      throw new Error(`retired preserved path is still active: ${retirement.path}`)
+    }
+    if (!preservedPaths.has(retirement.decision)) {
+      throw new Error(
+        `retired preserved path decision must itself be protected: ${retirement.decision}`,
+      )
+    }
+    if (typeof retirement.reason !== 'string' || !retirement.reason.trim()) {
+      throw new Error(`retired preserved path reason is required: ${retirement.path}`)
+    }
+    const matchingRules = rules.filter((rule) => matchesPath(retirement.path, rule.path))
+    if (matchingRules.length !== 1 || matchingRules[0].owner !== retirement.owner) {
+      throw new Error(
+        `retired preserved path ${retirement.path} must bind to exactly one path owned by ${retirement.owner}`,
+      )
+    }
+    retiredPaths.add(retirement.path)
   }
 
   if (!Array.isArray(value.immutable_exceptions)) {
@@ -334,13 +374,37 @@ export function evaluateChangedPaths(paths, baseline) {
 
 export function evaluatePreservedPaths(paths, baseline) {
   const preserved = preservedOverlayPaths(baseline)
+  const retired = retiredPreservedPaths(baseline)
   return [...new Set(paths)]
-    .filter((path) => preserved.has(path))
+    .filter((path) => preserved.has(path) && !retired.has(path))
     .sort()
     .map(
       (path) =>
         `${path} differs from the pre-upgrade product ref; restore it and port upstream changes separately`,
     )
+}
+
+export function evaluateRetiredPreservedPaths(baseline, readPath) {
+  return (baseline.retired_preserved_paths || []).flatMap((retirement) => {
+    try {
+      readPath(retirement.path)
+      return [`${retirement.path} is retired but still exists`]
+    } catch {
+      // The retired implementation must be absent; its decision remains protected below.
+    }
+    try {
+      const decision = readPath(retirement.decision)
+      if (!decision.isRegularFile) {
+        return [`retirement decision is not a regular file: ${retirement.decision}`]
+      }
+      if (!decision.content.toString('utf8').includes(retirement.path)) {
+        return [`retirement decision ${retirement.decision} does not name ${retirement.path}`]
+      }
+    } catch {
+      return [`retirement decision is missing: ${retirement.decision}`]
+    }
+    return []
+  })
 }
 
 export function evaluateProductReference(productCommit, headCommit) {
@@ -364,13 +428,21 @@ export function evaluatePreserveRegistryContinuity(baseline, productBaseline) {
     ? productBaseline.preserve_on_upstream_sync
     : []
   const current = new Set(baseline.preserve_on_upstream_sync)
-  return [...new Set(previous)]
-    .filter((path) => !current.has(path))
+  const retired = retiredPreservedPaths(baseline)
+  const violations = [...new Set(previous)]
+    .filter((path) => !current.has(path) && !retired.has(path))
     .sort()
     .map(
       (path) =>
         `${path} was protected at the pre-upgrade product ref and cannot be removed during upstream sync`,
     )
+  const previousRetired = new Set(
+    (productBaseline.retired_preserved_paths || []).map(({ path }) => path),
+  )
+  for (const path of previousRetired) {
+    if (!retired.has(path)) violations.push(`${path} retirement record cannot be removed`)
+  }
+  return violations.sort()
 }
 
 export function evaluateRecordedUpstreamSync({
@@ -602,6 +674,7 @@ export function main(argv = process.argv.slice(2)) {
     ...recordedSyncViolations,
     ...evaluateProductReference(productCommit, headCommit),
     ...evaluatePreservedPaths(productChanges, baseline),
+    ...evaluateRetiredPreservedPaths(baseline, readPath),
     ...evaluateApprovedBackportContents(baseline, readPath),
   ]
   if (violations.length) throw new Error(`upstream boundary violations:\n- ${violations.join('\n- ')}`)

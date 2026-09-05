@@ -26,7 +26,7 @@ export function verifyOnlineImageConsole(consoleDir) {
   const registrationEntry = index.slice(registrationStart, standardStart)
   const standardEntry = index.slice(standardStart, entryEnd)
   const adapterImport = 'import("/assets/online-image-v14/online-image.js")'
-  const shellImport = 'import("/assets/cn-provider-shell-v6/index-9xJBhx8B.js")'
+  const shellImport = 'import("/assets/cn-provider-shell-v7/index-9xJBhx8B.js")'
   requireMarkers(registrationEntry, [adapterImport, shellImport], 'Registration Console entry')
   requireMarkers(standardEntry, [`await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
   if (
@@ -37,7 +37,7 @@ export function verifyOnlineImageConsole(consoleDir) {
   }
 
   const shell = read(
-    resolve(consoleDir, 'assets/cn-provider-shell-v6/index-9xJBhx8B.js'),
+    resolve(consoleDir, 'assets/cn-provider-shell-v7/index-9xJBhx8B.js'),
     'Approved Console shell',
   )
   requireMarkers(shell, [

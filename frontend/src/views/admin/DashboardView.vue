@@ -8,46 +8,41 @@
       <template v-else-if="stats">
         <!-- Row 1: Core Stats -->
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <!-- Total API Keys -->
+          <!-- Total Consumption -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-gray-100 p-2 dark:bg-dark-700">
-                <Icon name="key" size="md" class="text-gray-700 dark:text-gray-200" :stroke-width="2" />
+                <Icon name="dollar" size="md" class="text-gray-700 dark:text-gray-200" :stroke-width="2" />
               </div>
               <div>
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.apiKeys') }}
+                  {{ t('admin.dashboard.totalCost') }}
                 </p>
                 <p class="text-xl font-bold text-gray-900 dark:text-white">
-                  {{ stats.total_api_keys }}
+                  ${{ formatMoney(stats.total_actual_cost) }}
                 </p>
-                <p class="text-xs text-zo-signal-600 dark:text-zo-signal-400">
-                  {{ stats.active_api_keys }} {{ t('common.active') }}
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.actual') }}
                 </p>
               </div>
             </div>
           </div>
 
-          <!-- Service Accounts -->
+          <!-- Today Consumption -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-gray-100 p-2 dark:bg-dark-700">
-                <Icon name="server" size="md" class="text-gray-700 dark:text-gray-200" :stroke-width="2" />
+                <Icon name="dollar" size="md" class="text-gray-700 dark:text-gray-200" :stroke-width="2" />
               </div>
               <div>
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.accounts') }}
+                  {{ t('admin.dashboard.todayCost') }}
                 </p>
                 <p class="text-xl font-bold text-gray-900 dark:text-white">
-                  {{ stats.total_accounts }}
+                  ${{ formatMoney(stats.today_actual_cost) }}
                 </p>
-                <p class="text-xs">
-                  <span class="text-zo-signal-600 dark:text-zo-signal-400"
-                    >{{ stats.normal_accounts }} {{ t('common.active') }}</span
-                  >
-                  <span v-if="stats.error_accounts > 0" class="ml-1 text-red-500"
-                    >{{ stats.error_accounts }} {{ t('common.error') }}</span
-                  >
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.actual') }}
                 </p>
               </div>
             </div>
@@ -591,6 +586,13 @@ const formatTokens = (value: number | undefined): string => {
 
 const formatNumber = (value: number | null | undefined): string => {
   return toFiniteNumber(value).toLocaleString()
+}
+
+const formatMoney = (value: number | null | undefined): string => {
+  return toFiniteNumber(value).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 }
 
 const formatDuration = (ms: number): string => {

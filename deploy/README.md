@@ -200,7 +200,7 @@ SELECT
 - Docker 场景下需把宿主机 Socket 挂载到容器内同路径
 - 详细步骤见：`deploy/DATAMANAGEMENTD_CN.md`
 
-### Commands
+### Docker Compose Commands
 
 For **local directory version** (docker-compose.local.yml):
 
@@ -414,7 +414,7 @@ curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install
    ```
 5. Open the Setup Wizard in your browser to complete configuration
 
-### Commands
+### Binary Installation Commands
 
 ```bash
 # Install
@@ -449,7 +449,7 @@ sudo journalctl -u sub2api -f
 sudo systemctl enable sub2api
 ```
 
-### Configuration
+### Binary Installation Configuration
 
 #### Server Address and Port
 
@@ -615,7 +615,7 @@ Sub2API supports TLS fingerprint simulation to make requests appear as if they c
 - JA4: `t13d5911h1_a33745022dd6_1f22a2ca17c4`
 - Profile selection: `accountID % profileCount`
 
-### Configuration
+### TLS Fingerprint Configuration Example
 
 ```yaml
 gateway:

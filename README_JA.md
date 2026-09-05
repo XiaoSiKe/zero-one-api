@@ -224,7 +224,7 @@ Nginx はデフォルトでアンダースコアを含むヘッダー（例: `se
 
 GitHub Releases からビルド済みバイナリをダウンロードするワンクリックインストールスクリプトです。
 
-#### 前提条件
+#### スクリプトの前提条件
 
 - Linux サーバー（amd64 または arm64）
 - PostgreSQL 15+（インストール済みかつ稼働中）
@@ -262,7 +262,7 @@ sudo systemctl enable sub2api
 - Redis 設定
 - 管理者アカウントの作成
 
-#### アップグレード
+#### スクリプトのアップグレード
 
 **管理ダッシュボード**の左上にある**アップデートを確認**ボタンをクリックすることで、ダッシュボードから直接アップグレードできます。
 
@@ -271,7 +271,7 @@ Web インターフェースでは以下が可能です:
 - ワンクリックでのアップデートのダウンロードと適用
 - 必要に応じたロールバック
 
-#### よく使うコマンド
+#### スクリプトでよく使うコマンド
 
 ```bash
 # ステータスを確認
@@ -293,7 +293,7 @@ curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install
 
 PostgreSQL と Redis のコンテナを含む Docker Compose でデプロイします。
 
-#### 前提条件
+#### Docker の前提条件
 
 - Docker 20.10+
 - Docker Compose v2+
@@ -408,7 +408,7 @@ docker compose -f docker-compose.local.yml logs -f sub2api
 docker compose -f docker-compose.local.yml logs sub2api | grep "admin password"
 ```
 
-#### アップグレード
+#### Docker のアップグレード
 
 ```bash
 # 最新イメージをプルしてコンテナを再作成
@@ -435,7 +435,7 @@ cd sub2api-deploy/
 docker compose -f docker-compose.local.yml up -d
 ```
 
-#### よく使うコマンド
+#### Docker でよく使うコマンド
 
 ```bash
 # すべてのサービスを停止
@@ -474,7 +474,7 @@ cd sub2api/deploy
 
 開発やカスタマイズのためにソースコードからビルドして実行します。
 
-#### 前提条件
+#### ソースビルドの前提条件
 
 - Go 1.21+
 - Node.js 18+

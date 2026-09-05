@@ -19,6 +19,7 @@ async function provision() {
   assert.ok(backendImage && edgeImage, 'Provide the candidate Backend and Edge image names')
   const prefix = `zero-one-recovery-${randomUUID().slice(0, 8)}`
   const names = { network: prefix, postgres: `${prefix}-postgres`, redis: `${prefix}-redis`, backend: `${prefix}-backend`, mail: `${prefix}-mail`, edge: `${prefix}-edge` }
+  state = { names }
   docker('network', 'create', '--label', 'verification=zero-one-password-recovery', names.network)
   ownedNetwork = names.network
   const run = (name, image, options = []) => {
@@ -36,8 +37,23 @@ async function provision() {
       await sleep(500)
     }
   }
+  for (let attempt = 0; ; attempt += 1) {
+    try { docker('exec', names.redis, 'redis-cli', 'ping'); break } catch (error) {
+      if (attempt >= 60) throw error
+      await sleep(500)
+    }
+  }
   const env = { AUTO_SETUP: 'true', SERVER_HOST: '0.0.0.0', SERVER_PORT: '8080', SERVER_MODE: 'release', DATABASE_HOST: 'postgres', DATABASE_PORT: '5432', DATABASE_USER: 'verification', DATABASE_PASSWORD: databasePassword, DATABASE_DBNAME: 'verification', DATABASE_SSLMODE: 'disable', REDIS_HOST: 'redis', REDIS_PORT: '6379', ADMIN_EMAIL: adminEmail, ADMIN_PASSWORD: adminPassword, JWT_SECRET: randomBytes(32).toString('hex'), TOTP_ENCRYPTION_KEY: randomBytes(32).toString('hex'), TZ: 'Asia/Shanghai' }
   run(names.backend, backendImage, ['--network', names.network, '--network-alias', 'sub2api', '-p', '127.0.0.1::8025', ...Object.entries(env).flatMap(([key, value]) => ['-e', `${key}=${value}`])])
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      docker('exec', names.backend, 'wget', '-q', '-T', '2', '-O', '/dev/null', 'http://127.0.0.1:8080/health')
+      break
+    } catch (error) {
+      if (attempt >= 120) throw error
+      await sleep(500)
+    }
+  }
   run(names.mail, 'axllent/mailpit:v1.30.0', ['--network', `container:${names.backend}`, '-e', 'MP_SMTP_BIND_ADDR=127.0.0.1:1025', '-e', 'MP_SMTP_AUTH_ACCEPT_ANY=true', '-e', 'MP_SMTP_AUTH_ALLOW_INSECURE=true', '-e', 'MP_DISABLE_VERSION_CHECK=true'])
   run(names.edge, edgeImage, ['--network', names.network, '-p', '127.0.0.1::80', '-v', `${root}/deploy/zero-one/Caddyfile.preview:/etc/caddy/Caddyfile:ro`])
   const port = (name, key) => JSON.parse(docker('inspect', name))[0].NetworkSettings.Ports[key][0].HostPort
@@ -56,6 +72,13 @@ try {
     assert.ok(attempt < 120, 'Candidate Backend did not become healthy')
     await sleep(500)
   }
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      if ((await fetch(`${mailOrigin}/api/v1/messages`, { signal: AbortSignal.timeout(1500) })).ok) break
+    } catch {}
+    assert.ok(attempt < 60, 'Mailpit did not become healthy')
+    await sleep(250)
+  }
 
   async function api(path, { method = 'GET', body, token, status = 200 } = {}) {
     const response = await fetch(`${origin}/api/v1${path}`, {
@@ -64,7 +87,7 @@ try {
       body: body === undefined ? undefined : JSON.stringify(body)
     })
     const payload = await response.json()
-    assert.equal(response.status, status, `${path}: unexpected HTTP status (reason: ${payload.reason || payload.code})`)
+    assert.equal(response.status, status, `${path}: unexpected HTTP status (reason: ${payload.reason || payload.message || payload.code})`)
     if (status === 200) assert.equal(payload.code, 0, `${path}: request failed`)
     return payload.data ?? payload
   }
