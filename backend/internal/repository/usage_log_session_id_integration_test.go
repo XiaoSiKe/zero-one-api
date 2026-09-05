@@ -25,19 +25,25 @@ func TestUsageLog_SessionIDPersistence(t *testing.T) {
 	account := mustCreateAccount(t, client, &service.Account{Name: "acc-session-" + uuid.NewString()})
 
 	sessionID := "sess-" + uuid.NewString()
+	upstreamID := "upstream-" + uuid.NewString()
+	declaredRate := 0.223456789
+	accountCost := 0.5
 
 	withSession := &service.UsageLog{
-		UserID:       user.ID,
-		APIKeyID:     apiKey.ID,
-		AccountID:    account.ID,
-		RequestID:    uuid.NewString(),
-		Model:        "claude-3",
-		InputTokens:  10,
-		OutputTokens: 5,
-		TotalCost:    1.0,
-		ActualCost:   1.0,
-		SessionID:    &sessionID,
-		CreatedAt:    time.Now().UTC(),
+		UserID:                 user.ID,
+		APIKeyID:               apiKey.ID,
+		AccountID:              account.ID,
+		RequestID:              uuid.NewString(),
+		Model:                  "claude-3",
+		InputTokens:            10,
+		OutputTokens:           5,
+		TotalCost:              1.0,
+		ActualCost:             1.0,
+		SessionID:              &sessionID,
+		UpstreamRequestID:      &upstreamID,
+		UpstreamRateMultiplier: &declaredRate,
+		AccountStatsCost:       &accountCost,
+		CreatedAt:              time.Now().UTC(),
 	}
 	_, err := repo.Create(ctx, withSession)
 	require.NoError(t, err)
@@ -63,9 +69,14 @@ func TestUsageLog_SessionIDPersistence(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, got.SessionID)
 	require.Equal(t, sessionID, *got.SessionID)
+	require.Equal(t, &upstreamID, got.UpstreamRequestID)
+	require.Equal(t, &declaredRate, got.UpstreamRateMultiplier)
+	require.Equal(t, &accountCost, got.AccountStatsCost)
 
 	// Omission: absent session id reads back as nil (NULL), not empty string.
 	gotNone, err := repo.GetByID(ctx, withoutSession.ID)
 	require.NoError(t, err)
 	require.Nil(t, gotNone.SessionID)
+	require.Nil(t, gotNone.UpstreamRequestID)
+	require.Nil(t, gotNone.UpstreamRateMultiplier)
 }

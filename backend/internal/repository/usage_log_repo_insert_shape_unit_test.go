@@ -115,8 +115,8 @@ func TestUsageLogStaticInsertShape_PlaceholdersMatchArgTypes(t *testing.T) {
 	})
 }
 
-// TestPrepareUsageLogInsert_UpstreamRequestIDArgWiring 把 upstream_request_id 钉在
-// session_id 之前，与参数类型表保持同位；缺失时落 NULL 而不是空串。
+// The request ID must bind to its named column even when product billing columns
+// extend the upstream schema; omission must remain SQL NULL.
 func TestPrepareUsageLogInsert_UpstreamRequestIDArgWiring(t *testing.T) {
 	upstreamRequestID := "req_upstream_123"
 	prepared := prepareUsageLogInsert(&service.UsageLog{
@@ -129,7 +129,14 @@ func TestPrepareUsageLogInsert_UpstreamRequestIDArgWiring(t *testing.T) {
 	})
 	require.Len(t, prepared.args, len(usageLogInsertArgTypes))
 
-	idx := len(prepared.args) - 4
+	idx := -1
+	for i, column := range usageLogColumnDefinitions {
+		if column.name == "upstream_request_id" {
+			idx = i
+			break
+		}
+	}
+	require.NotEqual(t, -1, idx, "request ID must be registered in the shared insert/read projection")
 	arg, ok := prepared.args[idx].(sql.NullString)
 	require.True(t, ok, "upstream_request_id arg should be sql.NullString, got %T", prepared.args[idx])
 	require.True(t, arg.Valid)

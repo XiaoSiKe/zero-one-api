@@ -633,6 +633,8 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 		safeErr := sanitizeUpstreamErrorMessage(err.Error())
 		setOpsUpstreamError(c, 0, safeErr, "")
 		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+			ProxyID:            opsUpstreamProxyID(account),
+			ProxyName:          opsUpstreamProxyName(account),
 			Platform:           account.Platform,
 			AccountID:          account.ID,
 			AccountName:        account.Name,
@@ -652,6 +654,8 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 		upstreamMsg = sanitizeUpstreamErrorMessage(upstreamMsg)
 		if s.shouldFailoverOpenAIUpstreamResponse(resp.StatusCode, upstreamMsg, respBody) {
 			appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+				ProxyID:            opsUpstreamProxyID(account),
+				ProxyName:          opsUpstreamProxyName(account),
 				Platform:           account.Platform,
 				AccountID:          account.ID,
 				AccountName:        account.Name,
@@ -684,6 +688,7 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 			if streamCount > 0 {
 				return &OpenAIForwardResult{
 					RequestID:        resp.Header.Get("x-request-id"),
+					UpstreamHeaders:  resp.Header,
 					Usage:            streamUsage,
 					Model:            requestModel,
 					UpstreamModel:    upstreamModel,
@@ -705,6 +710,7 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 		firstTokenMs = ttft
 		return &OpenAIForwardResult{
 			RequestID:        resp.Header.Get("x-request-id"),
+			UpstreamHeaders:  resp.Header,
 			Usage:            usage,
 			Model:            requestModel,
 			UpstreamModel:    upstreamModel,
@@ -719,7 +725,7 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 		}, nil
 	} else {
 		nonStreamUsage, nonStreamCount, nonStreamSizes, err := s.handleOpenAIImagesNonStreamingResponse(
-			resp, c, parsed.ResponseFormat, proxyURL, account,
+			upstreamCtx, resp, c, parsed.ResponseFormat, proxyURL, account,
 		)
 		if err != nil {
 			return nil, err
@@ -730,6 +736,7 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 		}
 		return &OpenAIForwardResult{
 			RequestID:        resp.Header.Get("x-request-id"),
+			UpstreamHeaders:  resp.Header,
 			Usage:            usage,
 			Model:            requestModel,
 			UpstreamModel:    upstreamModel,
@@ -892,6 +899,7 @@ func cloneMultipartHeader(src textproto.MIMEHeader) textproto.MIMEHeader {
 }
 
 func (s *OpenAIGatewayService) handleOpenAIImagesNonStreamingResponse(
+	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
 	responseFormat string,
@@ -904,7 +912,7 @@ func (s *OpenAIGatewayService) handleOpenAIImagesNonStreamingResponse(
 	}
 	if strings.EqualFold(strings.TrimSpace(responseFormat), "b64_json") {
 		normalized, normalizeErr := normalizeOpenAIImagesB64JSON(
-			c.Request.Context(),
+			ctx,
 			body,
 			func(ctx context.Context, rawURL string) ([]byte, string, error) {
 				return s.downloadOpenAIImagesAPIKeyResult(ctx, rawURL, proxyURL, account)
@@ -918,6 +926,8 @@ func (s *OpenAIGatewayService) handleOpenAIImagesNonStreamingResponse(
 			// into a retry that could generate and charge for the image twice.
 			logger.LegacyPrintf("service.openai_gateway", "[OpenAI] image URL could not be normalized to b64_json; preserving upstream response")
 		}
+	} else {
+		body = s.backfillOpenAIImagesB64JSON(ctx, account, &OpenAIImagesRequest{ResponseFormat: responseFormat}, body)
 	}
 	responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
 	contentType := "application/json"
@@ -1003,7 +1013,7 @@ func (s *OpenAIGatewayService) downloadOpenAIImagesAPIKeyResult(
 	}
 
 	requestCtx, cancel := context.WithTimeout(
-		WithHTTPUpstreamRedirectsDisabled(WithHTTPUpstreamProfile(ctx, HTTPUpstreamProfileOpenAI)),
+		WithHTTPUpstreamPublicHostsOnly(WithHTTPUpstreamRedirectsDisabled(WithHTTPUpstreamProfile(ctx, HTTPUpstreamProfileOpenAI))),
 		60*time.Second,
 	)
 	defer cancel()

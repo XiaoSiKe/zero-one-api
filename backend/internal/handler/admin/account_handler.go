@@ -200,7 +200,7 @@ type AccountWithConcurrency struct {
 }
 
 // AccountListItemWithConcurrency is the compact account-list envelope used
-// for lite=1. It embeds dto.AccountListItem instead of the full dto.Account,
+// for compact=1. It embeds dto.AccountListItem instead of the full dto.Account,
 // so groups/account_groups never appear in the list payload.
 type AccountListItemWithConcurrency struct {
 	*dto.AccountListItem
@@ -536,6 +536,8 @@ func (h *AccountHandler) List(c *gin.Context) {
 		search = search[:100]
 	}
 	lite := parseBoolQueryWithDefault(c.Query("lite"), false)
+	// The approved Console still consumes groups from legacy lite responses.
+	compactResponse := parseBoolQueryWithDefault(c.Query("compact"), false)
 	// 调度分需要跨候选池批量打分并读取负载，默认列表不计算；只有前端列可见时才显式开启。
 	includeSchedulerScore := parseBoolQueryWithDefault(c.Query("include_scheduler_score"), false)
 
@@ -675,7 +677,7 @@ func (h *AccountHandler) List(c *gin.Context) {
 	for i := range accounts {
 		acc := &accounts[i]
 		accountResponse := h.accountResponseFromService(acc)
-		if lite {
+		if compactResponse {
 			accountResponse = h.accountListResponseFromService(acc)
 		}
 		item := AccountWithConcurrency{
@@ -711,7 +713,7 @@ func (h *AccountHandler) List(c *gin.Context) {
 
 	h.enrichShadowParents(c.Request.Context(), result)
 
-	if lite {
+	if compactResponse {
 		compact := make([]AccountListItemWithConcurrency, len(result))
 		for i := range result {
 			item := result[i]
@@ -725,7 +727,7 @@ func (h *AccountHandler) List(c *gin.Context) {
 				CurrentRPM:         item.CurrentRPM,
 			}
 		}
-		etag := buildAccountsListETag(compact, total, page, pageSize, platform, accountType, status, search, true)
+		etag := buildAccountsListETag(compact, total, page, pageSize, platform, accountType, status, search, true, true)
 		if etag != "" {
 			c.Header("ETag", etag)
 			c.Header("Vary", "If-None-Match")
@@ -738,7 +740,7 @@ func (h *AccountHandler) List(c *gin.Context) {
 		return
 	}
 
-	etag := buildAccountsListETag(result, total, page, pageSize, platform, accountType, status, search, false)
+	etag := buildAccountsListETag(result, total, page, pageSize, platform, accountType, status, search, lite, false)
 	if etag != "" {
 		c.Header("ETag", etag)
 		c.Header("Vary", "If-None-Match")
@@ -756,7 +758,7 @@ func buildAccountsListETag[T any](
 	total int64,
 	page, pageSize int,
 	platform, accountType, status, search string,
-	lite bool,
+	lite, compact bool,
 ) string {
 	payload := struct {
 		Total       int64  `json:"total"`
@@ -767,6 +769,7 @@ func buildAccountsListETag[T any](
 		Status      string `json:"status"`
 		Search      string `json:"search"`
 		Lite        bool   `json:"lite"`
+		Compact     bool   `json:"compact"`
 		Items       []T    `json:"items"`
 	}{
 		Total:       total,
@@ -777,6 +780,7 @@ func buildAccountsListETag[T any](
 		Status:      status,
 		Search:      search,
 		Lite:        lite,
+		Compact:     compact,
 		Items:       items,
 	}
 	raw, err := json.Marshal(payload)

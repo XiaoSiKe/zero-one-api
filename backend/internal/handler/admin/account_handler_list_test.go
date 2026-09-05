@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccountHandlerListLiteUsesCompactDTOAndETag(t *testing.T) {
+func TestAccountHandlerListCompactUsesCompactDTOAndETag(t *testing.T) {
 	router, adminSvc := setupAccountListRouter()
 	now := time.Now().UTC()
 	groupID := int64(77)
@@ -31,7 +31,7 @@ func TestAccountHandlerListLiteUsesCompactDTOAndETag(t *testing.T) {
 	}}
 
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts?page=1&page_size=20&lite=1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts?page=1&page_size=20&compact=1", nil)
 	router.ServeHTTP(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.NotEmpty(t, rec.Header().Get("ETag"))
@@ -59,14 +59,15 @@ func TestAccountHandlerListLiteUsesCompactDTOAndETag(t *testing.T) {
 
 	// The ETag must represent the same compact body and return 304 on refresh.
 	rec304 := httptest.NewRecorder()
-	req304 := httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts?page=1&page_size=20&lite=1", nil)
+	req304 := httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts?page=1&page_size=20&compact=1", nil)
 	req304.Header.Set("If-None-Match", rec.Header().Get("ETag"))
 	router.ServeHTTP(rec304, req304)
 	require.Equal(t, http.StatusNotModified, rec304.Code)
 
-	// Omitting lite preserves the legacy full response shape.
+	// Legacy lite=1 must preserve the groups used by the approved Console.
 	recFull := httptest.NewRecorder()
-	reqFull := httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts?page=1&page_size=20", nil)
+	reqFull := httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts?page=1&page_size=20&lite=1", nil)
+	reqFull.Header.Set("If-None-Match", rec.Header().Get("ETag"))
 	router.ServeHTTP(recFull, reqFull)
 	require.Equal(t, http.StatusOK, recFull.Code)
 	var fullPayload struct {
@@ -79,7 +80,7 @@ func TestAccountHandlerListLiteUsesCompactDTOAndETag(t *testing.T) {
 	require.Contains(t, fullPayload.Data.Items[0], "account_groups")
 }
 
-func TestAccountHandlerListLiteStaysBelowResponseBudget(t *testing.T) {
+func TestAccountHandlerListCompactStaysBelowResponseBudget(t *testing.T) {
 	router, adminSvc := setupAccountListRouter()
 	now := time.Now().UTC()
 	accounts := make([]service.Account, 20)
@@ -98,7 +99,7 @@ func TestAccountHandlerListLiteStaysBelowResponseBudget(t *testing.T) {
 	adminSvc.accounts = accounts
 
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts?page=1&page_size=20&lite=1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts?page=1&page_size=20&compact=1", nil)
 	router.ServeHTTP(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Less(t, rec.Body.Len(), 80*1024)
@@ -404,4 +405,17 @@ func TestAccountHandlerListSchedulerScoreIgnoresPagination(t *testing.T) {
 	require.Equal(t, int64(301), payload.Data.Items[0].ID)
 	require.Less(t, payload.Data.Items[0].SchedulerScore.BaseScore, 3.75)
 	require.Empty(t, payload.Data.Items[0].SchedulerScores)
+}
+
+func TestAccountHandlerEmptyCompactListDoesNotShareLegacyETag(t *testing.T) {
+	router, svc := setupAccountListRouter()
+	svc.accounts = []service.Account{}
+	legacy := httptest.NewRecorder()
+	router.ServeHTTP(legacy, httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts?lite=1", nil))
+	compact := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts?compact=1", nil)
+	request.Header.Set("If-None-Match", legacy.Header().Get("ETag"))
+	router.ServeHTTP(compact, request)
+	require.Equal(t, http.StatusOK, compact.Code)
+	require.NotEqual(t, legacy.Header().Get("ETag"), compact.Header().Get("ETag"))
 }

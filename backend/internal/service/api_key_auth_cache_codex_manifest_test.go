@@ -41,3 +41,25 @@ func TestAPIKeyAuthSnapshotGroupCodexModelsManifestRoundtrip(t *testing.T) {
 	require.True(t, materialized.Group.CodexModelsManifestConfig.FallbackToScheduler)
 	require.Equal(t, apiKeyAuthSnapshotVersion, cached.Snapshot.Version)
 }
+
+func TestAPIKeyAuthSnapshotCodexManifestDoesNotAliasRequests(t *testing.T) {
+	svc := &APIKeyService{}
+	key := profitAuthTestAPIKey()
+	key.Group.CodexModelsManifestConfig = GroupCodexModelsManifestConfig{Enabled: true, AccountIDs: []int64{7, 8}}
+	snapshot := svc.snapshotFromAPIKey(context.Background(), key)
+	key.Group.CodexModelsManifestConfig.AccountIDs[0] = 99
+	require.Equal(t, []int64{7, 8}, snapshot.Group.CodexModelsManifestConfig.AccountIDs)
+	request, used, err := svc.applyAuthCacheEntry(key.Key, &APIKeyAuthCacheEntry{Snapshot: snapshot})
+	require.NoError(t, err)
+	require.True(t, used)
+	request.Group.CodexModelsManifestConfig.AccountIDs[1] = 100
+	require.Equal(t, []int64{7, 8}, snapshot.Group.CodexModelsManifestConfig.AccountIDs)
+}
+
+func TestAPIKeyAuthSnapshotRejectsV22WithoutCodexManifest(t *testing.T) {
+	svc := &APIKeyService{}
+	key, used, err := svc.applyAuthCacheEntry("legacy-v22", &APIKeyAuthCacheEntry{Snapshot: &APIKeyAuthSnapshot{Version: 22}})
+	require.NoError(t, err)
+	require.False(t, used)
+	require.Nil(t, key)
+}

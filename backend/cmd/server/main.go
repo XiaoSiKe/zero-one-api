@@ -59,10 +59,22 @@ func main() {
 	// Parse command line flags
 	setupMode := flag.Bool("setup", false, "Run setup wizard in CLI mode")
 	showVersion := flag.Bool("version", false, "Show version information")
+	migrateOnly := flag.Bool("migrate-only", false, "Apply database migrations without starting the server or background jobs")
 	flag.Parse()
 
 	if *showVersion {
 		log.Printf("Sub2API %s (commit: %s, built: %s)\n", Version, Commit, Date)
+		return
+	}
+
+	if *migrateOnly {
+		if *setupMode {
+			log.Fatal("--migrate-only cannot be combined with --setup")
+		}
+		if err := runMigrationsOnly(); err != nil {
+			log.Fatalf("Migration failed: %v", err)
+		}
+		log.Println("Database migrations completed; no application services started")
 		return
 	}
 

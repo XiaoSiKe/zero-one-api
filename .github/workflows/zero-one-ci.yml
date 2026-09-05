@@ -192,6 +192,8 @@ jobs:
         run: sh deploy/zero-one/test-safe-edge-switch.sh
       - name: Build source-revision Sub2API image
         run: docker build --file Dockerfile --tag zero-one-sub2api:sha-${{ github.sha }} .
+      - name: Verify migration-only mode in an isolated database
+        run: node deploy/zero-one/test-migrate-only.mjs zero-one-sub2api:sha-${{ github.sha }}
       - name: Build source-revision edge image
         run: >-
           docker build --build-arg VITE_LOCAL_EDGE_PREVIEW=false

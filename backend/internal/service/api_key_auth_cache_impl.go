@@ -8,13 +8,14 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand/v2"
+	"slices"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 22 // v22: group Fast and reasoning policy fields; retains v20 pricing isolation
+const apiKeyAuthSnapshotVersion = 23 // v23: Codex manifest; preserves group pricing and policy isolation
 
 func cloneAPIKeyAuthModelPricing(pricing []ChannelModelPricing) []ChannelModelPricing {
 	if pricing == nil {
@@ -31,6 +32,9 @@ func cloneAPIKeyAuthModelPricing(pricing []ChannelModelPricing) []ChannelModelPr
 		cloned[i].ImageInputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].ImageInputPrice)
 		cloned[i].ImageOutputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].ImageOutputPrice)
 		cloned[i].PerRequestPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].PerRequestPrice)
+		cloned[i].FastMultiplier = cloneAPIKeyAuthFloat64Ptr(pricing[i].FastMultiplier)
+		cloned[i].FlexMultiplier = cloneAPIKeyAuthFloat64Ptr(pricing[i].FlexMultiplier)
+		cloned[i].MaxReasoningEffortMultiplier = cloneAPIKeyAuthFloat64Ptr(pricing[i].MaxReasoningEffortMultiplier)
 		for j := range pricing[i].Intervals {
 			cloned[i].Intervals[j].MaxTokens = cloneAPIKeyAuthIntPtr(pricing[i].Intervals[j].MaxTokens)
 			cloned[i].Intervals[j].InputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].Intervals[j].InputPrice)
@@ -42,6 +46,11 @@ func cloneAPIKeyAuthModelPricing(pricing []ChannelModelPricing) []ChannelModelPr
 		}
 	}
 	return cloned
+}
+
+func cloneAPIKeyAuthCodexManifest(value GroupCodexModelsManifestConfig) GroupCodexModelsManifestConfig {
+	value.AccountIDs = slices.Clone(value.AccountIDs)
+	return value
 }
 
 func cloneAPIKeyAuthFloat64Ptr(value *float64) *float64 {
@@ -467,6 +476,7 @@ func (s *APIKeyService) snapshotFromAPIKey(ctx context.Context, apiKey *APIKey) 
 			DefaultMappedModel:              apiKey.Group.DefaultMappedModel,
 			MessagesDispatchModelConfig:     apiKey.Group.MessagesDispatchModelConfig,
 			ModelsListConfig:                apiKey.Group.ModelsListConfig,
+			CodexModelsManifestConfig:       cloneAPIKeyAuthCodexManifest(apiKey.Group.CodexModelsManifestConfig),
 			RPMLimit:                        apiKey.Group.RPMLimit,
 			MaxReasoningEffort:              apiKey.Group.MaxReasoningEffort,
 			MaxReasoningEffortOverLimit:     apiKey.Group.MaxReasoningEffortOverLimit,
@@ -568,6 +578,7 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 			DefaultMappedModel:              snapshot.Group.DefaultMappedModel,
 			MessagesDispatchModelConfig:     snapshot.Group.MessagesDispatchModelConfig,
 			ModelsListConfig:                snapshot.Group.ModelsListConfig,
+			CodexModelsManifestConfig:       cloneAPIKeyAuthCodexManifest(snapshot.Group.CodexModelsManifestConfig),
 			RPMLimit:                        snapshot.Group.RPMLimit,
 			MaxReasoningEffort:              snapshot.Group.MaxReasoningEffort,
 			MaxReasoningEffortOverLimit:     snapshot.Group.MaxReasoningEffortOverLimit,
