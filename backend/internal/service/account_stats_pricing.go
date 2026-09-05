@@ -6,13 +6,13 @@ import (
 )
 
 // resolveAccountStatsCost 计算账号统计定价费用。
-// 返回 nil 表示不覆盖，使用默认公式（total_cost × account_rate_multiplier）。
+// 返回 nil 表示不覆盖，账号统计基础费用回退到 total_cost。
 //
 // 优先级（先命中为准）：
 //  1. 自定义规则（始终尝试，不依赖 ApplyPricingToAccountStats 开关）
 //  2. ApplyPricingToAccountStats 启用时，直接使用本次请求的客户计费（倍率前的 totalCost）
 //  3. 模型定价文件（LiteLLM）中上游模型的默认价格
-//  4. nil → 走默认公式（total_cost × account_rate_multiplier）
+//  4. nil → 基础费用回退到 total_cost（最终成本仍需有效上游声明倍率）
 //
 // upstreamModel 是最终发往上游的模型 ID。
 // totalCost 是本次请求的客户计费（倍率前），用于优先级 2。

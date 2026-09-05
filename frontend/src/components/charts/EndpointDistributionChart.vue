@@ -71,9 +71,10 @@
     <div v-if="loading" class="flex h-48 items-center justify-center">
       <LoadingSpinner />
     </div>
-    <div v-else-if="displayEndpointStats.length > 0 && chartData" class="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
+    <div v-else-if="displayEndpointStats.length > 0" class="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
       <div class="h-48 w-48 shrink-0">
-        <Doughnut :data="chartData" :options="doughnutOptions" />
+        <Doughnut v-if="chartData" :data="chartData" :options="doughnutOptions" />
+        <span v-else class="text-sm text-gray-500">成本待确认</span>
       </div>
       <div class="max-h-48 w-full min-w-0 flex-1 overflow-auto">
         <table class="w-full text-xs">
@@ -235,19 +236,19 @@ const displayEndpointStats = computed(() => {
   if (!sourceStats?.length) return []
 
   const metricKey = props.metric === 'actual_cost' ? 'actual_cost' : 'total_tokens'
-  return [...sourceStats].sort((a, b) => b[metricKey] - a[metricKey])
+  return [...sourceStats].sort((a, b) => (b[metricKey] ?? -Infinity) - (a[metricKey] ?? -Infinity))
 })
 
 const chartData = computed(() => {
   if (!displayEndpointStats.value?.length) return null
 
+  const values = displayEndpointStats.value.map(item => props.metric === 'actual_cost' ? item.actual_cost : item.total_tokens)
+  if (values.some(value => value == null)) return null
   return {
     labels: displayEndpointStats.value.map((item) => item.endpoint),
     datasets: [
       {
-        data: displayEndpointStats.value.map((item) =>
-          props.metric === 'actual_cost' ? item.actual_cost : item.total_tokens
-        ),
+        data: values.filter((value): value is number => value !== null),
         backgroundColor: chartColors.slice(0, displayEndpointStats.value.length),
         borderWidth: 0
       }
@@ -293,7 +294,8 @@ const formatNumber = (value: number): string => {
   return value.toLocaleString()
 }
 
-const formatCost = (value: number): string => {
+const formatCost = (value: number | null | undefined): string => {
+  if (value == null) return '待确认'
   if (value >= 1000) {
     return (value / 1000).toFixed(2) + 'K'
   } else if (value >= 1) {

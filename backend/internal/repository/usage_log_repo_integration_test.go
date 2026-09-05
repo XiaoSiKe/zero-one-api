@@ -792,11 +792,11 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 	s.Require().Equal(baseStats.TotalTokens+int64(51), stats.TotalTokens, "TotalTokens mismatch")
 	s.Require().Equal(baseStats.TotalCost+2.3, stats.TotalCost, "TotalCost mismatch")
 	s.Require().Equal(baseStats.TotalActualCost+2.0, stats.TotalActualCost, "TotalActualCost mismatch")
-	// account_cost falls back to total_cost when account_stats_cost is NULL
-	s.Require().Equal(baseStats.TotalAccountCost+2.3, stats.TotalAccountCost, "TotalAccountCost mismatch")
+	// No stored declaration: historical local rates cannot confirm cost.
+	s.Require().Nil(stats.TotalAccountCost)
 	s.Require().GreaterOrEqual(stats.TodayRequests, int64(1), "expected TodayRequests >= 1")
 	s.Require().GreaterOrEqual(stats.TodayCost, 0.0, "expected TodayCost >= 0")
-	s.Require().GreaterOrEqual(stats.TodayAccountCost, 0.0, "expected TodayAccountCost >= 0")
+	s.Require().Nil(stats.TodayAccountCost)
 
 	wantRpm, wantTpm, err := s.repo.getPerformanceStats(s.ctx, 0)
 	s.Require().NoError(err, "getPerformanceStats")
@@ -875,8 +875,8 @@ func (s *UsageLogRepoSuite) TestDashboardStatsWithRange_Fallback() {
 	s.Require().Equal(int64(45), stats.TotalTokens)
 	s.Require().Equal(1.5, stats.TotalCost)
 	s.Require().Equal(1.4, stats.TotalActualCost)
-	// account_cost = COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1) = total_cost
-	s.Require().Equal(1.5, stats.TotalAccountCost)
+	// Missing historical declaration remains unknown.
+	s.Require().Nil(stats.TotalAccountCost)
 	s.Require().InEpsilon(150.0, stats.AverageDurationMs, 0.0001)
 }
 
@@ -907,31 +907,33 @@ func (s *UsageLogRepoSuite) TestGetAccountTodayStats() {
 	m1 := 1.5
 	m2 := 0.0
 	_, err := s.repo.Create(s.ctx, &service.UsageLog{
-		UserID:                user.ID,
-		APIKeyID:              apiKey.ID,
-		AccountID:             account.ID,
-		RequestID:             uuid.New().String(),
-		Model:                 "claude-3",
-		InputTokens:           10,
-		OutputTokens:          20,
-		TotalCost:             1.0,
-		ActualCost:            2.0,
-		AccountRateMultiplier: &m1,
-		CreatedAt:             createdAt,
+		UserID:                 user.ID,
+		APIKeyID:               apiKey.ID,
+		AccountID:              account.ID,
+		RequestID:              uuid.New().String(),
+		Model:                  "claude-3",
+		InputTokens:            10,
+		OutputTokens:           20,
+		TotalCost:              1.0,
+		ActualCost:             2.0,
+		AccountRateMultiplier:  &m1,
+		UpstreamRateMultiplier: &m1,
+		CreatedAt:              createdAt,
 	})
 	s.Require().NoError(err)
 	_, err = s.repo.Create(s.ctx, &service.UsageLog{
-		UserID:                user.ID,
-		APIKeyID:              apiKey.ID,
-		AccountID:             account.ID,
-		RequestID:             uuid.New().String(),
-		Model:                 "claude-3",
-		InputTokens:           5,
-		OutputTokens:          5,
-		TotalCost:             0.5,
-		ActualCost:            1.0,
-		AccountRateMultiplier: &m2,
-		CreatedAt:             createdAt,
+		UserID:                 user.ID,
+		APIKeyID:               apiKey.ID,
+		AccountID:              account.ID,
+		RequestID:              uuid.New().String(),
+		Model:                  "claude-3",
+		InputTokens:            5,
+		OutputTokens:           5,
+		TotalCost:              0.5,
+		ActualCost:             1.0,
+		AccountRateMultiplier:  &m2,
+		UpstreamRateMultiplier: &m2,
+		CreatedAt:              createdAt,
 	})
 	s.Require().NoError(err)
 
@@ -939,8 +941,9 @@ func (s *UsageLogRepoSuite) TestGetAccountTodayStats() {
 	s.Require().NoError(err, "GetAccountTodayStats")
 	s.Require().Equal(int64(2), stats.Requests)
 	s.Require().Equal(int64(40), stats.Tokens)
-	// account cost = SUM(total_cost * account_rate_multiplier)
-	s.Require().InEpsilon(1.5, stats.Cost, 0.0001)
+	// account cost uses the recorded upstream declaration.
+	s.Require().NotNil(stats.Cost)
+	s.Require().InEpsilon(1.5, *stats.Cost, 0.0001)
 	// standard cost = SUM(total_cost)
 	s.Require().InEpsilon(1.5, stats.StandardCost, 0.0001)
 	// user cost = SUM(actual_cost)

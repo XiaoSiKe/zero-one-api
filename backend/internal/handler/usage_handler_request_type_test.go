@@ -301,8 +301,8 @@ func TestUserUsageDashboardModelsOmitsAccountCost(t *testing.T) {
 			Requests:    2,
 			TotalTokens: 30,
 			Cost:        0.10,
-			ActualCost:  0.08,
-			AccountCost: 0.07,
+			ActualCost:  declaredCostTestPtr(0.08),
+			AccountCost: declaredCostTestPtr(0.07),
 		}},
 	}
 	router := newUserUsageRequestTypeTestRouter(repo)
@@ -331,8 +331,8 @@ func TestUserUsageDashboardModelsRejectsAdminModelSources(t *testing.T) {
 
 func TestUserUsageSnapshotUsesScopedFilters(t *testing.T) {
 	repo := &userUsageRepoCapture{
-		modelStats: []usagestats.ModelStat{{Model: "gpt-5", AccountCost: 0.07}},
-		groupStats: []usagestats.GroupStat{{GroupID: 1, GroupName: "default", AccountCost: 0.06}},
+		modelStats: []usagestats.ModelStat{{Model: "gpt-5", AccountCost: declaredCostTestPtr(0.07)}},
+		groupStats: []usagestats.GroupStat{{GroupID: 1, GroupName: "default", AccountCost: declaredCostTestPtr(0.06)}},
 	}
 	router := newUserUsageRequestTypeTestRouter(repo)
 
@@ -366,3 +366,5 @@ func TestUserUsageSnapshotRejectsInvalidIncludeFlags(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, rec.Code, query)
 	}
 }
+
+func declaredCostTestPtr(value float64) *float64 { return &value }

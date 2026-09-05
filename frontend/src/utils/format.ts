@@ -364,3 +364,23 @@ export function formatRelativeWithDateTime(date: string | Date | null | undefine
 
   return `${relativeTime} · ${dateTime}`
 }
+
+/** Preserve the Console analytics normalization used by counts and charts. */
+export function toFiniteNumber(value: unknown): number {
+  const numberValue = Number(value)
+  return Number.isFinite(numberValue) ? numberValue : 0
+}
+
+/** Compact Console cost display, including an explicit unconfirmed amount. */
+export function formatCompactCost(value: number | null | undefined): string {
+  if (value == null) return '待确认'
+  const safeValue = toFiniteNumber(value)
+  if (safeValue >= 1000) {
+    return (safeValue / 1000).toFixed(2) + 'K'
+  } else if (safeValue >= 1) {
+    return safeValue.toFixed(2)
+  } else if (safeValue >= 0.01) {
+    return safeValue.toFixed(3)
+  }
+  return safeValue.toFixed(4)
+}

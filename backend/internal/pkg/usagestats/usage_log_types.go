@@ -50,26 +50,26 @@ type DashboardStats struct {
 	OverloadAccounts  int64 `json:"overload_accounts"`  // 过载账户数
 
 	// 累计 Token 使用统计
-	TotalRequests            int64   `json:"total_requests"`
-	TotalInputTokens         int64   `json:"total_input_tokens"`
-	TotalOutputTokens        int64   `json:"total_output_tokens"`
-	TotalCacheCreationTokens int64   `json:"total_cache_creation_tokens"`
-	TotalCacheReadTokens     int64   `json:"total_cache_read_tokens"`
-	TotalTokens              int64   `json:"total_tokens"`
-	TotalCost                float64 `json:"total_cost"`         // 累计标准计费
-	TotalActualCost          float64 `json:"total_actual_cost"`  // 累计实际扣除
-	TotalAccountCost         float64 `json:"total_account_cost"` // 累计账号成本
+	TotalRequests            int64    `json:"total_requests"`
+	TotalInputTokens         int64    `json:"total_input_tokens"`
+	TotalOutputTokens        int64    `json:"total_output_tokens"`
+	TotalCacheCreationTokens int64    `json:"total_cache_creation_tokens"`
+	TotalCacheReadTokens     int64    `json:"total_cache_read_tokens"`
+	TotalTokens              int64    `json:"total_tokens"`
+	TotalCost                float64  `json:"total_cost"`         // 累计标准计费
+	TotalActualCost          float64  `json:"total_actual_cost"`  // 累计实际扣除
+	TotalAccountCost         *float64 `json:"total_account_cost"` // 累计账号成本
 
 	// 今日 Token 使用统计
-	TodayRequests            int64   `json:"today_requests"`
-	TodayInputTokens         int64   `json:"today_input_tokens"`
-	TodayOutputTokens        int64   `json:"today_output_tokens"`
-	TodayCacheCreationTokens int64   `json:"today_cache_creation_tokens"`
-	TodayCacheReadTokens     int64   `json:"today_cache_read_tokens"`
-	TodayTokens              int64   `json:"today_tokens"`
-	TodayCost                float64 `json:"today_cost"`         // 今日标准计费
-	TodayActualCost          float64 `json:"today_actual_cost"`  // 今日实际扣除
-	TodayAccountCost         float64 `json:"today_account_cost"` // 今日账号成本
+	TodayRequests            int64    `json:"today_requests"`
+	TodayInputTokens         int64    `json:"today_input_tokens"`
+	TodayOutputTokens        int64    `json:"today_output_tokens"`
+	TodayCacheCreationTokens int64    `json:"today_cache_creation_tokens"`
+	TodayCacheReadTokens     int64    `json:"today_cache_read_tokens"`
+	TodayTokens              int64    `json:"today_tokens"`
+	TodayCost                float64  `json:"today_cost"`         // 今日标准计费
+	TodayActualCost          float64  `json:"today_actual_cost"`  // 今日实际扣除
+	TodayAccountCost         *float64 `json:"today_account_cost"` // 今日账号成本
 
 	// 系统运行统计
 	AverageDurationMs float64 `json:"average_duration_ms"` // 平均响应时间
@@ -94,25 +94,25 @@ type TrendDataPoint struct {
 
 // ModelStat represents usage statistics for a single model
 type ModelStat struct {
-	Model               string  `json:"model"`
-	Requests            int64   `json:"requests"`
-	InputTokens         int64   `json:"input_tokens"`
-	OutputTokens        int64   `json:"output_tokens"`
-	CacheCreationTokens int64   `json:"cache_creation_tokens"`
-	CacheReadTokens     int64   `json:"cache_read_tokens"`
-	TotalTokens         int64   `json:"total_tokens"`
-	Cost                float64 `json:"cost"`         // 标准计费
-	ActualCost          float64 `json:"actual_cost"`  // 实际扣除
-	AccountCost         float64 `json:"account_cost"` // 账号成本
+	Model               string   `json:"model"`
+	Requests            int64    `json:"requests"`
+	InputTokens         int64    `json:"input_tokens"`
+	OutputTokens        int64    `json:"output_tokens"`
+	CacheCreationTokens int64    `json:"cache_creation_tokens"`
+	CacheReadTokens     int64    `json:"cache_read_tokens"`
+	TotalTokens         int64    `json:"total_tokens"`
+	Cost                float64  `json:"cost"`         // 标准计费
+	ActualCost          *float64 `json:"actual_cost"`  // 实际扣除
+	AccountCost         *float64 `json:"account_cost"` // 账号成本
 }
 
 // EndpointStat represents usage statistics for a single request endpoint.
 type EndpointStat struct {
-	Endpoint    string  `json:"endpoint"`
-	Requests    int64   `json:"requests"`
-	TotalTokens int64   `json:"total_tokens"`
-	Cost        float64 `json:"cost"`        // 标准计费
-	ActualCost  float64 `json:"actual_cost"` // 实际扣除
+	Endpoint    string   `json:"endpoint"`
+	Requests    int64    `json:"requests"`
+	TotalTokens int64    `json:"total_tokens"`
+	Cost        float64  `json:"cost"`        // 标准计费
+	ActualCost  *float64 `json:"actual_cost"` // 实际扣除
 }
 
 // GroupUsageSummary represents today's, yesterday's, and cumulative cost for a single group.
@@ -125,13 +125,13 @@ type GroupUsageSummary struct {
 
 // GroupStat represents usage statistics for a single group
 type GroupStat struct {
-	GroupID     int64   `json:"group_id"`
-	GroupName   string  `json:"group_name"`
-	Requests    int64   `json:"requests"`
-	TotalTokens int64   `json:"total_tokens"`
-	Cost        float64 `json:"cost"`         // 标准计费
-	ActualCost  float64 `json:"actual_cost"`  // 实际扣除
-	AccountCost float64 `json:"account_cost"` // 账号成本
+	GroupID     int64    `json:"group_id"`
+	GroupName   string   `json:"group_name"`
+	Requests    int64    `json:"requests"`
+	TotalTokens int64    `json:"total_tokens"`
+	Cost        float64  `json:"cost"`         // 标准计费
+	ActualCost  float64  `json:"actual_cost"`  // 实际扣除
+	AccountCost *float64 `json:"account_cost"` // 账号成本
 }
 
 // UserUsageTrendPoint represents user usage trend data point
@@ -166,16 +166,16 @@ type UserSpendingRankingResponse struct {
 
 // UserBreakdownItem represents per-user usage breakdown within a dimension (group, model, endpoint).
 type UserBreakdownItem struct {
-	UserID       int64   `json:"user_id"`
-	Email        string  `json:"email"`
-	Requests     int64   `json:"requests"`
-	InputTokens  int64   `json:"input_tokens"`  // 输入 token 累计
-	OutputTokens int64   `json:"output_tokens"` // 输出 token 累计
-	CacheTokens  int64   `json:"cache_tokens"`  // 缓存创建 + 读取 token 累计
-	TotalTokens  int64   `json:"total_tokens"`  // 输入+输出+缓存 token 累计
-	Cost         float64 `json:"cost"`          // 标准计费
-	ActualCost   float64 `json:"actual_cost"`   // 实际扣除
-	AccountCost  float64 `json:"account_cost"`  // 账号成本
+	UserID       int64    `json:"user_id"`
+	Email        string   `json:"email"`
+	Requests     int64    `json:"requests"`
+	InputTokens  int64    `json:"input_tokens"`  // 输入 token 累计
+	OutputTokens int64    `json:"output_tokens"` // 输出 token 累计
+	CacheTokens  int64    `json:"cache_tokens"`  // 缓存创建 + 读取 token 累计
+	TotalTokens  int64    `json:"total_tokens"`  // 输入+输出+缓存 token 累计
+	Cost         float64  `json:"cost"`          // 标准计费
+	ActualCost   float64  `json:"actual_cost"`   // 实际扣除
+	AccountCost  *float64 `json:"account_cost"`  // 账号成本
 }
 
 // UserBreakdownDimension specifies the dimension to filter for user breakdown.
@@ -332,49 +332,49 @@ type BatchAPIKeyUsageStats struct {
 
 // AccountUsageHistory represents daily usage history for an account
 type AccountUsageHistory struct {
-	Date       string  `json:"date"`
-	Label      string  `json:"label"`
-	Requests   int64   `json:"requests"`
-	Tokens     int64   `json:"tokens"`
-	Cost       float64 `json:"cost"`        // 标准计费（total_cost）
-	ActualCost float64 `json:"actual_cost"` // 账号口径费用（total_cost * account_rate_multiplier）
-	UserCost   float64 `json:"user_cost"`   // 用户口径费用（actual_cost，受分组倍率影响）
+	Date       string   `json:"date"`
+	Label      string   `json:"label"`
+	Requests   int64    `json:"requests"`
+	Tokens     int64    `json:"tokens"`
+	Cost       float64  `json:"cost"`        // 标准计费（total_cost）
+	ActualCost *float64 `json:"actual_cost"` // 账号口径费用（按历史上游声明，缺少依据为 nil）
+	UserCost   float64  `json:"user_cost"`   // 用户口径费用（actual_cost，受分组倍率影响）
 }
 
 // AccountUsageSummary represents summary statistics for an account
 type AccountUsageSummary struct {
-	Days              int     `json:"days"`
-	ActualDaysUsed    int     `json:"actual_days_used"`
-	TotalCost         float64 `json:"total_cost"`      // 账号口径费用
-	TotalUserCost     float64 `json:"total_user_cost"` // 用户口径费用
-	TotalStandardCost float64 `json:"total_standard_cost"`
-	TotalRequests     int64   `json:"total_requests"`
-	TotalTokens       int64   `json:"total_tokens"`
-	AvgDailyCost      float64 `json:"avg_daily_cost"` // 账号口径日均
-	AvgDailyUserCost  float64 `json:"avg_daily_user_cost"`
-	AvgDailyRequests  float64 `json:"avg_daily_requests"`
-	AvgDailyTokens    float64 `json:"avg_daily_tokens"`
-	AvgDurationMs     float64 `json:"avg_duration_ms"`
+	Days              int      `json:"days"`
+	ActualDaysUsed    int      `json:"actual_days_used"`
+	TotalCost         *float64 `json:"total_cost"`      // 账号口径费用
+	TotalUserCost     float64  `json:"total_user_cost"` // 用户口径费用
+	TotalStandardCost float64  `json:"total_standard_cost"`
+	TotalRequests     int64    `json:"total_requests"`
+	TotalTokens       int64    `json:"total_tokens"`
+	AvgDailyCost      *float64 `json:"avg_daily_cost"` // 账号口径日均
+	AvgDailyUserCost  float64  `json:"avg_daily_user_cost"`
+	AvgDailyRequests  float64  `json:"avg_daily_requests"`
+	AvgDailyTokens    float64  `json:"avg_daily_tokens"`
+	AvgDurationMs     float64  `json:"avg_duration_ms"`
 	Today             *struct {
-		Date     string  `json:"date"`
-		Cost     float64 `json:"cost"`
-		UserCost float64 `json:"user_cost"`
-		Requests int64   `json:"requests"`
-		Tokens   int64   `json:"tokens"`
+		Date     string   `json:"date"`
+		Cost     *float64 `json:"cost"`
+		UserCost float64  `json:"user_cost"`
+		Requests int64    `json:"requests"`
+		Tokens   int64    `json:"tokens"`
 	} `json:"today"`
 	HighestCostDay *struct {
-		Date     string  `json:"date"`
-		Label    string  `json:"label"`
-		Cost     float64 `json:"cost"`
-		UserCost float64 `json:"user_cost"`
-		Requests int64   `json:"requests"`
+		Date     string   `json:"date"`
+		Label    string   `json:"label"`
+		Cost     *float64 `json:"cost"`
+		UserCost float64  `json:"user_cost"`
+		Requests int64    `json:"requests"`
 	} `json:"highest_cost_day"`
 	HighestRequestDay *struct {
-		Date     string  `json:"date"`
-		Label    string  `json:"label"`
-		Requests int64   `json:"requests"`
-		Cost     float64 `json:"cost"`
-		UserCost float64 `json:"user_cost"`
+		Date     string   `json:"date"`
+		Label    string   `json:"label"`
+		Requests int64    `json:"requests"`
+		Cost     *float64 `json:"cost"`
+		UserCost float64  `json:"user_cost"`
 	} `json:"highest_request_day"`
 }
 

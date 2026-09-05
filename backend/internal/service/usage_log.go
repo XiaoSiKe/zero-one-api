@@ -168,9 +168,12 @@ type UsageLog struct {
 	ActualCost                float64
 	RateMultiplier            float64
 	LongContextBillingApplied bool
-	// AccountRateMultiplier 账号计费倍率快照（nil 表示历史数据，按 1.0 处理）
+	// AccountRateMultiplier 原本地账号倍率快照，保留审计；不作为上游成本来源
 	AccountRateMultiplier *float64
-	// AccountStatsCost 账号统计定价预计算费用（nil = 使用默认公式 total_cost × account_rate_multiplier）
+	// UpstreamRateMultiplier is the effective upstream declaration at request time.
+	// nil means unconfirmed, including legacy records; never fall back to the local rate.
+	UpstreamRateMultiplier *float64
+	// AccountStatsCost 账号统计定价预计算费用（nil = 基础费用回退到 total_cost）
 	AccountStatsCost *float64
 
 	BillingType        int8

@@ -44807,6 +44807,8 @@ type UsageLogMutation struct {
 	long_context_billing_applied *bool
 	account_rate_multiplier      *float64
 	addaccount_rate_multiplier   *float64
+	upstream_rate_multiplier     *float64
+	addupstream_rate_multiplier  *float64
 	billing_type                 *int8
 	addbilling_type              *int8
 	stream                       *bool
@@ -46469,6 +46471,76 @@ func (m *UsageLogMutation) ResetAccountRateMultiplier() {
 	delete(m.clearedFields, usagelog.FieldAccountRateMultiplier)
 }
 
+// SetUpstreamRateMultiplier sets the "upstream_rate_multiplier" field.
+func (m *UsageLogMutation) SetUpstreamRateMultiplier(f float64) {
+	m.upstream_rate_multiplier = &f
+	m.addupstream_rate_multiplier = nil
+}
+
+// UpstreamRateMultiplier returns the value of the "upstream_rate_multiplier" field in the mutation.
+func (m *UsageLogMutation) UpstreamRateMultiplier() (r float64, exists bool) {
+	v := m.upstream_rate_multiplier
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreamRateMultiplier returns the old "upstream_rate_multiplier" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldUpstreamRateMultiplier(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreamRateMultiplier is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreamRateMultiplier requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreamRateMultiplier: %w", err)
+	}
+	return oldValue.UpstreamRateMultiplier, nil
+}
+
+// AddUpstreamRateMultiplier adds f to the "upstream_rate_multiplier" field.
+func (m *UsageLogMutation) AddUpstreamRateMultiplier(f float64) {
+	if m.addupstream_rate_multiplier != nil {
+		*m.addupstream_rate_multiplier += f
+	} else {
+		m.addupstream_rate_multiplier = &f
+	}
+}
+
+// AddedUpstreamRateMultiplier returns the value that was added to the "upstream_rate_multiplier" field in this mutation.
+func (m *UsageLogMutation) AddedUpstreamRateMultiplier() (r float64, exists bool) {
+	v := m.addupstream_rate_multiplier
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearUpstreamRateMultiplier clears the value of the "upstream_rate_multiplier" field.
+func (m *UsageLogMutation) ClearUpstreamRateMultiplier() {
+	m.upstream_rate_multiplier = nil
+	m.addupstream_rate_multiplier = nil
+	m.clearedFields[usagelog.FieldUpstreamRateMultiplier] = struct{}{}
+}
+
+// UpstreamRateMultiplierCleared returns if the "upstream_rate_multiplier" field was cleared in this mutation.
+func (m *UsageLogMutation) UpstreamRateMultiplierCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldUpstreamRateMultiplier]
+	return ok
+}
+
+// ResetUpstreamRateMultiplier resets all changes to the "upstream_rate_multiplier" field.
+func (m *UsageLogMutation) ResetUpstreamRateMultiplier() {
+	m.upstream_rate_multiplier = nil
+	m.addupstream_rate_multiplier = nil
+	delete(m.clearedFields, usagelog.FieldUpstreamRateMultiplier)
+}
+
 // SetBillingType sets the "billing_type" field.
 func (m *UsageLogMutation) SetBillingType(i int8) {
 	m.billing_type = &i
@@ -47516,7 +47588,7 @@ func (m *UsageLogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UsageLogMutation) Fields() []string {
-	fields := make([]string, 0, 47)
+	fields := make([]string, 0, 48)
 	if m.user != nil {
 		fields = append(fields, usagelog.FieldUserID)
 	}
@@ -47606,6 +47678,9 @@ func (m *UsageLogMutation) Fields() []string {
 	}
 	if m.account_rate_multiplier != nil {
 		fields = append(fields, usagelog.FieldAccountRateMultiplier)
+	}
+	if m.upstream_rate_multiplier != nil {
+		fields = append(fields, usagelog.FieldUpstreamRateMultiplier)
 	}
 	if m.billing_type != nil {
 		fields = append(fields, usagelog.FieldBillingType)
@@ -47726,6 +47801,8 @@ func (m *UsageLogMutation) Field(name string) (ent.Value, bool) {
 		return m.LongContextBillingApplied()
 	case usagelog.FieldAccountRateMultiplier:
 		return m.AccountRateMultiplier()
+	case usagelog.FieldUpstreamRateMultiplier:
+		return m.UpstreamRateMultiplier()
 	case usagelog.FieldBillingType:
 		return m.BillingType()
 	case usagelog.FieldStream:
@@ -47829,6 +47906,8 @@ func (m *UsageLogMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldLongContextBillingApplied(ctx)
 	case usagelog.FieldAccountRateMultiplier:
 		return m.OldAccountRateMultiplier(ctx)
+	case usagelog.FieldUpstreamRateMultiplier:
+		return m.OldUpstreamRateMultiplier(ctx)
 	case usagelog.FieldBillingType:
 		return m.OldBillingType(ctx)
 	case usagelog.FieldStream:
@@ -48082,6 +48161,13 @@ func (m *UsageLogMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetAccountRateMultiplier(v)
 		return nil
+	case usagelog.FieldUpstreamRateMultiplier:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreamRateMultiplier(v)
+		return nil
 	case usagelog.FieldBillingType:
 		v, ok := value.(int8)
 		if !ok {
@@ -48254,6 +48340,9 @@ func (m *UsageLogMutation) AddedFields() []string {
 	if m.addaccount_rate_multiplier != nil {
 		fields = append(fields, usagelog.FieldAccountRateMultiplier)
 	}
+	if m.addupstream_rate_multiplier != nil {
+		fields = append(fields, usagelog.FieldUpstreamRateMultiplier)
+	}
 	if m.addbilling_type != nil {
 		fields = append(fields, usagelog.FieldBillingType)
 	}
@@ -48310,6 +48399,8 @@ func (m *UsageLogMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedRateMultiplier()
 	case usagelog.FieldAccountRateMultiplier:
 		return m.AddedAccountRateMultiplier()
+	case usagelog.FieldUpstreamRateMultiplier:
+		return m.AddedUpstreamRateMultiplier()
 	case usagelog.FieldBillingType:
 		return m.AddedBillingType()
 	case usagelog.FieldDurationMs:
@@ -48436,6 +48527,13 @@ func (m *UsageLogMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddAccountRateMultiplier(v)
 		return nil
+	case usagelog.FieldUpstreamRateMultiplier:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUpstreamRateMultiplier(v)
+		return nil
 	case usagelog.FieldBillingType:
 		v, ok := value.(int8)
 		if !ok {
@@ -48519,6 +48617,9 @@ func (m *UsageLogMutation) ClearedFields() []string {
 	if m.FieldCleared(usagelog.FieldAccountRateMultiplier) {
 		fields = append(fields, usagelog.FieldAccountRateMultiplier)
 	}
+	if m.FieldCleared(usagelog.FieldUpstreamRateMultiplier) {
+		fields = append(fields, usagelog.FieldUpstreamRateMultiplier)
+	}
 	if m.FieldCleared(usagelog.FieldDurationMs) {
 		fields = append(fields, usagelog.FieldDurationMs)
 	}
@@ -48598,6 +48699,9 @@ func (m *UsageLogMutation) ClearField(name string) error {
 		return nil
 	case usagelog.FieldAccountRateMultiplier:
 		m.ClearAccountRateMultiplier()
+		return nil
+	case usagelog.FieldUpstreamRateMultiplier:
+		m.ClearUpstreamRateMultiplier()
 		return nil
 	case usagelog.FieldDurationMs:
 		m.ClearDurationMs()
@@ -48729,6 +48833,9 @@ func (m *UsageLogMutation) ResetField(name string) error {
 		return nil
 	case usagelog.FieldAccountRateMultiplier:
 		m.ResetAccountRateMultiplier()
+		return nil
+	case usagelog.FieldUpstreamRateMultiplier:
+		m.ResetUpstreamRateMultiplier()
 		return nil
 	case usagelog.FieldBillingType:
 		m.ResetBillingType()

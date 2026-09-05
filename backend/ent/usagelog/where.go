@@ -205,6 +205,11 @@ func AccountRateMultiplier(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldAccountRateMultiplier, v))
 }
 
+// UpstreamRateMultiplier applies equality check predicate on the "upstream_rate_multiplier" field. It's identical to UpstreamRateMultiplierEQ.
+func UpstreamRateMultiplier(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamRateMultiplier, v))
+}
+
 // BillingType applies equality check predicate on the "billing_type" field. It's identical to BillingTypeEQ.
 func BillingType(v int8) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldBillingType, v))
@@ -1633,6 +1638,56 @@ func AccountRateMultiplierIsNil() predicate.UsageLog {
 // AccountRateMultiplierNotNil applies the NotNil predicate on the "account_rate_multiplier" field.
 func AccountRateMultiplierNotNil() predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldNotNull(FieldAccountRateMultiplier))
+}
+
+// UpstreamRateMultiplierEQ applies the EQ predicate on the "upstream_rate_multiplier" field.
+func UpstreamRateMultiplierEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamRateMultiplier, v))
+}
+
+// UpstreamRateMultiplierNEQ applies the NEQ predicate on the "upstream_rate_multiplier" field.
+func UpstreamRateMultiplierNEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldUpstreamRateMultiplier, v))
+}
+
+// UpstreamRateMultiplierIn applies the In predicate on the "upstream_rate_multiplier" field.
+func UpstreamRateMultiplierIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldUpstreamRateMultiplier, vs...))
+}
+
+// UpstreamRateMultiplierNotIn applies the NotIn predicate on the "upstream_rate_multiplier" field.
+func UpstreamRateMultiplierNotIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldUpstreamRateMultiplier, vs...))
+}
+
+// UpstreamRateMultiplierGT applies the GT predicate on the "upstream_rate_multiplier" field.
+func UpstreamRateMultiplierGT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldUpstreamRateMultiplier, v))
+}
+
+// UpstreamRateMultiplierGTE applies the GTE predicate on the "upstream_rate_multiplier" field.
+func UpstreamRateMultiplierGTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldUpstreamRateMultiplier, v))
+}
+
+// UpstreamRateMultiplierLT applies the LT predicate on the "upstream_rate_multiplier" field.
+func UpstreamRateMultiplierLT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldUpstreamRateMultiplier, v))
+}
+
+// UpstreamRateMultiplierLTE applies the LTE predicate on the "upstream_rate_multiplier" field.
+func UpstreamRateMultiplierLTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldUpstreamRateMultiplier, v))
+}
+
+// UpstreamRateMultiplierIsNil applies the IsNil predicate on the "upstream_rate_multiplier" field.
+func UpstreamRateMultiplierIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldUpstreamRateMultiplier))
+}
+
+// UpstreamRateMultiplierNotNil applies the NotNil predicate on the "upstream_rate_multiplier" field.
+func UpstreamRateMultiplierNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldUpstreamRateMultiplier))
 }
 
 // BillingTypeEQ applies the EQ predicate on the "billing_type" field.

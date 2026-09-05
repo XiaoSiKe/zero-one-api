@@ -50,8 +50,8 @@ type GeminiUsageTotals struct {
 	FlashRequests int64
 	ProTokens     int64
 	FlashTokens   int64
-	ProCost       float64
-	FlashCost     float64
+	ProCost       *float64
+	FlashCost     *float64
 }
 
 const geminiQuotaCacheTTL = time.Minute
@@ -406,17 +406,17 @@ func geminiModelClassFromName(model string) geminiModelClass {
 }
 
 func geminiAggregateUsage(stats []usagestats.ModelStat) GeminiUsageTotals {
-	var totals GeminiUsageTotals
+	totals := GeminiUsageTotals{ProCost: new(float64), FlashCost: new(float64)}
 	for _, stat := range stats {
 		switch geminiModelClassFromName(stat.Model) {
 		case geminiModelFlash:
 			totals.FlashRequests += stat.Requests
 			totals.FlashTokens += stat.TotalTokens
-			totals.FlashCost += stat.ActualCost
+			totals.FlashCost = usagestats.AddCosts(totals.FlashCost, stat.ActualCost)
 		default:
 			totals.ProRequests += stat.Requests
 			totals.ProTokens += stat.TotalTokens
-			totals.ProCost += stat.ActualCost
+			totals.ProCost = usagestats.AddCosts(totals.ProCost, stat.ActualCost)
 		}
 	}
 	return totals

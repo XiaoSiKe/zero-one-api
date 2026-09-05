@@ -407,6 +407,20 @@ func (_c *UsageLogCreate) SetNillableAccountRateMultiplier(v *float64) *UsageLog
 	return _c
 }
 
+// SetUpstreamRateMultiplier sets the "upstream_rate_multiplier" field.
+func (_c *UsageLogCreate) SetUpstreamRateMultiplier(v float64) *UsageLogCreate {
+	_c.mutation.SetUpstreamRateMultiplier(v)
+	return _c
+}
+
+// SetNillableUpstreamRateMultiplier sets the "upstream_rate_multiplier" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableUpstreamRateMultiplier(v *float64) *UsageLogCreate {
+	if v != nil {
+		_c.SetUpstreamRateMultiplier(*v)
+	}
+	return _c
+}
+
 // SetBillingType sets the "billing_type" field.
 func (_c *UsageLogCreate) SetBillingType(v int8) *UsageLogCreate {
 	_c.mutation.SetBillingType(v)
@@ -1066,6 +1080,10 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.AccountRateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldAccountRateMultiplier, field.TypeFloat64, value)
 		_node.AccountRateMultiplier = &value
+	}
+	if value, ok := _c.mutation.UpstreamRateMultiplier(); ok {
+		_spec.SetField(usagelog.FieldUpstreamRateMultiplier, field.TypeFloat64, value)
+		_node.UpstreamRateMultiplier = &value
 	}
 	if value, ok := _c.mutation.BillingType(); ok {
 		_spec.SetField(usagelog.FieldBillingType, field.TypeInt8, value)
@@ -1785,6 +1803,30 @@ func (u *UsageLogUpsert) AddAccountRateMultiplier(v float64) *UsageLogUpsert {
 // ClearAccountRateMultiplier clears the value of the "account_rate_multiplier" field.
 func (u *UsageLogUpsert) ClearAccountRateMultiplier() *UsageLogUpsert {
 	u.SetNull(usagelog.FieldAccountRateMultiplier)
+	return u
+}
+
+// SetUpstreamRateMultiplier sets the "upstream_rate_multiplier" field.
+func (u *UsageLogUpsert) SetUpstreamRateMultiplier(v float64) *UsageLogUpsert {
+	u.Set(usagelog.FieldUpstreamRateMultiplier, v)
+	return u
+}
+
+// UpdateUpstreamRateMultiplier sets the "upstream_rate_multiplier" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateUpstreamRateMultiplier() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldUpstreamRateMultiplier)
+	return u
+}
+
+// AddUpstreamRateMultiplier adds v to the "upstream_rate_multiplier" field.
+func (u *UsageLogUpsert) AddUpstreamRateMultiplier(v float64) *UsageLogUpsert {
+	u.Add(usagelog.FieldUpstreamRateMultiplier, v)
+	return u
+}
+
+// ClearUpstreamRateMultiplier clears the value of the "upstream_rate_multiplier" field.
+func (u *UsageLogUpsert) ClearUpstreamRateMultiplier() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldUpstreamRateMultiplier)
 	return u
 }
 
@@ -2726,6 +2768,34 @@ func (u *UsageLogUpsertOne) UpdateAccountRateMultiplier() *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) ClearAccountRateMultiplier() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearAccountRateMultiplier()
+	})
+}
+
+// SetUpstreamRateMultiplier sets the "upstream_rate_multiplier" field.
+func (u *UsageLogUpsertOne) SetUpstreamRateMultiplier(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamRateMultiplier(v)
+	})
+}
+
+// AddUpstreamRateMultiplier adds v to the "upstream_rate_multiplier" field.
+func (u *UsageLogUpsertOne) AddUpstreamRateMultiplier(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamRateMultiplier(v)
+	})
+}
+
+// UpdateUpstreamRateMultiplier sets the "upstream_rate_multiplier" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateUpstreamRateMultiplier() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamRateMultiplier()
+	})
+}
+
+// ClearUpstreamRateMultiplier clears the value of the "upstream_rate_multiplier" field.
+func (u *UsageLogUpsertOne) ClearUpstreamRateMultiplier() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamRateMultiplier()
 	})
 }
 
@@ -3882,6 +3952,34 @@ func (u *UsageLogUpsertBulk) UpdateAccountRateMultiplier() *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) ClearAccountRateMultiplier() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearAccountRateMultiplier()
+	})
+}
+
+// SetUpstreamRateMultiplier sets the "upstream_rate_multiplier" field.
+func (u *UsageLogUpsertBulk) SetUpstreamRateMultiplier(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamRateMultiplier(v)
+	})
+}
+
+// AddUpstreamRateMultiplier adds v to the "upstream_rate_multiplier" field.
+func (u *UsageLogUpsertBulk) AddUpstreamRateMultiplier(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamRateMultiplier(v)
+	})
+}
+
+// UpdateUpstreamRateMultiplier sets the "upstream_rate_multiplier" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateUpstreamRateMultiplier() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamRateMultiplier()
+	})
+}
+
+// ClearUpstreamRateMultiplier clears the value of the "upstream_rate_multiplier" field.
+func (u *UsageLogUpsertBulk) ClearUpstreamRateMultiplier() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamRateMultiplier()
 	})
 }
 

@@ -29,9 +29,7 @@ node deploy/zero-one/test-password-recovery.mjs <candidate-backend-image> <candi
 认证入口读取设置期间保持不可提交，关闭能力时不显示可用的找回入口。按错误码显示
 中文提示；找回请求的成功响应不透露邮箱是否注册。每个重置令牌必须原子核销。
 
-2026-09-03 已按此流程完成 PR #25 对应源码 `d83760688df34a55dc0f495ccc0b09129373e46d`
-的生产发布，找回能力已开启，链接域名已统一为规范域名。镜像摘要、恢复点、设置差异和
-回滚入口见 [`PRODUCTION_SERVER_CN.md`](PRODUCTION_SERVER_CN.md#当前生产基线2026-09-03渠道状态与密码找回修复)。
+当前部署身份从运行镜像与本次恢复点读取；过去的发布结果见[历史发布索引](PRODUCTION_SERVER_CN.md#历史发布索引)。
 
 ## Initial Deployment
 
@@ -379,78 +377,6 @@ empty commits to obtain new runners, or run production traffic on CI workers.
 Routing tests must retain temporary containers, loopback bindings and cleanup;
 TTFT parser tests use fake streams, not a production upstream account pool.
 
-## Repository Access Incidents
-
-If GitHub reports an account suspension, stop remote pushes, repository
-creation, image publication and Actions dispatches. Preserve local commits,
-tags and diagnostic records, and use the official
-[appeal and reinstatement process](https://docs.github.com/en/site-policy/acceptable-use-policies/github-appeal-and-reinstatement)
-to clarify access or an authorized migration. Successful login to another
-account is not evidence that the restriction has been lifted.
-
-Account changes must not rewrite upstream authorship, licenses, historical
-commit authors or old CI evidence links. Existing production image digests
-describe what is actually deployed; do not replace their registry owner with
-an unverified destination or imply that images have been published there.
-Repository identity changes and their credentials remain separate from
-production deployment and require an explicit, verified destination.
-
-## Repository Hosting Migration (2026-08-28)
-
-本次经仓库所有者确认已获 GitHub 允许后，迁移目标为
-[`XiaoSiKe/zero-one-api`](https://github.com/XiaoSiKe/zero-one-api)。
-`XiaoSiKe` 是登录名，`01-Yang` 只是显示名，不能用显示名推导 API、remote 或 GHCR 路径。
-
-| 配置 | 迁移目标或边界 |
-| --- | --- |
-| 产品 `origin` | `https://github.com/XiaoSiKe/zero-one-api.git` |
-| 上游 `upstream` | 保持 `Wei-Shaw/sub2api`，仅允许读取 |
-| 后续 Sub2API / Edge 发布 | `ghcr.io/xiaosike/zero-one-sub2api` / `ghcr.io/xiaosike/zero-one-edge`，须独立发布授权 |
-| 历史证据 | 旧 PR、Actions run、提交作者、许可证及已部署镜像摘要保留原归属 |
-| 生产环境 | 本次不发布镜像、不部署服务器、不替换线上 `.env` 或业务密钥 |
-
-迁移按以下顺序验收，不把导入已有标签当作新版本发布：
-
-1. 核验 CLI 的实际登录名和目标仓库；Git 提交身份单独核验，不按仓库名重写
-   历史作者，也不批量覆盖其他项目的全局凭据。
-2. 在首次导入分支与历史标签前，临时禁用目标仓库 Actions，避免已有 `v*` 标签
-   触发继承的版本发布工作流。逐项比对产品提交、上游基线、受保护 UI 标签及祖先关系，
-   不强推或移动旧标签。
-3. 核验目标仓库 Actions 权限、默认分支、分支保护/规则集、必需检查、Environment、
-   Secrets/Variables、deploy key、webhook 和 GHCR 包权限。新建仓库不会自动继承这些
-   元数据；只配置实际需要且已授权的项目，密钥值不写入 Git、日志或迁移报告。
-4. 导入核对完成后恢复验证工作流，以 PR 运行完整门禁。临时停用仅用于历史导入，
-   不能替代 CI，也不得通过跳过测试、降低截图阈值或关闭保护来合并。
-5. 所有必需检查通过后使用 merge commit 合入 `main`，核验合并后的 CI、
-   本地/远端提交和保留标签一致；不自动启动 `Zero One Publish` 或生产部署。
-
-本地已补齐完整 Git 历史，连通性和缺失对象检查通过。首次原子导入的 5 个分支、
-65 个标签已逐项核对一致，导入期间目标 Actions 运行数为 0；导入后已恢复验证。
-`origin` 与本项目的 gh 默认仓库均为 `XiaoSiKe/zero-one-api`，GitHub CLI 与 Git
-提交身份已核对为新账号，`upstream` 仍禁止推送。
-
-目标仓库默认分支为 `main`，只使用 merge commit；`main` 已要求 12 项原有检查、
-PR 和会话解决，管理员同样受保护，禁止强推/删除。规则集
-`Zero One immutable UI approvals`（ID `21721172`）禁止更新/删除 `ui-approved-*`，
-不配置绕过者。Actions 默认令牌为只读且不能批准 PR；Secrets、Variables、
-Environment、deploy key 和 webhook 均未从旧账号复制，也没有为迁移添加私密值。
-
-迁移候选 `6962df85d86c4719ebc97abc8610cebb77b9618f` 已在新仓库通过
-[原生 Linux x86 视觉验收 33159665998](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33159665998)：
-145 项通过、65 项既有平台排除，账号链接 2 项与兑换行为 44 项实际执行。
-迁移快照为 `ui-approved-2026-08-28-r2`，旧标签均保留。合并与合并后 `main` 检查的
-最终执行记录集中在[迁移 PR #1](https://github.com/XiaoSiKe/zero-one-api/pull/1)，
-以该 PR 的实际 merge commit 和必需检查结论为准；候选视觉通过不等于 PR 已合并。
-
-历史导入提示上游早期提交曾包含 59.23 MB 的 `backend/repository.test`；该文件
-已在上游历史中删除，当前版本未跟踪。本次没有为消除提示改写历史或移动标签。
-本机 Backend 构建曾被 Docker Hub 认证 POST 的 EOF 阻断，不能记为本地构建通过；
-完整双镜像构建仍由原始 CI 门禁验证，不通过删除构建步骤或循环重试取得绿灯。
-
-Codex/ChatGPT 的 GitHub 插件 OAuth 与本机 gh 凭据相互独立。每次切换账号都要
-分别核验身份；插件身份不匹配时不经该插件写入。仓库或 Git 配置不能替代插件的
-重新授权，不在文档或 Git 中复制个人令牌。
-
 ## Upstream Provenance And GitHub Fork Metadata
 
 本产品来源于 `Wei-Shaw/sub2api`，固定基线为
@@ -519,33 +445,6 @@ GoReleaser archives 均声明携带这三份根级材料。镜像文件位于
 授权的资源不应接入。不要利用 Actions 承载线上中转流量、持续号池探测、挖矿、刷量
 或规避平台限制。账号封禁原因只能以平台通知/申诉结果确认，代码检查不能作出保证。
 
-### 2026-08-28 hardening validation
-
-许可交付候选 `5c442ee1fb8cf1d7c92f0ff4c25da9fe139cb463` 通过
-[原生 Linux x64 视觉执行 33164525502](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33164525502)，
-attempt 1：145 项通过、65 项既有平台排除、0 失败/flaky/retry；兑换行为 44 项与
-仓库链接 2 项全部实际执行。Playwright 固定 1.55.1，配置、PNG、测试与 r2 无差异，
-没有放宽全局或既有具名用例阈值。成功用例配置为 only-on-failure 截图，因此该次
-artifact 是 HTML 报告，不能把现有批准基准 PNG 冒称为新下载的实际截图。
-
-完成桌面/移动基准复核后新增不可移动 `ui-approved-2026-08-28-r3`，指向该候选；
-r17、r1、r2 及旧标签不移动。新增/修改文件进入永久清单后为 440 项，Overlay 仍为
-五类。正式 PR 与合并后 main 仍须通过全部 12 项必需检查，候选视觉通过不代替它们。
-
-本地 Console 1801 项、Landing 114 项全量通过（均 0 fail/skip），类型检查、构建及
-Landing audit 通过。104 项脚本策略测试、18 项 TTFT 工具测试、actionlint 1.7.12、
-Compose/路由/资源闭包通过；Backend 与 Edge 实际构建成功，镜像内许可文件哈希
-一致。上次迁移中的 Docker Hub 认证失败仍作为历史记录保留，不改写成当时通过。
-本次未改变 Backend 业务代码；新的自动产品 CI 还必须分别执行 Go ordinary、unit、
-integration 配置，安全扫描独立运行，不把以前的通过记录计为本次已执行。
-
-随后[加固 PR #2](https://github.com/XiaoSiKe/zero-one-api/pull/2) 已使用 merge commit
-合并为 `e245f86c19eca2c8820f29b7b5167409f9f47ea2`。该 SHA 的自动 main push
-[Zero One CI 33166064227](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33166064227)
-与 [Security 33166064241](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33166064241)
-均在 attempt 1 成功，全部 12 项必需检查实际通过，且要求检查绑定 GitHub Actions
-App `15368`。ordinary/unit/integration 的包级结果不能换算成实际测试用例或跳过数。
-
 ### Docker build-context isolation
 
 正式镜像继续只从经过门禁的干净 Git checkout 构建。额外的 `.dockerignore` 防线
@@ -567,96 +466,29 @@ App `15368`。ordinary/unit/integration 的包级结果不能换算成实际测�
 该变更没有启动本机预览，也不连接生产数据库；旧 v0.1.179 的源码/镜像记录仍属于
 历史证据，不把不可访问的旧 registry 地址机械改成新 owner。
 
-### Authorized production namespace cutover (2026-08-28)
-
-所有者选择保持独立仓库，并授权继续完成新账号镜像与生产迁移；这属于源码迁移
-完成之后的独立运维阶段，不改写前述“当时未发布/部署”的历史事实。
-[发布 33172188926](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33172188926)
-仅 dispatch 一次、attempt 1 成功，源码固定为已通过 main 自动门禁的
-`e245f86c19eca2c8820f29b7b5167409f9f47ea2`，没有因本次文档和构建上下文修补重复发布。
-两包在 GitHub 页面实际为 Public；匿名 index/amd64+arm64 manifest/config、SBOM 与
-provenance 的内容校验以及生产 amd64 全层 pull 均通过，没有在生产保存个人 PAT。
-这些校验不是独立签名认证或 arm64 运行测试；本次只读取到包已为 Public，未执行可见性修改。
-
-已部署的不可变 index digest：
-
-```text
-ghcr.io/xiaosike/zero-one-sub2api@sha256:7c008a49a58b26a4ebc4caf842d6f1251b4b0f11d8993d202b2b9c23caea3a58
-ghcr.io/xiaosike/zero-one-edge@sha256:6ca66c891d78466ce2e4f653cbe751cbd1b2aa01ec9579c48ee85a90db19a9aa
-```
-
-先创建加密异机恢复点，再在维护机无网络、无端口、独立卷的 PostgreSQL 18 中实际
-恢复。100 张表、274 条账本与六项业务表计数逐项一致；候选 SQL 的 274 个 checksum
-也全部精确匹配，未使用兼容例外。四份旧镜像的 amd64 OCI 摘要链验证了 48 个 blob，
-保留旧缓存和加密归档，不假设旧账号 registry 可继续访问。首次临时检查器曾混淆
-index Image ID 与 config digest，修正为完整链校验后才继续；没有跳过失败或加载
-镜像覆盖本机标签。Redis RDB 和文件状态各有采集时点，不声明跨存储原子快照。
-
-Backend 于 `2026-08-28T13:31:45.039332802Z` 启动、`13:31:50Z` 健康；随后通过
-仓库 `safe-edge-switch.sh` 完成 Edge 切换（启动于 `13:34:31.368148287Z`），HTTPS
-readiness 通过。仍为 v0.1.183，数据服务容器/镜像/挂载不变，只修改两个产品镜像
-字段与本项目 Git remotes/source；业务 `.env` 哈希不变，无 SQL/业务密钥/号池配置变更。
-新请求级 TTFT 统计口径从该 Backend 启动时间起生效，不能与旧 attempt 口径混合比较。
-
-线上 20 项匿名检查共发出 20 个请求，没有重试或跟随重定向，核对了公开设置、
-HTML/新兑换资源/通知文件哈希、缓存边界、无 Key JSON 401 和兼容跳转。临时检查器
-最初误用管理 API 的数字错误码；实际网关 `middleware.ErrorResponse` 使用字符串
-`API_KEY_REQUIRED`。保留原失败记录，并用源码产生的完整错误体 SHA-256 与原响应
-匹配后纠正结论，只续做未执行的十项检查，不重放先前请求。匿名 401 不证明真正的
-SSE/WebSocket upgrade；生产登录/核销/扣费探针未执行，不能计入本次主动验收。
-只读日志/用量另观察到新后端的一条成功可见输出请求及新阶段字段，没有读取客户 Key。
-
-两份实际运行镜像中 LGPL/GPL/NOTICE 的 SHA-256 与源码一致；桥接服务保持 active，
-容器内健康可达。`18181` 仅监听 Docker host-gateway，UFW 仅放行网关子网，
-没有该端口的公网 NAT 映射，服务器连接自身公网地址被拒绝。维护机的公网 HTTP
-探测未收到响应；其路由经过 TUN 代理，因此毫秒级 TCP connect 成功不能当成
-服务端公网开放的证据，也不把该测试写成独立直连网络的端到端验证。
-完整恢复点、容器时间、上一组真实摘要及剩余边界见
-[`PRODUCTION_SERVER_CN.md`](PRODUCTION_SERVER_CN.md#当前生产基线2026-09-02v020)。
-当前没有配置 off-host 日备份挂载/定时任务；本次已验证的一次性加密异机备份不能
-替代它。恢复私钥留在维护机，临时明文 staging 已清理，历史恢复材料不动。
-
-### Visual fixture diagnosis during migration acceptance
-
-PR #3 首轮 head `356ef1abe3e43fee714be935f0305dcfcbd071d7` 的
-[产品 CI 33177554336](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33177554336)
-与 [Security 33177554324](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33177554324)
-均为 attempt 1、12 项必需 job 绿色，但逐项视觉报告实际为 **144 passed、1 flaky、
-65 skipped**。原导航用例经既有 Playwright `retries: 1` 后通过，不等于测试全部
-首次通过；44 个兑换用例实际均首次通过、0 skip/retry。原日志、trace、截图及失败
-结论均保留，没有将它们改写成干净的 145-pass 记录。
-
-按先复现后修复的诊断流程，捕获到白屏前 Keys/Usage/DataTable 的 `.map`、`.length`
-类型错误。两个 GET `/keys`、`/groups/available` 在测试中缺少显式 fixture，落入
-成功的 `data: {}`；真实后端分别返回分页对象和数组。只补这些只读空 DTO：
-keys 的 `items: []、total: 0、pages: 1`，以及 groups 的 `[]`，不改生产 API 或 UI。
-原 160ms 帧测试、全部断言、PNG、阈值及 retry 配置均不变。
-
-隔离的 Playwright 1.55.1 Linux ARM64 反馈环中，旧 fixture 三次运行有一次失败，
-且三份 trace 全部含 4–6 条类型错误；仅修改两个 DTO 后六次均通过，六份 trace
-均无运行错误。新增真实页面请求的 DTO/零渲染错误回归先在桌面、移动端各失败一次，
-再在修复后各通过一次，0 skip/retry。本机结果用于因果复现，不代替原生 Linux x86
-的完整像素验收。两处测试文件本来就在永久清单和受保护快照中，必须经新的候选
-视觉验收与不可移动批准标签更新，不能添加目录豁免来绕过保护。
-
-修复候选 `d5e4b4cc70e733ede2d1dab61fecdab510b1be19` 已通过
-[原生 Linux x64 验收 33180357784](https://github.com/XiaoSiKe/zero-one-api/actions/runs/33180357784)，
-attempt 1：147 passed、65 原有 skipped、0 flaky/unexpected/global error；147 个实际
-执行案例均只有一条 `retry=0` 的 passed 结果。新增桌面/移动 DTO 回归、原导航用例及
-44 个兑换案例全部首过，65 个排除项与旧报告逐项一致，没有删除旧用例。
-据此新增不可移动 `ui-approved-2026-08-28-r4`，r3、r2、r1、r17 和其他旧标签不动。
-R4 与 r3 的 Frontend、Landing、恢复版 UI 资产逐文件一致，变化仅为测试契约与回归，
-不需要为此重新发布镜像。两个改动文件均在原永久清单中，仍为 441 项；正式 PR 与
-合并后 main 必须再通过精确提交的完整门禁，候选校准不是最终合并许可。
-
-运行镜像源码与运维 checkout 应分别记录。仅包含测试、文档、构建上下文及预览
-防护的后续 main，可在核对应用源码/运行资源无差异后同步到生产工作目录，以便
-新的 `.dockerignore` 和操作手册实际生效；这不授权重建容器、修改 `.env` 或把
-新 checkout SHA 冒称为已发布镜像的构建 SHA。运行镜像仍以 OCI revision/digest 为准。
-
 ## Release And Rollback
 
-Before release, record the deployed Sub2API and edge image digests and take a database backup. Deploy immutable images, run the routing and smoke checks, then announce completion.
+### 发布前提与数据边界
+
+1. 目标必须是已合并的 main SHA，满足上文 [CI Resource Policy](#ci-resource-policy) 的完整产品/安全工作流证明；PR 成功不能替代 main push 成功。
+2. 记录实际运行的四个镜像、Backend/Edge OCI revision、容器身份、持久化挂载、业务配置哈希、数据库大小与完整文件名迁移账本。服务器 checkout HEAD 不能替代镜像来源。
+3. 创建本次受限恢复点，按 [Backup And Recovery](#backup-and-recovery) 加密 PostgreSQL、Redis 与部署/应用/证书状态，保存生产机之外的校验一致副本。实际恢复数据库，再用目标 Backend 演练迁移和旧镜像回滚；只执行 `pg_restore --list` 不算恢复成功。
+4. 检查目标双镜像来源一致、主机架构、磁盘余量、备份和回滚材料；生产不构建镜像、不改业务密钥，不更新 PostgreSQL/Redis 版本或挂载。
+
+### 原地升级
+
+- 完整使用生产环境文件和 Compose 文件，路径见[主机速查](PRODUCTION_SERVER_CN.md#生产目录与-compose)。保留全部 ignored/untracked 恢复材料，禁止 `git clean` 和删除数据卷。
+- 先 fetch 和核对目标 SHA，拉取并验证同源双镜像；此时不切换源码、不改 `.env`。在任何变更前启用分阶段回滚：Backend 未重建时恢复 source/env，重建后还必须恢复兼容旧镜像并验证健康。
+- 在短时维护窗口停止接受新写入，排空已接受的模型请求、账单提交和可安全停止的后台工作。五分钟内无法安全排空则取消切换并恢复接流量，不强行杀掉仍有未结算请求的进程。
+- 在稳定写入边界记录核心数据/主键/财务汇总，保存本次最终备份。逐项核对迁移后的原有业务列；新增列和明确授权的派生统计变化单独记录。
+- 用 `git switch --no-overwrite-ignore --detach <TARGET_SHA>` 切换源码，只更新 `SUB2API_IMAGE`。执行 `docker compose ... up -d --no-deps --no-build --pull never --force-recreate --timeout 30 sub2api`，等待真实健康、鉴权、迁移和数据检查；证明 PostgreSQL、Redis、Edge 容器未被替换。
+- Backend 通过后按下节唯一入口切换匹配的 Edge，完成[业务烟测](#required-smoke-tests)后恢复接流量，至少观察 30 分钟。只能使用专用测试身份，不能借用客户 Key，不能把匿名 401 当作受控模型调用验收。
+
+### 应用回滚
+
+回滚使用**本次发布前恢复点**的源码、兼容双镜像及环境副本，保持业务密钥、挂载和数据库不变。恢复后重做路由、登录、API 和核心账单检查。已接受的新写入不得被旧 dump 覆盖；数据库恢复只用于已确认数据库损坏的独立恢复流程。
+
+成本声明迁移是增量：保留旧汇总列及约束，新版本使用独立上游成本列和匹配的计算时间。旧镜像重写汇总后，新版本会将陈旧上游成本视为待确认。完整口径见 [ADR 0010](adr/0010-admin-billing-finance-and-date-panels.md)。
 
 ### Safe Edge switch
 
@@ -729,110 +561,6 @@ rollback uses the previous image digests without rolling back the database
 unless an upstream migration is proven incompatible. Database rollback is a
 separate destructive operation and must be based on a verified backup and
 maintenance window.
-
-## 导航与加载修复验收（2026-08-27）
-
-本次工作只提交源码、恢复快照及保护记录，不自动发布镜像或变更生产服务器。
-后续上线仍须遵循同一提交构建 Backend/Edge、Backend-first 和现有安全切换流程。
-轻量导航接口先随 Backend 就绪，再切换使用它的 Edge；管理员完整设置编辑接口保持兼容。
-
-- 管理员导航使用 `GET /api/v1/admin/settings?scope=navigation`，只返回九个导航字段；
-  不读取或返回 Logo、二维码原图和支付配置。普通设置编辑仍使用完整 GET/PUT。
-  多个导航消费者共享读取并沿用现有令牌续期，支付请求慢或失败不能阻塞菜单；保存成功值不能被先前请求覆盖。
-- 验证仪表盘第一、折叠组及子菜单整体排序、模型广场、自定义菜单和邀请返利路径别名。
-  保存、刷新、简洁模式、手机侧栏、折叠与路由切换后，实际顺序和键盘顺序应一致；空闲时无持续重排。
-- 二维码只在点击后逐次鉴权，响应保留 `no-store` 和 `nosniff`。服务内缓存只复用已校验
-  内容，最多 16 项、5 MiB；每次读取当前配置并重新判断角色，撤权、删除、换图、读取失败均不得绕过。
-  测试关闭取消、重新打开、损坏图片和下载／解码超过 15 秒后重试，确认 Blob URL 被释放。
-- 测试 iframe 先于菜单元数据完成、同 ID 修改名称和 URL、快速切换以及重试后的旧事件。
-  15 秒慢加载提示不代表失败或成功；重试创建新代次，迟到成功清除提示，新窗口入口仍可用。
-  不预加载外部页面，不把第三方网络耗时记为站内性能改善。
-- 公共设置与首屏注入对支持的栅格 Logo 使用带版本号的同源 URL；后台保留原图编辑值。
-  Console 原有 SVG data URI 保持兼容，但不得将 SVG 放入同源图片端点白名单，Landing 规则不变。恢复版 HTML
-  从 328,002 字节降到 5,137 字节（98.43%），不再内嵌约 323 KB Logo。
-  同一 1024 像素二维码服务基准：冷缓存约 0.917–1.053 ms/op、1.135 MB/op；
-  热缓存约 12.18–12.65 µs/op、29.4 KB/op。该数据只衡量服务处理，不包含外网传输。
-
-每次发布前回放 Console/Landing 全量测试、Go ordinary/unit/integration、lint/security、
-固定 Playwright 1.55.1 镜像的全部视觉与交互用例、保护清单、资源闭包、Compose 和双镜像路由测试。
-测试内明确选择跳过的外部探测应单独列出，不得把缺少凭据或环境的测试写成已执行通过。
-截图仅在审核实际差异后更新；先创建新的不可变 UI 批准标签，再更新基线清单，保留旧标签。
-
-## 兑换码与首 Token 加固验收（2026-08-28）
-
-本轮仅交付源码、恢复版 Console、测试与保护记录；没有自动发布镜像或修改生产配置。
-后续上线继续遵循同源码双镜像、Backend-first、备份与安全 Edge 切换流程。
-本轮无新增数据库迁移，不回填历史奖励或用量；领域约定见 ADR 0008。
-
-- 福利码与盲盒码每码一次、每用户每批一次；管理员不能通过启用、过期或删除
-  清除领取证明。核销与管理操作在真实 PostgreSQL 中并发回放，检查实际奖励、余额
-  和 used/by/at 不回退。批量删除按实际 affected rows 计数，数据库错误不得显示成功。
-- 正整分奖励范围为 0.01–999999999999.99，盲盒可使用等值上下限；普通余额码、订阅码、
-  邀请码与既有累计充值语义不变。福利与盲盒不参与邀请返利。
-- Redis 错误窗口从首次错误起一小时、最多 20 次，后续错误不延长窗口；旧 24 小时
-  或永久 TTL 收敛到一小时但保留计数。锁键不包含明文兑换码，过期旧请求不能释放新租约。
-- 兑换已成功而用户资料、历史或订阅读取失败时，显示成功并提供只读刷新。
-  请求结果不明时核对历史，不自动重新核销。测试初始慢历史请求不能覆盖兑换后的记录。
-- API Key 使用时间使用独立 1-worker、1024-Key 有界待办队列：排队期间合并最新时间，
-  执行中的新触达沿用本次写入的防抖窗口；成功 30 秒防抖、失败 5 秒退避、SQL 预算 10 秒。
-  队满不回退同步写库。鉴权、额度和账单仍按原规则执行。
-  相同 Linux ARM64 / Go 1.27 / 2 CPU 的离线 fixture，将元数据数据库延迟固定为 20 ms，
-  每轮 20 个新 Key、重复三轮：基线 `83495fcf7` 的请求路径为 21.426–22.439 ms/op，
-  异步实现的提交路径为 441.6–718.8 ns/op。后台写入仍需原来的 20 ms；这只证明
-  元数据 SQL 已离开关键路径，不代表真实模型或外网首 Token 提速同等幅度。
-- HTTP 访问日志新增 `gateway_timing_version=1`、`gateway_auth_ms`、`user_queue_ms`、
-  `account_queue_ms`、`account_selection_ms`、`upstream_headers_total_ms`、
-  `retry_backoff_ms`、`upstream_attempts`，有输出时才写 `gateway_first_output_ms`。
-  它们是阶段计时，不应将“整个流时长减响应头等待”称为本站开销。
-- 新用量的 `first_token_ms` 是鉴权前入口到首个有效完整事件写出并 flush 的时间；
-  `duration_ms` 使用同一请求起点。调度器仍使用原单次 attempt 指标。
-  此统计口径可能比旧值更大，不代表性能回退；上线时间必须记录，不能直接混合新旧分布。
-  WebSocket 保留逐 turn 指标；外网客户端到屏时延仍须客户端测量。
-- 对启用流闲置预算的 HTTP 路径，客户端断开及时释放用户槽位，账户槽位等到上游结束
-  或按原闲置配置回收后释放。配置显式为 0 时保留既有取消释放行为，不隐式增加阈值。
-  不修改并发额度、粘性、重试次数或 Caddy SSE flush 配置。
-- `benchmark-ttft.mjs` 使用完整 SSE 事件并单独统计失败；`success_rate` 为 0–1，
-  `ttft_ms` 仅含有效成功样本，包含 P50/P90/P95/P99。流内失败或无终止帧不得计为成功。
-  离线回归使用假上游；任何未来生产探针另行授权并使用专用限额密钥。
-
-恢复版 Console 使用 `redeem-ttft-20260828` 资源命名空间，旧 alias 保留。
-发布前必须运行新的桌面／移动兑换行为用例、source/recovered 一致性测试与原视觉门禁。
-不得以新截图覆盖差异、放宽阈值或把缺少外部条件的用例计为已执行通过。
-
-## 入口可用性与登录首屏优化验收（2026-08-31）
-
-本轮只交付源码、Approved UI Snapshot 启动顺序、测试与保护记录；没有发布镜像、
-修改生产 `.env`、重建线上容器或变更业务数据。截图中的根路径 HTTP 502 不是登录 API
-返回：规范域名的精确 `GET/HEAD /` 与 `/login` 都由 Edge 静态提供。生产 Compose
-此前却要求 Sub2API 先达到 healthy 才启动 Edge，安全切换脚本还会在新镜像拉取失败时
-无意义地重建健康旧 Edge；两者都会把服务端入口空窗误导成客户端换网问题。
-
-- Edge 现在独立启动并用静态根页自检；后端初始化期间 Public Site 与登录 HTML 仍可提供。
-  新 Edge 在改写镜像摘要前先验证 Caddy 配置及 Landing/Console 静态闭包。拉取、预检或
-  预检期间依赖健康失败都保持旧 Edge 原地运行，不进入应用回滚或 `force-recreate`。
-- Edge Docker healthcheck 在容器内将 `api.01yapi.com` 固定到 loopback，并以规范域名
-  发起 TLS，使 SNI 与 HTTP Host 一致。不得用 `https://127.0.0.1` 加 `Host`
-  头代替 SNI。安全切换在 HTTPS readiness 后还必须等待新 Edge 的 Docker
-  health 变为 `healthy`，否则回滚到旧镜像。
-- `/login` 预加载既有 Approved `LoginView` 闭包和必要运行时，继续由原 View 读取实时
-  Public Settings、控制验证码/OAuth/协议和登录动作；设置未完成时动作仍禁用。生图、
-  Provider 管理等非登录 Adapter 只在真实表单挂载后进入 idle 加载，找回密码、浮层、
-  角色跳转及桌面/移动最终视觉不变。
-- 维护机经 TUN 访问当前生产的冷浏览器样本为导航到表单 `21,007 ms`，其中 HTML TTFB
-  `1,537 ms`；该值包含维护机网络，不能写成源站处理时间。同机固定 `300 ms` RTT、
-  `4 Mbps`、全新浏览器上下文的可重复 A/B 中，`origin/main` 三轮为
-  `11,219/11,178/11,174 ms`，候选为 `4,729/4,672/4,681 ms`，中位数缩短 `58.1%`，
-  表单前资源数从 `56` 降为 `45`，六轮均无 page error。
-- Console `1,857` 项、Landing `120` 项、部署/路由/保护合同和受保护 Adapter 零漂移
-  检查通过。Playwright 1.55.1 Ubuntu Noble 容器实际执行 `211` 项桌面/移动用例、
-  `73` 项既有 viewport 排除、`0` 失败，未更新任何 PNG；原生 GitHub x86 门禁仍是
-  合并前权威结果。
-
-当前生产仍是单主机、单 Edge 监听 80/443；成功的 `force-recreate` 存在短暂端口交接，
-不能宣称双活零停机。本轮消除的是后端启动等待、失败前重建和最长 90 秒失败回滚造成的
-可避免 502 窗口。若要求发布期间也具备严格零中断，必须另行设计稳定外层负载均衡和至少
-两个 Edge 实例，并更新 Coherent Release、证书、健康探测与回滚 ADR，不能用重试文案
-冒充高可用。
 
 ## Required Smoke Tests
 

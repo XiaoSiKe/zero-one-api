@@ -115,11 +115,15 @@ func (UsageLog) Fields() []ent.Field {
 			Default(false).
 			Comment("Whether long-context pricing changed token prices for this request"),
 
-		// account_rate_multiplier: 账号计费倍率快照（NULL 表示按 1.0 处理）
+		// account_rate_multiplier: 原本地账号倍率快照，保留审计；不作为上游成本来源
 		field.Float("account_rate_multiplier").
 			Optional().
 			Nillable().
 			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}),
+
+		// Upstream declaration is independent of local quota/rate configuration.
+		field.Float("upstream_rate_multiplier").Optional().Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "numeric"}),
 
 		// 其他字段
 		field.Int8("billing_type").

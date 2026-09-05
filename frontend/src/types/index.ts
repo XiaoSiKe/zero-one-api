@@ -1302,7 +1302,7 @@ export interface AccountSchedulerGroupScore {
 export interface WindowStats {
   requests: number
   tokens: number
-  cost: number // Account cost (account multiplier)
+  cost: number | null // Confirmed upstream cost; null means unconfirmed
   standard_cost?: number
   user_cost?: number
 }
@@ -1758,6 +1758,7 @@ export interface AdminUsageLog extends UsageLog {
 
   // 账号计费倍率（仅管理员可见）
   account_rate_multiplier?: number | null
+  upstream_rate_multiplier?: number | null
   // 自定义定价规则计算的账号统计费用（nil 时使用 total_cost * multiplier）
   account_stats_cost?: number | null
 
@@ -1878,7 +1879,7 @@ export interface DashboardStats {
   total_tokens: number
   total_cost: number // 累计标准计费
   total_actual_cost: number // 累计实际扣除
-  total_account_cost: number // 累计账号成本
+  total_account_cost: number | null // 累计账号成本
 
   // 今日 Token 使用统计
   today_requests: number
@@ -1889,7 +1890,7 @@ export interface DashboardStats {
   today_tokens: number
   today_cost: number // 今日标准计费
   today_actual_cost: number // 今日实际扣除
-  today_account_cost: number // 今日账号成本
+  today_account_cost: number | null // 今日账号成本
 
   // 系统运行统计
   average_duration_ms: number // 平均响应时间
@@ -1941,8 +1942,8 @@ export interface ModelStat {
   cache_read_tokens: number
   total_tokens: number
   cost: number // 标准计费
-  actual_cost: number // 实际扣除
-  account_cost?: number // 账号成本（仅管理员接口返回）
+  actual_cost: number | null // 实际扣除
+  account_cost?: number | null // 账号成本（仅管理员接口返回）
 }
 
 export interface EndpointStat {
@@ -1950,7 +1951,7 @@ export interface EndpointStat {
   requests: number
   total_tokens: number
   cost: number
-  actual_cost: number
+  actual_cost: number | null
 }
 
 export interface GroupStat {
@@ -1960,7 +1961,7 @@ export interface GroupStat {
   total_tokens: number
   cost: number // 标准计费
   actual_cost: number // 实际扣除
-  account_cost?: number // 账号成本（仅管理员接口返回）
+  account_cost?: number | null // 账号成本（仅管理员接口返回）
 }
 
 export interface UserBreakdownItem {
@@ -1973,7 +1974,7 @@ export interface UserBreakdownItem {
   total_tokens: number
   cost: number
   actual_cost: number
-  account_cost: number
+  account_cost: number | null
 }
 
 export interface UserUsageTrendPoint {
@@ -2167,26 +2168,26 @@ export interface AccountUsageHistory {
   requests: number
   tokens: number
   cost: number
-  actual_cost: number // Account cost (account multiplier)
+  actual_cost: number | null // Confirmed upstream cost; null means unconfirmed
   user_cost: number // User/API key billed cost (group multiplier)
 }
 
 export interface AccountUsageSummary {
   days: number
   actual_days_used: number
-  total_cost: number // Account cost (account multiplier)
+  total_cost: number | null // Confirmed upstream cost; null means unconfirmed
   total_user_cost: number
   total_standard_cost: number
   total_requests: number
   total_tokens: number
-  avg_daily_cost: number // Account cost
+  avg_daily_cost: number | null // Confirmed upstream cost
   avg_daily_user_cost: number
   avg_daily_requests: number
   avg_daily_tokens: number
   avg_duration_ms: number
   today: {
     date: string
-    cost: number
+    cost: number | null
     user_cost: number
     requests: number
     tokens: number
@@ -2194,7 +2195,7 @@ export interface AccountUsageSummary {
   highest_cost_day: {
     date: string
     label: string
-    cost: number
+    cost: number | null
     user_cost: number
     requests: number
   } | null
@@ -2202,7 +2203,7 @@ export interface AccountUsageSummary {
     date: string
     label: string
     requests: number
-    cost: number
+    cost: number | null
     user_cost: number
   } | null
 }

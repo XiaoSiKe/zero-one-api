@@ -48,17 +48,17 @@ try {
     INSERT INTO groups (id,name,platform,rate_multiplier) VALUES (900001,'验收分组','openai',9);
     INSERT INTO accounts (id,name,platform,type,credentials,extra,rate_multiplier,schedulable) VALUES (900001,'验收号池','openai','apikey','{}','{}',8,false);
     INSERT INTO api_keys (id,user_id,key,name,group_id) VALUES (900001,900001,'finance-fixture-key','验收密钥',900001);
-    INSERT INTO usage_logs (user_id,api_key_id,account_id,group_id,request_id,model,input_tokens,output_tokens,cache_creation_tokens,cache_read_tokens,total_cost,actual_cost,account_stats_cost,rate_multiplier,account_rate_multiplier,created_at) VALUES
-      (900001,900001,900001,900001,'finance-today-early','test-model',100,30,5,20,10,5,10,0.5,0.2,TIMESTAMPTZ '2026-09-04 00:30:00+08'),
-      (900001,900001,900001,900001,'finance-today','test-model',200,50,0,0,20,6,30,0.3,0.1,TIMESTAMPTZ '2026-09-04 12:00:00+08'),
-      (900001,900001,900001,900001,'finance-old','test-model',300,10,0,0,100,40,60,0.4,0.25,TIMESTAMPTZ '2026-09-04 12:00:00+08'-interval '120 days');
+    INSERT INTO usage_logs (user_id,api_key_id,account_id,group_id,request_id,model,input_tokens,output_tokens,cache_creation_tokens,cache_read_tokens,total_cost,actual_cost,account_stats_cost,rate_multiplier,account_rate_multiplier,upstream_rate_multiplier,created_at) VALUES
+      (900001,900001,900001,900001,'finance-today-early','test-model',517682973,30,5,20,10,5,10,0.5,1,0.2,TIMESTAMPTZ '2026-09-04 00:30:00+08'),
+      (900001,900001,900001,900001,'finance-today','test-model',200,50,0,0,20,6,30,0.3,1,0.1,TIMESTAMPTZ '2026-09-04 12:00:00+08'),
+      (900001,900001,900001,900001,'finance-old','test-model',300,10,0,0,100,40,60,0.4,1,0.25,TIMESTAMPTZ '2026-09-04 12:00:00+08'-interval '120 days');
   `)
-  const { dateInTimezone } = await import('./recovered-frontend/console/assets/dashboard-finance-v1/data.js')
+  const { dateInTimezone } = await import('./recovered-frontend/console/assets/dashboard-finance-v2/data.js')
   const today = dateInTimezone(new Date('2026-09-04T12:00:00+08:00'), 'Asia/Shanghai')
   const day = await api(`/admin/usage/stats?start_date=${today}&end_date=${today}&timezone=Asia%2FShanghai&nocache=true`, auth.access_token)
   assert.equal(day.total_actual_cost, 11)
   assert.equal(day.total_account_cost, 5)
-  assert.equal(day.total_tokens, 405)
+  assert.equal(day.total_tokens, 517683278)
   const total = await api(`/admin/usage/stats?start_date=1970-01-01&end_date=${today}&timezone=Asia%2FShanghai&nocache=true`, auth.access_token)
   assert.equal(total.total_actual_cost, 51, '总计必须包括 120 天前的账单')
   assert.equal(total.total_account_cost, 20)
@@ -84,11 +84,31 @@ try {
   const cards = page.locator('.dashboard-finance-value')
   await expect(cards).toHaveText(['$11.0000', '$6.0000', '$51.0000', '$31.0000'], { timeout: 30000 })
   await expect(page.locator('.dashboard-finance-updated')).toContainText('每 30 秒自动刷新')
-  sql(`INSERT INTO usage_logs (user_id,api_key_id,account_id,group_id,request_id,model,total_cost,actual_cost,account_rate_multiplier,created_at) VALUES (900001,900001,900001,900001,'finance-live','test-model',2,0.5,0.2,TIMESTAMPTZ '2026-09-04 12:00:01+08'); UPDATE groups SET rate_multiplier=11 WHERE id=900001; UPDATE accounts SET rate_multiplier=12 WHERE id=900001;`)
+  sql(`INSERT INTO usage_logs (user_id,api_key_id,account_id,group_id,request_id,model,total_cost,actual_cost,account_rate_multiplier,upstream_rate_multiplier,created_at) VALUES (900001,900001,900001,900001,'finance-live','test-model',2,0.5,1,0.2,TIMESTAMPTZ '2026-09-04 12:00:01+08'); UPDATE groups SET rate_multiplier=11 WHERE id=900001; UPDATE accounts SET rate_multiplier=12 WHERE id=900001;`)
   await page.clock.fastForward(31000)
   await expect(cards).toHaveText(['$11.5000', '$6.1000', '$51.5000', '$31.1000'], { timeout: 30000 })
+  // Missing declarations cannot silently contribute 1x or disappear from a mixed sum.
+  sql(`INSERT INTO usage_logs (user_id,api_key_id,account_id,group_id,request_id,model,total_cost,actual_cost,account_rate_multiplier,created_at) VALUES (900001,900001,900001,900001,'finance-legacy','test-model',100,39,1,TIMESTAMPTZ '2026-09-04 12:00:02+08');`)
+  const pending = await api(`/admin/usage/stats?start_date=${today}&end_date=${today}&timezone=Asia%2FShanghai&nocache=true`, auth.access_token)
+  assert.equal(pending.total_actual_cost, 50.5)
+  assert.ok(pending.total_account_cost == null, '历史缺少声明时不能报部分成本或按 1 倍计算')
+  assert.equal(sql(`SELECT total_cost || ',' || actual_cost || ',' || account_rate_multiplier FROM usage_logs WHERE request_id='finance-legacy'`).trim(), '100.0000000000,39.0000000000,1.0000', '保留原始账单')
+  assert.equal(sql(`SELECT zero_one_cost_sum(v) FROM (VALUES (0::numeric),(0::numeric)) x(v)`).trim(), '0', '有效零成本必须保留')
+  await page.clock.fastForward(31000)
+  await expect(cards).toHaveText(['$50.5000', '待确认', '$90.5000', '待确认'], { timeout: 30000 })
+  await expect(page.locator('[data-zero-one-finance-trends] [role="status"]')).toContainText('待确认')
+  await expect(page.locator('.dashboard-finance-details tbody tr').last().locator('td').nth(1)).toHaveText('517.68M')
+  const tooltip = await page.evaluate(async () => {
+    const { C: Chart } = await import('/assets/vendor-chart-IcnlmW08.js')
+    const chart = Chart.getChart(document.querySelector('.dashboard-finance-chart-grid canvas'))
+    return chart.options.plugins.tooltip.callbacks.label({ parsed: { y: 517683278 } })
+  })
+  assert.equal(tooltip, '每日总 Token 消耗：517.68M')
+  if (process.env.FINANCE_SCREENSHOT) await page.screenshot({ path: process.env.FINANCE_SCREENSHOT, fullPage: true })
+  await page.goto(`http://${names.edge}/admin/usage`)
+  await expect(page.getByText('A $待确认', { exact: true }).first()).toBeVisible({ timeout: 20000 })
   assert.deepEqual(errors, [])
-  console.log('真实 API / PostgreSQL / 浏览器验收通过：跨 UTC 午夜、120 天历史账单、历史倍率、账号成本基数、自动刷新后新增账单均正确。')
+  console.log('真实 API / PostgreSQL / 浏览器验收通过：上游倍率快照、旧账保留、缺失声明待确认、零成本、跨日与自动刷新。')
 } finally {
   await browser?.close()
   for (const name of created.reverse()) { try { docker('rm', '-f', '-v', name) } catch {} }

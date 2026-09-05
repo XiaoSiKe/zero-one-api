@@ -914,7 +914,7 @@ export default {
       priority: 'Priority',
       priorityHint: 'Lower value accounts are used first',
       billingRateMultiplier: 'Billing Rate Multiplier',
-      billingRateMultiplierHint: '0 = free, affects account billing only',
+      billingRateMultiplierHint: 'Local account billing and scheduling; cost reports independently use valid upstream declared rates',
       expiresAt: 'Expires At',
       expiresAtHint: 'Leave empty for no expiration',
       higherPriorityFirst: 'Lower value means higher priority',

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { calendarDays, dailyValues, summaryValues, billedSummary, dateInTimezone } from './recovered-frontend/console/assets/dashboard-finance-v1/data.js'
+import { calendarDays, dailyValues, summaryValues, billedSummary, dateInTimezone } from './recovered-frontend/console/assets/dashboard-finance-v2/data.js'
 
 test('revenue uses actual debits and profit subtracts historically recorded account cost', () => {
   assert.deepEqual(summaryValues({ today_cost: 1000, today_actual_cost: 12, today_account_cost: 5, total_cost: 9000, total_actual_cost: 30, total_account_cost: 40 }), [12, 7, 30, -10])
@@ -25,4 +25,11 @@ test('bill-based totals are independent of rolling dashboard caches and share th
   assert.deepEqual(billedSummary({total_actual_cost: 11, total_account_cost: 5}, {total_actual_cost: 51, total_account_cost: 20}), [11, 6, 51, 31])
   assert.equal(dateInTimezone(new Date('2026-09-03T16:30:00Z'), 'Asia/Shanghai'), '2026-09-04')
   assert.equal(dateInTimezone(new Date('2026-09-03T16:30:00Z'), 'America/Los_Angeles'), '2026-09-03')
+})
+
+test('token consumption uses M below one billion and B at the boundary', async () => {
+  const { formatTokenConsumption } = await import('./recovered-frontend/console/assets/dashboard-finance-v2/data.js')
+  for (const [input, expected] of [[517683278, '517.68M'], [1e9, '1.00B'], [12.02e9, '12.02B'], [999999999, '1000.00M'], [5000, '0.01M'], [1, '0.000001M'], [0, '0.00M'], [null, '—'], [NaN, '—']]) {
+    assert.equal(formatTokenConsumption(input), expected)
+  }
 })

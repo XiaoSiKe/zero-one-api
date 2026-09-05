@@ -64,7 +64,7 @@ const formatTokens = (value: number): string => {
 }
 
 const formatCost = (value: number | undefined | null): string => {
-  if (value == null) return '0.0000'
+  if (value == null) return '待确认'
   if (value >= 1000) return (value / 1000).toFixed(2) + 'K'
   if (value >= 1) return value.toFixed(2)
   if (value >= 0.01) return value.toFixed(3)

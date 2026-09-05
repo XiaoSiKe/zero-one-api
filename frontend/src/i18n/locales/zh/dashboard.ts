@@ -293,7 +293,7 @@ export default {
     accountBilled: '账号计费',
     resetNow: '现在',
     resetPending: '待刷新',
-    accountMultiplier: '账号倍率',
+    accountMultiplier: '上游声明倍率',
     avgDuration: '平均耗时',
     inSelectedRange: '所选范围内',
     perRequest: '每次请求',

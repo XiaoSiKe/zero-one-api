@@ -577,6 +577,11 @@ func (h *UsageHandler) DashboardSnapshotV2(c *gin.Context) {
 func userModelStatsFromUsageStats(stats []usagestats.ModelStat) []userModelStat {
 	out := make([]userModelStat, 0, len(stats))
 	for _, stat := range stats {
+		// User-scoped queries always return the non-null sum of actual debits.
+		actualCost := 0.0
+		if stat.ActualCost != nil {
+			actualCost = *stat.ActualCost
+		}
 		out = append(out, userModelStat{
 			Model:               stat.Model,
 			Requests:            stat.Requests,
@@ -586,7 +591,7 @@ func userModelStatsFromUsageStats(stats []usagestats.ModelStat) []userModelStat 
 			CacheReadTokens:     stat.CacheReadTokens,
 			TotalTokens:         stat.TotalTokens,
 			Cost:                stat.Cost,
-			ActualCost:          stat.ActualCost,
+			ActualCost:          actualCost,
 		})
 	}
 	return out

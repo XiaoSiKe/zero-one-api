@@ -112,8 +112,8 @@ console=$(curl -fsS -H "Host: $request_host" "$edge_url/login")
 assert_text "$console" '<title>零一 API - AI API Gateway</title>' 'primary login did not return the recovered console'
 assert_text "$console" 'fetch("/api/v1/settings/public"' 'recovered console did not bootstrap live public settings'
 assert_text "$console" 'await import("/assets/cn-provider-admin-v1/cn-provider-admin.js")' 'recovered console CN Provider account/group adapter is missing'
-assert_text "$console" 'await import("/assets/cn-provider-admin-v3/cn-provider-admin.js")' 'recovered console Provider catalog route adapter is missing'
-assert_text "$console" 'await import("/assets/cn-provider-shell-v5/index-9xJBhx8B.js")' 'recovered console approved shell seam is missing'
+assert_text "$console" 'await import("/assets/cn-provider-admin-v4/cn-provider-admin.js")' 'recovered console Provider catalog route adapter is missing'
+assert_text "$console" 'await import("/assets/cn-provider-shell-v6/index-9xJBhx8B.js")' 'recovered console approved shell seam is missing'
 assert_text "$console" 'await import("/assets/zero-one-local-preview-guard-v2.js")' 'recovered console local preview guard is missing'
 assert_text "$console" 'await import("/assets/zero-one-custom-page-security-v1.js")' 'recovered console custom page security guard is missing'
 assert_text "$console" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=3")' 'recovered Console navigation reconciliation is missing'
@@ -127,13 +127,13 @@ case "$console" in
 esac
 assert_text "$console" 'await import("/assets/zero-one-redeem-actions-v1.js?v=1")' 'recovered console redeem actions adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=6")' 'recovered console affiliate administration adapter is missing'
-assert_text "$console" 'await import("/assets/online-image-v12/online-image.js")' 'recovered console online image adapter is missing'
+assert_text "$console" 'await import("/assets/online-image-v13/online-image.js")' 'recovered console online image adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-settings-unified-save-v1.js")' 'recovered console unified settings save adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-floating-panels-v1.js?v=3")' 'recovered console floating overlay is missing'
 
 for console_path in setup home login register email-verify forgot-password reset-password key-usage model-plaza dashboard keys images batch-image usage redeem affiliate available-channels profile subscriptions purchase orders admin monitor; do
 	console_variant=$(curl -fsS -H "Host: $request_host" "$edge_url/$console_path")
-	assert_text "$console_variant" 'await import("/assets/cn-provider-shell-v5/index-9xJBhx8B.js")' "Console route /$console_path escaped the recovered snapshot"
+	assert_text "$console_variant" 'await import("/assets/cn-provider-shell-v6/index-9xJBhx8B.js")' "Console route /$console_path escaped the recovered snapshot"
 	case "$console_variant" in
 		*repaired-20260818*) fail "Console route /$console_path leaked the Backend embedded frontend" ;;
 	esac
@@ -141,7 +141,7 @@ for console_path in setup home login register email-verify forgot-password reset
 	assert_text "$slash_headers" '308 Permanent Redirect' "Console route /$console_path/ was not canonicalized"
 	assert_text "$slash_headers" "Location: /$console_path" "Console route /$console_path/ redirected to the wrong path"
 	console_slash_variant=$(curl -fsSL -H "Host: $request_host" "$edge_url/$console_path/")
-	assert_text "$console_slash_variant" 'await import("/assets/cn-provider-shell-v5/index-9xJBhx8B.js")' "canonical Console route /$console_path/ escaped the recovered snapshot"
+	assert_text "$console_slash_variant" 'await import("/assets/cn-provider-shell-v6/index-9xJBhx8B.js")' "canonical Console route /$console_path/ escaped the recovered snapshot"
 done
 login_query_headers=$(curl -sSI -H "Host: $request_host" "$edge_url/login/?redirect=%2Fmodel-plaza")
 assert_text "$login_query_headers" 'Location: /login?redirect=%2Fmodel-plaza' 'Console trailing-slash redirect did not preserve its query string'
@@ -153,11 +153,11 @@ for redeem_asset in index-9xJBhx8B.js RedeemView-B-81-jXj.js RedeemView-Bn5PLb3-
 	redeem_asset_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/github-migration-20260828/$redeem_asset")
 	assert_text "$redeem_asset_headers" 'Cache-Control: public, max-age=31536000, immutable' 'versioned redeem asset is missing or not immutable'
 done
-cn_provider_shell_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/cn-provider-shell-v5/index-9xJBhx8B.js")
+cn_provider_shell_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/cn-provider-shell-v6/index-9xJBhx8B.js")
 assert_text "$cn_provider_shell_headers" 'Cache-Control: public, max-age=31536000, immutable' 'CN Provider approved shell seam is not immutable'
-cn_provider_placeholder_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/cn-provider-shell-v5/zero-one-cn-provider-route-placeholder-v1.js")
+cn_provider_placeholder_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/cn-provider-shell-v6/zero-one-cn-provider-route-placeholder-v1.js")
 assert_text "$cn_provider_placeholder_headers" 'Cache-Control: public, max-age=31536000, immutable' 'CN Provider route placeholder is not immutable'
-for cn_provider_version in cn-provider-admin-v1 cn-provider-admin-v3; do
+for cn_provider_version in cn-provider-admin-v1 cn-provider-admin-v4; do
 	for cn_provider_asset_path in "$test_dir"/console/assets/$cn_provider_version/*; do
 		[ -f "$cn_provider_asset_path" ] || continue
 		cn_provider_asset=$(basename "$cn_provider_asset_path")
@@ -165,10 +165,21 @@ for cn_provider_version in cn-provider-admin-v1 cn-provider-admin-v3; do
 		assert_text "$cn_provider_asset_headers" 'Cache-Control: public, max-age=31536000, immutable' 'versioned CN Provider route asset is missing or not immutable'
 	done
 done
-for online_image_asset_path in "$test_dir"/console/assets/online-image-v12/*; do
+# Deduplication changes storage only: cached old URLs must return identical bytes.
+for namespace_dir in "$test_dir"/console/assets/cn-provider-admin-v* "$test_dir"/console/assets/online-image-v*; do
+	[ -d "$namespace_dir" ] || continue
+	for alias_file in "$namespace_dir"/*.js; do
+		[ -L "$alias_file" ] || continue
+		alias_url="/assets/$(basename "$namespace_dir")/$(basename "$alias_file")"
+		curl -fsS -H "Host: $request_host" "$edge_url$alias_url" > "$test_dir/alias-response.js"
+		cmp -s "$alias_file" "$test_dir/alias-response.js" || fail "immutable alias changed bytes: $alias_url"
+	done
+done
+
+for online_image_asset_path in "$test_dir"/console/assets/online-image-v13/*; do
 	[ -f "$online_image_asset_path" ] || continue
 	online_image_asset=$(basename "$online_image_asset_path")
-	online_image_asset_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/online-image-v12/$online_image_asset")
+	online_image_asset_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/online-image-v13/$online_image_asset")
 	assert_text "$online_image_asset_headers" 'Cache-Control: public, max-age=31536000, immutable' 'versioned online image asset is missing or not immutable'
 done
 floating_overlay_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/zero-one-floating-panels-v1.js")

@@ -44,13 +44,13 @@ func TestUsageLog_UpstreamModelMismatchFilterAndPartialIndex(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(1), stats.TotalRequests)
 	require.Equal(t, []usagestats.EndpointStat{{
-		Endpoint: "unknown", Requests: 1, TotalTokens: 2,
+		Endpoint: "unknown", Requests: 1, TotalTokens: 2, ActualCost: new(float64),
 	}}, stats.Endpoints)
 	require.Equal(t, []usagestats.EndpointStat{{
-		Endpoint: "unknown", Requests: 1, TotalTokens: 2,
+		Endpoint: "unknown", Requests: 1, TotalTokens: 2, ActualCost: new(float64),
 	}}, stats.UpstreamEndpoints)
 	require.Equal(t, []usagestats.EndpointStat{{
-		Endpoint: "unknown -> unknown", Requests: 1, TotalTokens: 2,
+		Endpoint: "unknown -> unknown", Requests: 1, TotalTokens: 2, ActualCost: new(float64),
 	}}, stats.EndpointPaths)
 
 	trend, err := repo.GetUsageTrendWithUsageFilters(ctx, start, end, "hour", usagestats.UsageLogFilters{
