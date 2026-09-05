@@ -347,6 +347,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatCompactCost as formatCost, toFiniteNumber } from '@/utils/format'
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -588,26 +589,8 @@ const formatTokens = (value: number | undefined): string => {
   return value.toLocaleString()
 }
 
-const toFiniteNumber = (value: unknown): number => {
-  const numberValue = Number(value)
-  return Number.isFinite(numberValue) ? numberValue : 0
-}
-
 const formatNumber = (value: number | null | undefined): string => {
   return toFiniteNumber(value).toLocaleString()
-}
-
-const formatCost = (value: number | null | undefined): string => {
-  if (value == null) return '待确认'
-  const safeValue = toFiniteNumber(value)
-  if (safeValue >= 1000) {
-    return (safeValue / 1000).toFixed(2) + 'K'
-  } else if (safeValue >= 1) {
-    return safeValue.toFixed(2)
-  } else if (safeValue >= 0.01) {
-    return safeValue.toFixed(3)
-  }
-  return safeValue.toFixed(4)
 }
 
 const formatDuration = (ms: number): string => {

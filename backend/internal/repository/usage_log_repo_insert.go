@@ -16,77 +16,85 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
-// usageLogInsertArgTypes must stay in the same order as:
-//  1. prepareUsageLogInsert().args
-//  2. every INSERT/CTE VALUES column list in this file
-//  3. execUsageLogInsertNoResult placeholder positions
-//  4. scanUsageLog selected column order (via usageLogSelectColumns)
-//
-// When adding a usage_logs column, update all of those call sites together.
-var usageLogInsertArgTypes = [...]string{
-	"bigint",      // user_id
-	"bigint",      // api_key_id
-	"bigint",      // account_id
-	"text",        // request_id
-	"text",        // model
-	"text",        // requested_model
-	"text",        // upstream_model
-	"text",        // upstream_response_model
-	"boolean",     // upstream_model_mismatch
-	"bigint",      // group_id
-	"bigint",      // subscription_id
-	"integer",     // input_tokens
-	"integer",     // output_tokens
-	"integer",     // cache_creation_tokens
-	"integer",     // cache_read_tokens
-	"integer",     // cache_creation_5m_tokens
-	"integer",     // cache_creation_1h_tokens
-	"integer",     // image_output_tokens
-	"numeric",     // image_output_cost
-	"integer",     // image_input_tokens
-	"numeric",     // image_input_cost
-	"numeric",     // input_cost
-	"numeric",     // output_cost
-	"numeric",     // cache_creation_cost
-	"numeric",     // cache_read_cost
-	"numeric",     // total_cost
-	"numeric",     // actual_cost
-	"numeric",     // rate_multiplier
-	"numeric",     // account_rate_multiplier
-	"smallint",    // billing_type
-	"smallint",    // request_type
-	"boolean",     // stream
-	"boolean",     // openai_ws_mode
-	"integer",     // duration_ms
-	"integer",     // first_token_ms
-	"text",        // user_agent
-	"text",        // ip_address
-	"integer",     // image_count
-	"text",        // image_size
-	"text",        // image_input_size
-	"text",        // image_output_size
-	"text",        // image_size_source
-	"jsonb",       // image_size_breakdown
-	"integer",     // video_count
-	"text",        // video_resolution
-	"integer",     // video_duration_seconds
-	"text",        // service_tier
-	"text",        // reasoning_effort
-	"text",        // requested_reasoning_effort
-	"text",        // inbound_endpoint
-	"text",        // upstream_endpoint
-	"boolean",     // cache_ttl_overridden
-	"boolean",     // long_context_billing_applied
-	"bigint",      // channel_id
-	"text",        // model_mapping_chain
-	"text",        // billing_tier
-	"text",        // billing_mode
-	"numeric",     // account_stats_cost
-	"text",        // session_id
-	"boolean",     // native_compaction_v2
-	"numeric",     // upstream_rate_multiplier
-	"timestamptz", // created_at
+// Column names, PostgreSQL bind types and placeholders have one owner. Keep
+// prepareUsageLogInsert().args and scanUsageLog in the same order; every writer
+// and SELECT projection consumes this list instead of copying it.
+var usageLogColumnDefinitions = [...]struct{ name, sqlType string }{
+	{"user_id", "bigint"},
+	{"api_key_id", "bigint"},
+	{"account_id", "bigint"},
+	{"request_id", "text"},
+	{"model", "text"},
+	{"requested_model", "text"},
+	{"upstream_model", "text"},
+	{"upstream_response_model", "text"},
+	{"upstream_model_mismatch", "boolean"},
+	{"group_id", "bigint"},
+	{"subscription_id", "bigint"},
+	{"input_tokens", "integer"},
+	{"output_tokens", "integer"},
+	{"cache_creation_tokens", "integer"},
+	{"cache_read_tokens", "integer"},
+	{"cache_creation_5m_tokens", "integer"},
+	{"cache_creation_1h_tokens", "integer"},
+	{"image_output_tokens", "integer"},
+	{"image_output_cost", "numeric"},
+	{"image_input_tokens", "integer"},
+	{"image_input_cost", "numeric"},
+	{"input_cost", "numeric"},
+	{"output_cost", "numeric"},
+	{"cache_creation_cost", "numeric"},
+	{"cache_read_cost", "numeric"},
+	{"total_cost", "numeric"},
+	{"actual_cost", "numeric"},
+	{"rate_multiplier", "numeric"},
+	{"account_rate_multiplier", "numeric"},
+	{"billing_type", "smallint"},
+	{"request_type", "smallint"},
+	{"stream", "boolean"},
+	{"openai_ws_mode", "boolean"},
+	{"duration_ms", "integer"},
+	{"first_token_ms", "integer"},
+	{"user_agent", "text"},
+	{"ip_address", "text"},
+	{"image_count", "integer"},
+	{"image_size", "text"},
+	{"image_input_size", "text"},
+	{"image_output_size", "text"},
+	{"image_size_source", "text"},
+	{"image_size_breakdown", "jsonb"},
+	{"video_count", "integer"},
+	{"video_resolution", "text"},
+	{"video_duration_seconds", "integer"},
+	{"service_tier", "text"},
+	{"reasoning_effort", "text"},
+	{"requested_reasoning_effort", "text"},
+	{"inbound_endpoint", "text"},
+	{"upstream_endpoint", "text"},
+	{"cache_ttl_overridden", "boolean"},
+	{"long_context_billing_applied", "boolean"},
+	{"channel_id", "bigint"},
+	{"model_mapping_chain", "text"},
+	{"billing_tier", "text"},
+	{"billing_mode", "text"},
+	{"account_stats_cost", "numeric"},
+	{"session_id", "text"},
+	{"native_compaction_v2", "boolean"},
+	{"upstream_rate_multiplier", "numeric"},
+	{"created_at", "timestamptz"},
 }
+
+var usageLogInsertColumns, usageLogInsertValues, usageLogInsertArgTypes = func() (string, string, []string) {
+	columns := make([]string, len(usageLogColumnDefinitions))
+	values := make([]string, len(usageLogColumnDefinitions))
+	types := make([]string, len(usageLogColumnDefinitions))
+	for i, column := range usageLogColumnDefinitions {
+		columns[i] = column.name
+		values[i] = "$" + strconv.Itoa(i+1)
+		types[i] = column.sqlType
+	}
+	return strings.Join(columns, ", "), strings.Join(values, ", "), types
+}()
 
 const (
 	usageLogCreateBatchMaxSize  = 64
@@ -224,77 +232,7 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 	}
 
 	query := `
-		INSERT INTO usage_logs (
-			user_id,
-			api_key_id,
-			account_id,
-			request_id,
-			model,
-			requested_model,
-			upstream_model,
-			upstream_response_model,
-			upstream_model_mismatch,
-			group_id,
-			subscription_id,
-			input_tokens,
-			output_tokens,
-			cache_creation_tokens,
-			cache_read_tokens,
-			cache_creation_5m_tokens,
-			cache_creation_1h_tokens,
-			image_output_tokens,
-			image_output_cost,
-			image_input_tokens,
-			image_input_cost,
-			input_cost,
-			output_cost,
-			cache_creation_cost,
-			cache_read_cost,
-			total_cost,
-			actual_cost,
-			rate_multiplier,
-			account_rate_multiplier,
-			billing_type,
-			request_type,
-			stream,
-			openai_ws_mode,
-			duration_ms,
-			first_token_ms,
-			user_agent,
-			ip_address,
-			image_count,
-			image_size,
-			image_input_size,
-			image_output_size,
-			image_size_source,
-			image_size_breakdown,
-			video_count,
-			video_resolution,
-			video_duration_seconds,
-			service_tier,
-			reasoning_effort,
-			requested_reasoning_effort,
-			inbound_endpoint,
-			upstream_endpoint,
-			cache_ttl_overridden,
-			long_context_billing_applied,
-			channel_id,
-			model_mapping_chain,
-			billing_tier,
-			billing_mode,
-			account_stats_cost,
-			session_id,
-			native_compaction_v2,
-			upstream_rate_multiplier,
-			created_at
-		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9,
-			$10, $11,
-			$12, $13, $14, $15,
-			$16, $17, $18, $19,
-			$20, $21, $22, $23, $24, $25,
-			$26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62
-		)
+		INSERT INTO usage_logs (` + usageLogInsertColumns + `) VALUES (` + usageLogInsertValues + `)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 		RETURNING id, created_at
 	`
@@ -684,74 +622,10 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 	var query strings.Builder
 	_, _ = query.WriteString(`
 		WITH input (
-			input_idx,
-			user_id,
-			api_key_id,
-			account_id,
-			request_id,
-			model,
-			requested_model,
-			upstream_model,
-			upstream_response_model,
-			upstream_model_mismatch,
-			group_id,
-			subscription_id,
-			input_tokens,
-			output_tokens,
-			cache_creation_tokens,
-			cache_read_tokens,
-			cache_creation_5m_tokens,
-			cache_creation_1h_tokens,
-			image_output_tokens,
-			image_output_cost,
-			image_input_tokens,
-			image_input_cost,
-			input_cost,
-			output_cost,
-			cache_creation_cost,
-			cache_read_cost,
-			total_cost,
-			actual_cost,
-			rate_multiplier,
-			account_rate_multiplier,
-			billing_type,
-			request_type,
-			stream,
-			openai_ws_mode,
-			duration_ms,
-			first_token_ms,
-			user_agent,
-			ip_address,
-			image_count,
-			image_size,
-			image_input_size,
-			image_output_size,
-			image_size_source,
-			image_size_breakdown,
-			video_count,
-			video_resolution,
-			video_duration_seconds,
-			service_tier,
-			reasoning_effort,
-			requested_reasoning_effort,
-			inbound_endpoint,
-			upstream_endpoint,
-			cache_ttl_overridden,
-			long_context_billing_applied,
-			channel_id,
-			model_mapping_chain,
-			billing_tier,
-			billing_mode,
-			account_stats_cost,
-			session_id,
-			native_compaction_v2,
-			upstream_rate_multiplier,
-			created_at
-		) AS (VALUES `)
+			input_idx, ` + usageLogInsertColumns + `) AS (VALUES `)
 
-	// Each batch row prepends the synthetic input_index before the 60
-	// usage-log column values.
-	args := make([]any, 0, len(keys)*61)
+	// Each batch row prepends the synthetic input index before the usage columns.
+	args := make([]any, 0, len(keys)*(len(usageLogInsertArgTypes)+1))
 	argPos := 1
 	for idx, key := range keys {
 		if idx > 0 {
@@ -779,133 +653,8 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 	_, _ = query.WriteString(`
 		),
 		inserted AS (
-			INSERT INTO usage_logs (
-				user_id,
-				api_key_id,
-				account_id,
-				request_id,
-				model,
-				requested_model,
-				upstream_model,
-				upstream_response_model,
-				upstream_model_mismatch,
-				group_id,
-				subscription_id,
-				input_tokens,
-				output_tokens,
-				cache_creation_tokens,
-				cache_read_tokens,
-				cache_creation_5m_tokens,
-				cache_creation_1h_tokens,
-				image_output_tokens,
-				image_output_cost,
-				image_input_tokens,
-				image_input_cost,
-				input_cost,
-				output_cost,
-				cache_creation_cost,
-				cache_read_cost,
-				total_cost,
-				actual_cost,
-				rate_multiplier,
-				account_rate_multiplier,
-				billing_type,
-				request_type,
-				stream,
-				openai_ws_mode,
-				duration_ms,
-				first_token_ms,
-				user_agent,
-				ip_address,
-				image_count,
-				image_size,
-				image_input_size,
-				image_output_size,
-				image_size_source,
-				image_size_breakdown,
-				video_count,
-				video_resolution,
-				video_duration_seconds,
-				service_tier,
-				reasoning_effort,
-				requested_reasoning_effort,
-				inbound_endpoint,
-				upstream_endpoint,
-				cache_ttl_overridden,
-				long_context_billing_applied,
-				channel_id,
-				model_mapping_chain,
-				billing_tier,
-				billing_mode,
-				account_stats_cost,
-				session_id,
-				native_compaction_v2,
-			upstream_rate_multiplier,
-				created_at
-			)
-			SELECT
-				user_id,
-				api_key_id,
-				account_id,
-				request_id,
-				model,
-				requested_model,
-				upstream_model,
-				upstream_response_model,
-				upstream_model_mismatch,
-				group_id,
-				subscription_id,
-				input_tokens,
-				output_tokens,
-				cache_creation_tokens,
-				cache_read_tokens,
-				cache_creation_5m_tokens,
-				cache_creation_1h_tokens,
-				image_output_tokens,
-				image_output_cost,
-				image_input_tokens,
-				image_input_cost,
-				input_cost,
-				output_cost,
-				cache_creation_cost,
-				cache_read_cost,
-				total_cost,
-				actual_cost,
-				rate_multiplier,
-				account_rate_multiplier,
-				billing_type,
-				request_type,
-				stream,
-				openai_ws_mode,
-				duration_ms,
-				first_token_ms,
-				user_agent,
-				ip_address,
-				image_count,
-				image_size,
-				image_input_size,
-				image_output_size,
-				image_size_source,
-				image_size_breakdown,
-				video_count,
-				video_resolution,
-				video_duration_seconds,
-				service_tier,
-				reasoning_effort,
-				requested_reasoning_effort,
-				inbound_endpoint,
-				upstream_endpoint,
-				cache_ttl_overridden,
-				long_context_billing_applied,
-				channel_id,
-				model_mapping_chain,
-				billing_tier,
-				billing_mode,
-				account_stats_cost,
-				session_id,
-				native_compaction_v2,
-			upstream_rate_multiplier,
-				created_at
+			INSERT INTO usage_logs (` + usageLogInsertColumns + `)
+			SELECT ` + usageLogInsertColumns + `
 			FROM input
 			ON CONFLICT (request_id, api_key_id) DO NOTHING
 			RETURNING request_id, api_key_id, id, created_at
@@ -947,72 +696,9 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (string, []any) {
 	var query strings.Builder
 	_, _ = query.WriteString(`
-		WITH input (
-			user_id,
-			api_key_id,
-			account_id,
-			request_id,
-			model,
-			requested_model,
-			upstream_model,
-			upstream_response_model,
-			upstream_model_mismatch,
-			group_id,
-			subscription_id,
-			input_tokens,
-			output_tokens,
-			cache_creation_tokens,
-			cache_read_tokens,
-			cache_creation_5m_tokens,
-			cache_creation_1h_tokens,
-			image_output_tokens,
-			image_output_cost,
-			image_input_tokens,
-			image_input_cost,
-			input_cost,
-			output_cost,
-			cache_creation_cost,
-			cache_read_cost,
-			total_cost,
-			actual_cost,
-			rate_multiplier,
-			account_rate_multiplier,
-			billing_type,
-			request_type,
-			stream,
-			openai_ws_mode,
-			duration_ms,
-			first_token_ms,
-			user_agent,
-			ip_address,
-			image_count,
-			image_size,
-			image_input_size,
-			image_output_size,
-			image_size_source,
-			image_size_breakdown,
-			video_count,
-			video_resolution,
-			video_duration_seconds,
-			service_tier,
-			reasoning_effort,
-			requested_reasoning_effort,
-			inbound_endpoint,
-			upstream_endpoint,
-			cache_ttl_overridden,
-			long_context_billing_applied,
-			channel_id,
-			model_mapping_chain,
-			billing_tier,
-			billing_mode,
-			account_stats_cost,
-			session_id,
-			native_compaction_v2,
-			upstream_rate_multiplier,
-			created_at
-		) AS (VALUES `)
+		WITH input (` + usageLogInsertColumns + `) AS (VALUES `)
 
-	args := make([]any, 0, len(preparedList)*60)
+	args := make([]any, 0, len(preparedList)*len(usageLogInsertArgTypes))
 	argPos := 1
 	for idx, prepared := range preparedList {
 		if idx > 0 {
@@ -1037,133 +723,8 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 
 	_, _ = query.WriteString(`
 		)
-		INSERT INTO usage_logs (
-			user_id,
-			api_key_id,
-			account_id,
-			request_id,
-			model,
-			requested_model,
-			upstream_model,
-			upstream_response_model,
-			upstream_model_mismatch,
-			group_id,
-			subscription_id,
-			input_tokens,
-			output_tokens,
-			cache_creation_tokens,
-			cache_read_tokens,
-			cache_creation_5m_tokens,
-			cache_creation_1h_tokens,
-			image_output_tokens,
-			image_output_cost,
-			image_input_tokens,
-			image_input_cost,
-			input_cost,
-			output_cost,
-			cache_creation_cost,
-			cache_read_cost,
-			total_cost,
-			actual_cost,
-			rate_multiplier,
-			account_rate_multiplier,
-			billing_type,
-			request_type,
-			stream,
-			openai_ws_mode,
-			duration_ms,
-			first_token_ms,
-			user_agent,
-			ip_address,
-			image_count,
-			image_size,
-			image_input_size,
-			image_output_size,
-			image_size_source,
-			image_size_breakdown,
-			video_count,
-			video_resolution,
-			video_duration_seconds,
-			service_tier,
-			reasoning_effort,
-			requested_reasoning_effort,
-			inbound_endpoint,
-			upstream_endpoint,
-			cache_ttl_overridden,
-			long_context_billing_applied,
-			channel_id,
-			model_mapping_chain,
-			billing_tier,
-			billing_mode,
-			account_stats_cost,
-			session_id,
-			native_compaction_v2,
-			upstream_rate_multiplier,
-			created_at
-		)
-		SELECT
-			user_id,
-			api_key_id,
-			account_id,
-			request_id,
-			model,
-			requested_model,
-			upstream_model,
-			upstream_response_model,
-			upstream_model_mismatch,
-			group_id,
-			subscription_id,
-			input_tokens,
-			output_tokens,
-			cache_creation_tokens,
-			cache_read_tokens,
-			cache_creation_5m_tokens,
-			cache_creation_1h_tokens,
-			image_output_tokens,
-			image_output_cost,
-			image_input_tokens,
-			image_input_cost,
-			input_cost,
-			output_cost,
-			cache_creation_cost,
-			cache_read_cost,
-			total_cost,
-			actual_cost,
-			rate_multiplier,
-			account_rate_multiplier,
-			billing_type,
-			request_type,
-			stream,
-			openai_ws_mode,
-			duration_ms,
-			first_token_ms,
-			user_agent,
-			ip_address,
-			image_count,
-			image_size,
-			image_input_size,
-			image_output_size,
-			image_size_source,
-			image_size_breakdown,
-			video_count,
-			video_resolution,
-			video_duration_seconds,
-			service_tier,
-			reasoning_effort,
-			requested_reasoning_effort,
-			inbound_endpoint,
-			upstream_endpoint,
-			cache_ttl_overridden,
-			long_context_billing_applied,
-			channel_id,
-			model_mapping_chain,
-			billing_tier,
-			billing_mode,
-			account_stats_cost,
-			session_id,
-			native_compaction_v2,
-			upstream_rate_multiplier,
-			created_at
+		INSERT INTO usage_logs (` + usageLogInsertColumns + `)
+		SELECT ` + usageLogInsertColumns + `
 		FROM input
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 	`)
@@ -1173,77 +734,7 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 
 func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared usageLogInsertPrepared) error {
 	_, err := sqlq.ExecContext(ctx, `
-		INSERT INTO usage_logs (
-			user_id,
-			api_key_id,
-			account_id,
-			request_id,
-			model,
-			requested_model,
-			upstream_model,
-			upstream_response_model,
-			upstream_model_mismatch,
-			group_id,
-			subscription_id,
-			input_tokens,
-			output_tokens,
-			cache_creation_tokens,
-			cache_read_tokens,
-			cache_creation_5m_tokens,
-			cache_creation_1h_tokens,
-			image_output_tokens,
-			image_output_cost,
-			image_input_tokens,
-			image_input_cost,
-			input_cost,
-			output_cost,
-			cache_creation_cost,
-			cache_read_cost,
-			total_cost,
-			actual_cost,
-			rate_multiplier,
-			account_rate_multiplier,
-			billing_type,
-			request_type,
-			stream,
-			openai_ws_mode,
-			duration_ms,
-			first_token_ms,
-			user_agent,
-			ip_address,
-			image_count,
-			image_size,
-			image_input_size,
-			image_output_size,
-			image_size_source,
-			image_size_breakdown,
-			video_count,
-			video_resolution,
-			video_duration_seconds,
-			service_tier,
-			reasoning_effort,
-			requested_reasoning_effort,
-			inbound_endpoint,
-			upstream_endpoint,
-			cache_ttl_overridden,
-			long_context_billing_applied,
-			channel_id,
-			model_mapping_chain,
-			billing_tier,
-			billing_mode,
-			account_stats_cost,
-			session_id,
-			native_compaction_v2,
-			upstream_rate_multiplier,
-			created_at
-		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9,
-			$10, $11,
-			$12, $13, $14, $15,
-			$16, $17, $18, $19,
-			$20, $21, $22, $23, $24, $25,
-			$26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62
-		)
+		INSERT INTO usage_logs (`+usageLogInsertColumns+`) VALUES (`+usageLogInsertValues+`)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 	`, prepared.args...)
 	return err
