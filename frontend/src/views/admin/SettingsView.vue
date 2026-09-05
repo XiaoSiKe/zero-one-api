@@ -8760,7 +8760,7 @@ function auxiliarySettingsChanged(key: AuxiliarySettingsKey, value: unknown): bo
 const upstreamBillingProbeLoading = ref(true);
 const upstreamBillingProbeForm = reactive({
   enabled: true,
-  interval_minutes: 30,
+  interval_minutes: 5,
 });
 
 const ollamaCloudUsageLoading = ref(true);

@@ -261,11 +261,13 @@ func TestUserUsageListKeepsUserBillingAndIPWithoutAdminCostFields(t *testing.T) 
 
 func TestUserUsageStatsUsesScopedFilters(t *testing.T) {
 	accountCost := 0.12
+	finance := &usagestats.UsageFinanceSummary{ConfirmedRequests: 1, ConfirmedActualCost: 0.08, ConfirmedAccountCost: 0.07, ConfirmedProfit: 0.01}
 	repo := &userUsageRepoCapture{
 		stats: &usagestats.UsageStats{
 			TotalCost:        0.10,
 			TotalActualCost:  0.08,
 			TotalAccountCost: &accountCost,
+			Finance:          finance,
 			UpstreamEndpoints: []usagestats.EndpointStat{{
 				Endpoint: "/v1/responses",
 			}},
@@ -290,6 +292,7 @@ func TestUserUsageStatsUsesScopedFilters(t *testing.T) {
 	require.Contains(t, rec.Body.String(), `"total_cost":0.1`)
 	require.Contains(t, rec.Body.String(), `"total_actual_cost":0.08`)
 	require.NotContains(t, rec.Body.String(), "total_account_cost")
+	require.NotContains(t, rec.Body.String(), `"finance"`)
 	require.NotContains(t, rec.Body.String(), "upstream_endpoints")
 	require.NotContains(t, rec.Body.String(), "endpoint_paths")
 }

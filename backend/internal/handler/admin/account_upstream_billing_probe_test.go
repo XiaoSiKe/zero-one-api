@@ -35,7 +35,7 @@ func TestAccountHandlerGetUpstreamBillingProbeSettingsReturnsDefaults(t *testing
 	}
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
 	require.True(t, response.Data.Enabled)
-	require.Equal(t, 30, response.Data.IntervalMinutes)
+	require.Equal(t, 5, response.Data.IntervalMinutes)
 }
 
 func TestAccountHandlerProbeUpstreamBillingBatchValidatesIDs(t *testing.T) {

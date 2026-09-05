@@ -20,6 +20,13 @@ export interface AdminUsageStatsResponse {
   total_cost: number
   total_actual_cost: number
   total_account_cost?: number | null
+  finance?: {
+    confirmed_requests: number
+    unconfirmed_requests: number
+    confirmed_actual_cost: number
+    confirmed_account_cost: number
+    confirmed_profit: number
+  }
   average_duration_ms: number
   endpoints?: EndpointStat[]
   upstream_endpoints?: EndpointStat[]

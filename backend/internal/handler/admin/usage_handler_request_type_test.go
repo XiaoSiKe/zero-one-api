@@ -18,6 +18,7 @@ type adminUsageRepoCapture struct {
 	listParams   pagination.PaginationParams
 	listFilters  usagestats.UsageLogFilters
 	statsFilters usagestats.UsageLogFilters
+	stats        *usagestats.UsageStats
 }
 
 func (s *adminUsageRepoCapture) ListWithFilters(ctx context.Context, params pagination.PaginationParams, filters usagestats.UsageLogFilters) ([]service.UsageLog, *pagination.PaginationResult, error) {
@@ -33,6 +34,9 @@ func (s *adminUsageRepoCapture) ListWithFilters(ctx context.Context, params pagi
 
 func (s *adminUsageRepoCapture) GetStatsWithFilters(ctx context.Context, filters usagestats.UsageLogFilters) (*usagestats.UsageStats, error) {
 	s.statsFilters = filters
+	if s.stats != nil {
+		return s.stats, nil
+	}
 	return &usagestats.UsageStats{}, nil
 }
 
@@ -168,6 +172,28 @@ func TestAdminUsageStatsRequestTypePriority(t *testing.T) {
 	require.NotNil(t, repo.statsFilters.RequestType)
 	require.Equal(t, int16(service.RequestTypeStream), *repo.statsFilters.RequestType)
 	require.Nil(t, repo.statsFilters.Stream)
+}
+
+func TestAdminUsageStatsReturnsConfirmedFinanceScope(t *testing.T) {
+	repo := &adminUsageRepoCapture{stats: &usagestats.UsageStats{
+		TotalRequests:   4,
+		TotalActualCost: 50.5,
+		Finance: &usagestats.UsageFinanceSummary{
+			ConfirmedRequests:    3,
+			UnconfirmedRequests:  1,
+			ConfirmedActualCost:  11.5,
+			ConfirmedAccountCost: 5.4,
+			ConfirmedProfit:      6.1,
+		},
+	}}
+	router := newAdminUsageRequestTypeTestRouter(repo)
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/usage/stats?nocache=true", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.JSONEq(t, `{"code":0,"message":"success","data":{"total_requests":4,"total_input_tokens":0,"total_output_tokens":0,"total_cache_tokens":0,"total_cache_creation_tokens":0,"total_cache_read_tokens":0,"total_tokens":0,"total_cost":0,"total_actual_cost":50.5,"finance":{"confirmed_requests":3,"unconfirmed_requests":1,"confirmed_actual_cost":11.5,"confirmed_account_cost":5.4,"confirmed_profit":6.1},"average_duration_ms":0}}`, rec.Body.String())
 }
 
 func TestAdminUsageStatsNativeCompactionFilter(t *testing.T) {

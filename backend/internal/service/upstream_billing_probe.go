@@ -33,7 +33,7 @@ const (
 	UpstreamBillingProbeEnabledExtraKey    = "upstream_billing_probe_enabled"
 	UpstreamBillingRateSyncEnabledExtraKey = "upstream_billing_rate_sync_enabled"
 
-	upstreamBillingProbeDefaultIntervalMinutes = 30
+	upstreamBillingProbeDefaultIntervalMinutes = 5
 	upstreamBillingProbeMinIntervalMinutes     = 5
 	upstreamBillingProbeMaxIntervalMinutes     = 24 * 60
 	upstreamBillingProbeCycleInterval          = time.Minute
@@ -1200,13 +1200,30 @@ func freshUpstreamBillingRate(account *Account, now time.Time) (float64, bool) {
 	return upstreamBillingRateAt(snapshot.Data, now)
 }
 
+// reportingUpstreamBillingRate returns the last successful declaration for
+// new invoice reporting. Probe freshness remains a scheduler concern: a
+// transient probe failure must not turn later usage into an unknown cost. The
+// snapshot is still rejected when it was observed after the request began;
+// changing account credentials, base URL, or proxy clears it at the account
+// service boundary.
+func reportingUpstreamBillingRate(account *Account, at time.Time) (float64, bool) {
+	if !isUpstreamBillingProbeAccount(account) {
+		return 0, false
+	}
+	snapshot := decodeUpstreamBillingProbeSnapshot(account.Extra)
+	if snapshot == nil || snapshot.ReceivedAt == nil || snapshot.ReceivedAt.IsZero() || at.Before(*snapshot.ReceivedAt) {
+		return 0, false
+	}
+	return upstreamBillingRateAt(snapshot.Data, at)
+}
+
 // declaredUsageRate freezes a token-scoped upstream declaration for reporting.
 // Local account rate and sync/probe toggles do not authorize substitute costs.
 func declaredUsageRate(account *Account, log *UsageLog, at time.Time) *float64 {
 	if log == nil || (log.BillingMode != nil && *log.BillingMode != "" && *log.BillingMode != string(BillingModeToken)) {
 		return nil
 	}
-	rate, ok := freshUpstreamBillingRate(account, at)
+	rate, ok := reportingUpstreamBillingRate(account, at)
 	if !ok {
 		return nil
 	}

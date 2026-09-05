@@ -724,6 +724,10 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 			COALESCE(SUM(total_cost), 0) AS cost,
 			COALESCE(SUM(actual_cost), 0) AS actual_cost,
 			zero_one_cost_sum(account_cost) AS account_cost,
+			COUNT(account_cost) AS confirmed_requests,
+			COUNT(*) - COUNT(account_cost) AS unconfirmed_requests,
+			COALESCE(SUM(actual_cost) FILTER (WHERE account_cost IS NOT NULL), 0) AS confirmed_actual_cost,
+			COALESCE(SUM(account_cost), 0) AS confirmed_account_cost,
 			COALESCE(AVG(duration_ms), 0) AS avg_duration_ms
 		FROM scoped
 		GROUP BY GROUPING SETS (
@@ -750,6 +754,8 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 			requests, inputTokens, outputTokens, cacheCreationTokens, cacheReads int64
 			cost, actualCost, averageDurationMs                                  float64
 			accountCost                                                          *float64
+			confirmedRequests, unconfirmedRequests                               int64
+			confirmedActualCost, confirmedAccountCost                            float64
 		)
 		if err := rows.Scan(
 			&inboundGrouped,
@@ -764,6 +770,10 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 			&cost,
 			&actualCost,
 			&accountCost,
+			&confirmedRequests,
+			&unconfirmedRequests,
+			&confirmedActualCost,
+			&confirmedAccountCost,
 			&averageDurationMs,
 		); err != nil {
 			return nil, err
@@ -786,6 +796,13 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 			stats.TotalCost = cost
 			stats.TotalActualCost = actualCost
 			totalAccountCost = accountCost
+			stats.Finance = &usagestats.UsageFinanceSummary{
+				ConfirmedRequests:    confirmedRequests,
+				UnconfirmedRequests:  unconfirmedRequests,
+				ConfirmedActualCost:  confirmedActualCost,
+				ConfirmedAccountCost: confirmedAccountCost,
+				ConfirmedProfit:      confirmedActualCost - confirmedAccountCost,
+			}
 			stats.AverageDurationMs = averageDurationMs
 		case inboundGrouped == 0 && upstreamGrouped == 1:
 			stats.Endpoints = append(stats.Endpoints, EndpointStat{

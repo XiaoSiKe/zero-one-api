@@ -520,7 +520,8 @@ func TestUsageLogRepositoryUsageAggregatesFilterNativeCompactionV2(t *testing.T)
 			WillReturnRows(sqlmock.NewRows([]string{
 				"inbound_grouped", "upstream_grouped", "inbound_endpoint", "upstream_endpoint",
 				"requests", "input_tokens", "output_tokens", "cache_creation_tokens", "cache_read_tokens",
-				"cost", "actual_cost", "account_cost", "avg_duration_ms",
+				"cost", "actual_cost", "account_cost", "confirmed_requests", "unconfirmed_requests",
+				"confirmed_actual_cost", "confirmed_account_cost", "avg_duration_ms",
 			}))
 
 		_, err := repo.GetStatsWithFilters(context.Background(), filters)
@@ -639,12 +640,16 @@ func TestUsageLogRepositoryGetStatsWithFiltersRequestedModelSource(t *testing.T)
 			"cost",
 			"actual_cost",
 			"account_cost",
+			"confirmed_requests",
+			"unconfirmed_requests",
+			"confirmed_actual_cost",
+			"confirmed_account_cost",
 			"avg_duration_ms",
 		}).
-			AddRow(1, 1, nil, nil, int64(1), int64(2), int64(3), int64(1), int64(3), 1.2, 1.0, 1.2, 20.0).
-			AddRow(0, 1, "/v1/responses", nil, int64(1), int64(2), int64(3), int64(1), int64(3), 1.2, 1.0, 1.2, 20.0).
-			AddRow(1, 0, nil, "/v1/responses", int64(1), int64(2), int64(3), int64(1), int64(3), 1.2, 1.0, 1.2, 20.0).
-			AddRow(0, 0, "/v1/responses", "/v1/responses", int64(1), int64(2), int64(3), int64(1), int64(3), 1.2, 1.0, 1.2, 20.0))
+			AddRow(1, 1, nil, nil, int64(1), int64(2), int64(3), int64(1), int64(3), 1.2, 1.0, 1.2, int64(1), int64(0), 1.0, 1.2, 20.0).
+			AddRow(0, 1, "/v1/responses", nil, int64(1), int64(2), int64(3), int64(1), int64(3), 1.2, 1.0, 1.2, int64(1), int64(0), 1.0, 1.2, 20.0).
+			AddRow(1, 0, nil, "/v1/responses", int64(1), int64(2), int64(3), int64(1), int64(3), 1.2, 1.0, 1.2, int64(1), int64(0), 1.0, 1.2, 20.0).
+			AddRow(0, 0, "/v1/responses", "/v1/responses", int64(1), int64(2), int64(3), int64(1), int64(3), 1.2, 1.0, 1.2, int64(1), int64(0), 1.0, 1.2, 20.0))
 
 	stats, err := repo.GetStatsWithFilters(context.Background(), filters)
 	require.NoError(t, err)
@@ -680,8 +685,12 @@ func TestUsageLogRepositoryGetStatsWithFiltersRequestTypePriority(t *testing.T) 
 			"cost",
 			"actual_cost",
 			"account_cost",
+			"confirmed_requests",
+			"unconfirmed_requests",
+			"confirmed_actual_cost",
+			"confirmed_account_cost",
 			"avg_duration_ms",
-		}).AddRow(1, 1, nil, nil, int64(1), int64(2), int64(3), int64(1), int64(3), 1.2, 1.0, 1.2, 20.0))
+		}).AddRow(1, 1, nil, nil, int64(1), int64(2), int64(3), int64(1), int64(3), 1.2, 1.0, 1.2, int64(1), int64(0), 1.0, 1.2, 20.0))
 
 	stats, err := repo.GetStatsWithFilters(context.Background(), filters)
 	require.NoError(t, err)
@@ -806,13 +815,17 @@ func TestUsageLogRepositoryGetStatsWithFiltersAlwaysReturnsAccountCost(t *testin
 		WillReturnRows(sqlmock.NewRows([]string{
 			"inbound_grouped", "upstream_grouped", "inbound_endpoint", "upstream_endpoint",
 			"requests", "input_tokens", "output_tokens", "cache_creation_tokens", "cache_read_tokens",
-			"cost", "actual_cost", "account_cost", "avg_duration_ms",
-		}).AddRow(1, 1, nil, nil, int64(50), int64(1000), int64(2000), int64(60), int64(40), 15.0, 12.5, 11.0, 100.0))
+			"cost", "actual_cost", "account_cost", "confirmed_requests", "unconfirmed_requests",
+			"confirmed_actual_cost", "confirmed_account_cost", "avg_duration_ms",
+		}).AddRow(1, 1, nil, nil, int64(50), int64(1000), int64(2000), int64(60), int64(40), 15.0, 12.5, 11.0, int64(45), int64(5), 10.5, 11.0, 100.0))
 
 	stats, err := repo.GetStatsWithFilters(context.Background(), filters)
 	require.NoError(t, err)
 	require.NotNil(t, stats.TotalAccountCost, "TotalAccountCost must always be returned, even without AccountID filter")
 	require.Equal(t, 11.0, *stats.TotalAccountCost)
+	require.Equal(t, int64(45), stats.Finance.ConfirmedRequests)
+	require.Equal(t, int64(5), stats.Finance.UnconfirmedRequests)
+	require.Equal(t, -0.5, stats.Finance.ConfirmedProfit)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
