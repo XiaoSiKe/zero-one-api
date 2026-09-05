@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { calendarDays, dailyValues, financeValues, billedSummary, dateInTimezone, formatMoney } from './recovered-frontend/console/assets/dashboard-finance-v3/data.js'
+import { calendarDays, dailyValues, financeValues, billedSummary, dateInTimezone, formatMoney } from './recovered-frontend/console/assets/dashboard-finance-v4/data.js'
 
 test('revenue uses actual debits and profit subtracts historically recorded account cost', () => {
   const stats = { total_requests: 2, total_tokens: 1234, total_actual_cost: 12, total_account_cost: 5, finance: { confirmed_requests: 2, unconfirmed_requests: 0, confirmed_actual_cost: 12, confirmed_account_cost: 5, confirmed_profit: 7 } }
@@ -20,6 +20,17 @@ test('partial finance subtracts cost only from the matching confirmed invoices',
   assert.notEqual(mixed.confirmedProfit, mixed.charged - mixed.confirmedCost)
 })
 
+test('daily unknown cost is unavailable while confirmed zero and an empty day remain zero', () => {
+  const unknown = { total_requests: 2, total_actual_cost: 39, finance: { confirmed_requests: 0, unconfirmed_requests: 2, confirmed_actual_cost: 0, confirmed_account_cost: 0, confirmed_profit: 0 } }
+  assert.equal(dailyValues(unknown).cost, null)
+  assert.equal(dailyValues(unknown).earnings, null)
+  for (const requests of [0, 2]) {
+    const known = { total_requests: requests, total_actual_cost: 0, finance: { confirmed_requests: requests, unconfirmed_requests: 0, confirmed_actual_cost: 0, confirmed_account_cost: 0, confirmed_profit: 0 } }
+    assert.equal(dailyValues(known).cost, 0)
+    assert.equal(dailyValues(known).earnings, 0)
+  }
+})
+
 test('calendar-day iteration includes both bounds and survives month, leap-day and DST boundaries', () => {
   assert.deepEqual(calendarDays('2024-02-28', '2024-03-01'), ['2024-02-28', '2024-02-29', '2024-03-01'])
   assert.equal(calendarDays('2026-03-07', '2026-03-09').length, 3)
@@ -35,7 +46,7 @@ test('bill-based totals are independent of rolling dashboard caches and share th
 })
 
 test('token consumption uses M below one billion and B at the boundary', async () => {
-  const { formatTokenConsumption } = await import('./recovered-frontend/console/assets/dashboard-finance-v3/data.js')
+  const { formatTokenConsumption } = await import('./recovered-frontend/console/assets/dashboard-finance-v4/data.js')
   for (const [input, expected] of [[517683278, '517.68M'], [1e9, '1.00B'], [12.02e9, '12.02B'], [999999999, '1000.00M'], [5000, '0.01M'], [1, '0.00M'], [0, '0.00M'], [null, '—'], [NaN, '—']]) {
     assert.equal(formatTokenConsumption(input), expected)
   }
