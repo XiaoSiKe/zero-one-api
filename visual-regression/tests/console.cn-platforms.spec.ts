@@ -458,6 +458,40 @@ test.describe('Recovered CN Provider management contracts', () => {
     expect(pageErrors).toEqual([])
   })
 
+  test('a cached immutable v1 entry can still load its historical leaf closure', async ({ page }) => {
+    const currentLeaf = 'cnProviderAdminLeaf-BhlEtnfM.js'
+    const historicalLeaves = [
+      'cnProviderAdminLeaf-5Wps3W0p.js',
+      'cnProviderAdminLeaf-D2Wwc1yV.js',
+      'cnProviderAdminLeaf-B-djDzla.js',
+    ]
+    const requestedHistoricalLeaves = new Set<string>()
+    let historicalLeaf = historicalLeaves[0]
+    page.on('request', (request) => {
+      const requestedLeaf = historicalLeaves.find((leaf) =>
+        new URL(request.url()).pathname.endsWith(`/${leaf}`),
+      )
+      if (requestedLeaf) requestedHistoricalLeaves.add(requestedLeaf)
+    })
+    await page.route('**/assets/cn-provider-admin-v1/cn-provider-admin.js', async (route) => {
+      const response = await route.fetch()
+      const source = await response.text()
+      expect(source).toContain(currentLeaf)
+      await route.fulfill({
+        response,
+        body: source.replace(currentLeaf, historicalLeaf),
+      })
+    })
+
+    for (historicalLeaf of historicalLeaves) {
+      await page.goto(`${consoleOrigin}/admin/accounts`)
+      await expect(page.locator('.app-shell')).toBeVisible()
+      await expect(page.getByRole('button', { name: '添加账号', exact: true })).toBeVisible()
+      await expect(page.getByRole('alert')).toHaveCount(0)
+    }
+    expect(requestedHistoricalLeaves).toEqual(new Set(historicalLeaves))
+  })
+
   test('Provider catalog leaf load failure keeps the approved shell and retries', async ({ page }) => {
     const pageErrors: string[] = []
     let leafRequests = 0
