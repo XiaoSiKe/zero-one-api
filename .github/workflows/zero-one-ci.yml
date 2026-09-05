@@ -137,6 +137,8 @@ jobs:
         run: make test-unit
       - name: Test backend integration suite
         working-directory: backend
+        env:
+          GOFLAGS: -p=1
         run: make test-integration
 
   deployment:

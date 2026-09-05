@@ -79,10 +79,12 @@ for (const surface of ['source', 'recovered'] as const) {
 
     test('unavailable settings expose a working manual retry without authorizing data', async ({ page }) => {
       await seedLanding(page)
-      let unavailable = true
       const dataRequests: string[] = []
       await page.route('**/api/v1/settings/public*', async (route) => {
-        if (unavailable) return route.fulfill({ status: 503, body: '{}' })
+        const manuallyRequested = await page.evaluate(() => Boolean(
+          (window as Window & { __manualSettingsRetry?: boolean }).__manualSettingsRetry,
+        ))
+        if (!manuallyRequested) return route.fulfill({ status: 503, body: '{}' })
         return route.fallback()
       })
       page.on('request', (request) => {
@@ -92,7 +94,14 @@ for (const surface of ['source', 'recovered'] as const) {
       await page.locator('#pricing').scrollIntoViewIfNeeded()
       await expect(page.getByRole('heading', { name: '官网数据暂时无法加载' })).toBeVisible()
       expect(dataRequests).toEqual([])
-      unavailable = false
+      await page.evaluate(() => {
+        document.addEventListener('click', (event) => {
+          const button = event.target instanceof Element ? event.target.closest('button') : null
+          if (button?.textContent?.trim() === '重新读取') {
+            (window as Window & { __manualSettingsRetry?: boolean }).__manualSettingsRetry = true
+          }
+        }, { capture: true })
+      })
       await page.getByRole('button', { name: '重新读取', exact: true }).click()
       await expect(page.locator('.price-table tbody tr').first()).toBeVisible()
       await page.locator('#status').scrollIntoViewIfNeeded()

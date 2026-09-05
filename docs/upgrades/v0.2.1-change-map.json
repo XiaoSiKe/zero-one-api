@@ -1214,5 +1214,36 @@
     "backend/internal/config/config.go",
     "backend/internal/config/migration.go",
     "backend/internal/config/migration_test.go"
-  ]
+  ],
+  "version_metadata_calibration": {
+    "source_ui_unchanged": true,
+    "previous_tag": "ui-approved-2026-09-05-imagefinance",
+    "new_tag": "ui-approved-2026-09-05-v021-metadata",
+    "pixel_rectangle": [
+      20,
+      38,
+      80,
+      60
+    ],
+    "references": [
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-accounts-cn-platform-options.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-groups-cn-platform-options.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-ops-cn-platform-options.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-accounts-cn-protocol-guidance.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-channels-cn-platform-options.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-online-image-new-user-sidebar.png",
+      "visual-regression/tests/__screenshots__/chromium-mobile/console-online-image-new-user-sidebar.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-affiliate-customers.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-announcement-editor.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-shell-light-expanded.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v1.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v2.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-model-plaza-pricing.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-user-redeem.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-subscriptions-cn-platform-options.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-monitor-cn-platform-options.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-date-picker.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-online-image-new-user-empty.png"
+    ]
+  }
 }
