@@ -27,6 +27,33 @@ function requireMarkers(source, markers, label) {
   }
 }
 
+function collectJavaScriptClosure(directory, roots, label) {
+  const javascriptAssets = new Set(
+    readdirSync(directory).filter((name) => name.endsWith('.js')),
+  )
+  const reachableAssets = new Set()
+  const queue = [...roots]
+  const localJavaScriptReference = /["']\.\/([^"']+\.js)["']/g
+  while (queue.length > 0) {
+    const name = queue.pop()
+    if (!name || reachableAssets.has(name)) continue
+    if (!javascriptAssets.has(name)) {
+      throw new Error(`${label} reachable JavaScript asset is missing: ${name}`)
+    }
+    reachableAssets.add(name)
+    const source = read(resolve(directory, name), `${label} asset ${name}`)
+    for (const match of source.matchAll(localJavaScriptReference)) queue.push(match[1])
+  }
+  const unreachableAssets = [...javascriptAssets].filter((name) => !reachableAssets.has(name))
+  if (unreachableAssets.length > 0) {
+    throw new Error(`${label} JavaScript assets are unreachable: ${unreachableAssets.join(', ')}`)
+  }
+  return [...reachableAssets]
+    .sort()
+    .map((name) => read(resolve(directory, name), `${label} asset ${name}`))
+    .join('\n')
+}
+
 export function verifyCNProviderConsole(consoleDir) {
   const index = read(resolve(consoleDir, 'index.html'), 'Console entry')
   const registrationStart = index.indexOf('      if (isRegistrationEntry) {')
@@ -116,11 +143,18 @@ export function verifyCNProviderConsole(consoleDir) {
   }
 
   const legacyAdapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v1')
-  const legacyModuleSource = readdirSync(legacyAdapterDirectory)
-    .filter((name) => name.endsWith('.js'))
-    .sort()
-    .map((name) => read(resolve(legacyAdapterDirectory, name), `Legacy CN Provider asset ${name}`))
-    .join('\n')
+  const legacyModuleSource = collectJavaScriptClosure(
+    legacyAdapterDirectory,
+    [
+      'cn-provider-admin.js',
+      // These roots were referenced by immutable v1 entry responses before the
+      // current entry was deployed. Cached entries must retain their full closure.
+      'cnProviderAdminLeaf-5Wps3W0p.js',
+      'cnProviderAdminLeaf-D2Wwc1yV.js',
+      'cnProviderAdminLeaf-B-djDzla.js',
+    ],
+    'Legacy CN Provider Admin',
+  )
   requireMarkers(legacyModuleSource, [
     '/admin/accounts', '/admin/groups', 'Kimi', 'Zhipu GLM', 'DeepSeek',
     'account_mode', 'api_protocol', 'adaptive', 'api_base_urls',
@@ -140,30 +174,11 @@ export function verifyCNProviderConsole(consoleDir) {
     resolve(adapterDirectory, 'cn-provider-admin.css'),
     'CN Provider Admin stylesheet',
   )
-  const javascriptAssets = new Set(
-    readdirSync(adapterDirectory).filter((name) => name.endsWith('.js')),
+  const moduleSource = collectJavaScriptClosure(
+    adapterDirectory,
+    ['cn-provider-admin.js'],
+    'CN Provider',
   )
-  const reachableAssets = new Set()
-  const queue = ['cn-provider-admin.js']
-  const localJavaScriptReference = /["']\.\/([^"']+\.js)["']/g
-  while (queue.length > 0) {
-    const name = queue.pop()
-    if (!name || reachableAssets.has(name)) continue
-    if (!javascriptAssets.has(name)) {
-      throw new Error(`CN Provider reachable JavaScript asset is missing: ${name}`)
-    }
-    reachableAssets.add(name)
-    const source = read(resolve(adapterDirectory, name), `CN Provider asset ${name}`)
-    for (const match of source.matchAll(localJavaScriptReference)) queue.push(match[1])
-  }
-  const unreachableJavaScript = [...javascriptAssets].filter((name) => !reachableAssets.has(name))
-  if (unreachableJavaScript.length > 0) {
-    throw new Error(`CN Provider JavaScript assets are unreachable: ${unreachableJavaScript.join(', ')}`)
-  }
-  const moduleSource = [...reachableAssets]
-    .sort()
-    .map((name) => read(resolve(adapterDirectory, name), `CN Provider asset ${name}`))
-    .join('\n')
 
   requireMarkers(moduleSource, [
     '/admin/channels/pricing', '/admin/channels/monitor',
