@@ -9,6 +9,9 @@ const harness = vi.hoisted(() => ({
   refreshImageGenerationAccess: vi.fn(),
   listAccessibleImageModels: vi.fn(),
   generateImage: vi.fn(),
+  saveHistory: vi.fn(),
+  readHistory: vi.fn(),
+  clearHistory: vi.fn(),
   showError: vi.fn(),
   showInfo: vi.fn(),
   showSuccess: vi.fn(),
@@ -35,6 +38,12 @@ vi.mock('@/features/online-image/api', () => ({
   listAccessibleImageModels: harness.listAccessibleImageModels,
 }))
 
+vi.mock('@/features/online-image/history', () => ({
+  saveImageGenerationHistoryEntry: harness.saveHistory,
+  readImageGenerationHistory: harness.readHistory,
+  clearImageGenerationHistory: harness.clearHistory,
+}))
+
 vi.mock('@/stores/app', () => ({
   useAppStore: () => ({
     cachedPublicSettings: { custom_menu_items: harness.customMenuItems },
@@ -45,7 +54,7 @@ vi.mock('@/stores/app', () => ({
 }))
 
 vi.mock('@/stores/auth', () => ({
-  useAuthStore: () => ({ isAdmin: harness.isAdmin }),
+  useAuthStore: () => ({ isAdmin: harness.isAdmin, user: { id: 7 } }),
 }))
 
 vi.mock('@/stores/adminSettings', () => ({
@@ -85,6 +94,9 @@ const messages: Record<string, string> = {
   'imageGeneration.history.clear': '清空历史',
   'imageGeneration.history.empty': '暂无历史记录',
   'imageGeneration.messages.mobileSaveHint': '已打开图片，请长按图片保存。',
+  'imageGeneration.messages.generationError': '本次生成失败：{message}',
+  'imageGeneration.messages.invalidResponse': '图片接口返回了异常数据，请稍后重试。',
+  'imageGeneration.messages.noImages': '接口没有返回可预览的图片。',
   'common.selectOption': '请选择',
   'common.loading': '加载中',
   'common.noOptionsFound': '无可用选项',
@@ -234,6 +246,9 @@ describe('ImageGenerationView', () => {
     harness.refreshImageGenerationAccess.mockReset().mockResolvedValue(undefined)
     harness.listAccessibleImageModels.mockReset().mockResolvedValue(['gpt-image-2', 'gpt-image-1.5'])
     harness.generateImage.mockReset()
+    harness.saveHistory.mockReset().mockImplementation(async (_userId, entry) => [entry])
+    harness.readHistory.mockReset().mockResolvedValue([])
+    harness.clearHistory.mockReset()
     harness.showError.mockReset()
     harness.showInfo.mockReset()
     harness.showSuccess.mockReset()
@@ -324,6 +339,46 @@ describe('ImageGenerationView', () => {
       'sk-first',
       expect.objectContaining({ response_format: 'b64_json' }),
     )
+  })
+
+  it('shows a failed attempt in the results panel while preserving the previous image and history', async () => {
+    harness.generateImage.mockResolvedValueOnce({ data: [{ b64_json: 'aW1hZ2U=' }] })
+      .mockRejectedValueOnce(Object.assign(new Error('上游生图超时'), { code: 'upstream_timeout' }))
+    const wrapper = await mountView()
+    await wrapper.get('textarea').setValue('draw a cat')
+    await wrapper.get('[data-testid="start-generation"]').trigger('click')
+    await flushPromises()
+    expect(harness.saveHistory).toHaveBeenCalledTimes(1)
+    const image = wrapper.get('[data-testid="results-panel"] img').attributes('src')
+    harness.showSuccess.mockClear()
+
+    await wrapper.get('[data-testid="start-generation"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="results-panel"] [role="status"]').text()).toBe('本次生成失败：上游生图超时')
+    expect(wrapper.get('[data-testid="results-panel"] img').attributes('src')).toBe(image)
+    expect(harness.showError).toHaveBeenCalledWith('上游生图超时')
+    expect(harness.showSuccess).not.toHaveBeenCalled()
+    expect(harness.saveHistory).toHaveBeenCalledTimes(1)
+    expect(harness.clearHistory).not.toHaveBeenCalled()
+    expect(harness.generateImage).toHaveBeenCalledTimes(2)
+    expect(wrapper.get('[data-testid="start-generation"]').attributes('disabled')).toBeUndefined()
+  })
+
+  it('keeps an empty success separate from a malformed response and saves neither as history', async () => {
+    harness.generateImage.mockResolvedValueOnce({ data: [] })
+      .mockRejectedValueOnce(Object.assign(new Error('Invalid image response'), { code: 'INVALID_IMAGE_RESPONSE' }))
+    const wrapper = await mountView()
+    await wrapper.get('textarea').setValue('draw a cat')
+    await wrapper.get('[data-testid="start-generation"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="results-panel"]').text()).toContain('接口没有返回可预览的图片。')
+    expect(harness.showError).not.toHaveBeenCalled()
+
+    await wrapper.get('[data-testid="start-generation"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="results-panel"]').text()).toContain('本次生成失败：图片接口返回了异常数据，请稍后重试。')
+    expect(harness.saveHistory).not.toHaveBeenCalled()
+    expect(harness.showSuccess).not.toHaveBeenCalled()
   })
 
   it('opens the image for long-press saving inside WeChat instead of fetching it', async () => {

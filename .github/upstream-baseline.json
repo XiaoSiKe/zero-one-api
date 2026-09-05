@@ -681,7 +681,17 @@
     "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-6pKNrg32.js",
     "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-BBEtrNVx.js",
     "deploy/zero-one/deduplicate-console-assets.mjs",
-    "deploy/zero-one/deduplicate-console-assets.test.mjs"
+    "deploy/zero-one/deduplicate-console-assets.test.mjs",
+    "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v4/dashboard-finance.js",
+    "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v4/data.js",
+    "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v4/dashboard-finance.css",
+    "docs/adr/0011-online-image-result-errors.md",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/index-BHv-Ew2S.js",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/index-DviBIr8Y.js",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/online-image.css",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/online-image.js",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/onlineImageLeaf-BhDXshpj.js",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/passwordRecovery-B_mr17oP.js"
   ],
   "legacy_hotfixes": [
     {
@@ -1318,7 +1328,8 @@
         "tools/check_pnpm_audit_exceptions.py",
         "docs/adr/0010-admin-billing-finance-and-date-panels.md",
         "openspec/changes/add-openai-compatible-prompt-audit/implementation-guide.md",
-        "openspec/changes/add-openai-compatible-prompt-audit/tasks.md"
+        "openspec/changes/add-openai-compatible-prompt-audit/tasks.md",
+        "docs/adr/0011-online-image-result-errors.md"
       ]
     },
     {

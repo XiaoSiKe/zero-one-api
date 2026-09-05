@@ -102,6 +102,7 @@ test.describe('Dashboard finance and repeatable date selection', () => {
     const trends = page.locator('[data-zero-one-finance-trends]')
     await expect(trends).toHaveAttribute('aria-busy', 'false')
     await expect(trends.locator('[role="status"]')).toContainText('成本与收益待确认')
+    await expect(trends.locator('tbody tr').last().locator('td').nth(3)).toHaveText('待确认')
     await expect(trends.locator('tbody tr').last().locator('td').nth(4)).toHaveText('待确认')
     await expect(trends.locator('tbody tr').last().locator('td').last()).toContainText('笔待核算')
     await page.unroute('**/api/v1/admin/usage/stats?*')
@@ -121,13 +122,13 @@ test.describe('Dashboard finance and repeatable date selection', () => {
   })
   test('a delayed finance module does not block login and initializes after the dashboard has loaded', async ({ page }) => {
     await seedConsole(page, 'v2', { authenticated: false })
-    await page.route('**/assets/dashboard-finance-v3/dashboard-finance.js', route => route.abort())
+    await page.route('**/assets/dashboard-finance-v4/dashboard-finance.js', route => route.abort())
     await page.goto('http://127.0.0.1:4173/login')
     await expect(page.locator('#password')).toBeVisible()
-    await page.unroute('**/assets/dashboard-finance-v3/dashboard-finance.js')
+    await page.unroute('**/assets/dashboard-finance-v4/dashboard-finance.js')
     await seedConsole(page)
     await dailyFixture(page)
-    await page.route('**/assets/dashboard-finance-v3/dashboard-finance.js', async route => {
+    await page.route('**/assets/dashboard-finance-v4/dashboard-finance.js', async route => {
       await new Promise(resolve => setTimeout(resolve, 800))
       await route.continue()
     })

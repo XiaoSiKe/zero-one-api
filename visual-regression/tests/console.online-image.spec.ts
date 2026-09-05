@@ -193,6 +193,33 @@ test.describe('Recovered online image generation contracts', () => {
     expect(runtimeErrors).toEqual([])
   })
 
+  test('shows HTTP 200 keepalive errors without losing the last image or creating history', async ({ page }) => {
+    const runtimeErrors = collectRuntimeErrors(page)
+    let requests = 0
+    await page.route('**/v1/images/generations', async route => {
+      requests++
+      const payload = requests === 1
+        ? { data: [{ b64_json: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=' }] }
+        : { error: { message: '上游生图超时，请稍后重试', code: 'upstream_timeout' } }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: ' \n' + JSON.stringify(payload) })
+    })
+    await page.goto(`${consoleOrigin}/images`)
+    const host = page.locator('#zero-one-online-image')
+    await expect(host.getByRole('button', { name: '模型选择' })).toContainText('gpt-image-2')
+    await host.locator('textarea').fill('a cat')
+    await host.getByTestId('start-generation').click()
+    await expect(host.getByTestId('history-download')).toHaveCount(1)
+    await host.getByTestId('start-generation').click()
+    await expect(host.getByTestId('results-panel').getByRole('status')).toHaveText('本次生成失败：上游生图超时，请稍后重试')
+    await expect(host.getByTestId('results-panel').locator('img')).toHaveCount(1)
+    await expect(host.getByTestId('history-download')).toHaveCount(1)
+    await expect(host.getByTestId('start-generation')).toBeEnabled()
+    expect(requests).toBe(2)
+    expect(runtimeErrors).toEqual([])
+    await page.reload()
+    await expect(host.getByTestId('history-download')).toHaveCount(1)
+  })
+
   test('keeps the online image link in the approved sidebar without a document reload', async ({ page }, testInfo) => {
     const runtimeErrors = collectRuntimeErrors(page)
     await page.goto(`${consoleOrigin}/admin/dashboard`)

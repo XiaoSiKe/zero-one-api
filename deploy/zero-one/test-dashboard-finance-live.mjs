@@ -53,7 +53,7 @@ try {
       (900001,900001,900001,900001,'finance-today','test-model',200,50,0,0,20,6,30,0.3,1,0.1,TIMESTAMPTZ '2026-09-04 12:00:00+08'),
       (900001,900001,900001,900001,'finance-old','test-model',300,10,0,0,100,40,60,0.4,1,0.25,TIMESTAMPTZ '2026-09-04 12:00:00+08'-interval '120 days');
   `)
-  const { dateInTimezone } = await import('./recovered-frontend/console/assets/dashboard-finance-v3/data.js')
+  const { dateInTimezone } = await import('./recovered-frontend/console/assets/dashboard-finance-v4/data.js')
   const today = dateInTimezone(new Date('2026-09-04T12:00:00+08:00'), 'Asia/Shanghai')
   const day = await api(`/admin/usage/stats?start_date=${today}&end_date=${today}&timezone=Asia%2FShanghai&nocache=true`, auth.access_token)
   assert.equal(day.total_actual_cost, 11)
@@ -97,8 +97,8 @@ try {
   assert.equal(sql(`SELECT zero_one_cost_sum(v) FROM (VALUES (0::numeric),(0::numeric)) x(v)`).trim(), '0', '有效零成本必须保留')
   await page.clock.fastForward(31000)
   await expect(cards).toHaveText(['$50.50', '$6.10', '$90.50', '$31.10'], { timeout: 30000 })
-  await expect(page.locator('.dashboard-finance-label')).toHaveText(['今日消费', '今日已核算收益', '总消费', '总计已核算收益'])
-  await expect(page.locator('[data-zero-one-finance-trends] [role="status"]')).toContainText('1 笔账单')
+  await expect(page.locator('.dashboard-finance-label')).toHaveText(['今日消费', '今日收益', '总消费', '总收益'])
+  await expect(page.locator('[data-zero-one-finance-trends] [role="status"]')).toContainText('1 笔待核算')
   await expect(page.locator('.dashboard-finance-details tbody tr').last().locator('td').nth(1)).toHaveText('517.68M')
   const tooltip = await page.evaluate(async () => {
     const { C: Chart } = await import('/assets/vendor-chart-IcnlmW08.js')
@@ -106,6 +106,12 @@ try {
     return chart.options.plugins.tooltip.callbacks.label({ parsed: { y: 517683278 } })
   })
   assert.equal(tooltip, '每日总 Token 消耗：517.68M')
+  sql(`INSERT INTO usage_logs (user_id,api_key_id,account_id,group_id,request_id,model,total_cost,actual_cost,rate_multiplier,upstream_rate_multiplier,created_at) VALUES
+    (900001,900001,900001,900001,'finance-rate-difference','test-model',100,39,0.39,0.22,TIMESTAMPTZ '2026-08-01 12:00:00+08');`)
+  const rateExample = await api('/admin/usage/stats?start_date=2026-08-01&end_date=2026-08-01&timezone=Asia%2FShanghai&nocache=true', auth.access_token)
+  assert.equal(rateExample.total_actual_cost, 39)
+  assert.equal(rateExample.total_account_cost, 22)
+  assert.equal(rateExample.finance.confirmed_profit, 17, '0.39 售价与 0.22 上游倍率对应 17 收益')
   if (process.env.FINANCE_SCREENSHOT) await page.screenshot({ path: process.env.FINANCE_SCREENSHOT, fullPage: true })
   await page.goto(`http://${names.edge}/admin/usage`)
   await expect(page.getByText('A $待确认', { exact: true }).first()).toBeVisible({ timeout: 20000 })

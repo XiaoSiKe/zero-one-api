@@ -233,7 +233,7 @@
               <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
                 {{ t('imageGeneration.results.title') }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ resultHint }}</p>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" role="status">{{ resultHint }}</p>
             </div>
             <span v-if="resultModel" class="badge badge-gray">{{ resultModel }}</span>
           </div>
@@ -431,6 +431,20 @@ type PreviewImage = ImageGenerationHistoryImage
 type HistoryEntry = ImageGenerationHistoryEntry
 
 const { t } = useI18n()
+// Keep result-only copy out of the shared locale chunks used by immutable adapters.
+const { t: resultText } = useI18n({
+  useScope: 'local',
+  messages: {
+    zh: { imageGeneration: { messages: {
+      generationError: '本次生成失败：{message}',
+      invalidResponse: '图片接口返回了异常数据，请稍后重试。',
+    } } },
+    en: { imageGeneration: { messages: {
+      generationError: 'This generation failed: {message}',
+      invalidResponse: 'The image API returned an invalid response. Please try again later.',
+    } } },
+  },
+})
 const appStore = useAppStore()
 const authStore = useAuthStore()
 const adminSettingsStore = useAdminSettingsStore()
@@ -711,7 +725,7 @@ async function submitGeneration() {
       response_format: String(responseFormat.value || ''),
       referenceImages: referenceImages.value.map((image) => image.file),
     })
-    const images = (response.data || []).flatMap((image, index) => {
+    const images = response.data.flatMap((image, index) => {
       const src = imageSource(image)
       if (!src) return []
       const revisedPrompt = String(image.revised_prompt || '').trim()
@@ -744,7 +758,12 @@ async function submitGeneration() {
     }
     appStore.showSuccess(t('imageGeneration.messages.generated'))
   } catch (error) {
-    appStore.showError(extractApiErrorMessage(error, t('imageGeneration.messages.generateFailed')))
+    const message = extractApiErrorMessage(error, t('imageGeneration.messages.generateFailed'), {
+      INVALID_GATEWAY_RESPONSE: resultText('imageGeneration.messages.invalidResponse'),
+      INVALID_IMAGE_RESPONSE: resultText('imageGeneration.messages.invalidResponse'),
+    })
+    resultHint.value = resultText('imageGeneration.messages.generationError', { message })
+    appStore.showError(message)
   } finally {
     generating.value = false
   }
