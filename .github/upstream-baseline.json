@@ -702,7 +702,10 @@
     "deploy/zero-one/test-migrate-only.mjs",
     "docs/upgrades/v0.2.1.md",
     "docs/upgrades/v0.2.1-change-map.json",
-    "backend/internal/repository/usage_log_repo_insert_shape_unit_test.go"
+    "backend/internal/repository/usage_log_repo_insert_shape_unit_test.go",
+    "backend/internal/config/config.go",
+    "backend/internal/config/migration.go",
+    "backend/internal/config/migration_test.go"
   ],
   "legacy_hotfixes": [
     {
@@ -1305,7 +1308,10 @@
         "backend/internal/repository/migrations_runner_notx_test.go",
         "backend/internal/repository/usage_log_session_id_integration_test.go",
         "backend/internal/service/api_key_auth_cache_codex_manifest_test.go",
-        "backend/internal/repository/usage_log_repo_insert_shape_unit_test.go"
+        "backend/internal/repository/usage_log_repo_insert_shape_unit_test.go",
+        "backend/internal/config/config.go",
+        "backend/internal/config/migration.go",
+        "backend/internal/config/migration_test.go"
       ]
     },
     {

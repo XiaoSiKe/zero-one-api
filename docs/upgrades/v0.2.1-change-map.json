@@ -1209,5 +1209,10 @@
       "path": "backend/internal/handler/admin/grok_oauth_handler_test.go",
       "reason": "Synchronize asynchronous test adapter state confirmed by the race detector."
     }
+  ],
+  "additional_migration_support": [
+    "backend/internal/config/config.go",
+    "backend/internal/config/migration.go",
+    "backend/internal/config/migration_test.go"
   ]
 }

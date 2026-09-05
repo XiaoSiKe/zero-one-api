@@ -18,7 +18,7 @@ try {
     '-e', `POSTGRES_PASSWORD=${password}`, 'postgres:18.1-alpine3.23')
   databaseCreated = true
   for (let attempt = 0; ; attempt++) {
-    try { docker('exec', postgres, 'pg_isready', '-U', 'verification'); break }
+    try { docker('exec', postgres, 'pg_isready', '-h', '127.0.0.1', '-U', 'verification'); break }
     catch { assert.ok(attempt < 60, 'PostgreSQL did not become ready'); await new Promise(r => setTimeout(r, 500)) }
   }
   const sql = query => docker('exec', postgres, 'psql', '-X', '-qAt', '-U', 'verification', '-d', 'verification', '-v', 'ON_ERROR_STOP=1', '-c', query)
@@ -28,7 +28,9 @@ try {
   // run setup, bootstrap secrets, background jobs or the HTTP listener.
   const args = ['run', '--rm', '--network', prefix, '--read-only', '--tmpfs', '/tmp',
     ...Object.entries(env).flatMap(([key, value]) => ['-e', `${key}=${value}`]), image]
-  docker(...args, '--migrate-only')
+  const migration = spawnSync('docker', [...args, '--migrate-only'], { encoding: 'utf8', timeout: 120000 })
+  assert.equal(migration.status, 0, `${migration.stdout}\n${migration.stderr}`)
+  assert.doesNotMatch(`${migration.stdout}\n${migration.stderr}`, /TOTP encryption key auto-generated|JWT secret appears weak|Auto setup mode enabled/)
   const expected = ['232_add_usage_log_upstream_request_id.sql', '233_add_usage_log_upstream_request_id_index_notx.sql',
     '234_channel_max_reasoning_effort_multiplier.sql', '234_group_codex_models_manifest_config.sql', '234_upstream_declared_usage_cost.sql']
   for (const filename of expected) assert.equal(sql(`SELECT count(*) FROM schema_migrations WHERE filename='${filename}'`), '1')

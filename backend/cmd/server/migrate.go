@@ -13,7 +13,7 @@ import (
 // runMigrationsOnly deliberately avoids InitEnt and setup: both can initialize
 // business state or secrets. The SQL runner is the sole migration authority.
 func runMigrationsOnly() error {
-	cfg, err := config.LoadForBootstrap()
+	cfg, err := config.LoadForMigration()
 	if err != nil {
 		return fmt.Errorf("load database configuration: %w", err)
 	}
