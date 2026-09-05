@@ -5,7 +5,7 @@
 > rewrite upstream authorship or historical release evidence; see the
 > [migration checklist](docs/PRODUCTION_SERVER_CN.md#历史发布索引). Its technical
 > baseline is the stable upstream release
-> [Wei-Shaw/sub2api v0.2.0@aa236488351eb71e120fc2b6fb32e36b0374c918](https://github.com/Wei-Shaw/sub2api/tree/aa236488351eb71e120fc2b6fb32e36b0374c918).
+> [Wei-Shaw/sub2api v0.2.1@578785ee7fb35030b094b69624efe25670a36f5f](https://github.com/Wei-Shaw/sub2api/tree/578785ee7fb35030b094b69624efe25670a36f5f).
 > This is an independently maintained downstream distribution, currently hosted
 > as a standalone GitHub repository, not a GitHub-native fork. Full upstream
 > history and a read-only `upstream` remote preserve its provenance; see

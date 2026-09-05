@@ -78,6 +78,7 @@ var usageLogColumnDefinitions = [...]struct{ name, sqlType string }{
 	{"billing_tier", "text"},
 	{"billing_mode", "text"},
 	{"account_stats_cost", "numeric"},
+	{"upstream_request_id", "text"},
 	{"session_id", "text"},
 	{"native_compaction_v2", "boolean"},
 	{"upstream_rate_multiplier", "numeric"},
@@ -775,6 +776,7 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 	modelMappingChain := nullString(log.ModelMappingChain)
 	billingTier := nullString(log.BillingTier)
 	billingMode := nullString(log.BillingMode)
+	upstreamRequestID := nullString(log.UpstreamRequestID)
 	sessionID := nullString(log.SessionID)
 	requestedModel := strings.TrimSpace(log.RequestedModel)
 	if requestedModel == "" {
@@ -853,6 +855,7 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 			billingTier,
 			billingMode,
 			log.AccountStatsCost, // account_stats_cost
+			upstreamRequestID,    // upstream_request_id
 			sessionID,            // session_id
 			log.NativeCompactionV2,
 			log.UpstreamRateMultiplier,

@@ -499,6 +499,7 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		billingTier               sql.NullString
 		billingMode               sql.NullString
 		accountStatsCost          sql.NullFloat64
+		upstreamRequestID         sql.NullString
 		sessionID                 sql.NullString
 		nativeCompactionV2        bool
 		upstreamRateMultiplier    sql.NullFloat64
@@ -565,6 +566,7 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		&billingTier,
 		&billingMode,
 		&accountStatsCost,
+		&upstreamRequestID,
 		&sessionID,
 		&nativeCompactionV2,
 		&upstreamRateMultiplier,
@@ -702,6 +704,9 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 	}
 	if sessionID.Valid {
 		log.SessionID = &sessionID.String
+	}
+	if upstreamRequestID.Valid {
+		log.UpstreamRequestID = &upstreamRequestID.String
 	}
 
 	return log, nil

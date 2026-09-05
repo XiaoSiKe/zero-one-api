@@ -1,0 +1,1249 @@
+{
+  "previous_upstream": "aa236488351eb71e120fc2b6fb32e36b0374c918",
+  "upstream": "578785ee7fb35030b094b69624efe25670a36f5f",
+  "product": "5809ad69d35aa5d8bd9ba9415f49ebe4b8f90a4b",
+  "changes": [
+    {
+      "path": "README.md",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "README_CN.md",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "README_JA.md",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "assets/partners/logos/novada.png",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "assets/partners/logos/sui-xiang.jpg",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/cmd/server/VERSION",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/dev-docs/upstream-error-proxy-attribution.md",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/group.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/group/group.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/group_create.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/group_update.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/migrate/schema.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/ent/mutation.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/ent/runtime/runtime.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/ent/schema/group.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/domain/codex_models_manifest_config.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/admin/account_handler.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/admin/account_handler_list_test.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/admin/admin_helpers_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/admin/channel_handler.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/admin/channel_handler_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/admin/group_handler.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/available_channel_handler.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/composite_platform.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/composite_platform_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/concurrency_error_response.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/concurrency_error_response_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/dto/group_mapper_codex_manifest_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/dto/mappers.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/dto/types.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/gateway_handler.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/gateway_handler_responses.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/gemini_v1beta_handler.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/gemini_v1beta_handler_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/openai_automation_bootstrap_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/openai_chat_completions.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/openai_codex_models_handler.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/openai_codex_models_handler_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/openai_delegation_bootstrap_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/openai_embeddings.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/openai_gateway_cyber_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/openai_gateway_handler.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/openai_gateway_handler_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/openai_service_tier_validation_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/stream_error_event.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/stream_error_event_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/chatcompletions_responses_bridge.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/chatcompletions_responses_bridge_custom_tools_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/responses_tool_search_discoveries.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/pkg/claude/cli_version.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/pkg/claude/cli_version_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/pkg/claude/constants.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/pkg/openai/constants.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/pkg/openai/constants_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/api_key_repo.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/repository/api_key_repo_codex_manifest_projection_integration_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/channel_repo_pricing.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/channel_repo_pricing_time_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/fixtures_integration_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/group_repo.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/http_upstream.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/http_upstream_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/migrations_runner.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/ops_repo_metrics.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/ops_repo_metrics_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/session_limit_cache.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/session_limit_cache_integration_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/usage_log_repo_insert.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/repository/usage_log_repo_insert_shape_unit_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/usage_log_repo_query.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/repository/usage_log_repo_request_type_test.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/account_stats_pricing.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/account_stats_pricing_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/admin_account.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/admin_group.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/admin_group_duplicate.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/admin_service.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/admin_service_group_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_claude.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_compat.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_gemini.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_retry.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_streaming.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_upstream.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/api_key_auth_cache.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/api_key_auth_cache_codex_manifest_test.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/api_key_auth_cache_impl.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/api_key_auth_cache_openai_fast_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/api_key_auth_cache_profit_test.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/billing_service.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/billing_service_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/billing_token_cost_request.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/billing_token_cost_request_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/channel.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/channel_available.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/channel_pricing_multipliers_test.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/gateway_anthropic_passthrough.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/gateway_bedrock.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/gateway_billing_header.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/gateway_billing_header_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/gateway_channel_restriction_load_aware_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/gateway_claude_oauth_body.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/gateway_count_tokens.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/gateway_forward.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/gateway_forward_as_chat_completions.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/gateway_forward_as_responses.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/gateway_request.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/gateway_request_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/gateway_scheduling.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/gateway_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/gateway_upstream_request.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/gateway_upstream_response.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/gateway_upstream_transport_error.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/gateway_upstream_transport_error_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/gateway_usage_billing.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/gemini_chat_completions_compat_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/gemini_messages_compat_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/grok_audio.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/grok_credential_failure.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/grok_credential_failure_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/grok_media.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/group.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/group_codex_models_manifest.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/http_upstream_profile.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/http_upstream_profile_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/identity_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/model_plaza_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/model_plaza_service_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/model_pricing_resolver.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_alpha_search.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_model_metadata.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_model_metadata_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_models_pinned.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_models_pinned_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_models_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_models_service_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_transform.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_transform_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_compact_fallback.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_compact_fallback_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_compat_model_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_compat_prompt_cache_key.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_compat_prompt_cache_key_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_cyber_policy.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_embeddings.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_encrypted_content_lineage.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_encrypted_content_lineage_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_fast_policy_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_fast_policy_ws_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_fast_service_tier_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_first_output_timeout.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_first_output_timeout_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_cc_pipeline.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_chat_completions.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_chat_completions_anthropic_native.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_chat_completions_raw.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_chat_completions_raw_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_chat_completions_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_count_tokens.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_count_tokens_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_forward.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_grok.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_grok_chat_bridge.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_messages.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_messages_anthropic_native.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_messages_anthropic_native_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_messages_chat_fallback.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_passthrough.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_record_usage_test.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_request_body.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_request_body_reasoning_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_response_handling.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_responses_anthropic_native.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_responses_chat_fallback.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_upstream_errors.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_usage.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_usage_integrity.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gpt56_max_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_images.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_images_b64_backfill.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_images_b64_backfill_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_images_responses.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_messages_continuation.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_model_alias.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_model_alias_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_opencode_session.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_opencode_session_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_raw_stream_truncation.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_reasoning_effort_policy.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_reasoning_effort_policy_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_routing_hint.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_routing_hint_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_silent_refusal.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_upstream_transport_error.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_upstream_transport_error_handle_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_fallback_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_forwarder_ingress.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_forwarder_ingress_session_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_forwarder_ingress_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_forwarder_payload.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_forwarder_v2.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_forwarder_v2_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_http_bridge.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_http_bridge_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_ingress_capacity_shed_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_replay_allocation_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_state_store.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_v2_passthrough_adapter.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_queue_sanitize_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_repo_mock_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_upstream_context.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/ops_upstream_context_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/payment_order_expiry_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/payment_order_lifecycle.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/payment_order_lifecycle_test.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/pricing_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/pricing_service_hot_reload_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/pricing_service_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/session_limit_cache.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/session_limit_release_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/setting_features.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/settings_view.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/upstream_models.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/upstream_models_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/upstream_request_id.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/upstream_request_id_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/usage_log.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/testutil/stubs.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/util/urlvalidator/validator.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/util/urlvalidator/validator_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/migrations/232_add_usage_log_upstream_request_id.sql",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/migrations/233_add_usage_log_upstream_request_id_index_notx.sql",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/migrations/234_channel_max_reasoning_effort_multiplier.sql",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/migrations/234_group_codex_models_manifest_config.sql",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "deploy/config.example.yaml",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/api/admin/accounts.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/api/admin/channels.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/api/admin/settings.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/api/channels.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/components/account/CreateAccountModal.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/account/EditAccountModal.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/account/ModelWhitelistSelector.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/account/UpstreamRequestIdHeaderField.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/CreateAccountModal.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/EditAccountModal.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/ModelWhitelistSelector.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/UpstreamRequestIdHeaderField.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/admin/channel/PricingEntryCard.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/admin/channel/__tests__/PricingEntryCard.timePricing.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/admin/channel/types.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/admin/group/CodexManifestAccountsField.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/admin/group/ReasoningEffortPolicyFields.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/admin/group/__tests__/CodexManifestAccountsField.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/admin/group/__tests__/ReasoningEffortPolicyFields.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/admin/usage/UsageTable.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/admin/usage/__tests__/UsageTable.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/common/HelpTooltip.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/common/__tests__/HelpTooltip.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/keys/UseKeyModal.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/keys/__tests__/UseKeyModal.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/layout/AppSidebar.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/layout/__tests__/AppSidebar.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/modelPlaza/PlazaModelPricingTable.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/modelPlaza/__tests__/PlazaModelPricingTable.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/payment/PaymentStatusPanel.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/components/payment/__tests__/PaymentStatusPanel.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/composables/__tests__/useModelWhitelist.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/composables/useModelWhitelist.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/i18n/__tests__/openaiFastPolicyLocales.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/i18n/__tests__/usageServiceTierLocales.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/accounts.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/channels.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/overview.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/resources.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/settings.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/dashboard.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/accounts.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/channels.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/overview.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/resources.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/settings.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/dashboard.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/types/index.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/utils/__tests__/usageServiceTier.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/utils/usageServiceTier.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/views/admin/AccountsView.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/views/admin/ChannelsView.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/views/admin/GroupsView.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/views/admin/SettingsView.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/views/admin/UsageView.vue",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/AccountsView.lite.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/UsageView.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/groupsModelsListLayout.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/groupsReasoningEffort.spec.ts",
+      "decision": "preserve-approved-ui"
+    },
+    {
+      "path": "frontend/src/views/admin/groupsReasoningEffort.ts",
+      "decision": "preserve-approved-ui"
+    }
+  ],
+  "additional_test_repairs": [
+    {
+      "path": "backend/internal/service/channel_monitor_checker_body_test.go",
+      "reason": "Synchronize asynchronous test adapter state confirmed by the race detector."
+    },
+    {
+      "path": "backend/internal/service/grok_free_quota_gate_test.go",
+      "reason": "Synchronize asynchronous test adapter state confirmed by the race detector."
+    },
+    {
+      "path": "backend/internal/handler/admin/grok_import_probe_test.go",
+      "reason": "Synchronize asynchronous test adapter state confirmed by the race detector."
+    },
+    {
+      "path": "backend/internal/handler/admin/grok_oauth_handler_test.go",
+      "reason": "Synchronize asynchronous test adapter state confirmed by the race detector."
+    }
+  ],
+  "additional_migration_support": [
+    "backend/internal/config/config.go",
+    "backend/internal/config/migration.go",
+    "backend/internal/config/migration_test.go"
+  ],
+  "version_metadata_calibration": {
+    "source_ui_unchanged": true,
+    "previous_tag": "ui-approved-2026-09-05-imagefinance",
+    "new_tag": "ui-approved-2026-09-05-v021metadata",
+    "pixel_rectangle": [
+      20,
+      38,
+      80,
+      60
+    ],
+    "references": [
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-accounts-cn-platform-options.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-groups-cn-platform-options.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-ops-cn-platform-options.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-accounts-cn-protocol-guidance.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-channels-cn-platform-options.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-online-image-new-user-sidebar.png",
+      "visual-regression/tests/__screenshots__/chromium-mobile/console-online-image-new-user-sidebar.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-affiliate-customers.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-announcement-editor.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-shell-light-expanded.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v1.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v2.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-model-plaza-pricing.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-user-redeem.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-subscriptions-cn-platform-options.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-monitor-cn-platform-options.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-date-picker.png",
+      "visual-regression/tests/__screenshots__/chromium-desktop/console-online-image-new-user-empty.png"
+    ]
+  }
+}

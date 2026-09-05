@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -60,6 +61,7 @@ func setupFakeAnthropic(t *testing.T, handler *captureHandler) string {
 }
 
 type openAICaptureHandler struct {
+	mu                        sync.Mutex
 	lastBody                  map[string]any
 	lastHeaders               http.Header
 	lastPath                  string
@@ -69,25 +71,28 @@ type openAICaptureHandler struct {
 }
 
 func (h *openAICaptureHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.lastHeaders = r.Header.Clone()
-	h.lastPath = r.URL.Path
 	defer func() { _ = r.Body.Close() }()
 	var parsed map[string]any
 	_ = json.NewDecoder(r.Body).Decode(&parsed)
+	h.mu.Lock()
+	h.lastHeaders = r.Header.Clone()
+	h.lastPath = r.URL.Path
 	h.lastBody = parsed
+	status := h.status
+	h.mu.Unlock()
 
-	if h.status == 0 {
-		h.status = http.StatusOK
+	if status == 0 {
+		status = http.StatusOK
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(h.status)
+	w.WriteHeader(status)
 	if h.rawResponse != "" {
 		_, _ = w.Write([]byte(h.rawResponse))
 		return
 	}
 
 	answer := answerFromOpenAIRequest(parsed)
-	if h.lastPath == providerOpenAIResponsesPath {
+	if r.URL.Path == providerOpenAIResponsesPath {
 		output := []map[string]any{}
 		if h.responsesLeadingReasoning {
 			output = append(output, map[string]any{

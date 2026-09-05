@@ -2152,19 +2152,7 @@ func setDefaults() {
 	viper.SetDefault("dingtalk_connect.username_overwrite_policy", "if_empty")
 
 	// Database
-	viper.SetDefault("database.host", "localhost")
-	viper.SetDefault("database.port", 5432)
-	viper.SetDefault("database.user", "postgres")
-	viper.SetDefault("database.password", "postgres")
-	viper.SetDefault("database.dbname", "sub2api")
-	viper.SetDefault("database.sslmode", "prefer")
-	viper.SetDefault("database.max_open_conns", 256)
-	viper.SetDefault("database.max_idle_conns", 128)
-	viper.SetDefault("database.conn_max_lifetime_minutes", 30)
-	viper.SetDefault("database.conn_max_idle_time_minutes", 5)
-	viper.SetDefault("database.user_platform_quota_flusher_enabled", false)
-	viper.SetDefault("database.user_platform_quota_flush_interval_ms", 2000)
-	viper.SetDefault("database.user_platform_quota_flush_batch_size", 1000)
+	setDatabaseDefaults(viper.SetDefault)
 
 	// Redis
 	viper.SetDefault("redis.host", "localhost")
@@ -2299,7 +2287,7 @@ func setDefaults() {
 	viper.SetDefault("plugins.start_timeout_seconds", 15)
 
 	// Timezone (default to Asia/Shanghai for Chinese users)
-	viper.SetDefault("timezone", "Asia/Shanghai")
+	viper.SetDefault("timezone", defaultTimezone)
 
 	// API Key auth cache
 	viper.SetDefault("api_key_auth_cache.l1_size", 65535)

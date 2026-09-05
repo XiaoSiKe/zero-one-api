@@ -3,7 +3,7 @@
 ## Baseline And Change Boundary
 
 项目的稳定技术基线为
-[`Wei-Shaw/sub2api v0.2.0@aa236488351eb71e120fc2b6fb32e36b0374c918`](https://github.com/Wei-Shaw/sub2api/tree/aa236488351eb71e120fc2b6fb32e36b0374c918)。
+[`Wei-Shaw/sub2api v0.2.1@578785ee7fb35030b094b69624efe25670a36f5f`](https://github.com/Wei-Shaw/sub2api/tree/578785ee7fb35030b094b69624efe25670a36f5f)。
 产品仓库 [`XiaoSiKe/zero-one-api`](https://github.com/XiaoSiKe/zero-one-api)
 配置为 `origin`，官方仓库 `Wei-Shaw/sub2api` 配置为只读
 `upstream`。`main` 是零一 API 唯一产品、CI 和发布分支；不保留第二产品分支。
@@ -142,26 +142,19 @@ edge image. Image rollback does not reverse a database migration; see
 合回 `main`。每次同步同时更新本节的 tag 与完整提交 SHA。
 主题改动保持集中，使新增上游页面继承设计系统，避免逐页分叉。
 
-当前 Upstream Baseline 是 `v0.2.0`，解引用源码提交为
-`aa236488351eb71e120fc2b6fb32e36b0374c918`。本次通过真实双父合并引入分组
-OpenAI Fast 强制与免费策略、按模型限定的 reasoning effort 映射及超限拒绝、Kimi
-原生 Responses、Codex automation bootstrap、API Key 对话缓存身份隔离、
-Anthropic fallback 清理、WebSocket terminal-event 校验和 `model_not_found` 状态
-修复。数据库新增四个迁移，为渠道和账号统计定价增加可空 1h cache-write 单价，
-并为分组增加两个 Fast 开关及默认 `downgrade` 的 reasoning 超限策略。
+当前 Upstream Baseline 是 `v0.2.1`，解引用源码提交为
+`578785ee7fb35030b094b69624efe25670a36f5f`。本次通过真实双父合并引入 Astra、
+Ultrafast、固定账号 Codex 模型清单、上游请求标识、reasoning 定价、热加载及
+网关、WS、图片和支付补单修复。整合、接口兼容与四个增量迁移的完整约定见
+[升级记录](upgrades/v0.2.1.md)。
 
-`v0.2.0` 继续保留 Zero One 自 `v0.1.179` 起验证的深拷贝隔离、分组定价
-快照 v22、创建默认值、复制/校验、durable cache invalidation、Batch Image 和
-Model Plaza 传播修复。Zero One 为避免存量账号静默改变账单，继续采用分组与
-账号同时启用长上下文计费的口径，并兼容渠道区间倍率；每个模型请求也不得恢复
-输出完整会话关联信息的 `[DEBUG-STICKY]` 日志。新增上游 Console 控件不进入
-Approved UI Snapshot；后台能力先通过管理 API 保持可用。后端临时权限仅限
-`.github/upstream-baseline.json` 的 `legacy_hotfixes` 区块所列精确文件。
+继续保留 Zero One 的分组与账号长上下文计费双重开关、定价快照隔离、
+历史上游声明成本、兑换领取证明、请求首 Token 和生图错误语义。鉴权快照升级至
+v23，新字段经过隔离复制；不重算旧账或变更现有生产配置。新增上游 Console
+控件不进入 Approved UI Snapshot，后台能力通过管理 API 保持可用。
 
-`v0.2.0` 使用 Go `1.27.0`，`.github/upstream-baseline.json` 的
-`approved_backports` 保持为空列表。每个 legacy hotfix 都必须以稳定 Tag 中的
-等价内容执行退出判定；不得因为一次同步或相近提交就删除保护，也不得将已经进入
-上游的重复补丁永久保留。
+Go 版本保持 `1.27.0`，`approved_backports` 为空。七组 legacy hotfix 继续按
+各自退出条件审查：与上游重叠的业务修复已整合，未达到等价条件的精确路径保留。
 
 The repository's dedicated Zero One CI job validates React, Vue, Go unit and
 integration suites, Compose,

@@ -1,13 +1,13 @@
 {
   "schema_version": 4,
   "repository": "Wei-Shaw/sub2api",
-  "release": "v0.2.0",
-  "commit": "aa236488351eb71e120fc2b6fb32e36b0374c918",
+  "release": "v0.2.1",
+  "commit": "578785ee7fb35030b094b69624efe25670a36f5f",
   "upstream_sync": {
-    "previous_release": "v0.1.185",
-    "previous_commit": "2ac784c51a5d0925b324efef2ba6b3446c364781",
-    "product_commit": "f0188c0bb8a4bb7a519d110208b18fffe1f967bb",
-    "merge_commit": "abfd2146932d8a5be8bb10b5902b150850a96c5c"
+    "previous_release": "v0.2.0",
+    "previous_commit": "aa236488351eb71e120fc2b6fb32e36b0374c918",
+    "product_commit": "5809ad69d35aa5d8bd9ba9415f49ebe4b8f90a4b",
+    "merge_commit": "0e5e2f10b9d252197810a6d7352ba1b0d7579225"
   },
   "approved_backports": [],
   "preserve_on_upstream_sync": [
@@ -691,12 +691,26 @@
     "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/online-image.css",
     "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/online-image.js",
     "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/onlineImageLeaf-BhDXshpj.js",
-    "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/passwordRecovery-B_mr17oP.js"
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/passwordRecovery-B_mr17oP.js",
+    "backend/cmd/server/main.go",
+    "backend/cmd/server/migrate.go",
+    "backend/internal/handler/admin/account_handler.go",
+    "backend/internal/handler/admin/account_handler_list_test.go",
+    "backend/internal/repository/migrations_runner_notx_test.go",
+    "backend/internal/repository/usage_log_session_id_integration_test.go",
+    "backend/internal/service/api_key_auth_cache_codex_manifest_test.go",
+    "deploy/zero-one/test-migrate-only.mjs",
+    "docs/upgrades/v0.2.1.md",
+    "docs/upgrades/v0.2.1-change-map.json",
+    "backend/internal/repository/usage_log_repo_insert_shape_unit_test.go",
+    "backend/internal/config/config.go",
+    "backend/internal/config/migration.go",
+    "backend/internal/config/migration_test.go"
   ],
   "legacy_hotfixes": [
     {
       "name": "approved-v0.1.179-production-correctness-and-billing-compatibility",
-      "valid_for_release": "v0.2.0",
+      "valid_for_release": "v0.2.1",
       "exit_condition": "Remove each path when the first stable upstream release containing its equivalent production-correctness fix becomes the baseline; remove the entire block when no listed path remains.",
       "paths": [
         "backend/internal/handler/admin/admin_basic_handlers_test.go",
@@ -726,7 +740,7 @@
     },
     {
       "name": "approved-v0.1.179-version-metadata-alignment",
-      "valid_for_release": "v0.2.0",
+      "valid_for_release": "v0.2.1",
       "exit_condition": "Remove this metadata alignment when the first stable upstream release makes backend/cmd/server/VERSION match the baseline release.",
       "paths": [
         "backend/cmd/server/VERSION"
@@ -734,18 +748,22 @@
     },
     {
       "name": "approved-v0.1.179-race-safety",
-      "valid_for_release": "v0.2.0",
+      "valid_for_release": "v0.2.1",
       "exit_condition": "Remove each path when the first stable upstream release contains the equivalent race-safe runtime cache and asynchronous test fixture handling.",
       "paths": [
         "backend/internal/service/content_moderation.go",
         "backend/internal/service/content_moderation_cyber_test.go",
         "backend/internal/service/content_moderation_runtime_cache_test.go",
-        "backend/internal/service/usage_cleanup_service_test.go"
+        "backend/internal/service/usage_cleanup_service_test.go",
+        "backend/internal/service/channel_monitor_checker_body_test.go",
+        "backend/internal/service/grok_free_quota_gate_test.go",
+        "backend/internal/handler/admin/grok_import_probe_test.go",
+        "backend/internal/handler/admin/grok_oauth_handler_test.go"
       ]
     },
     {
       "name": "approved-v0.1.179-go-format-normalization",
-      "valid_for_release": "v0.2.0",
+      "valid_for_release": "v0.2.1",
       "exit_condition": "Remove each path when the first stable upstream release contains the same Go 1.26 formatting normalization.",
       "paths": [
         "backend/internal/handler/auth_current_user_test.go",
@@ -756,7 +774,7 @@
     },
     {
       "name": "approved-v0.1.179-remove-unconditional-sticky-debug-logs",
-      "valid_for_release": "v0.2.0",
+      "valid_for_release": "v0.2.1",
       "exit_condition": "Remove this hotfix when the first stable upstream release removes or explicitly gates the equivalent per-request sticky-session debug logs.",
       "paths": [
         "backend/internal/service/gateway_scheduling.go"
@@ -764,7 +782,7 @@
     },
     {
       "name": "approved-v0.1.181-grok-mapping-test-isolation",
-      "valid_for_release": "v0.2.0",
+      "valid_for_release": "v0.2.1",
       "exit_condition": "Remove this hotfix when the first stable upstream release contains equivalent runtime model-mapping isolation in the canonical scheduling test.",
       "paths": [
         "backend/internal/service/openai_model_mapping_test.go"
@@ -772,7 +790,7 @@
     },
     {
       "name": "approved-v0.1.182-go-dependency-security-updates",
-      "valid_for_release": "v0.2.0",
+      "valid_for_release": "v0.2.1",
       "exit_condition": "Remove this hotfix when the first stable upstream release uses golang.org/x/image v0.45.0 or later, Testcontainers v0.44.0 or later, github.com/moby/go-archive v0.3.0 or later, and no longer depends on github.com/docker/docker.",
       "paths": [
         "backend/go.mod",
@@ -958,7 +976,11 @@
         "frontend/src/views/auth/__tests__/recoveredPasswordRecovery.spec.ts",
         "frontend/vite.password-recovery.config.mjs",
         "frontend/src/views/auth/__tests__/TencentCaptchaForgotPassword.spec.ts",
-        "frontend/src/utils/__tests__/formatCompactCost.spec.ts"
+        "frontend/src/utils/__tests__/formatCompactCost.spec.ts",
+        "frontend/src/i18n/__tests__/usageServiceTierLocales.spec.ts",
+        "frontend/src/utils/__tests__/usageServiceTier.spec.ts",
+        "frontend/src/utils/usageServiceTier.ts",
+        "frontend/src/views/admin/__tests__/AccountsView.lite.spec.ts"
       ]
     },
     {
@@ -1278,7 +1300,18 @@
         "backend/internal/service/upstream_usage_cost_test.go",
         "backend/migrations/234_upstream_declared_usage_cost.sql",
         "backend/internal/handler/dto/mappers_usage_test.go",
-        "backend/internal/service/account_stats_pricing.go"
+        "backend/internal/service/account_stats_pricing.go",
+        "backend/cmd/server/main.go",
+        "backend/cmd/server/migrate.go",
+        "backend/internal/handler/admin/account_handler.go",
+        "backend/internal/handler/admin/account_handler_list_test.go",
+        "backend/internal/repository/migrations_runner_notx_test.go",
+        "backend/internal/repository/usage_log_session_id_integration_test.go",
+        "backend/internal/service/api_key_auth_cache_codex_manifest_test.go",
+        "backend/internal/repository/usage_log_repo_insert_shape_unit_test.go",
+        "backend/internal/config/config.go",
+        "backend/internal/config/migration.go",
+        "backend/internal/config/migration_test.go"
       ]
     },
     {
@@ -1329,7 +1362,9 @@
         "docs/adr/0010-admin-billing-finance-and-date-panels.md",
         "openspec/changes/add-openai-compatible-prompt-audit/implementation-guide.md",
         "openspec/changes/add-openai-compatible-prompt-audit/tasks.md",
-        "docs/adr/0011-online-image-result-errors.md"
+        "docs/adr/0011-online-image-result-errors.md",
+        "docs/upgrades/v0.2.1.md",
+        "docs/upgrades/v0.2.1-change-map.json"
       ]
     },
     {

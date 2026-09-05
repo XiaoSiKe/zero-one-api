@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-05-imagefinance",
-  "baseline_commit": "cb068377bf3784575813401b21af0d637565f478",
+  "baseline_ref": "ui-approved-2026-09-05-v021metadata",
+  "baseline_commit": "f130f1a161715a22f3fd5c5057c727ddad7d677b",
   "protected_paths": [
     "landing/",
     "frontend/",

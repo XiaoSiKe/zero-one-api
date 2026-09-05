@@ -56,7 +56,7 @@ func TestAPIKeyAuthSnapshotGroupPricingRoundTrip(t *testing.T) {
 
 	snapshot := svc.snapshotFromAPIKey(context.Background(), apiKey)
 	require.NotNil(t, snapshot)
-	require.Equal(t, 22, snapshot.Version, "v22 invalidates snapshots that predate Fast and reasoning policies")
+	require.Equal(t, 23, snapshot.Version, "v23 preserves pricing isolation and adds the Codex manifest")
 	require.NotNil(t, snapshot.Group)
 	require.True(t, snapshot.Group.LongContextPricingEnabled)
 	require.Len(t, snapshot.Group.ModelPricing, 1)
@@ -110,4 +110,22 @@ func TestAPIKeyAuthSnapshotRejectsV19BeforeGroupPricing(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, used, "v19 snapshots omit group pricing and must be rebuilt from the repository")
 	require.Nil(t, materialized)
+}
+
+func TestAPIKeyAuthPricingMultipliersDoNotAliasRequests(t *testing.T) {
+	svc := &APIKeyService{}
+	key := profitAuthTestAPIKey()
+	fast, flex, maxEffort := 2.0, 0.5, 3.0
+	key.Group.ModelPricing = []ChannelModelPricing{{FastMultiplier: &fast, FlexMultiplier: &flex, MaxReasoningEffortMultiplier: &maxEffort}}
+	snapshot := svc.snapshotFromAPIKey(context.Background(), key)
+	fast, flex, maxEffort = 10, 11, 12
+	cached := snapshot.Group.ModelPricing[0]
+	require.Equal(t, 2.0, *cached.FastMultiplier)
+	require.Equal(t, 0.5, *cached.FlexMultiplier)
+	require.Equal(t, 3.0, *cached.MaxReasoningEffortMultiplier)
+	request, used, err := svc.applyAuthCacheEntry(key.Key, &APIKeyAuthCacheEntry{Snapshot: snapshot})
+	require.NoError(t, err)
+	require.True(t, used)
+	*request.Group.ModelPricing[0].MaxReasoningEffortMultiplier = 99
+	require.Equal(t, 3.0, *cached.MaxReasoningEffortMultiplier)
 }
