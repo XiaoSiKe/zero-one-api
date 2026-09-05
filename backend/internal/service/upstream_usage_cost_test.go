@@ -23,7 +23,8 @@ func TestDeclaredUsageRate(t *testing.T) {
 	require.Equal(t, 0.0, *declaredUsageRate(account, log, now), "zero is confirmed free, not unknown")
 	account.Extra[UpstreamBillingProbeExtraKey] = snapshot(0.220012345)
 	require.Equal(t, 0.220012345, *declaredUsageRate(account, log, now), "do not round to local account DECIMAL(10,4)")
-	require.Nil(t, declaredUsageRate(account, log, now.Add(2*time.Minute)), "expired declaration must be unknown")
+	require.Equal(t, 0.220012345, *declaredUsageRate(account, log, now.Add(2*time.Minute)), "reporting keeps the last successful declaration after scheduler freshness expires")
+	require.False(t, func() bool { _, ok := freshUpstreamBillingRate(account, now.Add(2*time.Minute)); return ok }(), "scheduler freshness remains independent")
 	require.Nil(t, declaredUsageRate(account, log, now.Add(-2*time.Minute)), "future observation cannot prove old cost")
 	peak := snapshot(0.22)
 	peak.Data["peak_rate_enabled"] = true

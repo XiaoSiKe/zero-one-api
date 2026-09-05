@@ -5,10 +5,15 @@ async function dailyFixture(page: Page, missingCost = false) {
   await page.route('**/api/v1/admin/usage/stats?*', async route => {
     const date = new URL(route.request().url()).searchParams.get('start_date')!
     const day = date === '1970-01-01' ? 50 : Number(date.slice(-2))
+    const accountCost = date === '1970-01-01' ? 40 : day * 3
     await route.fulfill({ json: { code: 0, data: {
+      total_requests: day,
       total_tokens: day * 1000,
       total_actual_cost: day * 2,
-      ...(missingCost ? {} : { total_account_cost: date === '1970-01-01' ? 40 : day * 3 }),
+      finance: missingCost
+        ? { confirmed_requests: 0, unconfirmed_requests: day, confirmed_actual_cost: 0, confirmed_account_cost: 0, confirmed_profit: 0 }
+        : { confirmed_requests: day, unconfirmed_requests: 0, confirmed_actual_cost: day * 2, confirmed_account_cost: accountCost, confirmed_profit: day * 2 - accountCost },
+      ...(missingCost ? {} : { total_account_cost: accountCost }),
     } } })
   })
 }
@@ -71,7 +76,7 @@ test.describe('Dashboard finance and repeatable date selection', () => {
     await page.goto('http://127.0.0.1:4173/admin/dashboard')
     const summary = page.locator('[data-zero-one-finance-summary]')
     const trends = page.locator('[data-zero-one-finance-trends]')
-    await expect(summary.locator('.dashboard-finance-value')).toHaveText(['$8.0000', '−$4.0000', '$100.0000', '$60.0000'])
+    await expect(summary.locator('.dashboard-finance-value')).toHaveText(['$8.00', '−$4.00', '$100.00', '$60.00'])
     expect(await summary.evaluate(node => node.previousElementSibling?.textContent)).toContain('今日 Token')
     await expect(trends).toHaveAttribute('aria-busy', 'false')
     await expect(trends.locator('canvas')).toHaveCount(3)
@@ -80,7 +85,7 @@ test.describe('Dashboard finance and repeatable date selection', () => {
     await expect(trends.locator('.dashboard-finance-range')).toContainText('2026-08-29 至 2026-09-04')
     await expect(trends).toHaveAttribute('aria-busy', 'false')
     await expect(trends.locator('tbody tr')).toHaveCount(7)
-    await expect(trends.locator('tbody tr').last().locator('td')).toHaveText(['2026-09-04', '0.004M', '$8.0000', '−$4.0000'])
+    await expect(trends.locator('tbody tr').last().locator('td')).toHaveText(['2026-09-04', '0.00M', '$8.00', '$12.00', '−$4.00', '已核算'])
     expect(requestedDays).toContain('2026-08-29')
     const overflow = await page.locator('.dashboard-finance-summary, .dashboard-finance-chart-grid').evaluateAll(nodes => nodes.some(node => node.scrollWidth > node.clientWidth + 1))
     expect(overflow).toBe(false)
@@ -97,12 +102,13 @@ test.describe('Dashboard finance and repeatable date selection', () => {
     const trends = page.locator('[data-zero-one-finance-trends]')
     await expect(trends).toHaveAttribute('aria-busy', 'false')
     await expect(trends.locator('[role="status"]')).toContainText('成本与收益待确认')
-    await expect(trends.locator('tbody tr').last().locator('td').last()).toHaveText('待确认')
+    await expect(trends.locator('tbody tr').last().locator('td').nth(4)).toHaveText('待确认')
+    await expect(trends.locator('tbody tr').last().locator('td').last()).toContainText('笔待核算')
     await page.unroute('**/api/v1/admin/usage/stats?*')
     await page.route('**/api/v1/admin/usage/stats?*', async route => {
       const day = new URL(route.request().url()).searchParams.get('start_date')!
       if (day !== '2026-09-04') await new Promise(resolve => setTimeout(resolve, 700))
-      await route.fulfill({ json: { code: 0, data: { total_tokens: 10, total_actual_cost: 5, total_account_cost: 2 } } }).catch(() => {})
+      await route.fulfill({ json: { code: 0, data: { total_requests: 1, total_tokens: 10, total_actual_cost: 5, total_account_cost: 2, finance: { confirmed_requests: 1, unconfirmed_requests: 0, confirmed_actual_cost: 5, confirmed_account_cost: 2, confirmed_profit: 3 } } } }).catch(() => {})
     })
     await choose(page, '近 7 天')
     await choose(page, '今天')
@@ -111,17 +117,17 @@ test.describe('Dashboard finance and repeatable date selection', () => {
     await expect(trends.locator('tbody tr td').first()).toHaveText('2026-09-04')
     await page.waitForTimeout(900)
     await expect(trends.locator('tbody tr')).toHaveCount(1)
-    await expect(trends.locator('tbody tr td').last()).toHaveText('$3.0000')
+    await expect(trends.locator('tbody tr td').nth(4)).toHaveText('$3.00')
   })
   test('a delayed finance module does not block login and initializes after the dashboard has loaded', async ({ page }) => {
     await seedConsole(page, 'v2', { authenticated: false })
-    await page.route('**/assets/dashboard-finance-v2/dashboard-finance.js', route => route.abort())
+    await page.route('**/assets/dashboard-finance-v3/dashboard-finance.js', route => route.abort())
     await page.goto('http://127.0.0.1:4173/login')
     await expect(page.locator('#password')).toBeVisible()
-    await page.unroute('**/assets/dashboard-finance-v2/dashboard-finance.js')
+    await page.unroute('**/assets/dashboard-finance-v3/dashboard-finance.js')
     await seedConsole(page)
     await dailyFixture(page)
-    await page.route('**/assets/dashboard-finance-v2/dashboard-finance.js', async route => {
+    await page.route('**/assets/dashboard-finance-v3/dashboard-finance.js', async route => {
       await new Promise(resolve => setTimeout(resolve, 800))
       await route.continue()
     })
@@ -141,14 +147,14 @@ test.describe('Dashboard finance and repeatable date selection', () => {
       requests++
       expect(new URL(route.request().url()).searchParams.get('nocache')).toBe('true')
       if (fail) return route.fulfill({ status: 503, json: { code: 503 } })
-      await route.fulfill({ json: { code: 0, data: { total_tokens: 100, total_actual_cost: value, total_account_cost: 2 } } })
+      await route.fulfill({ json: { code: 0, data: { total_requests: 1, total_tokens: 100, total_actual_cost: value, total_account_cost: 2, finance: { confirmed_requests: 1, unconfirmed_requests: 0, confirmed_actual_cost: value, confirmed_account_cost: 2, confirmed_profit: value - 2 } } } })
     })
     await page.goto('http://127.0.0.1:4173/admin/dashboard')
     const cards = page.locator('.dashboard-finance-value')
-    await expect(cards).toHaveText(['$10.0000', '$8.0000', '$10.0000', '$8.0000'])
+    await expect(cards).toHaveText(['$10.00', '$8.00', '$10.00', '$8.00'])
     value = 20
     await page.clock.fastForward(31000)
-    await expect(cards).toHaveText(['$20.0000', '$18.0000', '$20.0000', '$18.0000'])
+    await expect(cards).toHaveText(['$20.00', '$18.00', '$20.00', '$18.00'])
     await expect(page.locator('.dashboard-finance-updated')).toContainText('每 30 秒自动刷新')
     await page.evaluate(() => {
       Object.defineProperty(document, 'hidden', { configurable: true, value: true })
@@ -164,15 +170,16 @@ test.describe('Dashboard finance and repeatable date selection', () => {
       window.dispatchEvent(new Event('online'))
       window.dispatchEvent(new Event('focus'))
     })
-    await expect(cards).toHaveText(['$30.0000', '$28.0000', '$30.0000', '$28.0000'])
+    await expect(cards).toHaveText(['$30.00', '$28.00', '$30.00', '$28.00'])
     expect(requests - before).toBe(3)
     fail = true
     await page.clock.fastForward(31000)
-    await expect(cards).toHaveText(['—', '—', '—', '—'])
+    await expect(cards).toHaveText(['$30.00', '$28.00', '$30.00', '$28.00'])
+    await expect(page.locator('[data-zero-one-finance-trends] [role="status"]')).toContainText('上次成功结果')
     await expect(page.locator('.dashboard-finance-updated')).toContainText('本次更新未完成')
     fail = false
     await page.locator('[data-zero-one-finance-trends]').getByRole('button', { name: '重新读取' }).click()
-    await expect(cards).toHaveText(['$30.0000', '$28.0000', '$30.0000', '$28.0000'])
+    await expect(cards).toHaveText(['$30.00', '$28.00', '$30.00', '$28.00'])
   })
 
   test('failed native snapshots still permit fresh billing and cross-tab logout removes financial data', async ({ page }) => {
@@ -200,10 +207,37 @@ test.describe('Dashboard finance and repeatable date selection', () => {
     page.on('request', request => { if (request.url().includes('/admin/dashboard/snapshot-v2')) snapshots++ })
     await page.route('**/api/v1/admin/usage/stats?*', route => snapshots < 2
       ? route.fulfill({ status: 401, json: { code: 401 } })
-      : route.fulfill({ json: { code: 0, data: { total_tokens: 100, total_actual_cost: 9, total_account_cost: 3 } } }))
+      : route.fulfill({ json: { code: 0, data: { total_requests: 1, total_tokens: 100, total_actual_cost: 9, total_account_cost: 3, finance: { confirmed_requests: 1, unconfirmed_requests: 0, confirmed_actual_cost: 9, confirmed_account_cost: 3, confirmed_profit: 6 } } } }))
     await page.goto('http://127.0.0.1:4173/admin/dashboard')
-    await expect(page.locator('.dashboard-finance-value')).toHaveText(['$9.0000', '$6.0000', '$9.0000', '$6.0000'])
+    await expect(page.locator('.dashboard-finance-value')).toHaveText(['$9.00', '$6.00', '$9.00', '$6.00'])
     expect(snapshots).toBe(2)
+  })
+
+  test('dark theme keeps long two-decimal amounts readable and exposes refresh progress', async ({ page }) => {
+    await seedConsole(page, 'v2', { theme: 'dark' })
+    let releaseStats = () => {}
+    const gate = new Promise<void>(resolve => { releaseStats = resolve })
+    await page.route('**/api/v1/admin/usage/stats?*', async route => {
+      await gate
+      await route.fulfill({ json: { code: 0, data: {
+        total_requests: 2,
+        total_tokens: 2_500_000_000,
+        total_actual_cost: 12_345_678.9,
+        total_account_cost: 10_000_000,
+        finance: { confirmed_requests: 2, unconfirmed_requests: 0, confirmed_actual_cost: 12_345_678.9, confirmed_account_cost: 10_000_000, confirmed_profit: 2_345_678.9 },
+      } } })
+    })
+    const navigation = page.goto('http://127.0.0.1:4173/admin/dashboard')
+    const retry = page.locator('[data-zero-one-finance-trends]').getByRole('button', { name: '读取中…' })
+    await expect(retry).toBeDisabled()
+    releaseStats()
+    await navigation
+    await expect(page.locator('html')).toHaveClass(/dark/)
+    await expect(page.locator('.dashboard-finance-value')).toHaveText(['$12,345,678.90', '$2,345,678.90', '$12,345,678.90', '$2,345,678.90'])
+    await expect(page.locator('.dashboard-finance-updated')).toContainText('(Asia/Shanghai)')
+    await expect(page.locator('[data-zero-one-finance-trends]').getByRole('button', { name: '重新读取' })).toBeEnabled()
+    const overflow = await page.locator('.dashboard-finance-summary').evaluate(node => node.scrollWidth > node.clientWidth + 1)
+    expect(overflow).toBe(false)
   })
 
   test('the real date picker fits a 320px screen after reopening', async ({ page }) => {

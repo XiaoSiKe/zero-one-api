@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-05-convergence",
-  "baseline_commit": "e22b2d23b44310248658107ffa318a1ed065a637",
+  "baseline_ref": "ui-approved-2026-09-05-finance3",
+  "baseline_commit": "84a2dc29e4dc992d768061bd4f28c49e5e4a411e",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -478,6 +478,9 @@
         "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/dashboard-finance.css",
         "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/dashboard-finance.js",
         "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/data.js",
+        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v3/dashboard-finance.css",
+        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v3/dashboard-finance.js",
+        "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v3/data.js",
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/AccountsView-CM4yOmZE.js",
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/DashboardView-CYAPqspo.js",
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/EndpointDistributionChart.vue_vue_type_script_setup_true_lang-DOhczKYp.js",
