@@ -14,11 +14,11 @@ const REQUIRED_JOBS = {
 
 const REQUIRED_JOB_DECISIONS = {
   'zero-one-ci.yml': {
-    landing: 'Impact decision - landing',
-    console: 'Impact decision - console',
-    backend: 'Impact decision - backend',
-    deployment: 'Impact decision - deployment',
-    shell: 'Impact decision - shell',
+    landing: 'Impact decision - landing tests',
+    console: 'Impact decision - console tests',
+    backend: 'Impact decision - backend tests',
+    deployment: 'Impact decision - deployment tests',
+    shell: 'Impact decision - shell tests',
     'golangci-lint': 'Impact decision - golangci-lint',
     'Chromium visual regression': 'Impact decision - Chromium visual regression',
   },
