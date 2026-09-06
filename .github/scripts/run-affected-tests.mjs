@@ -70,6 +70,7 @@ export function commandsForImpact(impact) {
   commands.push(...(backendCommands[impact.backend_scope] ?? []))
   if (impact.lint) commands.push('cd backend && golangci-lint run ./...')
   if (impact.deployment) commands.push(
+    'python3 deploy/zero-one/test-release-maintenance.py',
     'sh deploy/zero-one/test-routing.sh',
     'sh deploy/zero-one/test-direct-upstream.sh',
     'sh deploy/zero-one/test-compose.sh',

@@ -734,7 +734,51 @@
     "deploy/zero-one/audit-data-consistency.sql",
     "docs/adr/0013-affected-verification-policy.md",
     "docs/data-and-connectivity-audit-2026-09-06.md",
-    "docs/channel-monitor-v2-safe-defaults.md"
+    "docs/channel-monitor-v2-safe-defaults.md",
+    "backend/internal/handler/admin/data_management_handler.go",
+    "backend/internal/handler/admin/data_management_handler_test.go",
+    "backend/internal/service/data_management_compat.go",
+    "backend/internal/service/data_management_service.go",
+    "backend/internal/service/data_management_service_test.go",
+    "backend/migrations/README.md",
+    "backend/internal/server/routes/data_management_test.go",
+    "deploy/zero-one/release-smoke.py",
+    "deploy/zero-one/test-release-maintenance.py",
+    "deploy/zero-one/observe-release.py",
+    "deploy/zero-one/release-control.py",
+    "deploy/zero-one/zero-one-backup.service",
+    "deploy/zero-one/backup.env.example",
+    "deploy/zero-one/backup-health.py",
+    "deploy/zero-one/zero-one-backup.timer",
+    "frontend/src/i18n/index.ts",
+    "frontend/src/i18n/__tests__/localeIsolation.spec.ts",
+    "frontend/src/router/__tests__/localeTitle.spec.ts",
+    "frontend/vite.adapter-boundary.ts",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/format-B5JsbSG6.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/platforms-CGPAWIbv.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/ChannelsView-KtzT-VxP.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/OpsDashboard-CAXKEWcH.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/PlatformIcon.vue_vue_type_script_setup_true_lang-ChitOams.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/cn-provider-admin.css",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/ChannelMonitorView-DzxNfUI1.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/GroupBadge.vue_vue_type_script_setup_true_lang-eMvdiWcb.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/index-D9hsmkXw.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/cnProviderAdminLeaf-BVwx19SN.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/cn-provider-admin.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/ModelTagInput.vue_vue_type_script_setup_true_lang-BSyQvb-H.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/HelpTooltip.vue_vue_type_script_setup_true_lang-Bs089eBu.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/Toggle.vue_vue_type_script_setup_true_lang-QqyLZ4iw.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/passwordRecovery-B_mr17oP.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/SubscriptionsView-D-uhWS_c.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/index-BGzMG_Uz.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/logo.svg",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/onlineImageLeaf-B20f0VQc.js",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/index-D9hsmkXw.js",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/online-image.js",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/passwordRecovery-B_mr17oP.js",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/online-image.css",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/index-BGzMG_Uz.js",
+    "docs/adr/0014-retired-data-management-compatibility.md"
   ],
   "retired_preserved_paths": [
     {
@@ -778,6 +822,18 @@
       "path": "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-trends.png",
       "decision": "docs/adr/0012-admin-dashboard-consumption.md",
       "reason": "The daily finance trends are no longer a product surface."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/service/data_management_grpc.go",
+      "decision": "docs/adr/0014-retired-data-management-compatibility.md",
+      "reason": "The retired agent keeps its HTTP validation and deprecated response; unreachable internal RPC methods and their tests are replaced by the compatibility types and HTTP contract tests."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/service/data_management_grpc_test.go",
+      "decision": "docs/adr/0014-retired-data-management-compatibility.md",
+      "reason": "The retired agent keeps its HTTP validation and deprecated response; unreachable internal RPC methods and their tests are replaced by the compatibility types and HTTP contract tests."
     }
   ],
   "legacy_hotfixes": [
@@ -1055,7 +1111,11 @@
         "frontend/src/utils/__tests__/usageServiceTier.spec.ts",
         "frontend/src/utils/usageServiceTier.ts",
         "frontend/src/views/admin/__tests__/AccountsView.lite.spec.ts",
-        "frontend/src/views/admin/__tests__/DashboardView.spec.ts"
+        "frontend/src/views/admin/__tests__/DashboardView.spec.ts",
+        "frontend/src/i18n/index.ts",
+        "frontend/src/i18n/__tests__/localeIsolation.spec.ts",
+        "frontend/src/router/__tests__/localeTitle.spec.ts",
+        "frontend/vite.adapter-boundary.ts"
       ]
     },
     {
@@ -1405,7 +1465,16 @@
         "backend/migrations/channel_monitor_v2_taxonomy_migration_test.go",
         "frontend/src/i18n/locales/en/channelMonitorV2.ts",
         "frontend/src/i18n/locales/zh/channelMonitorV2.ts",
-        "docs/channel-monitor-v2-safe-defaults.md"
+        "docs/channel-monitor-v2-safe-defaults.md",
+        "backend/internal/handler/admin/data_management_handler.go",
+        "backend/internal/handler/admin/data_management_handler_test.go",
+        "backend/internal/service/data_management_compat.go",
+        "backend/internal/service/data_management_service.go",
+        "backend/internal/service/data_management_service_test.go",
+        "backend/migrations/README.md",
+        "backend/internal/service/data_management_grpc.go",
+        "backend/internal/service/data_management_grpc_test.go",
+        "backend/internal/server/routes/data_management_test.go"
       ]
     },
     {
@@ -1465,7 +1534,8 @@
         "docs/data-and-connectivity-audit-2026-09-06.md",
         "docs/upgrades/v0.2.1.md",
         "docs/upgrades/v0.2.1-change-map.json",
-        "skills/sub2api-admin/references/admin-cli.md"
+        "skills/sub2api-admin/references/admin-cli.md",
+        "docs/adr/0014-retired-data-management-compatibility.md"
       ]
     },
     {

@@ -2,12 +2,13 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { adapterBoundary } from './vite.adapter-boundary'
 
 const frontendRoot = fileURLToPath(new URL('.', import.meta.url))
 
 export default defineConfig({
   root: frontendRoot,
-  plugins: [vue()],
+  plugins: [vue(), adapterBoundary()],
   resolve: {
     alias: {
       '@': resolve(frontendRoot, 'src'),
@@ -19,7 +20,7 @@ export default defineConfig({
     'process.env.NODE_ENV': JSON.stringify('production'),
   },
   build: {
-    outDir: resolve(frontendRoot, '../deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v5'),
+    outDir: resolve(frontendRoot, '../deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6'),
     emptyOutDir: true,
     cssCodeSplit: false,
     lib: {

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-06-loginnavr2",
-  "baseline_commit": "46b003f9d144245d8f650806d4db0a1ce6af9873",
+  "baseline_ref": "ui-approved-2026-09-06-convergence",
+  "baseline_commit": "d1a8c7f4e5ff9606f096fcd72ed851f7831e7408",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -371,7 +371,9 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v5/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
-        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/"
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/",
+        "frontend/vite.adapter-boundary.ts"
       ]
     },
     {
@@ -419,7 +421,9 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/",
-        "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/"
+        "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/",
+        "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/",
+        "frontend/vite.adapter-boundary.ts"
       ]
     },
     {

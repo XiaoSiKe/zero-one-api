@@ -16,6 +16,8 @@
 
 后端按 `redeem`、`data`、`gateway` 和 `full` 四种范围选择普通、unit 与 integration 构建标签。不同后端范围同时出现时扩大到 `full`。Console 行为验证与恢复版适配器生成分别选择；API 类型或单元测试变化不触发全部适配器生成。
 
+共享语言入口和 `i18n/locales` 会进入两个叶子适配器的构建，即使某个词条不出现在当前页面。它们必须同时选择 CN Provider、Online Image 与 shell 生成，不能仅按词条所属页面缩小范围。叶子构建同时禁止遍历整套 Console Router，避免登录等无关页面重新成为隐藏构建依赖。
+
 视觉范围为 `none`、`dashboard` 或 `full`。UI 未受影响时只校验 Approved UI Snapshot 的提交、资源引用和保护边界，不启动浏览器。仪表盘局部改动运行目标页面的桌面、手机合同；公共壳层、路由、共享样式、渲染依赖或无法可靠归类的 UI 改动运行全量视觉套件。上游前端文件只有进入实际交付资源或受保护源码时才构成 UI 影响。
 
 依赖锁文件触发对应生态的安全检查；每周 Security Scan 始终完整执行。Docker、Caddy、迁移和部署脚本触发交付验证。福利码、Mystery Box Redeem Code 只在其自身路径，或用户余额、事务、鉴权等共享依赖变化时执行；共享影响合并为更宽范围。

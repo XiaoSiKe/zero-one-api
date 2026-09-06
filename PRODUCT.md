@@ -11,7 +11,7 @@
 | Compatibility entry | `https://app.01yapi.com/*` permanently redirects to the same path on `api.01yapi.com` |
 | Registration | Public registration is enabled |
 | Billing in v1 | Redeem Code only; online purchase remains disabled |
-| Brand form in v1 | Text wordmark only until an approved logo is supplied |
+| Brand assets | Follow DESIGN.md and the Approved UI Snapshot; the approved local logo is already included |
 
 ## Users
 

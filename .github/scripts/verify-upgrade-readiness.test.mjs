@@ -31,7 +31,7 @@ test('redeem, TTFT, and metadata changes require permanent retention rather than
     'visual-regression/tests/redeem.behavior.spec.ts',
   ].sort()
   assert.deepEqual(evaluateProductChangeProtection(paths, baseline, uiManifest), {
-    preserved: paths, approved_ui: [], legacy_hotfix: [], approved_backport: [], unprotected: [],
+    preserved: paths, retired: [], approved_ui: [], legacy_hotfix: [], approved_backport: [], unprotected: [],
   })
   for (const path of paths) {
     const incomplete = structuredClone(baseline)
@@ -71,12 +71,26 @@ test('requires every product difference to have one retention policy', () => {
     ),
     {
       preserved: ['backend/preserved.go', 'frontend/src/api/preserved.ts'],
+      retired: [],
       approved_ui: ['frontend/src/App.vue'],
       legacy_hotfix: ['backend/hotfix.go'],
       approved_backport: ['backend/backport.go'],
       unprotected: ['backend/unprotected.go', 'frontend/src/api/unprotected.ts'],
     },
   )
+})
+
+test('an exact decision-backed retirement covers the deleted product difference only', () => {
+  const baseline = {
+    preserve_on_upstream_sync: [], legacy_hotfixes: [], approved_backports: [],
+    retired_preserved_paths: [{ path: 'backend/retired.go' }],
+  }
+  const result = evaluateProductChangeProtection(
+    ['backend/retired.go', 'backend/neighbor.go'], baseline,
+    { protected_paths: [], compatibility_paths: [] },
+  )
+  assert.deepEqual(result.retired, ['backend/retired.go'])
+  assert.deepEqual(result.unprotected, ['backend/neighbor.go'])
 })
 
 test('parses stable release tags and worktree mode', () => {

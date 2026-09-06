@@ -68,7 +68,7 @@ export function verifyCNProviderConsole(consoleDir) {
   const registrationEntry = index.slice(registrationStart, standardStart)
   const standardEntry = index.slice(standardStart, entryEnd)
   const legacyAdapterImport = 'import("/assets/cn-provider-admin-v1/cn-provider-admin.js")'
-  const adapterImport = 'import("/assets/cn-provider-admin-v5/cn-provider-admin.js")'
+  const adapterImport = 'import("/assets/cn-provider-admin-v6/cn-provider-admin.js")'
   const shellImport = `import("/assets/${CN_PROVIDER_SHELL_ASSET}")`
   requireMarkers(registrationEntry, [legacyAdapterImport, adapterImport, shellImport], 'Registration Console entry')
   requireMarkers(standardEntry, [`await ${legacyAdapterImport}`, `await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
@@ -162,7 +162,7 @@ export function verifyCNProviderConsole(consoleDir) {
     'https://api.deepseek.com',
   ], 'Legacy CN Provider Admin route adapter')
 
-  const adapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v5')
+  const adapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v6')
   const adapterEntry = read(
     resolve(adapterDirectory, 'cn-provider-admin.js'),
     'CN Provider Admin route adapter',
@@ -185,7 +185,7 @@ export function verifyCNProviderConsole(consoleDir) {
     '/admin/ops', '/admin/subscriptions',
     '__ZERO_ONE_NAVIGATION_RECONCILIATION__', 'provider-catalog-admin',
     '__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__', 'Management page failed to load',
-    '/assets/cn-provider-admin-v5/cn-provider-admin.css',
+    '/assets/cn-provider-admin-v6/cn-provider-admin.css',
     'Kimi', 'Zhipu GLM', 'DeepSeek',
     'ops-platform-filter', 'subscription-platform-filter',
   ], 'CN Provider Admin route adapter')
@@ -199,8 +199,8 @@ export function verifyCNProviderConsole(consoleDir) {
   return {
     shell: `/assets/${CN_PROVIDER_SHELL_ASSET}`,
     legacyModule: '/assets/cn-provider-admin-v1/cn-provider-admin.js',
-    module: '/assets/cn-provider-admin-v5/cn-provider-admin.js',
-    stylesheet: '/assets/cn-provider-admin-v5/cn-provider-admin.css',
+    module: '/assets/cn-provider-admin-v6/cn-provider-admin.js',
+    stylesheet: '/assets/cn-provider-admin-v6/cn-provider-admin.css',
   }
 }
 

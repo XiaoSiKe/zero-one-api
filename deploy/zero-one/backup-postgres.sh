@@ -55,7 +55,9 @@ if ! flock -n 9; then
   exit 1
 fi
 
-tmp_dir=$(mktemp -d "$backup_root/.postgres-backup.XXXXXX")
+# Plaintext staging stays on the source host. Only age ciphertext crosses the
+# off-host filesystem boundary.
+tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/zero-one-postgres-backup.XXXXXX")
 tmp_dump="$tmp_dir/postgres.dump"
 tmp_encrypted="$tmp_dir/postgres.dump.age"
 state_source="$script_dir/state/sub2api"
@@ -96,11 +98,22 @@ for config_file in Caddyfile Caddyfile.shared Dockerfile.edge compose.bootstrap.
   cp "$script_dir/$config_file" "$state_stage/config/$config_file"
 done
 cp -R "$state_source" "$state_stage/state/sub2api"
+# Include certificate state and a real Redis snapshot, not a live AOF copy.
+for state_name in caddy-data caddy-config; do
+  cp -R "$script_dir/state/$state_name" "$state_stage/state/$state_name"
+done
+mkdir -p "$state_stage/state/redis"
+docker compose --env-file "$env_file" -f "$script_dir/compose.yml" exec -T redis \
+  sh -ec 'export REDISCLI_AUTH="${REDIS_PASSWORD:-}"; exec redis-cli --rdb -' \
+  > "$state_stage/state/redis/dump.rdb"
+test -s "$state_stage/state/redis/dump.rdb"
 tar -C "$state_stage" -czf "$tmp_state_archive" .
 age -r "$age_recipient" -o "$tmp_state_encrypted" "$tmp_state_archive"
 
-mv -f -- "$tmp_encrypted" "$daily_backup"
-mv -f -- "$tmp_state_encrypted" "$daily_state_backup"
+cp "$tmp_encrypted" "$daily_backup.tmp"
+cp "$tmp_state_encrypted" "$daily_state_backup.tmp"
+mv -f -- "$daily_backup.tmp" "$daily_backup"
+mv -f -- "$daily_state_backup.tmp" "$daily_state_backup"
 write_checksum "$daily_backup"
 write_checksum "$daily_state_backup"
 
@@ -129,5 +142,9 @@ if [ "$(date -u +%u)" = "7" ]; then
   done
 fi
 
+printf '{"completed_at_epoch":%s,"postgres":"%s","state":"%s"}\n' \
+  "$(date -u +%s)" "$(basename -- "$daily_backup")" "$(basename -- "$daily_state_backup")" \
+  > "$backup_root/.last-success.json.tmp"
+mv -f -- "$backup_root/.last-success.json.tmp" "$backup_root/.last-success.json"
 echo "encrypted PostgreSQL backup created: $daily_backup"
 echo "encrypted deployment state backup created: $daily_state_backup"

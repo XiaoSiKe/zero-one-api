@@ -19,7 +19,11 @@
       "impact": { "console": true }
     },
     {
-      "patterns": ["frontend/src/views/admin/DashboardView.vue", "frontend/src/i18n/locales/*/admin/overview.ts"],
+      "patterns": ["frontend/src/i18n/index.ts", "frontend/src/i18n/locales/**", "frontend/vite.adapter-boundary.ts"],
+      "impact": { "console": true, "console_asset_scopes": ["cn_provider", "online", "shell"], "visual_scope": "full" }
+    },
+    {
+      "patterns": ["frontend/src/views/admin/DashboardView.vue"],
       "impact": { "console": true, "console_asset_scopes": ["shell"], "visual_scope": "dashboard" }
     },
     {
