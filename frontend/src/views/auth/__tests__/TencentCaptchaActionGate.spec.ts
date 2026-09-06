@@ -5,7 +5,7 @@ import LoginView from '@/views/auth/LoginView.vue'
 
 const loginMock = vi.fn()
 const loginWithPasskeyMock = vi.fn()
-const getPublicSettingsMock = vi.fn()
+const fetchPublicSettingsMock = vi.fn()
 const startOAuthLoginMock = vi.fn()
 const verifyActionMock = vi.fn()
 const captchaResetMock = vi.fn()
@@ -34,6 +34,7 @@ vi.mock('@/stores', () => ({
     loginWithPasskey: (...args: unknown[]) => loginWithPasskeyMock(...args)
   }),
   useAppStore: () => ({
+    fetchPublicSettings: (...args: unknown[]) => fetchPublicSettingsMock(...args),
     showError: vi.fn(),
     showSuccess: vi.fn(),
     showWarning: vi.fn()
@@ -44,7 +45,6 @@ vi.mock('@/api/auth', async () => {
   const actual = await vi.importActual<typeof import('@/api/auth')>('@/api/auth')
   return {
     ...actual,
-    getPublicSettings: (...args: unknown[]) => getPublicSettingsMock(...args),
     startOAuthLogin: (...args: unknown[]) => startOAuthLoginMock(...args),
     isTotp2FARequired: () => false,
     isWeChatWebOAuthEnabled: () => false
@@ -99,11 +99,11 @@ describe('Tencent captcha action gate', () => {
   beforeEach(() => {
     loginMock.mockReset()
     loginWithPasskeyMock.mockReset()
-    getPublicSettingsMock.mockReset()
+    fetchPublicSettingsMock.mockReset()
     startOAuthLoginMock.mockReset()
     verifyActionMock.mockReset()
     captchaResetMock.mockReset()
-    getPublicSettingsMock.mockResolvedValue({
+    fetchPublicSettingsMock.mockResolvedValue({
       turnstile_enabled: false,
       turnstile_site_key: '',
       tencent_captcha_enabled: true,
@@ -127,6 +127,14 @@ describe('Tencent captcha action gate', () => {
       configurable: true,
       value: locationState
     })
+  })
+
+  it('loads login capabilities through the shared Public Settings store', async () => {
+    const wrapper = mountLogin()
+    await flushPromises()
+
+    expect(fetchPublicSettingsMock).toHaveBeenCalledWith(true)
+    expect(wrapper.get('#email').attributes('disabled')).toBeUndefined()
   })
 
   it('clicking login opens Tencent captcha before calling login', async () => {

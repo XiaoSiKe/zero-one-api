@@ -1,5 +1,11 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { adminUser, communityQrPngBase64, regularUser, seedConsole } from './fixtures/api'
+import {
+  adminUser,
+  communityQrPngBase64,
+  regularUser,
+  seedConsole,
+  visualFixtureVersion,
+} from './fixtures/api'
 
 const affiliateConsoleOrigin =
   process.env.AFFILIATE_CONSOLE_ORIGIN || 'http://127.0.0.1:4173'
@@ -353,7 +359,7 @@ test.describe('Console public auth contracts', () => {
       await expect(page).toHaveURL('http://127.0.0.1:4173/admin/dashboard')
       await expect(page.locator('main').getByText('总消费', { exact: true }).first()).toBeVisible()
       await expect.poll(() => adapterRequested).toBe(true)
-      await expect.poll(() => headerAdapterVersion).toBe('25')
+      await expect.poll(() => headerAdapterVersion).toBe('26')
       await page.waitForTimeout(250)
       expect(consoleErrors).toEqual([])
       expect(pageErrors).toEqual([])
@@ -387,6 +393,60 @@ test.describe('Console public auth contracts', () => {
     )
 
     await expectConsoleCardMotion(page, testInfo.project.name)
+  })
+
+  test('same-document login refreshes public settings before rendering navigation', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop')
+    await page.unroute('**/api/v1/**')
+    await seedConsole(page, 'v2', {
+      authenticated: false,
+      user: regularUser,
+      modelPlazaPlacement: 'sidebar',
+      customMenuItems: [
+        {
+          id: 'relogin-sidebar',
+          label: '登录后侧栏',
+          icon_svg: '',
+          url: 'https://embed.01yapi.test/relogin-sidebar',
+          visibility: 'user',
+          placement: 'sidebar',
+          sort_order: 1,
+        },
+        {
+          id: 'relogin-header',
+          label: '登录后顶部',
+          icon_svg: '',
+          url: 'https://embed.01yapi.test/relogin-header',
+          visibility: 'user',
+          placement: 'both',
+          sort_order: 2,
+        },
+      ],
+    })
+
+    let publicSettingsRequestCount = 0
+    await page.route('**/api/v1/settings/public*', async (route) => {
+      const url = new URL(route.request().url())
+      if (url.searchParams.get('scope') === 'logo') {
+        await route.fallback()
+        return
+      }
+      publicSettingsRequestCount += 1
+      await route.fallback()
+    })
+
+    await page.goto('http://127.0.0.1:4173/login')
+    await page.locator('#email').fill(regularUser.email)
+    await page.locator('#password').fill('preview-password')
+    await page.getByRole('button', { name: '登录', exact: true }).click()
+
+    await expect(page).toHaveURL('http://127.0.0.1:4173/dashboard')
+    await expect(page.locator('aside a[href="/custom/relogin-sidebar"]')).toBeVisible()
+    await expect(page.locator('header a[href="/custom/relogin-header"]')).toBeVisible()
+    await expect(page.locator('aside nav a[data-zero-one-model-plaza-sidebar]')).toBeVisible()
+    await expect(page.locator('header a[href^="/model-plaza"]')).toBeHidden()
+    await expect(page.locator('aside')).toContainText(`v${visualFixtureVersion}`)
+    expect(publicSettingsRequestCount).toBe(1)
   })
 
   test('same-document relogin applies the response run mode before rendering the dashboard sidebar', async ({ page }) => {
@@ -3315,8 +3375,8 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=5')
     expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=14')
     expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=6')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=25')
-    expect(html).not.toContain('/assets/zero-one-header-custom-menu-v1.js?v=24')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=26')
+    expect(html).not.toContain('/assets/zero-one-header-custom-menu-v1.js?v=25')
     expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=7')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.js?v=1')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.css?v=1')
