@@ -278,6 +278,29 @@ archive checksums. A missing mount, failed run, stale receipt or damaged archive
 blocks release. A manually copied historical recovery point does not establish
 scheduled backup health.
 
+When the authorized off-host destination is Google Drive instead of a mounted
+filesystem, the maintenance host owns encryption upload, Drive metadata readback
+and the isolated restore. A dedicated RSA 3072 key on that host signs a canonical
+JSON receipt containing the source SHA, snapshot ID, private Drive folder/file
+IDs, exact sizes and checksums, restore results and active scheduler identity.
+The production host stores only `/etc/zero-one/backup-receipt.pub`, the receipt
+and its detached signature. Verify it with:
+
+```bash
+python3 deploy/zero-one/backup-health.py \
+  --receipt /srv/zero-one/.release-backups/RELEASE/backup-receipt.json \
+  --signature /srv/zero-one/.release-backups/RELEASE/backup-receipt.sig \
+  --public-key /etc/zero-one/backup-receipt.pub \
+  --expected-source MAIN_SHA \
+  --expected-snapshot RELEASE
+```
+
+The signed mode fails if the signature, release identity, age, file inventory,
+private/downloadable Drive metadata, checksums, actual restore, sequence checks
+or scheduler state is absent. The private signing key and age identity must never
+be copied to production. A signed receipt attests the exact observed upload; it
+does not make Google Drive public or allow production to download the backup.
+
 `BACKUP_DIR` must itself be an off-host filesystem mount point; a subdirectory on
 the production root filesystem does not satisfy the backup requirement. After
 mounting it, create the sentinel inside the mounted filesystem:
@@ -526,9 +549,11 @@ GoReleaser archives 均声明携带这三份根级材料。镜像文件位于
 `production_before`、`old_images`/`new_images` 的两容器摘要映射、
 `expected_migrations` 完整新增文件名列表、公开 age `recipient` 和随机
 `probe_secret`。新增迁移列表必须等于目标源码与当前账本的差集。
-`OFFHOST_BACKUP_VERIFIED.json` 绑定本次 `snapshot_id`、`source_sha` 和
-实际 `backup_dir`，记录 `sha256_verified`、`restore_verified`、
-`scheduled_backup_healthy`；preflight 还会实时复查备份健康，不能只填写布尔值放行。
+`OFFHOST_BACKUP_VERIFIED.json` 绑定本次 `snapshot_id`、`source_sha`，记录
+`sha256_verified`、`restore_verified`、`scheduled_backup_healthy`。挂载模式保存
+实际 `backup_dir`；Google Drive 模式保存 `mode=signed_receipt`、本次回执和
+签名文件名，以及固定的 `/etc/zero-one/backup-receipt.pub`。preflight 会重新
+验签并核对目标 SHA 和发布 ID，不能只填写布尔值放行。
 
 执行顺序为 `preflight` → `drain-backup` → `migrate-backend` → `edge` →
 `open` → `complete`。迁移阶段另需本次最终备份的异地校验与实际恢复证明；

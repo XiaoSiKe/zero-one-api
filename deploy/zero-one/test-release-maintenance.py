@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -101,8 +102,102 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual(result.exception.code, 0)
                 run.assert_not_called()
 
+    def test_signed_backup_health_command_is_release_bound(self):
+        recovery = Path("/srv/zero-one/.release-backups/fixture")
+        with (
+            patch.object(release, "ROOT", recovery, create=True),
+            patch.object(release, "META", {"merge_sha": "a" * 40, "id": "fixture"}, create=True),
+        ):
+            command = release.backup_health_command(
+                {
+                    "mode": "signed_receipt",
+                    "receipt": "backup-receipt.json",
+                    "signature": "backup-receipt.sig",
+                    "public_key": "/etc/zero-one/backup-receipt.pub",
+                }
+            )
+            self.assertIn(str(recovery / "backup-receipt.json"), command)
+            self.assertIn("a" * 40, command)
+            self.assertIn("fixture", command)
+            with self.assertRaises(ValueError):
+                release.backup_health_command(
+                    {
+                        "mode": "signed_receipt",
+                        "receipt": "../other-release.json",
+                        "signature": "backup-receipt.sig",
+                        "public_key": "/etc/zero-one/backup-receipt.pub",
+                    }
+                )
+
 
 class BackupTests(unittest.TestCase):
+    def receipt(self):
+        return {
+            "schema_version": 1,
+            "completed_at_epoch": 100,
+            "source_sha": "a" * 40,
+            "snapshot_id": "fixture",
+            "storage_provider": "google_drive",
+            "folder_id": "folder_123456789",
+            "files": [
+                {
+                    "name": name,
+                    "size": 100,
+                    "sha256": "b" * 64,
+                    "drive_file_id": "file_123456789_" + str(index),
+                    "private": True,
+                    "can_download": True,
+                }
+                for index, name in enumerate(
+                    ("postgres.dump.age", "deployment-state.tar.gz.age", "offhost-upload-manifest.json")
+                )
+            ],
+            "restore": {
+                "postgres_dump_restored": True,
+                "original_business_columns_unchanged": True,
+                "original_tables": 99,
+                "serial_sequences_checked": 72,
+            },
+            "schedule": {"status": "ACTIVE", "automation_id": "daily-backup"},
+        }
+
+    def sign(self, root, receipt):
+        private_key = root / "private.pem"
+        public_key = root / "public.pem"
+        receipt_path = root / "receipt.json"
+        signature = root / "receipt.sig"
+        subprocess.run(
+            [
+                "openssl",
+                "genpkey",
+                "-algorithm",
+                "RSA",
+                "-pkeyopt",
+                "rsa_keygen_bits:3072",
+                "-out",
+                private_key,
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        subprocess.run(["openssl", "pkey", "-in", private_key, "-pubout", "-out", public_key], check=True)
+        receipt_path.write_text(json.dumps(receipt, sort_keys=True, separators=(",", ":")))
+        subprocess.run(
+            [
+                "openssl",
+                "dgst",
+                "-sha256",
+                "-sign",
+                private_key,
+                "-out",
+                signature,
+                receipt_path,
+            ],
+            check=True,
+        )
+        return receipt_path, signature, public_key
+
     def test_requires_mount_recent_receipt_and_matching_archives(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -127,6 +222,20 @@ class BackupTests(unittest.TestCase):
                 (root / "daily" / "db.age").write_bytes(b"corrupt")
                 with self.assertRaises(ValueError):
                     backup.verify_backup(root, 101)
+
+    def test_signed_receipt_requires_valid_signature_release_and_restore(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            receipt = self.receipt()
+            receipt_path, signature, public_key = self.sign(root, receipt)
+            result = backup.verify_signed_receipt(receipt_path, signature, public_key, 101, "a" * 40, "fixture")
+            self.assertTrue(result["restore_verified"])
+            self.assertEqual(result["storage_provider"], "google_drive")
+            with self.assertRaises(ValueError):
+                backup.verify_signed_receipt(receipt_path, signature, public_key, 101, "c" * 40, "fixture")
+            receipt_path.write_text(receipt_path.read_text() + " ")
+            with self.assertRaises(subprocess.CalledProcessError):
+                backup.verify_signed_receipt(receipt_path, signature, public_key, 101, "a" * 40, "fixture")
 
 
 class SmokeTests(unittest.TestCase):
