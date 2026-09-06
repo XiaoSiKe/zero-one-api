@@ -773,6 +773,10 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 
 	stats, err := s.repo.GetDashboardStats(s.ctx)
 	s.Require().NoError(err, "GetDashboardStats")
+	userRepo := newUserRepositoryWithSQL(s.client, s.tx)
+	_, userPage, err := userRepo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 1})
+	s.Require().NoError(err, "List users with dashboard-equivalent filters")
+	s.Require().Equal(userPage.Total, stats.TotalUsers, "dashboard total users must match the unfiltered non-deleted user directory")
 
 	s.Require().Equal(baseStats.TotalUsers+2, stats.TotalUsers, "TotalUsers mismatch")
 	s.Require().Equal(baseStats.TodayNewUsers+1, stats.TodayNewUsers, "TodayNewUsers mismatch")

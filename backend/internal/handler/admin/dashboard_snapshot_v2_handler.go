@@ -83,6 +83,7 @@ func (h *DashboardHandler) GetSnapshotV2(c *gin.Context) {
 	includeModels := parseBoolQueryWithDefault(c.Query("include_model_stats"), true)
 	includeGroups := parseBoolQueryWithDefault(c.Query("include_group_stats"), false)
 	includeUsersTrend := parseBoolQueryWithDefault(c.Query("include_users_trend"), false)
+	refresh := parseBoolQueryWithDefault(c.Query("refresh"), false)
 	usersTrendLimit := 12
 	if raw := strings.TrimSpace(c.Query("users_trend_limit")); raw != "" {
 		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 && parsed <= 50 {
@@ -119,7 +120,7 @@ func (h *DashboardHandler) GetSnapshotV2(c *gin.Context) {
 	})
 	cacheKey := string(keyRaw)
 
-	cached, hit, err := dashboardSnapshotV2Cache.GetOrLoad(cacheKey, func() (any, error) {
+	load := func() (any, error) {
 		return h.buildSnapshotV2Response(
 			c.Request.Context(),
 			startTime,
@@ -132,8 +133,25 @@ func (h *DashboardHandler) GetSnapshotV2(c *gin.Context) {
 			includeGroups,
 			includeUsersTrend,
 			usersTrendLimit,
+			refresh,
 		)
-	})
+	}
+	if refresh {
+		generation := dashboardSnapshotV2Cache.Invalidate(cacheKey)
+		payload, loadErr := load()
+		if loadErr != nil {
+			response.InternalError(c, loadErr.Error())
+			return
+		}
+		cached := dashboardSnapshotV2Cache.setIfGeneration(cacheKey, payload, generation)
+		if cached.ETag != "" {
+			c.Header("ETag", cached.ETag)
+		}
+		c.Header("X-Snapshot-Cache", "refresh")
+		response.Success(c, cached.Payload)
+		return
+	}
+	cached, hit, err := dashboardSnapshotV2Cache.GetOrLoad(cacheKey, load)
 	if err != nil {
 		response.Error(c, 500, err.Error())
 		return
@@ -157,6 +175,7 @@ func (h *DashboardHandler) buildSnapshotV2Response(
 	filters *dashboardSnapshotV2Filters,
 	includeStats, includeTrend, includeModels, includeGroups, includeUsersTrend bool,
 	usersTrendLimit int,
+	refresh bool,
 ) (*dashboardSnapshotV2Response, error) {
 	resp := &dashboardSnapshotV2Response{
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
@@ -166,7 +185,13 @@ func (h *DashboardHandler) buildSnapshotV2Response(
 	}
 
 	if includeStats {
-		stats, err := h.dashboardService.GetDashboardStats(ctx)
+		var stats *usagestats.DashboardStats
+		var err error
+		if refresh {
+			stats, err = h.dashboardService.GetDashboardStatsFresh(ctx)
+		} else {
+			stats, err = h.dashboardService.GetDashboardStats(ctx)
+		}
 		if err != nil {
 			return nil, errors.New("failed to get dashboard statistics")
 		}
@@ -177,22 +202,22 @@ func (h *DashboardHandler) buildSnapshotV2Response(
 	}
 
 	if includeTrend {
-		trend, _, err := h.getUsageTrendCached(
-			ctx,
-			startTime,
-			endTime,
-			granularity,
-			filters.UserID,
-			filters.APIKeyID,
-			filters.AccountID,
-			filters.GroupID,
-			filters.Model,
-			filters.RequestType,
-			filters.Stream,
-			filters.NativeCompactionV2,
-			filters.BillingType,
-			filters.UpstreamModelMismatch,
-		)
+		var trend []usagestats.TrendDataPoint
+		var err error
+		if refresh {
+			trend, err = h.dashboardService.GetUsageTrendWithUsageFilters(ctx, startTime, endTime, granularity, usagestats.UsageLogFilters{
+				UserID: filters.UserID, APIKeyID: filters.APIKeyID, AccountID: filters.AccountID, GroupID: filters.GroupID,
+				Model: filters.Model, RequestType: filters.RequestType, Stream: filters.Stream,
+				NativeCompactionV2: filters.NativeCompactionV2, BillingType: filters.BillingType,
+				UpstreamModelMismatch: filters.UpstreamModelMismatch,
+			})
+		} else {
+			trend, _, err = h.getUsageTrendCached(
+				ctx, startTime, endTime, granularity, filters.UserID, filters.APIKeyID,
+				filters.AccountID, filters.GroupID, filters.Model, filters.RequestType,
+				filters.Stream, filters.NativeCompactionV2, filters.BillingType, filters.UpstreamModelMismatch,
+			)
+		}
 		if err != nil {
 			return nil, errors.New("failed to get usage trend")
 		}
@@ -200,21 +225,21 @@ func (h *DashboardHandler) buildSnapshotV2Response(
 	}
 
 	if includeModels {
-		models, _, err := h.getModelStatsCached(
-			ctx,
-			startTime,
-			endTime,
-			filters.UserID,
-			filters.APIKeyID,
-			filters.AccountID,
-			filters.GroupID,
-			usagestats.ModelSourceRequested,
-			filters.RequestType,
-			filters.Stream,
-			filters.NativeCompactionV2,
-			filters.BillingType,
-			filters.UpstreamModelMismatch,
-		)
+		var models []usagestats.ModelStat
+		var err error
+		if refresh {
+			models, err = h.dashboardService.GetModelStatsWithUsageFiltersBySource(ctx, startTime, endTime, usagestats.UsageLogFilters{
+				UserID: filters.UserID, APIKeyID: filters.APIKeyID, AccountID: filters.AccountID, GroupID: filters.GroupID,
+				RequestType: filters.RequestType, Stream: filters.Stream, NativeCompactionV2: filters.NativeCompactionV2,
+				BillingType: filters.BillingType, UpstreamModelMismatch: filters.UpstreamModelMismatch,
+			}, usagestats.ModelSourceRequested)
+		} else {
+			models, _, err = h.getModelStatsCached(
+				ctx, startTime, endTime, filters.UserID, filters.APIKeyID, filters.AccountID,
+				filters.GroupID, usagestats.ModelSourceRequested, filters.RequestType, filters.Stream,
+				filters.NativeCompactionV2, filters.BillingType, filters.UpstreamModelMismatch,
+			)
+		}
 		if err != nil {
 			return nil, errors.New("failed to get model statistics")
 		}
@@ -222,20 +247,21 @@ func (h *DashboardHandler) buildSnapshotV2Response(
 	}
 
 	if includeGroups {
-		groups, _, err := h.getGroupStatsCached(
-			ctx,
-			startTime,
-			endTime,
-			filters.UserID,
-			filters.APIKeyID,
-			filters.AccountID,
-			filters.GroupID,
-			filters.RequestType,
-			filters.Stream,
-			filters.NativeCompactionV2,
-			filters.BillingType,
-			filters.UpstreamModelMismatch,
-		)
+		var groups []usagestats.GroupStat
+		var err error
+		if refresh {
+			groups, err = h.dashboardService.GetGroupStatsWithUsageFilters(ctx, startTime, endTime, usagestats.UsageLogFilters{
+				UserID: filters.UserID, APIKeyID: filters.APIKeyID, AccountID: filters.AccountID, GroupID: filters.GroupID,
+				RequestType: filters.RequestType, Stream: filters.Stream, NativeCompactionV2: filters.NativeCompactionV2,
+				BillingType: filters.BillingType, UpstreamModelMismatch: filters.UpstreamModelMismatch,
+			})
+		} else {
+			groups, _, err = h.getGroupStatsCached(
+				ctx, startTime, endTime, filters.UserID, filters.APIKeyID, filters.AccountID,
+				filters.GroupID, filters.RequestType, filters.Stream, filters.NativeCompactionV2,
+				filters.BillingType, filters.UpstreamModelMismatch,
+			)
+		}
 		if err != nil {
 			return nil, errors.New("failed to get group statistics")
 		}
@@ -243,7 +269,13 @@ func (h *DashboardHandler) buildSnapshotV2Response(
 	}
 
 	if includeUsersTrend {
-		usersTrend, _, err := h.getUserUsageTrendCached(ctx, startTime, endTime, granularity, usersTrendLimit)
+		var usersTrend []usagestats.UserUsageTrendPoint
+		var err error
+		if refresh {
+			usersTrend, err = h.dashboardService.GetUserUsageTrend(ctx, startTime, endTime, granularity, usersTrendLimit)
+		} else {
+			usersTrend, _, err = h.getUserUsageTrendCached(ctx, startTime, endTime, granularity, usersTrendLimit)
+		}
 		if err != nil {
 			return nil, errors.New("failed to get user usage trend")
 		}

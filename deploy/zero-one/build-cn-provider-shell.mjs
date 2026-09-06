@@ -16,11 +16,13 @@ export const PRIOR_CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v3'
 export const PRE_RECOVERY_SHELL_DIRECTORY = 'cn-provider-shell-v4'
 export const RECOVERY_SHELL_DIRECTORY = 'cn-provider-shell-v5'
 export const DECLARED_COST_SHELL_DIRECTORY = 'cn-provider-shell-v6'
-export const CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v7'
+export const DASHBOARD_SPEND_SHELL_DIRECTORY = 'cn-provider-shell-v7'
+export const CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v8'
 export const CN_PROVIDER_SHELL_ASSET = `${CN_PROVIDER_SHELL_DIRECTORY}/${APPROVED_SHELL_SOURCE}`
 export const APPROVED_LAYOUT_SOURCE = 'AppLayout.vue_vue_type_script_setup_true_lang-gmb2csy1.js'
 export const DECLARED_COST_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v2'
-export const CURRENT_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v3'
+export const DASHBOARD_SPEND_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v3'
+export const CURRENT_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v4'
 export const PASSWORD_RECOVERY_PAGES = {
   'ForgotPasswordView-DfgTg0iM.js': 'password-recovery-v1/ForgotPasswordView.js',
   'ResetPasswordView-CMRDA6OL.js': 'password-recovery-v1/ResetPasswordView.js',
@@ -130,13 +132,32 @@ export function patchDashboardSpendCards(source) {
 export function dashboardSpendShellOverrides(assetsDirectory) {
   const overrides = declaredCostShellOverrides(assetsDirectory)
   for (const [name, target] of Object.entries(PASSWORD_RECOVERY_PAGES)) {
-    const currentTarget = `${CURRENT_PASSWORD_RECOVERY_DIRECTORY}/${basename(target)}`
+    const currentTarget = `${DASHBOARD_SPEND_PASSWORD_RECOVERY_DIRECTORY}/${basename(target)}`
     readFileSync(resolve(assetsDirectory, currentTarget), 'utf8')
     overrides.set(name, `export { default } from '../${currentTarget}';\n`)
   }
   overrides.set(
     'DashboardView-CYAPqspo.js',
     patchDashboardSpendCards(overrides.get('DashboardView-CYAPqspo.js')),
+  )
+  return overrides
+}
+
+export function dashboardUserClarityShellOverrides(assetsDirectory) {
+  const overrides = dashboardSpendShellOverrides(assetsDirectory)
+  for (const [name, target] of Object.entries(PASSWORD_RECOVERY_PAGES)) {
+    const currentTarget = `${CURRENT_PASSWORD_RECOVERY_DIRECTORY}/${basename(target)}`
+    readFileSync(resolve(assetsDirectory, currentTarget), 'utf8')
+    overrides.set(name, `export { default } from '../${currentTarget}';\n`)
+  }
+  overrides.set(
+    'DashboardView-CYAPqspo.js',
+    replaceExactlyOnce(
+      overrides.get('DashboardView-CYAPqspo.js'),
+      'admin.dashboard.users',
+      'admin.dashboard.newUsersToday',
+      'dashboard new-users label',
+    ),
   )
   return overrides
 }
@@ -278,7 +299,13 @@ export function buildCNProviderShell(consoleAssetsDirectory) {
   for (const [name, content] of declaredCostOverrides) {
     writeFileSync(resolve(consoleAssetsDirectory, DECLARED_COST_SHELL_DIRECTORY, name), content)
   }
-  const currentOverrides = dashboardSpendShellOverrides(consoleAssetsDirectory)
+  const dashboardSpendOverrides = dashboardSpendShellOverrides(consoleAssetsDirectory)
+  const dashboardSpendTargetPath = writeShellVariant(consoleAssetsDirectory, DASHBOARD_SPEND_SHELL_DIRECTORY,
+    patchApprovedShell(source), new Set(dashboardSpendOverrides.keys()))
+  for (const [name, content] of dashboardSpendOverrides) {
+    writeFileSync(resolve(consoleAssetsDirectory, DASHBOARD_SPEND_SHELL_DIRECTORY, name), content)
+  }
+  const currentOverrides = dashboardUserClarityShellOverrides(consoleAssetsDirectory)
   const currentTargetPath = writeShellVariant(consoleAssetsDirectory, CN_PROVIDER_SHELL_DIRECTORY,
     patchApprovedShell(source), new Set(currentOverrides.keys()))
   for (const [name, content] of currentOverrides) {
@@ -286,6 +313,7 @@ export function buildCNProviderShell(consoleAssetsDirectory) {
   }
   return { sourcePath, legacyTargetPath, previousTargetPath, priorTargetPath,
     preRecoveryTargetPath: targetPath, recoveryTargetPath, declaredCostTargetPath,
+    dashboardSpendTargetPath,
     targetPath: currentTargetPath }
 
 }

@@ -58,7 +58,7 @@ const jobPolicies = {
       'run: pnpm run build:cn-provider-admin',
       'run: pnpm run build:cn-provider-shell',
       'run: pnpm run build:online-image',
-      'run: test -z "$(git status --porcelain --untracked-files=all -- deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v2 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v3 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v4 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v2 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v3 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v4 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7 deploy/zero-one/recovered-frontend/console/assets/online-image-v7 deploy/zero-one/recovered-frontend/console/assets/online-image-v8 deploy/zero-one/recovered-frontend/console/assets/online-image-v9 deploy/zero-one/recovered-frontend/console/assets/online-image-v10 deploy/zero-one/recovered-frontend/console/assets/online-image-v11 deploy/zero-one/recovered-frontend/console/assets/online-image-v12 deploy/zero-one/recovered-frontend/console/assets/online-image-v13 deploy/zero-one/recovered-frontend/console/assets/online-image-v14 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v1 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v3 deploy/zero-one/recovered-frontend/console/assets/shared-immutable)"',
+      'run: test -z "$(git status --porcelain --untracked-files=all -- deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v2 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v3 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v4 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v5 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v2 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v3 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v4 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8 deploy/zero-one/recovered-frontend/console/assets/online-image-v7 deploy/zero-one/recovered-frontend/console/assets/online-image-v8 deploy/zero-one/recovered-frontend/console/assets/online-image-v9 deploy/zero-one/recovered-frontend/console/assets/online-image-v10 deploy/zero-one/recovered-frontend/console/assets/online-image-v11 deploy/zero-one/recovered-frontend/console/assets/online-image-v12 deploy/zero-one/recovered-frontend/console/assets/online-image-v13 deploy/zero-one/recovered-frontend/console/assets/online-image-v14 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v1 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v3 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v4 deploy/zero-one/recovered-frontend/console/assets/shared-immutable)"',
     ]],
     backend: [30, ['run: go test ./...', 'run: make test-unit', 'run: make test-integration']],
     deployment: [45, [
@@ -208,6 +208,22 @@ test('automatic validation executes ordinary, unit, integration and full Console
   assert.ok(!commands.includes('run: make test-frontend'), 'the full Console suite includes the critical subset')
   assert.ok(!commands.includes('run: make test'), 'Go lint runs only in its dedicated job')
   assert.ok(!source.includes('continue-on-error:'), 'automatic gates must not hide failures')
+})
+
+test('required checks record exactly one successful affected-or-not-applicable decision path', () => {
+  const product = workflowJobs(readFileSync(new URL('../workflows/zero-one-ci.yml', import.meta.url), 'utf8'))
+  for (const id of ['landing', 'console', 'backend', 'deployment', 'shell', 'golangci-lint', 'chromium-calibration']) {
+    const body = product[id]
+    assert.ok(body.includes(`Impact decision - ${id === 'chromium-calibration' ? 'Chromium visual regression' : id}`))
+    assert.ok(body.includes('not applicable'))
+    assert.ok(body.includes('required'))
+  }
+  const security = workflowJobs(readFileSync(new URL('../workflows/security-scan.yml', import.meta.url), 'utf8'))
+  for (const id of ['backend-security', 'frontend-security']) {
+    assert.ok(security[id].includes('Impact decision -'))
+    assert.ok(security[id].includes('not applicable'))
+    assert.ok(security[id].includes('required'))
+  }
 })
 
 for (const [file, events, name] of workflows) {

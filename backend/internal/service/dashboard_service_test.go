@@ -182,6 +182,33 @@ func TestDashboardService_CacheHitFresh(t *testing.T) {
 	require.Equal(t, int32(0), atomic.LoadInt32(&cache.setCalls))
 }
 
+func TestDashboardService_ForceRefreshBypassesReadCacheAndReplacesIt(t *testing.T) {
+	cached := dashboardStatsCacheEntry{
+		Stats:     &usagestats.DashboardStats{TotalUsers: 10},
+		UpdatedAt: time.Now().Unix(),
+	}
+	payload, err := json.Marshal(cached)
+	require.NoError(t, err)
+
+	cache := &dashboardCacheStub{
+		get: func(context.Context) (string, error) { return string(payload), nil },
+	}
+	repo := &usageRepoStub{stats: &usagestats.DashboardStats{TotalUsers: 20}}
+	cfg := &config.Config{
+		Dashboard:    config.DashboardCacheConfig{Enabled: true},
+		DashboardAgg: config.DashboardAggregationConfig{Enabled: true},
+	}
+	svc := NewDashboardService(repo, &dashboardAggregationRepoStub{watermark: time.Now().UTC()}, cache, cfg)
+
+	got, err := svc.GetDashboardStatsFresh(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, int64(20), got.TotalUsers)
+	require.Equal(t, int32(0), atomic.LoadInt32(&cache.getCalls))
+	require.Equal(t, int32(1), atomic.LoadInt32(&repo.calls))
+	require.Equal(t, int32(1), atomic.LoadInt32(&cache.setCalls))
+	require.Equal(t, int64(20), cache.readLastEntry(t).Stats.TotalUsers)
+}
+
 func TestDashboardService_CacheMiss_StoresCache(t *testing.T) {
 	stats := &usagestats.DashboardStats{
 		TotalUsers:     7,

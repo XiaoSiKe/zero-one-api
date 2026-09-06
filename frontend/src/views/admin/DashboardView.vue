@@ -76,7 +76,7 @@
               </div>
               <div>
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.users') }}
+                  {{ t('admin.dashboard.newUsersToday') }}
                 </p>
                 <p class="text-xl font-bold text-gray-900 dark:text-white">
                   +{{ stats.today_new_users }}
@@ -281,7 +281,7 @@
                   @change="onDateRangeChange"
                 />
               </div>
-              <button @click="loadDashboardStats" :disabled="chartsLoading" class="btn btn-secondary">
+              <button @click="loadDashboardStats(true)" :disabled="chartsLoading" class="btn btn-secondary">
                 {{ t('common.refresh') }}
               </button>
               <div class="ml-auto flex items-center gap-2">
@@ -635,7 +635,7 @@ const onDateRangeChange = (range: {
 }
 
 // Load data
-const loadDashboardSnapshot = async (includeStats: boolean) => {
+const loadDashboardSnapshot = async (includeStats: boolean, refresh = false) => {
   const currentSeq = ++chartLoadSeq
   if (includeStats && !stats.value) {
     loading.value = true
@@ -646,6 +646,7 @@ const loadDashboardSnapshot = async (includeStats: boolean) => {
       start_date: startDate.value,
       end_date: endDate.value,
       granularity: granularity.value,
+			refresh,
       include_stats: includeStats,
       include_trend: true,
       include_model_stats: true,
@@ -723,9 +724,9 @@ const loadUserSpendingRanking = async () => {
   }
 }
 
-const loadDashboardStats = async () => {
+const loadDashboardStats = async (refresh = false) => {
   await Promise.all([
-    loadDashboardSnapshot(true),
+		loadDashboardSnapshot(true, refresh),
     loadUsersTrend(),
     loadUserSpendingRanking()
   ])

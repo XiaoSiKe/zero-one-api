@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-06-providercache",
-  "baseline_commit": "f6ea10b6c23556bac375c17b4a95560d0f88d471",
+  "baseline_ref": "ui-approved-2026-09-06-dataconnectivity",
+  "baseline_commit": "95bab1237786f2f044e7294ba8e14f8e95f0c10a",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -112,7 +112,8 @@
         "visual-regression/tests/__screenshots__/chromium-mobile/console-forgot-password.png",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-reset-password.png",
         "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2/",
-        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v3/"
+        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v3/",
+        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v4/"
       ]
     },
     {
@@ -367,8 +368,10 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v3/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v4/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v5/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/",
-        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/"
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/"
       ]
     },
     {
@@ -415,6 +418,7 @@
         "deploy/zero-one/recovered-frontend/console/assets/online-image-v13/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/",
         "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/"
       ]
     },
@@ -482,6 +486,7 @@
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-6pKNrg32.js",
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-BBEtrNVx.js",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/",
         "visual-regression/tests/dashboard-spend.behavior.spec.ts",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-cards.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-cards.png"

@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+Affected-verification note: [ADR 0013](0013-affected-verification-policy.md) supersedes this record's unconditional full Console, Go and visual execution requirement. The twelve required names, exact-run provenance, failure handling, security workflow and publication constraints below remain accepted.
+
 ## Context
 
 The hosting migration preserved source history and protected product metadata,

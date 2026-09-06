@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -370,13 +371,16 @@ func TestSameFixedRollupBucket(t *testing.T) {
 // aggregation SQL CASE so rollup categories match drilldown classification.
 func TestChannelMonitorV2SQLTaxonomyContainsGoNeedles(t *testing.T) {
 	sql := channelMonitorV2ErrorAggregationSQL
+	require.Contains(t, sql, fmt.Sprintf("category, %d, COUNT(*)", service.ChannelMonitorV2TaxonomyVersion))
 	needles := []string{
 		"blocked keyword",
 		"invalid_api_key",
+		"upstream_authentication",
 		"max_tokens",
 		"invalid_request",
 		"model not supported",
 		"billing hard limit",
+		"upstream_quota_or_balance",
 		"no healthy upstream account",
 		"rate_limit",
 		"gateway timeout",

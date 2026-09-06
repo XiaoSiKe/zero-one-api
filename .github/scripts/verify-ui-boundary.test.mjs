@@ -26,6 +26,7 @@ test('validates the approved UI baseline manifest', () => {
   assert.ok(auth.paths.includes('visual-regression/tests/__screenshots__/chromium-desktop/console-register.png'))
   assert.ok(auth.paths.includes('visual-regression/tests/__screenshots__/chromium-mobile/console-register.png'))
   assert.ok(auth.paths.includes('visual-regression/tests/console.visual.spec.ts'))
+  assert.ok(auth.paths.includes('deploy/zero-one/recovered-frontend/console/assets/password-recovery-v4/'))
   const redeem = manifest.protected_surfaces.find(({ name }) => name === 'redeem-benefits-mystery-box')
   assert.ok(redeem.paths.includes('frontend/src/api/redeem.ts'))
   assert.ok(redeem.paths.includes('visual-regression/tests/redeem.behavior.spec.ts'))
@@ -113,6 +114,8 @@ test('validates the approved UI baseline manifest', () => {
     ),
   )
   assert.ok(cnProviderManagement.paths.includes('visual-regression/tests/console.cn-platforms.spec.ts'))
+  assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v5/'))
+  assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/'))
   assert.ok(
     cnProviderManagement.paths.includes(
       'visual-regression/tests/__screenshots__/chromium-desktop/console-accounts-cn-protocol-guidance.png',

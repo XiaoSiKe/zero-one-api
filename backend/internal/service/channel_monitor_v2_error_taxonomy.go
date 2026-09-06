@@ -17,11 +17,15 @@ func ClassifyChannelMonitorV2Error(input ChannelMonitorV2ErrorInput) string {
 	errorType := strings.ToLower(strings.TrimSpace(input.ErrorType))
 	owner := strings.ToLower(strings.TrimSpace(input.ErrorOwner))
 	text := strings.ToLower(strings.Join([]string{input.ErrorType, input.ErrorSource, input.Message}, " "))
+	upstreamAffected := owner == "provider" || input.UpstreamStatusCode > 0
 
 	if errorType == "cyber_policy" || channelMonitorV2ContainsAny(text, "content policy", "content_policy", "safety policy", "moderation", "blocked keyword") {
 		return "content_policy"
 	}
-	if input.StatusCode == 401 || input.UpstreamStatusCode == 401 || channelMonitorV2ContainsAny(text, "unauthorized", "invalid api key", "invalid_api_key", "authentication", "api_key_disabled") {
+	if input.UpstreamStatusCode == 401 || (upstreamAffected && channelMonitorV2ContainsAny(text, "unauthorized", "invalid api key", "invalid_api_key", "authentication", "api_key_disabled")) {
+		return "upstream_authentication"
+	}
+	if input.StatusCode == 401 || channelMonitorV2ContainsAny(text, "unauthorized", "invalid api key", "invalid_api_key", "authentication", "api_key_disabled") {
 		return "authentication"
 	}
 	if channelMonitorV2ContainsAny(text, "context window", "context length", "maximum prompt length", "too many tokens", "max_tokens") {
@@ -35,6 +39,9 @@ func ClassifyChannelMonitorV2Error(input ChannelMonitorV2ErrorInput) string {
 	}
 	if channelMonitorV2ContainsAny(text, "group not allowed", "group_not_allowed", "group access") {
 		return "group_access"
+	}
+	if upstreamAffected && channelMonitorV2ContainsAny(text, "run out of credits", "insufficient balance", "insufficient quota", "subscription", "quota exceeded", "billing hard limit") {
+		return "upstream_quota_or_balance"
 	}
 	if channelMonitorV2ContainsAny(text, "run out of credits", "insufficient balance", "insufficient quota", "subscription", "quota exceeded", "billing hard limit") {
 		return "quota_or_balance"

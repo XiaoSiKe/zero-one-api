@@ -127,6 +127,7 @@ export interface GroupStatsResponse {
 }
 
 export interface DashboardSnapshotV2Params extends TrendParams {
+	refresh?: boolean
   include_stats?: boolean
   include_trend?: boolean
   include_model_stats?: boolean

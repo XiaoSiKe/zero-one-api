@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+Affected-verification note: [ADR 0013](0013-affected-verification-policy.md) supersedes unconditional full-suite execution. The lifecycle contracts and permanent Product Change Protection remain accepted; their tests run when these paths or shared dependencies are affected.
+
 ## Context
 
 Redeem Code management could read an unused row, race with redemption, and then

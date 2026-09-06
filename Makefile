@@ -1,4 +1,4 @@
-.PHONY: build build-backend build-frontend test test-backend test-frontend test-frontend-critical test-landing
+.PHONY: build build-backend build-frontend test test-affected test-backend test-frontend test-frontend-critical test-landing
 
 FRONTEND_CRITICAL_VITEST := \
 	src/api/__tests__/client.spec.ts \
@@ -28,6 +28,11 @@ build-frontend:
 
 # 运行完整测试（后端 + 控制台 + 官网）；关键子集仅供快速诊断。
 test: test-backend test-frontend test-landing
+
+# Apply the canonical impact policy to committed and uncommitted paths.
+# Set TEST_BASE_SHA to compare against a specific base revision.
+test-affected:
+	@node .github/scripts/run-affected-tests.mjs $(if $(TEST_BASE_SHA),--base $(TEST_BASE_SHA),)
 
 test-backend:
 	@$(MAKE) -C backend test

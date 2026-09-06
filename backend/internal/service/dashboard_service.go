@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -40,17 +41,19 @@ type dashboardStatsCacheEntry struct {
 
 // DashboardService 提供管理员仪表盘统计服务。
 type DashboardService struct {
-	usageRepo      UsageLogRepository
-	aggRepo        DashboardAggregationRepository
-	cache          DashboardStatsCache
-	cacheFreshTTL  time.Duration
-	cacheTTL       time.Duration
-	refreshTimeout time.Duration
-	refreshing     int32
-	aggEnabled     bool
-	aggInterval    time.Duration
-	aggLookback    time.Duration
-	aggUsageDays   int
+	usageRepo       UsageLogRepository
+	aggRepo         DashboardAggregationRepository
+	cache           DashboardStatsCache
+	cacheFreshTTL   time.Duration
+	cacheTTL        time.Duration
+	refreshTimeout  time.Duration
+	refreshing      int32
+	cacheGeneration uint64
+	cacheWriteMu    sync.Mutex
+	aggEnabled      bool
+	aggInterval     time.Duration
+	aggLookback     time.Duration
+	aggUsageDays    int
 }
 
 func NewDashboardService(usageRepo UsageLogRepository, aggRepo DashboardAggregationRepository, cache DashboardStatsCache, cfg *config.Config) *DashboardService {
@@ -120,6 +123,20 @@ func (s *DashboardService) GetDashboardStats(ctx context.Context) (*usagestats.D
 	stats, err := s.refreshDashboardStats(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get dashboard stats: %w", err)
+	}
+	return stats, nil
+}
+
+// GetDashboardStatsFresh bypasses the read cache and replaces it with a value
+// loaded from the authoritative repositories. Advancing cacheGeneration also
+// prevents an older in-flight refresh from overwriting this explicit refresh.
+func (s *DashboardService) GetDashboardStatsFresh(ctx context.Context) (*usagestats.DashboardStats, error) {
+	s.cacheWriteMu.Lock()
+	generation := atomic.AddUint64(&s.cacheGeneration, 1)
+	s.cacheWriteMu.Unlock()
+	stats, err := s.refreshDashboardStatsAtGeneration(ctx, generation)
+	if err != nil {
+		return nil, fmt.Errorf("refresh dashboard stats: %w", err)
 	}
 	return stats, nil
 }
@@ -242,6 +259,10 @@ func (s *DashboardService) getCachedDashboardStats(ctx context.Context) (*usages
 }
 
 func (s *DashboardService) refreshDashboardStats(ctx context.Context) (*usagestats.DashboardStats, error) {
+	return s.refreshDashboardStatsAtGeneration(ctx, atomic.LoadUint64(&s.cacheGeneration))
+}
+
+func (s *DashboardService) refreshDashboardStatsAtGeneration(ctx context.Context, generation uint64) (*usagestats.DashboardStats, error) {
 	stats, err := s.fetchDashboardStats(ctx)
 	if err != nil {
 		return nil, err
@@ -249,7 +270,7 @@ func (s *DashboardService) refreshDashboardStats(ctx context.Context) (*usagesta
 	s.applyAggregationStatus(ctx, stats)
 	cacheCtx, cancel := s.cacheOperationContext()
 	defer cancel()
-	s.saveDashboardStatsCache(cacheCtx, stats)
+	s.saveDashboardStatsCache(cacheCtx, stats, generation)
 	return stats, nil
 }
 
@@ -261,6 +282,7 @@ func (s *DashboardService) refreshDashboardStatsAsync() {
 		return
 	}
 
+	generation := atomic.LoadUint64(&s.cacheGeneration)
 	go func() {
 		defer atomic.StoreInt32(&s.refreshing, 0)
 
@@ -275,7 +297,7 @@ func (s *DashboardService) refreshDashboardStatsAsync() {
 		s.applyAggregationStatus(ctx, stats)
 		cacheCtx, cancel := s.cacheOperationContext()
 		defer cancel()
-		s.saveDashboardStatsCache(cacheCtx, stats)
+		s.saveDashboardStatsCache(cacheCtx, stats, generation)
 	}()
 }
 
@@ -290,11 +312,10 @@ func (s *DashboardService) fetchDashboardStats(ctx context.Context) (*usagestats
 	return s.usageRepo.GetDashboardStats(ctx)
 }
 
-func (s *DashboardService) saveDashboardStatsCache(ctx context.Context, stats *usagestats.DashboardStats) {
+func (s *DashboardService) saveDashboardStatsCache(ctx context.Context, stats *usagestats.DashboardStats, generation uint64) {
 	if s.cache == nil || stats == nil {
 		return
 	}
-
 	entry := dashboardStatsCacheEntry{
 		Stats:     stats,
 		UpdatedAt: time.Now().Unix(),
@@ -302,6 +323,11 @@ func (s *DashboardService) saveDashboardStatsCache(ctx context.Context, stats *u
 	data, err := json.Marshal(entry)
 	if err != nil {
 		logger.LegacyPrintf("service.dashboard", "[Dashboard] 仪表盘缓存序列化失败: %v", err)
+		return
+	}
+	s.cacheWriteMu.Lock()
+	defer s.cacheWriteMu.Unlock()
+	if generation != atomic.LoadUint64(&s.cacheGeneration) {
 		return
 	}
 
