@@ -557,8 +557,9 @@ GoReleaser archives 均声明携带这三份根级材料。镜像文件位于
 
 执行顺序为 `preflight` → `drain-backup` → `migrate-backend` → `edge` →
 `open` → `complete`。迁移阶段另需本次最终备份的异地校验与实际恢复证明；
-控制器核对其镜像摘要、归档校验值和原始数据指纹。235 迁移允许修改的监控回填
-水位三列单独列为派生状态，其余原有列仍精确比较。
+控制器核对其镜像摘要、归档校验值和原始数据指纹。监控回填的
+`error_coverage_start`、`backfill_cursor` 和 `updated_at` 会由后台聚合异步推进，
+每次发布都作为派生水位排除；水位行本身、其他监控列及全部业务列仍精确比较。
 
 在 `drain-backup` 前，创建名为 `zero-one-release-watchdog-<id>` 的主机
 systemd 临时 timer，20 分钟后调用同一脚本的 `watchdog RECOVERY_DIR`。

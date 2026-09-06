@@ -61,10 +61,10 @@ class ReleaseTests(unittest.TestCase):
             ],
         }
         original = copy.deepcopy(columns)
-        self.assertEqual(release.migration_projection(columns, []), original)
-        projection = release.migration_projection(columns, ["235_channel_monitor_v2_taxonomy_v2_backfill.sql"])
-        self.assertEqual(projection["users"], original["users"])
-        self.assertEqual(projection["channel_monitor_v2_watermarks"], ["id", "last_aggregated_at"])
+        for pending in ([], ["235_channel_monitor_v2_taxonomy_v2_backfill.sql"]):
+            projection = release.migration_projection(columns, pending)
+            self.assertEqual(projection["users"], original["users"])
+            self.assertEqual(projection["channel_monitor_v2_watermarks"], ["id", "last_aggregated_at"])
         self.assertEqual(columns, original)
 
     def test_rejects_rewritten_or_unexpected_migration_ledger(self):

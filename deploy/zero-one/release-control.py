@@ -34,15 +34,15 @@ def validate_metadata(meta, root):
 
 
 def migration_projection(columns, pending):
-    # The accepted data/connectivity release includes a derived monitor
-    # cursor reset. Every other original column, including all invoices, is exact.
+    # Monitor cursors and their timestamp are derived, asynchronously advancing
+    # state. Every business column, including all invoices, remains exact.
+    _ = pending
     result = {table: list(names) for table, names in columns.items()}
-    if "235_channel_monitor_v2_taxonomy_v2_backfill.sql" in pending:
-        table = "channel_monitor_v2_watermarks"
-        if table in result:
-            result[table] = [
-                name for name in result[table] if name not in ("error_coverage_start", "backfill_cursor", "updated_at")
-            ]
+    table = "channel_monitor_v2_watermarks"
+    if table in result:
+        result[table] = [
+            name for name in result[table] if name not in ("error_coverage_start", "backfill_cursor", "updated_at")
+        ]
     return result
 
 
