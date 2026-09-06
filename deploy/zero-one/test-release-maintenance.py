@@ -21,6 +21,7 @@ def load(name):
 release = load("release-control")
 backup = load("backup-health")
 smoke = load("release-smoke")
+observation = load("release_observation_policy")
 
 
 class ReleaseTests(unittest.TestCase):
@@ -259,6 +260,25 @@ class SmokeTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     smoke.invoice_count(key)
             command.assert_not_called()
+
+
+class ObservationTests(unittest.TestCase):
+    def test_known_sparse_internal_error_is_observed_without_false_rollback(self):
+        result = observation.classify_internal_taxonomy(
+            [{"signature": "gateway|service-unavailable", "count": 141}],
+            [{"signature": "gateway|service-unavailable", "count": 1}],
+            11 * 60,
+        )
+        self.assertEqual(result, {"novel": [], "bursts": []})
+
+    def test_novel_taxonomy_and_known_burst_still_block_release(self):
+        result = observation.classify_internal_taxonomy(
+            [{"signature": "known", "count": 141}],
+            [{"signature": "known", "count": 5}, {"signature": "new", "count": 1}],
+            10 * 60,
+        )
+        self.assertEqual([row["signature"] for row in result["novel"]], ["new"])
+        self.assertEqual([row["signature"] for row in result["bursts"]], ["known"])
 
 
 if __name__ == "__main__":

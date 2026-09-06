@@ -934,7 +934,8 @@ def execute(action):
             proof["elapsed_seconds"] >= 1800
             and proof["historical_bills_unchanged"]
             and proof["duplicate_bills"] == 0
-            and proof["internal_errors"] == 0
+            and proof["novel_internal_categories"] == 0
+            and proof["known_internal_bursts"] == 0
             and proof["source_sha"] == META["merge_sha"]
         )
         healthy()

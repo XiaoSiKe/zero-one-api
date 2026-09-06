@@ -745,6 +745,7 @@
     "deploy/zero-one/release-smoke.py",
     "deploy/zero-one/test-release-maintenance.py",
     "deploy/zero-one/observe-release.py",
+    "deploy/zero-one/release_observation_policy.py",
     "deploy/zero-one/release-control.py",
     "deploy/zero-one/zero-one-backup.service",
     "deploy/zero-one/backup.env.example",

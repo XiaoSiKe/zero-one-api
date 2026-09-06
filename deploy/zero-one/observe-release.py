@@ -2,6 +2,8 @@
 
 import json, pathlib, subprocess, time, datetime, os, sys
 
+from release_observation_policy import classify_internal_taxonomy
+
 if not __debug__:
     raise RuntimeError("observation requires assertions")
 os.umask(0o077)
@@ -55,8 +57,24 @@ def old_bills():
     assert expected == actual, "historical invoice rows changed after application upgrade"
 
 
+def internal_taxonomy(window_start, window_end=None):
+    end = "" if window_end is None else " AND created_at<'" + window_end + "'::timestamptz"
+    source = sql(
+        "SELECT coalesce(jsonb_agg(row),'[]') FROM ("
+        "SELECT jsonb_build_object('signature',concat_ws('|',error_phase,error_owner,error_source,error_type,status_code),"
+        "'count',count(*)) row FROM ops_error_logs WHERE error_phase='internal' AND created_at>='"
+        + window_start
+        + "'::timestamptz"
+        + end
+        + " GROUP BY error_phase,error_owner,error_source,error_type,status_code) grouped"
+    )
+    return json.loads(source)
+
+
 old_bills()
 samples = []
+baseline_start = (datetime.datetime.fromisoformat(start) - datetime.timedelta(days=7)).isoformat()
+baseline_internal = internal_taxonomy(baseline_start, start)
 initial_apps = {x["Name"].lstrip("/"): x["Id"] for x in json.loads(run(["docker", "inspect", *meta["new_images"]]))}
 while True:
     containers = {x["Name"].lstrip("/"): x for x in json.loads(run(["docker", "inspect", *state["before"]]))}
@@ -116,7 +134,10 @@ while True:
         + " AND request_id<>'' GROUP BY request_id,api_key_id HAVING count(*)>1) t"
     )
     assert dup == "0", "duplicate invoice identities found"
-    assert errors["internal"] == 0, "new internal service errors require investigation"
+    elapsed = int(time.monotonic() - begin)
+    internal = classify_internal_taxonomy(baseline_internal, internal_taxonomy(start), elapsed)
+    assert not internal["novel"], "new internal error taxonomy requires investigation"
+    assert not internal["bursts"], "known internal error taxonomy increased sharply"
     runtime_logs = subprocess.check_output(
         ["docker", "logs", "--since", start, "zero-one-api-sub2api-1"], text=True, stderr=subprocess.STDOUT
     ).lower()
@@ -130,13 +151,16 @@ while True:
             "fatal error:",
         ]
     ), "new billing/runtime failure requires immediate investigation"
-    elapsed = int(time.monotonic() - begin)
     sample = {
         "at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "elapsed_seconds": elapsed,
         "health": "passed",
         "data": data,
         "errors": errors,
+        "internal_taxonomy": {
+            "novel_categories": len(internal["novel"]),
+            "burst_categories": len(internal["bursts"]),
+        },
     }
     samples.append(sample)
     (root / "observation-samples.json").write_text(json.dumps(samples, indent=2))
@@ -185,7 +209,9 @@ assert not issues, "billing/runtime log anomalies require investigation"
             "samples": len(samples),
             "historical_bills_unchanged": True,
             "duplicate_bills": 0,
-            "internal_errors": 0,
+            "internal_errors": samples[-1]["errors"]["internal"],
+            "novel_internal_categories": samples[-1]["internal_taxonomy"]["novel_categories"],
+            "known_internal_bursts": samples[-1]["internal_taxonomy"]["burst_categories"],
             "billing_log_anomalies": issues,
             "provider_5xx": samples[-1]["errors"]["provider_5xx"],
             "last_metrics": samples[-1]["data"],
