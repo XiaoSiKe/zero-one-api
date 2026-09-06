@@ -235,6 +235,29 @@ async function readApiResponse(response) {
   return payload
 }
 
+function recoveredAppStore() {
+  return document.querySelector('#app')
+    ?.__vue_app__?.config?.globalProperties?.$pinia?._s?.get('app') || null
+}
+
+function publishPublicSettings(settings) {
+  publicNavigationSettings = settings
+  publicSettingsRequested = true
+  window.__APP_CONFIG__ = settings
+  window.__ZERO_ONE_PUBLIC_SETTINGS__ = settings
+
+  const appStore = recoveredAppStore()
+  if (
+    appStore &&
+    typeof appStore.clearPublicSettingsCache === 'function' &&
+    typeof appStore.initFromInjectedConfig === 'function'
+  ) {
+    appStore.clearPublicSettingsCache()
+    appStore.initFromInjectedConfig()
+  }
+  scheduleScan()
+}
+
 function normalizeMenuItems(value) {
   if (!Array.isArray(value)) return []
   return value.filter((item) => {
@@ -1207,16 +1230,20 @@ function ensurePlacementControls(user) {
   })
 }
 
-function confirmedXHRSettings(request) {
+function confirmedXHRData(request) {
   if (request.status < 200 || request.status >= 300) return null
   try {
     const payload = typeof request.response === 'string' ? JSON.parse(request.response) : request.response
     if (payload && 'code' in payload && payload.code !== 0) return null
-    const settings = payload && typeof payload === 'object' && 'code' in payload ? payload.data : payload
-    return settings && Array.isArray(settings.custom_menu_items) ? settings : null
+    return payload && typeof payload === 'object' && 'code' in payload ? payload.data : payload
   } catch {
     return null
   }
+}
+
+function confirmedXHRSettings(request) {
+  const settings = confirmedXHRData(request)
+  return settings && Array.isArray(settings.custom_menu_items) ? settings : null
 }
 
 function installXHRSaveBridge() {
@@ -1232,6 +1259,17 @@ function installXHRSaveBridge() {
     try {
       const requestURL = new URL(this.__zeroOneSettingsURL, window.location.origin)
       const path = requestURL.pathname
+      if (
+        this.__zeroOneSettingsMethod === 'GET' &&
+        path === PUBLIC_SETTINGS_API &&
+        !requestURL.searchParams.has('scope') &&
+        window.location.pathname === '/login'
+      ) {
+        this.addEventListener('load', () => {
+          const settings = confirmedXHRSettings(this)
+          if (settings) publishPublicSettings(settings)
+        }, { once: true })
+      }
       if (this.__zeroOneSettingsMethod === 'GET' && path === ADMIN_SETTINGS_API && requestURL.searchParams.get('scope') !== 'navigation' && window.location.pathname === ADMIN_SETTINGS_PATH) {
         const identity = navigationIdentity()
         const revision = adminSettingsRevision

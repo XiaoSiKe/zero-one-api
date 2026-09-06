@@ -119,10 +119,10 @@ assert_text "$console" 'await import("/assets/zero-one-custom-page-security-v1.j
 assert_text "$console" 'await import("/assets/zero-one-navigation-reconciliation-v1.js?v=3")' 'recovered Console navigation reconciliation is missing'
 assert_text "$console" 'await import("/assets/zero-one-console-parity-v1.js?v=8")' 'recovered console parity overlay is missing'
 assert_text "$console" 'await import("/assets/zero-one-community-qr-v1.js?v=14")' 'recovered console header-navigation settings adapter is missing'
-assert_text "$console" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=25")' 'recovered console header custom-menu adapter is missing'
+assert_text "$console" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=27")' 'recovered console header custom-menu adapter is missing'
 case "$console" in
-	*'/assets/zero-one-header-custom-menu-v1.js?v=24'*)
-		fail 'recovered console still references the immutable v24 custom-menu adapter'
+	*'/assets/zero-one-header-custom-menu-v1.js?v=26'*)
+		fail 'recovered console still references the stale v26 custom-menu adapter'
 		;;
 esac
 assert_text "$console" 'await import("/assets/zero-one-redeem-actions-v1.js?v=1")' 'recovered console redeem actions adapter is missing'

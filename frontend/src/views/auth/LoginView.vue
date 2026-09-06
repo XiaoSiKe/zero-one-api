@@ -233,7 +233,6 @@ import TurnstileWidget from '@/components/CaptchaChallenge.vue'
 import { useAuthStore, useAppStore } from '@/stores'
 import {
   buildOAuthLoginStartURL,
-  getPublicSettings,
   isTotp2FARequired,
   isWeChatWebOAuthEnabled,
   startOAuthLogin,
@@ -375,7 +374,8 @@ onMounted(async () => {
   }
 
   try {
-    const settings = await getPublicSettings()
+    const settings = await appStore.fetchPublicSettings(true)
+    if (!settings) throw new Error('Public Settings unavailable')
     turnstileEnabled.value = settings.turnstile_enabled
     turnstileSiteKey.value = settings.turnstile_site_key || ''
     tencentCaptchaEnabled.value = settings.tencent_captcha_enabled === true
