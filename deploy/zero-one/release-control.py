@@ -482,6 +482,37 @@ def firewall(enable):
             subprocess.run([tool, "-w", "5", "-X", chain], stdout=LOG, stderr=LOG)
 
 
+def backup_health_command(backup):
+    checker = str(pathlib.Path(__file__).with_name("backup-health.py"))
+    if backup.get("mode") == "signed_receipt":
+        receipt_name = backup.get("receipt")
+        signature_name = backup.get("signature")
+        if not isinstance(receipt_name, str) or pathlib.Path(receipt_name).name != receipt_name:
+            raise ValueError("backup receipt must be a file in the release recovery directory")
+        if not isinstance(signature_name, str) or pathlib.Path(signature_name).name != signature_name:
+            raise ValueError("backup signature must be a file in the release recovery directory")
+        if backup.get("public_key") != "/etc/zero-one/backup-receipt.pub":
+            raise ValueError("backup receipt must use the installed off-host verifier key")
+        return [
+            sys.executable,
+            checker,
+            "--receipt",
+            str(ROOT / receipt_name),
+            "--signature",
+            str(ROOT / signature_name),
+            "--public-key",
+            backup["public_key"],
+            "--expected-source",
+            META["merge_sha"],
+            "--expected-snapshot",
+            META["id"],
+        ]
+    backup_dir = backup.get("backup_dir")
+    if not isinstance(backup_dir, str) or not backup_dir.startswith("/"):
+        raise ValueError("mounted backup directory must be absolute")
+    return [sys.executable, checker, backup_dir]
+
+
 def execute(action):
     if action == "watchdog":
         if not STATE.exists() or state()["phase"] in (
@@ -520,9 +551,10 @@ def execute(action):
         )
         target = {path.rsplit("/", 1)[-1] for path in target if path.endswith(".sql")}
         assert set(META["expected_migrations"]) == target - applied, "migration delta does not match target source"
-        live_backup = json.loads(
-            run([sys.executable, str(pathlib.Path(__file__).with_name("backup-health.py")), backup["backup_dir"]])
-        )
+        live_backup = json.loads(run(backup_health_command(backup)))
+        assert live_backup["sha256_verified"]
+        if backup.get("mode") == "signed_receipt":
+            assert live_backup["restore_verified"]
         assert live_backup["scheduled_backup_healthy"]
         assert backup["snapshot_id"] == META["id"] and backup["source_sha"] == META["merge_sha"]
         before = healthy()
