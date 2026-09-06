@@ -55,3 +55,7 @@
 - Force existing v2 → v1.
 - Separate backfill workers / read replicas.
 - Admin `backfill_profile` setting (may add later).
+
+## Taxonomy v2 follow-up
+
+Authentication and quota failures are split by owner. User-side authentication and balance errors retain the non-operational ignored defaults; Provider Account authentication and upstream quota failures use `upstream_authentication` and `upstream_quota_or_balance` and affect health by default. Migration 235 restarts the existing gentle backfill cursor without scanning source tables during migration.

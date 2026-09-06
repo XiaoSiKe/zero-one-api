@@ -8,6 +8,7 @@ import {
   APPROVED_SHELL_SOURCE,
   CN_PROVIDER_SHELL_ASSET,
   CN_PROVIDER_SHELL_DIRECTORY,
+  DASHBOARD_SPEND_SHELL_DIRECTORY,
   DECLARED_COST_SHELL_DIRECTORY,
   LEGACY_CN_PROVIDER_SHELL_DIRECTORY,
   PREVIOUS_CN_PROVIDER_SHELL_DIRECTORY,
@@ -18,6 +19,7 @@ import {
   recoveryShellOverrides,
   declaredCostShellOverrides,
   dashboardSpendShellOverrides,
+  dashboardUserClarityShellOverrides,
   patchDashboardSpendCards,
   DECLARED_COST_OVERRIDE_FILES,
   RECOVERY_SHELL_DIRECTORY,
@@ -122,6 +124,22 @@ test('current shell changes only the two existing dashboard cards', () => {
   assert.match(dashboard, /admin\.dashboard\.todayCost/)
   assert.match(dashboard, /minimumFractionDigits:2,maximumFractionDigits:2/)
   assert.doesNotMatch(dashboard, /admin\.dashboard\.(?:apiKeys|accounts)/)
+})
+
+test('current shell clarifies the new-users card and preserves the dashboard spend namespace', () => {
+  const previous = dashboardSpendShellOverrides(assetsDirectory)
+  const current = dashboardUserClarityShellOverrides(assetsDirectory)
+  const dashboardName = 'DashboardView-CYAPqspo.js'
+  assert.equal(
+    readFileSync(resolve(assetsDirectory, DASHBOARD_SPEND_SHELL_DIRECTORY, dashboardName), 'utf8'),
+    previous.get(dashboardName),
+  )
+  assert.equal(
+    current.get(dashboardName),
+    previous.get(dashboardName).replace('admin.dashboard.users', 'admin.dashboard.newUsersToday'),
+  )
+  assert.match(current.get(dashboardName), /admin\.dashboard\.newUsersToday/)
+  assert.doesNotMatch(current.get(dashboardName), /admin\.dashboard\.users/)
 })
 
 

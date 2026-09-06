@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 )
 
 // 渠道监控聚合层：把 latest + availability 拼成 admin/user 视图所需的 summary / detail。
@@ -230,6 +231,24 @@ func buildUserViewFromSummary(
 	primaryLatest *ChannelMonitorLatest,
 	timelineEntries []*ChannelMonitorHistoryEntry,
 ) *UserMonitorView {
+	return buildUserViewFromSummaryAt(m, summary, primaryLatest, timelineEntries, time.Now())
+}
+
+func buildUserViewFromSummaryAt(
+	m *ChannelMonitor,
+	summary MonitorStatusSummary,
+	primaryLatest *ChannelMonitorLatest,
+	timelineEntries []*ChannelMonitorHistoryEntry,
+	now time.Time,
+) *UserMonitorView {
+	var checkedAt *time.Time
+	if primaryLatest != nil {
+		checkedAt = &primaryLatest.CheckedAt
+	}
+	summary = CurrentMonitorStatusSummary(m, summary, checkedAt, now)
+	if summary.PrimaryStatus == "" {
+		primaryLatest = nil
+	}
 	view := &UserMonitorView{
 		ID:               m.ID,
 		Name:             m.Name,
@@ -247,6 +266,39 @@ func buildUserViewFromSummary(
 		view.LatestQuota = primaryLatest.Quota
 	}
 	return view
+}
+
+// CurrentMonitorStatusSummary clears point-in-time status when the latest
+// completed probe is too old to describe current health. Historical
+// availability remains useful and is preserved.
+func CurrentMonitorStatusSummary(m *ChannelMonitor, summary MonitorStatusSummary, checkedAt *time.Time, now time.Time) MonitorStatusSummary {
+	if !channelMonitorLatestStale(m, checkedAt, now) {
+		return summary
+	}
+	summary.PrimaryStatus = ""
+	summary.PrimaryLatencyMs = nil
+	summary.LatestQuota = nil
+	for index := range summary.ExtraModels {
+		summary.ExtraModels[index].Status = ""
+		summary.ExtraModels[index].LatencyMs = nil
+	}
+	return summary
+}
+
+func channelMonitorLatestStale(m *ChannelMonitor, checkedAt *time.Time, now time.Time) bool {
+	if m == nil || checkedAt == nil || checkedAt.IsZero() {
+		return true
+	}
+	interval := time.Duration(m.IntervalSeconds) * time.Second
+	if interval <= 0 {
+		interval = time.Minute
+	}
+	jitter := time.Duration(m.JitterSeconds) * time.Second
+	if jitter < 0 {
+		jitter = 0
+	}
+	deadline := 2*interval + jitter + monitorRequestTimeout + monitorPingTimeout + monitorRunOneBuffer
+	return now.Sub(*checkedAt) > deadline
 }
 
 // buildTimelinePoints 把 history entry 裁剪为 timeline 点（去除 message/ID/Model，减小响应体）。

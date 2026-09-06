@@ -1,5 +1,7 @@
 # Zero One Visual Regression
 
+Automatic execution is governed by [ADR 0013](../docs/adr/0013-affected-verification-policy.md). Changes that do not affect delivered UI run only the Approved UI Snapshot and resource-boundary checks. Dashboard-only presentation changes run this directory's focused dashboard contract; shared shell, routing, typography, styling or unclassified rendering changes run the complete suite below. `npm test` remains the explicit complete baseline command.
+
 This module owns deterministic Chromium snapshots for the Zero One Console and
 Public Site. Console tests serve `deploy/zero-one/recovered-frontend/console`
 directly; they must never build or launch `frontend/src`, because that upstream

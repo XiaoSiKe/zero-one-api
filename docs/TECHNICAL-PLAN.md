@@ -138,7 +138,7 @@ edge image. Image rollback does not reverse a database migration; see
 `upstream/main`。通用 `latest` 镜像、管理后台一键升级和上游 README
 中的一键安装/覆盖命令也不得用于 Zero One 产品部署。只有符合上述生产正确性例外的已审核提交才可临时 cherry-pick，且不得将它伪装成 stable tag baseline。更新时获取 `upstream` tags，从
 `main` 创建 `codex/sync-sub2api-vX.Y.Z` 短期集成分支，
-合并新的稳定 tag，运行全部测试、构建和视觉验收后，再通过 PR
+合并新的稳定 tag，按 [Affected Verification](adr/0013-affected-verification-policy.md) 运行所需测试、构建和视觉验收后，再通过 PR
 合回 `main`。每次同步同时更新本节的 tag 与完整提交 SHA。
 主题改动保持集中，使新增上游页面继承设计系统，避免逐页分叉。
 
@@ -156,9 +156,10 @@ v23，新字段经过隔离复制；不重算旧账或变更现有生产配置�
 Go 版本保持 `1.27.0`，`approved_backports` 为空。七组 legacy hotfix 继续按
 各自退出条件审查：与上游重叠的业务修复已整合，未达到等价条件的精确路径保留。
 
-The repository's dedicated Zero One CI job validates React, Vue, Go unit and
-integration suites, Compose,
-the root Sub2API Docker build and the Caddy edge Docker build independently.
+The repository's dedicated Zero One CI keeps the established required check
+names while selecting React, Vue, Go build-tag suites, Compose and image work
+from the canonical affected-verification policy. Unknown or policy-changing
+diffs run the complete baseline.
 It uses source-revision image tags as build artifacts only. The manual
 `Zero One Publish` workflow is the sole registry publisher: it accepts a full
 commit SHA from `main` plus the exact confirmation word `PUBLISH`,

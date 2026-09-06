@@ -270,7 +270,8 @@ func (h *ChannelMonitorHandler) List(c *gin.Context) {
 	summaries := h.batchSummaryFor(c, items)
 	out := make([]*channelMonitorResponse, 0, len(items))
 	for _, m := range items {
-		out = append(out, buildListItemResponse(m, summaries[m.ID]))
+		summary := service.CurrentMonitorStatusSummary(m, summaries[m.ID], m.LastCheckedAt, time.Now())
+		out = append(out, buildListItemResponse(m, summary))
 	}
 	response.Paginated(c, out, total, page, pageSize)
 }

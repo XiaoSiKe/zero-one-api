@@ -12,6 +12,32 @@ const REQUIRED_JOBS = {
   'security-scan.yml': ['backend-security', 'frontend-security'],
 }
 
+const REQUIRED_JOB_DECISIONS = {
+  'zero-one-ci.yml': {
+    landing: 'Impact decision - landing',
+    console: 'Impact decision - console',
+    backend: 'Impact decision - backend',
+    deployment: 'Impact decision - deployment',
+    shell: 'Impact decision - shell',
+    'golangci-lint': 'Impact decision - golangci-lint',
+    'Chromium visual regression': 'Impact decision - Chromium visual regression',
+  },
+  'security-scan.yml': {
+    'backend-security': 'Impact decision - backend security',
+    'frontend-security': 'Impact decision - frontend security',
+  },
+}
+
+export function validateJobImpactDecision(job, prefix) {
+  if (!prefix) return true
+  const steps = Array.isArray(job?.steps) ? job.steps : []
+  const required = steps.filter((step) => step?.name === `${prefix} required`)
+  const notApplicable = steps.filter((step) => step?.name === `${prefix} not applicable`)
+  if (required.length !== 1 || notApplicable.length !== 1) return false
+  const conclusions = [required[0].conclusion, notApplicable[0].conclusion].sort()
+  return conclusions[0] === 'skipped' && conclusions[1] === 'success'
+}
+
 export function validateCommitSha(value) {
   if (typeof value !== 'string' || !/^[0-9a-f]{40}$/.test(value)) {
     throw new Error('commit_sha must be a lowercase 40-character SHA')
@@ -97,6 +123,9 @@ export async function verifySuccessfulChecks(repository, token, commitSha, fetch
       if (matching.length !== 1 || job.status !== 'completed' || job.conclusion !== 'success'
         || job.run_id !== run.id || job.run_attempt !== run.run_attempt || job.head_sha !== commitSha) {
         throw new Error(`${workflowFile}: required job "${name}" is missing, unsuccessful or from another run/attempt`)
+      }
+      if (!validateJobImpactDecision(job, REQUIRED_JOB_DECISIONS[workflowFile]?.[name])) {
+        throw new Error(`${workflowFile}: required job "${name}" has missing or contradictory impact evidence`)
       }
     }
     verified.push({ workflowFile, url, run })

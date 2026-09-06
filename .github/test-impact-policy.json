@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "backend_scope_order": ["none", "redeem", "data", "gateway", "full"],
+  "always_full": [
+    ".github/test-impact-policy.json",
+    ".github/scripts/select-test-impact.mjs",
+    ".github/workflows/zero-one-ci.yml",
+    ".github/workflows/security-scan.yml",
+    ".github/workflows/zero-one-publish.yml",
+    "Makefile"
+  ],
+  "rules": [
+    {
+      "patterns": ["docs/**", "*.md", "AGENTS.md", "CONTEXT.md"],
+      "impact": {}
+    },
+    {
+      "patterns": ["frontend/**/__tests__/**", "frontend/**/*.spec.ts", "frontend/**/*.test.ts"],
+      "impact": { "console": true }
+    },
+    {
+      "patterns": ["frontend/src/views/admin/DashboardView.vue", "frontend/src/i18n/locales/*/admin/overview.ts"],
+      "impact": { "console": true, "console_asset_scopes": ["shell"], "visual_scope": "dashboard" }
+    },
+    {
+      "patterns": ["frontend/src/App.vue", "frontend/src/components/layout/**", "frontend/src/router/**", "frontend/src/styles/**"],
+      "impact": { "console": true, "console_asset_scopes": ["shell"], "visual_scope": "full" }
+    },
+    {
+      "patterns": ["frontend/src/features/channel-monitor-v2/**", "frontend/src/views/user/ChannelStatusV2View.vue", "frontend/src/i18n/locales/*/channelMonitorV2.ts", "frontend/src/entries/cnProviderAdmin.ts", "frontend/vite.cn-provider-admin.config.ts"],
+      "impact": { "console": true, "console_asset_scopes": ["cn_provider"], "visual_scope": "full" }
+    },
+    {
+      "patterns": ["frontend/src/features/online-image/**", "frontend/src/entries/onlineImage*.ts", "frontend/vite.online-image.config.ts"],
+      "impact": { "console": true, "console_asset_scopes": ["online", "shell"], "visual_scope": "full" }
+    },
+    {
+      "patterns": ["frontend/src/views/auth/**", "frontend/src/i18n/passwordRecovery.ts", "frontend/src/utils/passwordRecovery.ts", "frontend/vite.password-recovery.config.mjs"],
+      "impact": { "console": true, "console_asset_scopes": ["password", "shell"], "visual_scope": "full" }
+    },
+    {
+      "patterns": ["frontend/src/api/**", "frontend/src/types/**"],
+      "impact": { "console": true }
+    },
+    {
+      "patterns": ["frontend/package.json", "frontend/pnpm-lock.yaml"],
+      "impact": { "console": true, "visual_scope": "full", "frontend_security": true }
+    },
+    {
+      "patterns": ["frontend/**"],
+      "impact": { "console": true, "visual_scope": "full" }
+    },
+    {
+      "patterns": ["landing/package.json", "landing/package-lock.json"],
+      "impact": { "landing": true, "visual_scope": "full", "frontend_security": true }
+    },
+    {
+      "patterns": ["landing/**"],
+      "impact": { "landing": true, "visual_scope": "full" }
+    },
+    {
+      "patterns": ["visual-regression/tests/dashboard-spend.behavior.spec.ts", "visual-regression/tests/__screenshots__/**/console-dashboard-spend-cards.png"],
+      "impact": { "visual_scope": "dashboard" }
+    },
+    {
+      "patterns": ["visual-regression/**"],
+      "impact": { "visual_scope": "full" }
+    },
+    {
+      "patterns": ["backend/internal/**/redeem*", "backend/migrations/*redeem*"],
+      "impact": { "backend_scope": "redeem" }
+    },
+    {
+      "patterns": [
+        "backend/internal/**/dashboard*",
+        "backend/internal/**/usage*",
+        "backend/internal/**/billing*",
+        "backend/internal/**/payment*",
+        "backend/internal/**/affiliate*",
+        "backend/internal/**/subscription*",
+        "backend/internal/**/user*",
+        "backend/internal/**/api_key*"
+      ],
+      "impact": { "backend_scope": "data" }
+    },
+    {
+      "patterns": [
+        "backend/internal/**/gateway*",
+        "backend/internal/**/channel_monitor*",
+        "backend/internal/**/account*",
+        "backend/internal/**/group*",
+        "backend/internal/**/concurrency*"
+      ],
+      "impact": { "backend_scope": "gateway" }
+    },
+    {
+      "patterns": ["backend/go.mod", "backend/go.sum", "backend/migrations/**", "backend/internal/config/**", "backend/internal/server/**", "backend/cmd/**"],
+      "impact": { "backend_scope": "full", "backend_security": true, "deployment": true }
+    },
+    {
+      "patterns": ["backend/**"],
+      "impact": { "backend_scope": "full" }
+    },
+    {
+      "patterns": ["Dockerfile", "Dockerfile.*", "deploy/zero-one/Dockerfile.edge", "deploy/zero-one/compose*.yml", "deploy/zero-one/Caddyfile*"],
+      "impact": { "deployment": true }
+    },
+    {
+      "patterns": ["deploy/apple-container.sh", "deploy/tests/**", "deploy/test-caddyfile-cache.sh"],
+      "impact": { "shell": true }
+    },
+    {
+      "patterns": ["deploy/zero-one/build-cn-provider-shell.mjs", "deploy/zero-one/build-cn-provider-shell.test.mjs"],
+      "impact": { "console": true, "console_asset_scopes": ["shell"], "deployment": true, "visual_scope": "full" }
+    },
+    {
+      "patterns": ["deploy/zero-one/recovered-frontend/console/**", "deploy/zero-one/build-cn-provider-shell*", "deploy/zero-one/test-*", "deploy/zero-one/verify-*"],
+      "impact": { "console": true, "deployment": true, "visual_scope": "full" }
+    },
+    {
+      "patterns": [".github/audit-exceptions.yml", "tools/check_pnpm_audit_exceptions.py"],
+      "impact": { "frontend_security": true }
+    },
+    {
+      "patterns": [".golangci.yml", ".golangci.yaml"],
+      "impact": { "lint": true }
+    },
+    {
+      "patterns": [".github/scripts/**", ".github/upstream-baseline.json"],
+      "impact": {}
+    }
+  ]
+}

@@ -11,7 +11,7 @@ import (
 
 const (
 	ChannelMonitorV2OtherModel      = "__other__"
-	ChannelMonitorV2TaxonomyVersion = 1
+	ChannelMonitorV2TaxonomyVersion = 2
 )
 
 var (
@@ -56,11 +56,13 @@ type ChannelMonitorV2Config struct {
 var ChannelMonitorV2ErrorCategories = []string{
 	"content_policy",
 	"authentication",
+	"upstream_authentication",
 	"context_limit",
 	"invalid_request",
 	"model_unsupported",
 	"group_access",
 	"quota_or_balance",
+	"upstream_quota_or_balance",
 	"account_pool_unavailable",
 	"rate_or_capacity",
 	"timeout",

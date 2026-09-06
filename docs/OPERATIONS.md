@@ -105,6 +105,8 @@ Add three external probes:
 - A non-following request to an `app.01yapi.com` path that verifies its same-URI `308` compatibility redirect.
 - A low-frequency authenticated model request using a dedicated probe User and tightly limited API Key.
 
+V1 Channel Monitor probes call their configured upstream endpoint and model directly. A green V1 row proves only that recent challenge; it does not cover the Canonical Product Domain, User authorization, Group mapping, account selection, retries, streaming completion or billing. Keep the authenticated external probe above as the low-frequency full-path signal, choose models that represent current user traffic, cap its balance and rate, and never reuse an Administrator or production User key.
+
 Alert separately for canonical-host DNS/TLS failure, compatibility-redirect
 failure and origin failure.
 
@@ -306,18 +308,22 @@ use the following event boundary:
 | Existing manual dispatch | Only the explicitly selected diagnostic or product workflow; not publish evidence |
 | Weekly security schedule | `Security Scan` only, with the existing schedule |
 
-`Zero One CI` is the single owner of the product verification work. `backend`
-runs the ordinary, unit and integration Go build configurations once each;
-`console` runs the full Console suite, including the previous critical subset.
-Shell, lint and fixed Playwright 1.55.1 visual validation run in this same
-workflow. `Security Scan` independently owns vulnerability checks.
+`Zero One CI` is the single owner of product verification. It applies the
+canonical [Affected Verification](adr/0013-affected-verification-policy.md)
+policy to the complete commit range. Backend scopes select ordinary, unit and
+integration build tags; Console behavior, recovered adapters, deployment,
+shell, lint and fixed Playwright 1.55.1 visual checks are selected separately.
+`Security Scan` uses the same policy for dependency changes and still runs its
+complete vulnerability checks on the weekly schedule.
 
 All 12 required check names remain: `shell`, `test`, `frontend`,
 `golangci-lint`, `backend-security`, `frontend-security`, `upstream-boundary`,
 `landing`, `console`, `backend`, `deployment`, `Chromium visual regression`.
 The lightweight `test` and `frontend` jobs explicitly fail unless `backend`
-and `console`, respectively, completed successfully. Missing, skipped, failed
-or cancelled dependencies must not produce a green compatibility check.
+and `console`, respectively, completed successfully. Every required job runs
+and records exactly one successful `required` or `not applicable` decision;
+GitHub's ordinary skipped state is not accepted as evidence. Missing, failed,
+cancelled or contradictory dependencies must not produce a green compatibility check.
 The old `CI` and `Zero One Visual Calibration` workflows are manual-only
 diagnostics with distinct `Diagnostic …` job names; they cannot satisfy the
 automatic required checks or replace release evidence.
@@ -342,10 +348,10 @@ same group. Every job has an explicit time budget. Consult the job's
 and visual checks have separate bounded budgets. A timeout is a failed
 validation, not permission to remove a test or relax a screenshot threshold.
 
-This consolidation removes both duplicate event triggers and the repeated
-backend/critical-frontend computation. PR and post-merge main validation remain
-separate because they verify different commits. Do not reduce coverage or
-claim a measured runner-minute improvement based only on workflow counts.
+PR and post-merge main validation remain separate because they verify different
+commits. A policy, workflow, unknown path or missing comparison history change
+fails closed to the complete baseline. UI-neutral changes retain Approved UI
+Snapshot integrity checks without installing a browser or rebuilding adapters.
 All external contributors' fork PR workflows require maintainer approval;
 default tokens remain read-only and cannot approve PRs. Review workflow changes
 before granting that approval, especially new network access or write scopes.

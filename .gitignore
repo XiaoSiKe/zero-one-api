@@ -145,6 +145,7 @@ docs/*
 !docs/TECHNICAL-PLAN.md
 !docs/OPERATIONS.md
 !docs/PRODUCTION_SERVER_CN.md
+!docs/data-and-connectivity-audit-2026-09-06.md
 !docs/adr/
 !docs/adr/*.md
 !docs/legal/

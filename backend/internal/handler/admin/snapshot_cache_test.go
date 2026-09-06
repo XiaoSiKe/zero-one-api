@@ -152,6 +152,31 @@ func TestSnapshotCache_GetOrLoad_ConcurrentSingleflight(t *testing.T) {
 	require.Equal(t, int32(1), loads.Load())
 }
 
+func TestSnapshotCache_ExplicitRefreshCannotBeOverwrittenByOlderLoad(t *testing.T) {
+	c := newSnapshotCache(5 * time.Second)
+	started := make(chan struct{})
+	release := make(chan struct{})
+	done := make(chan error, 1)
+	go func() {
+		_, _, err := c.GetOrLoad("shared", func() (any, error) {
+			close(started)
+			<-release
+			return "old", nil
+		})
+		done <- err
+	}()
+
+	<-started
+	generation := c.Invalidate("shared")
+	c.setIfGeneration("shared", "fresh", generation)
+	close(release)
+	require.NoError(t, <-done)
+
+	entry, ok := c.Get("shared")
+	require.True(t, ok)
+	require.Equal(t, "fresh", entry.Payload)
+}
+
 func TestParseBoolQueryWithDefault(t *testing.T) {
 	tests := []struct {
 		name string

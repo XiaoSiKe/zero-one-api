@@ -5,6 +5,7 @@ import {
   findSuccessfulRun,
   stableReleaseVersion,
   validateCommitSha,
+  validateJobImpactDecision,
   verifySuccessfulChecks,
 } from './verify-publish-source.mjs'
 
@@ -61,6 +62,24 @@ function successfulChecksFixture() {
         head_sha: commitSha,
         status: 'completed',
         conclusion: 'success',
+        steps: (() => {
+          const prefixes = {
+            landing: 'Impact decision - landing',
+            console: 'Impact decision - console',
+            backend: 'Impact decision - backend',
+            deployment: 'Impact decision - deployment',
+            shell: 'Impact decision - shell',
+            'golangci-lint': 'Impact decision - golangci-lint',
+            'Chromium visual regression': 'Impact decision - Chromium visual regression',
+            'backend-security': 'Impact decision - backend security',
+            'frontend-security': 'Impact decision - frontend security',
+          }
+          const prefix = prefixes[name]
+          return prefix ? [
+            { name: `${prefix} not applicable`, conclusion: 'skipped' },
+            { name: `${prefix} required`, conclusion: 'success' },
+          ] : []
+        })(),
       })),
     })
   }
@@ -131,6 +150,24 @@ test('requires a full lowercase commit SHA', () => {
   assert.equal(validateCommitSha(commitSha), commitSha)
   assert.throws(() => validateCommitSha('abc'), /40-character SHA/)
   assert.throws(() => validateCommitSha('A'.repeat(40)), /40-character SHA/)
+})
+
+test('impact evidence has one required or not-applicable path', () => {
+  const prefix = 'Impact decision - backend'
+  assert.equal(validateJobImpactDecision({ steps: [
+    { name: `${prefix} not applicable`, conclusion: 'skipped' },
+    { name: `${prefix} required`, conclusion: 'success' },
+  ] }, prefix), true)
+  for (const steps of [
+    [],
+    [{ name: `${prefix} required`, conclusion: 'success' }],
+    [
+      { name: `${prefix} not applicable`, conclusion: 'success' },
+      { name: `${prefix} required`, conclusion: 'success' },
+    ],
+  ]) {
+    assert.equal(validateJobImpactDecision({ steps }, prefix), false)
+  }
 })
 
 test('does not reuse an older successful run after the newest run failed', () => {

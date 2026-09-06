@@ -183,5 +183,33 @@ describe('admin DashboardView', () => {
     expect(cards[1].text()).not.toContain('admin.dashboard.accounts')
     expect(cards[0].text()).toContain('admin.dashboard.actual')
     expect(cards[1].text()).toContain('admin.dashboard.actual')
+    expect(cards[3].text()).toContain('admin.dashboard.newUsersToday')
+    expect(cards[3].text()).not.toContain('admin.dashboard.users')
+  })
+
+  it('marks the explicit refresh so both dashboard caches are bypassed', async () => {
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          ModelDistributionChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+    const refresh = wrapper.findAll('button').find((button) => button.text().includes('common.refresh'))
+    expect(refresh).toBeDefined()
+    await refresh!.trigger('click')
+    await flushPromises()
+
+    expect(getSnapshotV2).toHaveBeenCalledTimes(2)
+    expect(getSnapshotV2).toHaveBeenLastCalledWith(expect.objectContaining({ refresh: true }))
   })
 })

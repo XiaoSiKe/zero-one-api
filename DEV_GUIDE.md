@@ -21,23 +21,25 @@
 2. 从真实路由和调用者定位规则维护位置。前端壳层由 App.vue 维护，叶子页面只渲染内容；见 [Layout](frontend/src/components/layout/README.md)。
 3. 先用最小可重复场景证明缺陷，或明确新需求的验收条件。依赖、权限、扣费、持久化和失败策略必须从原维护模块复用。
 4. 修改规范源码，更新必要调用者、类型、测试与文档。不得直接手改 Ent 生成代码；数据库规则按 [迁移约定](backend/migrations/README.md) 追加，已执行的历史文件及校验和不可改写。
-5. 先运行相关检查，再运行完整套件；检查最终 diff、生成产物和二开保护。测试预期不能替代业务规则。
+5. 运行 `make test-affected`，由完整差异选择相关检查；策略自身变化、未知路径和共享基础设施会自动扩大到完整套件。检查最终 diff、生成产物和二开保护。测试预期不能替代业务规则。
 
 ## 验证入口
 
 下面命令均在仓库根目录执行；需要对应工具链，集成测试需要 Docker。
 
 ```bash
+make test-affected
+# 显式完整基线或诊断：
 make test
 make build
 node --test .github/scripts/*.test.mjs
 node .github/scripts/verify-upstream-boundary.mjs --worktree
 node .github/scripts/verify-upgrade-readiness.mjs --recorded-sync --worktree
 node .github/scripts/verify-ui-boundary.mjs --worktree
-npm test --prefix visual-regression
+npm test --prefix visual-regression  # 仅显式完整视觉基线
 ```
 
-`make test` 包含 Go ordinary/unit/integration 与 lint、Console 的 lint/typecheck/全量测试和 Landing 验证。`make test-frontend-critical` 只用于诊断，不能代替全量结果。构建、部署/备份/路由检查和固定 Linux 浏览器证据以 [Zero One CI](.github/workflows/zero-one-ci.yml) 的完整作业为准；安全检查由 [Security Scan](.github/workflows/security-scan.yml) 维护。
+`make test-affected` 与 CI 共用 [Affected Verification](docs/adr/0013-affected-verification-policy.md) 规则，并包含未提交文件。`make test` 保留 Go ordinary/unit/integration、lint、Console 与 Landing 的显式完整入口。`make test-frontend-critical` 只用于诊断。CI 保留原必需检查名称，每个检查以实际执行或“不适用”互斥证据结束；安全检查由 [Security Scan](.github/workflows/security-scan.yml) 维护。
 
 ### 规范前端产物
 
@@ -50,7 +52,7 @@ pnpm --dir frontend run build:cn-provider-shell
 pnpm --dir frontend run build:online-image
 ```
 
-验证源码与产物一致、资源引用闭合、再次生成不产生额外差异。旧命名空间可能被已打开页面或回滚镜像引用，不能仅凭版本号删除。UI 改动先完成桌面/手机视觉审核，再在已审核提交上创建新的不可移动 `ui-approved-*` 标签并更新基线元数据；不移动旧标签，不降低截图阈值。
+只有影响恢复版适配器时才运行对应生成器，并验证源码与产物一致、资源引用闭合、再次生成不产生额外差异。旧命名空间可能被已打开页面或回滚镜像引用，不能仅凭版本号删除。UI 改动先完成受影响页面的桌面/手机视觉审核；公共壳层或共享渲染变化扩大到全量。随后在已审核提交上创建新的不可移动 `ui-approved-*` 标签并更新基线元数据；不移动旧标签，不降低截图阈值。未影响 UI 时只运行固定资源和引用边界检查，不启动浏览器。
 
 ### 常见边界
 
@@ -71,6 +73,6 @@ pnpm --dir frontend run build:online-image
 2. 保留完整历史、只读 upstream 和不可移动 UI 标签。以产品 tip 为第一父提交做正常双亲合并，不重置或覆盖二开文件。
 3. 更新技术方案定义的 `upstream_sync` 来源记录；对冲突逐路径保留产品实现，再分别移植确实需要的上游变化。
 4. 每个产品差异必须有明确 owner 和保留策略。路径改名/收敛必须保留功能、测试和维护位置的对应关系，不靠删除登记避开保护。
-5. 重跑提交态和工作区态保护检查、全量功能/视觉测试，再按正常 PR、main 验证和同源双镜像流程发布。
+5. 重跑提交态和工作区态保护检查。上游差异进入交付 UI、共享运行时或无法归类时执行完整视觉验证；其余检查由影响策略选择，再按正常 PR、main 验证和同源双镜像流程发布。
 
 业务规则不在本指南重复定义。新增需求和缺陷使用 [GitHub Issues](docs/agents/issue-tracker.md)，保持实际代码、ADR 与操作手册一致。

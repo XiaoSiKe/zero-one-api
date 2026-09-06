@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+Affected-verification note: [ADR 0013](0013-affected-verification-policy.md) supersedes unconditional browser execution. The immutable snapshot and resource-boundary checks remain mandatory; browser coverage follows the delivered UI impact.
+
 ## Context
 
 ADR 0001 separated the React Public Site from the Vue Console and originally

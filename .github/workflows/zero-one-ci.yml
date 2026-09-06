@@ -20,6 +20,16 @@ jobs:
   upstream-boundary:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      landing: ${{ steps.impact.outputs.landing }}
+      console: ${{ steps.impact.outputs.console }}
+      console_asset_scopes: ${{ steps.impact.outputs.console_asset_scopes }}
+      backend_scope: ${{ steps.impact.outputs.backend_scope }}
+      deployment: ${{ steps.impact.outputs.deployment }}
+      shell: ${{ steps.impact.outputs.shell }}
+      lint: ${{ steps.impact.outputs.lint }}
+      visual_scope: ${{ steps.impact.outputs.visual_scope }}
+      impact_json: ${{ steps.impact.outputs.impact_json }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -27,6 +37,20 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
+      - name: Select affected verification
+        id: impact
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          if [ "$EVENT_NAME" = workflow_dispatch ]; then
+            node .github/scripts/select-test-impact.mjs --all >> "$GITHUB_OUTPUT"
+          else
+            node .github/scripts/select-test-impact.mjs \
+              --base "$BASE_SHA" --head "$HEAD_SHA" --mode "$EVENT_NAME" >> "$GITHUB_OUTPUT"
+          fi
+          sed -n 's/^impact_json=//p' "$GITHUB_OUTPUT" >> "$GITHUB_STEP_SUMMARY"
       - name: Fetch declared upstream release tags
         run: |
           jq -er '[.release, .upstream_sync.previous_release][] | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))' \
@@ -49,104 +73,228 @@ jobs:
         run: node .github/scripts/verify-upgrade-readiness.mjs --recorded-sync --worktree
 
   landing:
+    needs: [upstream-boundary]
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      IMPACT_REQUIRED: ${{ needs.upstream-boundary.outputs.landing }}
     steps:
+      - name: Require a valid impact selection
+        env:
+          UPSTREAM_RESULT: ${{ needs.upstream-boundary.result }}
+        run: test "$UPSTREAM_RESULT" = success
+      - name: Impact decision - landing tests not applicable
+        if: env.IMPACT_REQUIRED != 'true'
+        run: echo 'Landing sources and dependencies are unchanged.'
       - uses: actions/checkout@v6
+        if: env.IMPACT_REQUIRED == 'true'
       - uses: actions/setup-node@v6
+        if: env.IMPACT_REQUIRED == 'true'
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: landing/package-lock.json
       - name: Install landing dependencies
+        if: env.IMPACT_REQUIRED == 'true'
         working-directory: landing
         run: npm ci
       - name: Audit landing build dependencies
+        if: env.IMPACT_REQUIRED == 'true'
         working-directory: landing
         run: npm audit --audit-level=high
       - name: Typecheck landing
+        if: env.IMPACT_REQUIRED == 'true'
         working-directory: landing
         run: npm run typecheck
       - name: Test landing
+        if: env.IMPACT_REQUIRED == 'true'
         working-directory: landing
         run: npm test
       - name: Build landing
+        if: env.IMPACT_REQUIRED == 'true'
         working-directory: landing
         run: npm run build
+      - name: Impact decision - landing tests required
+        if: env.IMPACT_REQUIRED == 'true'
+        run: echo 'Affected Landing verification completed.'
 
   console:
+    needs: [upstream-boundary]
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      IMPACT_REQUIRED: ${{ needs.upstream-boundary.outputs.console }}
+      ASSET_SCOPES: ${{ needs.upstream-boundary.outputs.console_asset_scopes }}
     steps:
+      - name: Require a valid impact selection
+        env:
+          UPSTREAM_RESULT: ${{ needs.upstream-boundary.result }}
+        run: test "$UPSTREAM_RESULT" = success
+      - name: Impact decision - console tests not applicable
+        if: env.IMPACT_REQUIRED != 'true'
+        run: echo 'Console sources, contracts and generated assets are unchanged.'
       - uses: actions/checkout@v6
+        if: env.IMPACT_REQUIRED == 'true'
       - uses: pnpm/action-setup@v6
+        if: env.IMPACT_REQUIRED == 'true'
         with:
           version: 9.15.9
       - uses: actions/setup-node@v6
+        if: env.IMPACT_REQUIRED == 'true'
         with:
           node-version: '20'
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - name: Install console dependencies
+        if: env.IMPACT_REQUIRED == 'true'
         working-directory: frontend
         run: pnpm install --frozen-lockfile
       - name: Lint console
+        if: env.IMPACT_REQUIRED == 'true'
         working-directory: frontend
         run: pnpm run lint:check
       - name: Typecheck console
+        if: env.IMPACT_REQUIRED == 'true'
         working-directory: frontend
         run: pnpm run typecheck
       - name: Test console
+        if: env.IMPACT_REQUIRED == 'true'
         working-directory: frontend
         run: pnpm run test:run
       - name: Build console
+        if: env.IMPACT_REQUIRED == 'true'
         working-directory: frontend
         run: pnpm run build
       - name: Build CN Provider administration adapter
+        if: contains(env.ASSET_SCOPES, 'cn_provider') || env.ASSET_SCOPES == 'all'
         working-directory: frontend
         run: pnpm run build:cn-provider-admin
       - name: Build password recovery views
+        if: contains(env.ASSET_SCOPES, 'password') || contains(env.ASSET_SCOPES, 'shell') || env.ASSET_SCOPES == 'all'
         working-directory: frontend
         run: pnpm run build:password-recovery
       - name: Build approved Console namespace
+        if: contains(env.ASSET_SCOPES, 'shell') || env.ASSET_SCOPES == 'all'
         working-directory: frontend
         run: pnpm run build:cn-provider-shell
       - name: Build Online Images route adapter
+        if: contains(env.ASSET_SCOPES, 'online') || env.ASSET_SCOPES == 'all'
         working-directory: frontend
         run: pnpm run build:online-image
       - name: Verify checked-in Console adapter assets
-        run: test -z "$(git status --porcelain --untracked-files=all -- deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v2 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v3 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v4 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v2 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v3 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v4 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7 deploy/zero-one/recovered-frontend/console/assets/online-image-v7 deploy/zero-one/recovered-frontend/console/assets/online-image-v8 deploy/zero-one/recovered-frontend/console/assets/online-image-v9 deploy/zero-one/recovered-frontend/console/assets/online-image-v10 deploy/zero-one/recovered-frontend/console/assets/online-image-v11 deploy/zero-one/recovered-frontend/console/assets/online-image-v12 deploy/zero-one/recovered-frontend/console/assets/online-image-v13 deploy/zero-one/recovered-frontend/console/assets/online-image-v14 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v1 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v3 deploy/zero-one/recovered-frontend/console/assets/shared-immutable)"
+        if: env.ASSET_SCOPES != 'none'
+        run: test -z "$(git status --porcelain --untracked-files=all -- deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v2 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v3 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v4 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v5 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v2 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v3 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v4 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8 deploy/zero-one/recovered-frontend/console/assets/online-image-v7 deploy/zero-one/recovered-frontend/console/assets/online-image-v8 deploy/zero-one/recovered-frontend/console/assets/online-image-v9 deploy/zero-one/recovered-frontend/console/assets/online-image-v10 deploy/zero-one/recovered-frontend/console/assets/online-image-v11 deploy/zero-one/recovered-frontend/console/assets/online-image-v12 deploy/zero-one/recovered-frontend/console/assets/online-image-v13 deploy/zero-one/recovered-frontend/console/assets/online-image-v14 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v1 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v3 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v4 deploy/zero-one/recovered-frontend/console/assets/shared-immutable)"
+      - name: Impact decision - console tests required
+        if: env.IMPACT_REQUIRED == 'true'
+        run: echo 'Affected Console verification completed.'
 
   backend:
+    needs: [upstream-boundary]
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      BACKEND_SCOPE: ${{ needs.upstream-boundary.outputs.backend_scope }}
     steps:
+      - name: Require a valid impact selection
+        env:
+          UPSTREAM_RESULT: ${{ needs.upstream-boundary.result }}
+        run: test "$UPSTREAM_RESULT" = success
+      - name: Impact decision - backend tests not applicable
+        if: env.BACKEND_SCOPE == 'none'
+        run: echo 'Backend runtime and data contracts are unchanged.'
       - uses: actions/checkout@v6
+        if: env.BACKEND_SCOPE != 'none'
       - uses: actions/setup-go@v6
+        if: env.BACKEND_SCOPE != 'none'
         with:
           go-version-file: backend/go.mod
           check-latest: false
           cache-dependency-path: backend/go.sum
       - name: Verify Go version
+        if: env.BACKEND_SCOPE != 'none'
         run: go version | grep -q 'go1.27.0'
-      - name: Test backend ordinary suite
+      - name: Test complete backend ordinary suite
+        if: env.BACKEND_SCOPE == 'full'
         working-directory: backend
         run: go test ./...
-      - name: Test backend unit suite
+      - name: Test complete backend unit suite
+        if: env.BACKEND_SCOPE == 'full'
         working-directory: backend
         run: make test-unit
-      - name: Test backend integration suite
+      - name: Test complete backend integration suite
+        if: env.BACKEND_SCOPE == 'full'
         working-directory: backend
         env:
           GOFLAGS: -p=1
         run: make test-integration
+      - name: Test affected data packages
+        if: env.BACKEND_SCOPE == 'data'
+        working-directory: backend
+        run: go test ./internal/handler/admin ./internal/repository ./internal/service -run 'Dashboard|Usage|Billing|Payment|Affiliate|Subscription|User|APIKey'
+      - name: Test affected data unit configurations
+        if: env.BACKEND_SCOPE == 'data'
+        working-directory: backend
+        run: go test -tags=unit ./internal/handler/admin ./internal/repository ./internal/service -run 'Dashboard|Usage|Billing|Payment|Affiliate|Subscription|User|APIKey'
+      - name: Test affected data integrations
+        if: env.BACKEND_SCOPE == 'data'
+        working-directory: backend
+        env:
+          GOFLAGS: -p=1
+        run: go test -tags=integration ./internal/repository -run 'Dashboard|Usage|Billing|Payment|Affiliate|Subscription|User|APIKey'
+      - name: Test affected gateway packages
+        if: env.BACKEND_SCOPE == 'gateway'
+        working-directory: backend
+        run: go test ./internal/handler ./internal/handler/admin ./internal/repository ./internal/service -run 'Gateway|ChannelMonitor|Account|Group|Concurrency|Failover|Stream|Upstream'
+      - name: Test affected gateway unit configurations
+        if: env.BACKEND_SCOPE == 'gateway'
+        working-directory: backend
+        run: go test -tags=unit ./internal/handler ./internal/handler/admin ./internal/repository ./internal/service -run 'Gateway|ChannelMonitor|Account|Group|Concurrency|Failover|Stream|Upstream'
+      - name: Test affected gateway integrations
+        if: env.BACKEND_SCOPE == 'gateway'
+        working-directory: backend
+        env:
+          GOFLAGS: -p=1
+        run: go test -tags=integration ./internal/handler ./internal/repository -run 'Gateway|ChannelMonitor|Account|Group|Concurrency|Failover|Stream|Upstream'
+      - name: Test affected redeem packages
+        if: env.BACKEND_SCOPE == 'redeem'
+        working-directory: backend
+        run: go test ./internal/handler/admin ./internal/repository ./internal/service -run 'Redeem|Benefit|Mystery|Balance'
+      - name: Test affected redeem unit configurations
+        if: env.BACKEND_SCOPE == 'redeem'
+        working-directory: backend
+        run: go test -tags=unit ./internal/handler/admin ./internal/repository ./internal/service -run 'Redeem|Benefit|Mystery|Balance'
+      - name: Test affected redeem integrations
+        if: env.BACKEND_SCOPE == 'redeem'
+        working-directory: backend
+        env:
+          GOFLAGS: -p=1
+        run: go test -tags=integration ./internal/repository -run 'Redeem|Benefit|Mystery|Balance'
+      - name: Impact decision - backend tests required
+        if: env.BACKEND_SCOPE != 'none'
+        run: echo "Affected Backend verification completed for scope $BACKEND_SCOPE."
 
   deployment:
+    needs: [upstream-boundary]
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      IMPACT_REQUIRED: ${{ needs.upstream-boundary.outputs.deployment }}
     steps:
+      - name: Require a valid impact selection
+        env:
+          UPSTREAM_RESULT: ${{ needs.upstream-boundary.result }}
+        run: test "$UPSTREAM_RESULT" = success
+      - name: Impact decision - deployment tests not applicable
+        if: env.IMPACT_REQUIRED != 'true'
+        run: echo 'Images, migrations, routing and deployment scripts are unchanged.'
       - uses: actions/checkout@v6
+        if: env.IMPACT_REQUIRED == 'true'
       - name: Check deployment script syntax
+        if: env.IMPACT_REQUIRED == 'true'
         run: |
           sh -n deploy/zero-one/backup-postgres.sh
           sh -n deploy/zero-one/restore-drill.sh
@@ -164,12 +312,16 @@ jobs:
           node --test deploy/zero-one/benchmark-ttft.test.mjs
           node --test deploy/zero-one/deduplicate-console-assets.test.mjs
       - name: Verify Caddy routing contract
+        if: env.IMPACT_REQUIRED == 'true'
         run: sh deploy/zero-one/test-routing.sh
       - name: Verify direct-upstream contract
+        if: env.IMPACT_REQUIRED == 'true'
         run: sh deploy/zero-one/test-direct-upstream.sh
       - name: Verify managed marketing sources
+        if: env.IMPACT_REQUIRED == 'true'
         run: node deploy/zero-one/verify-marketing-sources.mjs
       - name: Verify public-settings release gate
+        if: env.IMPACT_REQUIRED == 'true'
         run: |
           printf '%s' '{"code":0,"data":{"site_name":"零一 API","site_subtitle":"从零到一，连接每一次模型调用。","api_base_url":"https://api.01yapi.com","registration_enabled":true,"payment_enabled":false,"promo_code_enabled":false,"invitation_code_enabled":false}}' \
             | node deploy/zero-one/verify-public-settings.mjs -
@@ -179,6 +331,7 @@ jobs:
             exit 1
           fi
       - name: Validate Compose interpolation
+        if: env.IMPACT_REQUIRED == 'true'
         run: |
           docker compose --env-file deploy/zero-one/.env.example -f deploy/zero-one/compose.yml config -q
           docker compose --env-file deploy/zero-one/.env.example -f deploy/zero-one/compose.yml -f deploy/zero-one/compose.bootstrap.yml config -q
@@ -186,26 +339,34 @@ jobs:
             | jq -e '.services.sub2api.extra_hosts | index("superapi-direct=host-gateway") != null' >/dev/null
           test "$(docker compose --env-file deploy/zero-one/.env.example -f deploy/zero-one/compose.yml -f deploy/zero-one/compose.bootstrap.yml config --format json | jq -r '.services.sub2api.ports[0].host_ip + ":" + (.services.sub2api.ports[0].published | tostring)')" = '127.0.0.1:18080'
       - name: Verify production and preview Compose contract
+        if: env.IMPACT_REQUIRED == 'true'
         run: sh deploy/zero-one/test-compose.sh
       - name: Verify Docker build-context isolation
+        if: env.IMPACT_REQUIRED == 'true'
         run: sh deploy/zero-one/test-build-context.sh
       - name: Verify safe Edge switch and rollback contract
+        if: env.IMPACT_REQUIRED == 'true'
         run: sh deploy/zero-one/test-safe-edge-switch.sh
       - name: Build source-revision Sub2API image
+        if: env.IMPACT_REQUIRED == 'true'
         run: docker build --file Dockerfile --tag zero-one-sub2api:sha-${{ github.sha }} .
       - name: Verify migration-only mode in an isolated database
+        if: env.IMPACT_REQUIRED == 'true'
         run: node deploy/zero-one/test-migrate-only.mjs zero-one-sub2api:sha-${{ github.sha }}
       - name: Build source-revision edge image
+        if: env.IMPACT_REQUIRED == 'true'
         run: >-
           docker build --build-arg VITE_LOCAL_EDGE_PREVIEW=false
           --file deploy/zero-one/Dockerfile.edge
           --tag zero-one-edge:sha-${{ github.sha }} .
       - name: Validate production Caddy configuration
+        if: env.IMPACT_REQUIRED == 'true'
         run: >-
           docker run --rm -e ACME_EMAIL=ci@example.invalid
           zero-one-edge:sha-${{ github.sha }}
           caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
       - name: Validate preview Caddy configuration
+        if: env.IMPACT_REQUIRED == 'true'
         run: >-
           docker run --rm
           -v "${{ github.workspace }}/deploy/zero-one/Caddyfile.preview:/etc/caddy/Caddyfile:ro"
@@ -213,22 +374,42 @@ jobs:
           zero-one-edge:sha-${{ github.sha }}
           caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
       - name: Test live production Caddy routing contract
+        if: env.IMPACT_REQUIRED == 'true'
         run: sh deploy/zero-one/test-live-routing.sh zero-one-edge:sha-${{ github.sha }}
       - name: Test live preview Caddy routing contract
+        if: env.IMPACT_REQUIRED == 'true'
         run: sh deploy/zero-one/test-live-routing.sh zero-one-edge:sha-${{ github.sha }} preview
       - name: Install password recovery browser test dependencies
+        if: env.IMPACT_REQUIRED == 'true'
         run: npm ci --prefix visual-regression
       - name: Verify password recovery with an isolated mailbox
+        if: env.IMPACT_REQUIRED == 'true'
         run: >-
           node deploy/zero-one/test-password-recovery.mjs
           zero-one-sub2api:sha-${{ github.sha }}
           zero-one-edge:sha-${{ github.sha }}
+      - name: Impact decision - deployment tests required
+        if: env.IMPACT_REQUIRED == 'true'
+        run: echo 'Affected deployment verification completed.'
   shell:
+    needs: [upstream-boundary]
+    if: always()
     runs-on: macos-15
     timeout-minutes: 15
+    env:
+      IMPACT_REQUIRED: ${{ needs.upstream-boundary.outputs.shell }}
     steps:
+      - name: Require a valid impact selection
+        env:
+          UPSTREAM_RESULT: ${{ needs.upstream-boundary.result }}
+        run: test "$UPSTREAM_RESULT" = success
+      - name: Impact decision - shell tests not applicable
+        if: env.IMPACT_REQUIRED != 'true'
+        run: echo 'macOS and portable shell deployment paths are unchanged.'
       - uses: actions/checkout@v6
+        if: env.IMPACT_REQUIRED == 'true'
       - name: Check deployment scripts
+        if: env.IMPACT_REQUIRED == 'true'
         run: |
           /bin/bash -n deploy/apple-container.sh
           /bin/bash deploy/tests/apple-container-test.sh
@@ -236,29 +417,52 @@ jobs:
           /bin/sh deploy/tests/docker-compose-gateway-env-test.sh
           /bin/sh deploy/tests/docker-runtime-resources-test.sh
           /bin/sh deploy/test-caddyfile-cache.sh
+      - name: Impact decision - shell tests required
+        if: env.IMPACT_REQUIRED == 'true'
+        run: echo 'Affected shell verification completed.'
 
   golangci-lint:
+    needs: [upstream-boundary]
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    env:
+      IMPACT_REQUIRED: ${{ needs.upstream-boundary.outputs.lint }}
     steps:
+      - name: Require a valid impact selection
+        env:
+          UPSTREAM_RESULT: ${{ needs.upstream-boundary.result }}
+        run: test "$UPSTREAM_RESULT" = success
+      - name: Impact decision - golangci-lint not applicable
+        if: env.IMPACT_REQUIRED != 'true'
+        run: echo 'Go sources and lint policy are unchanged.'
       - uses: actions/checkout@v6
+        if: env.IMPACT_REQUIRED == 'true'
       - uses: actions/setup-go@v6
+        if: env.IMPACT_REQUIRED == 'true'
         with:
           go-version-file: backend/go.mod
           check-latest: false
           cache: true
           cache-dependency-path: backend/go.sum
       - name: Verify Go version
+        if: env.IMPACT_REQUIRED == 'true'
         run: go version | grep -q 'go1.27.0'
       - name: golangci-lint
+        if: env.IMPACT_REQUIRED == 'true'
         uses: golangci/golangci-lint-action@v9
         with:
           version: v2.13
           args: --timeout=30m
           working-directory: backend
+      - name: Impact decision - golangci-lint required
+        if: env.IMPACT_REQUIRED == 'true'
+        run: echo 'Affected Go lint verification completed.'
 
   chromium-calibration:
     name: Chromium visual regression
+    needs: [upstream-boundary]
+    if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     container:
@@ -266,25 +470,44 @@ jobs:
     env:
       CI: "true"
       TZ: Asia/Shanghai
+      VISUAL_SCOPE: ${{ needs.upstream-boundary.outputs.visual_scope }}
     steps:
+      - name: Require a valid impact selection
+        env:
+          UPSTREAM_RESULT: ${{ needs.upstream-boundary.result }}
+        run: test "$UPSTREAM_RESULT" = success
+      - name: Impact decision - Chromium visual regression not applicable
+        if: env.VISUAL_SCOPE == 'none'
+        run: echo 'Delivered UI rendering and visual contracts are unchanged.'
       - uses: actions/checkout@v6
+        if: env.VISUAL_SCOPE != 'none'
       - uses: actions/setup-node@v6
+        if: env.VISUAL_SCOPE != 'none'
         with:
           node-version: "24"
       - name: Install visual test dependencies
+        if: env.VISUAL_SCOPE != 'none'
         run: npm ci --prefix visual-regression
       - name: Audit visual test dependencies
+        if: env.VISUAL_SCOPE != 'none'
         run: npm audit --prefix visual-regression --audit-level=high
       - name: Install Landing dependencies
+        if: env.VISUAL_SCOPE == 'full'
         run: npm ci --prefix landing
       - name: Typecheck visual contracts
+        if: env.VISUAL_SCOPE != 'none'
         run: npm run typecheck --prefix visual-regression
       - name: List visual contracts
+        if: env.VISUAL_SCOPE == 'full'
         run: npm run test:list --prefix visual-regression
       - name: Run snapshot calibration without baseline updates
+        if: env.VISUAL_SCOPE == 'full'
         run: npm test --prefix visual-regression
+      - name: Run focused dashboard visual verification
+        if: env.VISUAL_SCOPE == 'dashboard'
+        run: npm test --prefix visual-regression -- tests/dashboard-spend.behavior.spec.ts
       - name: Upload visual calibration artifacts
-        if: always()
+        if: always() && env.VISUAL_SCOPE != 'none'
         uses: actions/upload-artifact@v7
         with:
           name: zero-one-visual-calibration-${{ github.sha }}
@@ -293,6 +516,9 @@ jobs:
           path: |
             visual-regression/playwright-report/
             visual-regression/test-results/
+      - name: Impact decision - Chromium visual regression required
+        if: env.VISUAL_SCOPE != 'none'
+        run: echo "Affected visual verification completed for scope $VISUAL_SCOPE."
 
   # Preserve required check names without executing the same suites twice.
   test:

@@ -18,10 +18,11 @@ type snapshotCacheEntry struct {
 }
 
 type snapshotCache struct {
-	mu    sync.RWMutex
-	ttl   time.Duration
-	items map[string]snapshotCacheEntry
-	sf    singleflight.Group
+	mu          sync.RWMutex
+	ttl         time.Duration
+	items       map[string]snapshotCacheEntry
+	generations map[string]uint64
+	sf          singleflight.Group
 }
 
 type snapshotCacheLoadResult struct {
@@ -34,8 +35,9 @@ func newSnapshotCache(ttl time.Duration) *snapshotCache {
 		ttl = 30 * time.Second
 	}
 	return &snapshotCache{
-		ttl:   ttl,
-		items: make(map[string]snapshotCacheEntry),
+		ttl:         ttl,
+		items:       make(map[string]snapshotCacheEntry),
+		generations: make(map[string]uint64),
 	}
 }
 
@@ -78,6 +80,41 @@ func (c *snapshotCache) Set(key string, payload any) snapshotCacheEntry {
 	return entry
 }
 
+// Invalidate removes one cached response and advances its generation. A load
+// that began before invalidation may still return to its caller, but cannot
+// repopulate the cache after a newer explicit refresh.
+func (c *snapshotCache) Invalidate(key string) uint64 {
+	if c == nil || key == "" {
+		return 0
+	}
+	c.mu.Lock()
+	delete(c.items, key)
+	c.generations[key]++
+	generation := c.generations[key]
+	c.mu.Unlock()
+	return generation
+}
+
+func (c *snapshotCache) generation(key string) uint64 {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.generations[key]
+}
+
+func (c *snapshotCache) setIfGeneration(key string, payload any, generation uint64) snapshotCacheEntry {
+	entry := snapshotCacheEntry{
+		ETag:      buildETagFromAny(payload),
+		Payload:   payload,
+		ExpiresAt: time.Now().Add(c.ttl),
+	}
+	c.mu.Lock()
+	if c.generations[key] == generation {
+		c.items[key] = entry
+	}
+	c.mu.Unlock()
+	return entry
+}
+
 func (c *snapshotCache) GetOrLoad(key string, load func() (any, error)) (snapshotCacheEntry, bool, error) {
 	if load == nil {
 		return snapshotCacheEntry{}, false, nil
@@ -97,11 +134,12 @@ func (c *snapshotCache) GetOrLoad(key string, load func() (any, error)) (snapsho
 		if entry, ok := c.Get(key); ok {
 			return snapshotCacheLoadResult{Entry: entry, Hit: true}, nil
 		}
+		generation := c.generation(key)
 		payload, err := load()
 		if err != nil {
 			return nil, err
 		}
-		return snapshotCacheLoadResult{Entry: c.Set(key, payload), Hit: false}, nil
+		return snapshotCacheLoadResult{Entry: c.setIfGeneration(key, payload, generation), Hit: false}, nil
 	})
 	if err != nil {
 		return snapshotCacheEntry{}, false, err

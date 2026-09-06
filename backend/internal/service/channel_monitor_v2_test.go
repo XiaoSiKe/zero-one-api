@@ -189,6 +189,9 @@ func TestChannelMonitorV2ErrorTaxonomyPriority(t *testing.T) {
 	}{
 		{"cyber", ChannelMonitorV2ErrorInput{ErrorType: "cyber_policy", StatusCode: 200}, "content_policy"},
 		{"auth before forbidden", ChannelMonitorV2ErrorInput{StatusCode: 403, Message: "invalid API key"}, "authentication"},
+		{"upstream auth is operational", ChannelMonitorV2ErrorInput{ErrorOwner: "provider", StatusCode: 502, UpstreamStatusCode: 401, Message: "invalid API key"}, "upstream_authentication"},
+		{"client quota stays non-operational", ChannelMonitorV2ErrorInput{ErrorOwner: "client", StatusCode: 403, Message: "insufficient balance"}, "quota_or_balance"},
+		{"upstream quota is operational", ChannelMonitorV2ErrorInput{ErrorOwner: "provider", StatusCode: 502, Message: "insufficient quota"}, "upstream_quota_or_balance"},
 		{"context", ChannelMonitorV2ErrorInput{Message: "maximum prompt length exceeded"}, "context_limit"},
 		{"unsupported", ChannelMonitorV2ErrorInput{Message: "not supported by any configured account"}, "model_unsupported"},
 		{"pool", ChannelMonitorV2ErrorInput{Message: "No available accounts"}, "account_pool_unavailable"},
@@ -198,6 +201,20 @@ func TestChannelMonitorV2ErrorTaxonomyPriority(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) { require.Equal(t, tt.want, ClassifyChannelMonitorV2Error(tt.in)) })
+	}
+}
+
+func TestChannelMonitorV2UpstreamFailuresAreNotIgnoredByDefault(t *testing.T) {
+	ignored := ChannelMonitorV2IgnoredCategorySet(ChannelMonitorV2Config{
+		IgnoredErrorCategories: DefaultChannelMonitorV2IgnoredErrorCategories,
+	})
+	for _, category := range []string{"upstream_authentication", "upstream_quota_or_balance"} {
+		_, found := ignored[category]
+		require.False(t, found, category)
+	}
+	for _, category := range []string{"authentication", "quota_or_balance"} {
+		_, found := ignored[category]
+		require.True(t, found, category)
 	}
 }
 
