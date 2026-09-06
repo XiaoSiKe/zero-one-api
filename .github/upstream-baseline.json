@@ -777,7 +777,8 @@
     "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/online-image.js",
     "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/passwordRecovery-B_mr17oP.js",
     "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/online-image.css",
-    "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/index-BGzMG_Uz.js"
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/index-BGzMG_Uz.js",
+    "docs/adr/0014-retired-data-management-compatibility.md"
   ],
   "retired_preserved_paths": [
     {
@@ -821,6 +822,18 @@
       "path": "visual-regression/tests/__screenshots__/chromium-mobile/console-finance-trends.png",
       "decision": "docs/adr/0012-admin-dashboard-consumption.md",
       "reason": "The daily finance trends are no longer a product surface."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/service/data_management_grpc.go",
+      "decision": "docs/adr/0014-retired-data-management-compatibility.md",
+      "reason": "The retired agent keeps its HTTP validation and deprecated response; unreachable internal RPC methods and their tests are replaced by the compatibility types and HTTP contract tests."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/service/data_management_grpc_test.go",
+      "decision": "docs/adr/0014-retired-data-management-compatibility.md",
+      "reason": "The retired agent keeps its HTTP validation and deprecated response; unreachable internal RPC methods and their tests are replaced by the compatibility types and HTTP contract tests."
     }
   ],
   "legacy_hotfixes": [
@@ -1521,7 +1534,8 @@
         "docs/data-and-connectivity-audit-2026-09-06.md",
         "docs/upgrades/v0.2.1.md",
         "docs/upgrades/v0.2.1-change-map.json",
-        "skills/sub2api-admin/references/admin-cli.md"
+        "skills/sub2api-admin/references/admin-cli.md",
+        "docs/adr/0014-retired-data-management-compatibility.md"
       ]
     },
     {
