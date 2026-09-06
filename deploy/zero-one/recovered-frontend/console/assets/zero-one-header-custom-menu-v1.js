@@ -1259,7 +1259,12 @@ function installXHRSaveBridge() {
     try {
       const requestURL = new URL(this.__zeroOneSettingsURL, window.location.origin)
       const path = requestURL.pathname
-      if (this.__zeroOneSettingsMethod === 'GET' && path === PUBLIC_SETTINGS_API && !requestURL.searchParams.has('scope')) {
+      if (
+        this.__zeroOneSettingsMethod === 'GET' &&
+        path === PUBLIC_SETTINGS_API &&
+        !requestURL.searchParams.has('scope') &&
+        window.location.pathname === '/login'
+      ) {
         this.addEventListener('load', () => {
           const settings = confirmedXHRSettings(this)
           if (settings) publishPublicSettings(settings)
@@ -1331,7 +1336,10 @@ function requestPublicSettings(user) {
     headers: apiHeaders(),
   })
     .then(readApiResponse)
-    .then(publishPublicSettings)
+    .then((settings) => {
+      publicNavigationSettings = settings
+      scheduleScan()
+    })
     .catch(() => {})
 }
 
