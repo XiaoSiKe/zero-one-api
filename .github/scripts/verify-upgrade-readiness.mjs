@@ -92,12 +92,16 @@ export function classifyUIPaths(paths, manifest) {
 
 export function evaluateProductChangeProtection(paths, baseline, uiManifest) {
   const preserved = new Set(baseline.preserve_on_upstream_sync)
+  // validateBaseline and the upstream-boundary adapter verify exact ownership,
+  // the protected decision and the retired file's absence.
+  const retired = new Set((baseline.retired_preserved_paths ?? []).map(({ path }) => path))
   const legacyHotfix = new Set(baseline.legacy_hotfixes.flatMap((hotfix) => hotfix.paths))
   const approvedBackport = new Set(
     baseline.approved_backports.flatMap((backport) => Object.keys(backport.files)),
   )
   const result = {
     preserved: [],
+    retired: [],
     approved_ui: [],
     legacy_hotfix: [],
     approved_backport: [],
@@ -107,6 +111,10 @@ export function evaluateProductChangeProtection(paths, baseline, uiManifest) {
   for (const path of [...new Set(paths)].sort()) {
     if (preserved.has(path)) {
       result.preserved.push(path)
+      continue
+    }
+    if (retired.has(path)) {
+      result.retired.push(path)
       continue
     }
     if (legacyHotfix.has(path)) {
