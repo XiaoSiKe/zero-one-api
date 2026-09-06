@@ -1,0 +1,15 @@
+[Unit]
+Description=Encrypted Zero One off-host backup
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/zero-one/backup.env
+WorkingDirectory=/srv/zero-one
+ExecStart=/bin/sh /srv/zero-one/deploy/zero-one/backup-postgres.sh /srv/zero-one/deploy/zero-one/.env
+UMask=0077
+PrivateTmp=true
+Nice=10
+TimeoutStartSec=30min

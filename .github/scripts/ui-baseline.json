@@ -371,7 +371,9 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v5/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
-        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/"
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/",
+        "frontend/vite.adapter-boundary.ts"
       ]
     },
     {
@@ -419,7 +421,9 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/",
-        "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/"
+        "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/",
+        "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/",
+        "frontend/vite.adapter-boundary.ts"
       ]
     },
     {

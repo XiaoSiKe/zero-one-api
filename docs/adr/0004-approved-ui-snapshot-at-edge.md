@@ -37,6 +37,15 @@ registers idempotent reconciliation instead of adding another global observer,
 history wrapper or navigation-time animation frame. This is an overlay change,
 not permission to replace or rewrite the approved recovered base package.
 
+Shared locale loading must not import the application router. The native Console
+router owns route titles and their locale-change refresh; route-content Adapters
+only consume locale state. Both Adapter builds reject traversing the application
+router, preventing unrelated pages from entering their build graph. The source
+isolation repair uses `cn-provider-admin-v6` and `online-image-v15`; preceding
+namespaces retain their HTTP URLs and byte content, with identical bytes allowed
+to share the existing immutable storage pool. No visual or business behavior is
+changed by this repair.
+
 The exact `/register` entry may prioritize the existing Approved `RegisterView`
 closure, but it must not substitute another page, skeleton, placeholder or
 simplified form. Public Settings remain authoritative and registration actions

@@ -37,6 +37,7 @@ frontend/dist/
 .pnpm-store/
 *.local
 *.tsbuildinfo
+__pycache__/
 vite.config.d.ts
 vite.config.js.timestamp-*
 

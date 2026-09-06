@@ -173,15 +173,9 @@ the controlled time window has no missing usage or billing records.
 
 ## Encrypted Backups
 
-Install [`age`](https://age-encryption.org/), `flock` and `mountpoint` (the last
-two are normally provided by util-linux) on the deployment host and create an
-offline recovery key. Put only its public recipient in the scheduler
-environment; keep the corresponding private key outside the server. Schedule
-the included script daily, for example:
-
-```cron
-30 2 * * * BACKUP_DIR=/mnt/offsite/zero-one BACKUP_AGE_RECIPIENT=age1... /srv/zero-one/deploy/zero-one/backup-postgres.sh /srv/zero-one/deploy/zero-one/.env >> /var/log/zero-one-backup.log 2>&1
-```
+Install `age`, `flock` and `mountpoint` on the deployment host and keep the
+private recovery key outside that host. Configure and verify the checked-in
+systemd units through the authoritative [Daily backup scheduler](../../docs/OPERATIONS.md#daily-backup-scheduler).
 
 It creates separate encrypted PostgreSQL and deployment-state archives, keeps
 seven daily copies and promotes Sunday snapshots into four weekly copies.

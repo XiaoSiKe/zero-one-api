@@ -51,7 +51,31 @@ Sub2API remains one Go process and keeps its embedded Vue SPA as an unmatched-ro
 
 The React app lives in `landing/`, uses Vite with base `/_landing/`, and is built into the edge image. It is not embedded in Vue and does not add a second frontend runtime to the Console.
 
+## Maintenance Ownership
+
+| Surface | Maintained boundary and retention decision |
+| --- | --- |
+| Gateway, scheduling and streaming | Existing provider services own retries, cancellation and accounting; large files alone do not justify moving their state or changing their order. |
+| Authentication, billing, redeem and affiliate data | Existing route/service/repository contracts and integration tests own the invariants; migrations and original business records remain immutable. |
+| Console and Landing | Source, generated adapters and Approved UI Snapshot have separate roles. Versioned asset URLs and byte content remain available for old pages and rollback; identical byte storage already shares the immutable pool. |
+| Generated code and dependencies | Ent/Wire output follows its generator. Frontend API/type exports and optional provider/plugin integrations are not classified as dead merely because the current UI does not import them. |
+| Legacy hotfixes | All seven registered groups retain their existing exit conditions. The fixed upstream VERSION is still 0.2.0, so the 0.2.1 product correction remains necessary. Billing, race, formatting, sticky-log, Grok-test and dependency fixes are not retired without an equivalent baseline and passing regressions. |
+| Operations and historical evidence | Release/backup entry points live under `deploy/zero-one`; recovery material stays outside Git. Historical design evidence, completed plans and provenance records do not define current runtime behavior. |
+
+The active maintenance commands and release prerequisites are owned by
+[OPERATIONS](OPERATIONS.md#release-and-rollback). The migration runner and
+[migration instructions](../backend/migrations/README.md) own database execution
+semantics; do not copy migration commands into a second runbook.
+
 ## Public Interfaces
+
+The retired `/api/v1/admin/data-management/*` routes remain a compatibility
+surface: health returns HTTP 200 with `enabled=false`; other valid requests
+return HTTP 503 and `DATA_MANAGEMENT_DEPRECATED`. Existing JSON validation,
+administrator authentication and sensitive-operation step-up checks still run
+in their original order. Their internal RPC success paths were unreachable and
+have been removed. The active `/api/v1/admin/backups/*` service is separate and
+unchanged. Legacy frontend API/type exports remain available for compatibility.
 
 | Host and request | Result |
 | --- | --- |

@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily encrypted Zero One off-host backup
+
+[Timer]
+OnCalendar=*-*-* 02:30:00 Asia/Shanghai
+Persistent=true
+RandomizedDelaySec=5min
+Unit=zero-one-backup.service
+
+[Install]
+WantedBy=timers.target

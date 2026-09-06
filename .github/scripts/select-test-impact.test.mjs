@@ -94,7 +94,7 @@ test('complete baseline keeps only explicitly affected immutable generators', ()
   ], policy)
   assert.equal(impact.backend_scope, 'full')
   assert.equal(impact.visual_scope, 'full')
-  assert.equal(impact.console_asset_scopes, 'cn_provider,shell')
+  assert.equal(impact.console_asset_scopes, 'cn_provider,online,shell')
   assert.equal(impact.reason, 'test-policy-change')
 })
 
@@ -107,4 +107,13 @@ test('policy change cannot be narrowed by one backend or visual scope', () => {
   assert.equal(impact.backend_scope, 'full')
   assert.equal(impact.visual_scope, 'full')
   assert.equal(impact.console_asset_scopes, 'shell')
+})
+
+
+test('shared locale modules rebuild both leaf adapters even for a page-specific label', () => {
+  for (const path of ['frontend/src/i18n/index.ts', 'frontend/src/i18n/locales/zh/admin/overview.ts', 'frontend/src/i18n/locales/en/channelMonitorV2.ts']) {
+    const impact = selectTestImpact([path], policy)
+    assert.equal(impact.console_asset_scopes, 'cn_provider,online,shell')
+    assert.equal(impact.visual_scope, 'full')
+  }
 })

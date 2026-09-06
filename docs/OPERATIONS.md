@@ -245,6 +245,39 @@ the canary model calls or usage-log comparison.
 
 Recovery order is PostgreSQL, Sub2API data, Redis, then application and edge containers. After recovery, verify administrator login, API Key authentication, one streamed model request and one Redeem Code redemption with a test user.
 
+The scheduled state archive also contains an actual Redis RDB snapshot and both
+Caddy state directories. A successful backup atomically writes
+`.last-success.json` only after the encrypted archives and checksums are complete.
+Plaintext staging stays in a private temporary directory on the source host;
+only encrypted archives are copied to the off-host filesystem. The receipt does
+not replace an isolated restore drill.
+
+### Daily backup scheduler
+
+Use the checked-in `deploy/zero-one/zero-one-backup.service` and `.timer` instead
+of maintaining a separate cron command. The timer runs around 02:30 Asia/Shanghai
+and catches a missed run after host startup. Configure `/etc/zero-one/backup.env`
+from `deploy/zero-one/backup.env.example` with the actual off-host mount and the
+offline key's public age recipient; keep the file mode at `0600`.
+
+Before enabling the timer, verify that the target is a real remote filesystem
+and run the backup manually. A local directory or same-host bind mount is not an
+off-host destination. Install the two units into `/etc/systemd/system`, run
+`systemctl daemon-reload`, then `systemctl enable --now zero-one-backup.timer`.
+Do not enable a second scheduler when an equivalent job already exists.
+
+```bash
+systemctl start zero-one-backup.service
+python3 deploy/zero-one/backup-health.py /mnt/offsite/zero-one
+journalctl -u zero-one-backup.service --since '2 days ago'
+```
+
+The read-only health check requires an enabled, active timer, a successful
+service result, an archive receipt no older than 26 hours and matching encrypted
+archive checksums. A missing mount, failed run, stale receipt or damaged archive
+blocks release. A manually copied historical recovery point does not establish
+scheduled backup health.
+
 `BACKUP_DIR` must itself be an off-host filesystem mount point; a subdirectory on
 the production root filesystem does not satisfy the backup requirement. After
 mounting it, create the sentinel inside the mounted filesystem:
@@ -482,6 +515,44 @@ GoReleaser archives 均声明携带这三份根级材料。镜像文件位于
 4. 检查目标双镜像来源一致、主机架构、磁盘余量、备份和回滚材料；生产不构建镜像、不改业务密钥，不更新 PostgreSQL/Redis 版本或挂载。
 
 ### 原地升级
+
+阶段控制入口为 `python3 deploy/zero-one/release-control.py ACTION RECOVERY_DIR`。
+`RECOVERY_DIR` 必须是生产仓库 `.release-backups/` 内本次发布的受限目录。
+从已验证的目标源码取出该脚本及同目录 `backup-health.py`，以校验一致的副本
+运行整个发布，避免切换源码时换掉正在使用的控制逻辑。环境文件、密钥、备份和
+下面的发布记录都不进入 Git。
+
+`release-metadata.json` 保存本次 `id`、目标 `merge_sha`、原生产
+`production_before`、`old_images`/`new_images` 的两容器摘要映射、
+`expected_migrations` 完整新增文件名列表、公开 age `recipient` 和随机
+`probe_secret`。新增迁移列表必须等于目标源码与当前账本的差集。
+`OFFHOST_BACKUP_VERIFIED.json` 绑定本次 `snapshot_id`、`source_sha` 和
+实际 `backup_dir`，记录 `sha256_verified`、`restore_verified`、
+`scheduled_backup_healthy`；preflight 还会实时复查备份健康，不能只填写布尔值放行。
+
+执行顺序为 `preflight` → `drain-backup` → `migrate-backend` → `edge` →
+`open` → `complete`。迁移阶段另需本次最终备份的异地校验与实际恢复证明；
+控制器核对其镜像摘要、归档校验值和原始数据指纹。235 迁移允许修改的监控回填
+水位三列单独列为派生状态，其余原有列仍精确比较。
+
+在 `drain-backup` 前，创建名为 `zero-one-release-watchdog-<id>` 的主机
+systemd 临时 timer，20 分钟后调用同一脚本的 `watchdog RECOVERY_DIR`。
+脚本拒绝在该 timer 未激活时停流。任何中途失败执行 `rollback`，确认恢复后
+再取消 timer；不能删除 `.active-upgrade.json` 来绕过未完成的发布。
+
+`release-smoke.py RECOVERY_DIR read|model` 使用目录内
+`smoke-identity.json` 的专用登录 `token`、`user_id` 和 `model_probes`。
+每个模型用例提供新建限额 Key 的 `key_id`、`key`、既有 `endpoint` 与 `body`；
+测试用户名和 Key 名以 `release-` 开头，Key 属于该测试身份，额度不超过 1 美元，
+且两天内过期；脚本先核对 Key 指纹及这些限制，再发送模型请求。
+用例必须覆盖 Responses 流和图片结果，且每个 Key 只产生一条账单。它不自动借用
+客户 Key 或伪造管理员凭据。登录、兑换、WebSocket 等其余合同仍按下方业务烟测
+执行。测试身份和 Key 用后回收，领取证明及账单仍保留。
+
+恢复接流量后运行 `python3 deploy/zero-one/observe-release.py RECOVERY_DIR`。
+它持续检查镜像与容器身份、挂载、健康、桥接、历史账单、重复账单和内部错误，
+至少 30 分钟通过后生成 `OBSERVATION_30M_COMPLETE.json`，供 `complete` 验证。
+观察失败不得宣布发布完成，应先归因，再按下方回滚边界处理。
 
 - 完整使用生产环境文件和 Compose 文件，路径见[主机速查](PRODUCTION_SERVER_CN.md#生产目录与-compose)。保留全部 ignored/untracked 恢复材料，禁止 `git clean` 和删除数据卷。
 - 先 fetch 和核对目标 SHA，拉取并验证同源双镜像；此时不切换源码、不改 `.env`。在任何变更前启用分阶段回滚：Backend 未重建时恢复 source/env，重建后还必须恢复兼容旧镜像并验证健康。
