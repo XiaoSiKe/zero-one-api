@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-06-dataconnectivity",
-  "baseline_commit": "95bab1237786f2f044e7294ba8e14f8e95f0c10a",
+  "baseline_ref": "ui-approved-2026-09-06-loginnav",
+  "baseline_commit": "62abf47e4bce9b693314f4f2544f42e45e5e8a69",
   "protected_paths": [
     "landing/",
     "frontend/",
