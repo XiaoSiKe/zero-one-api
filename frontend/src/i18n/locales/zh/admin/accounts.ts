@@ -983,6 +983,7 @@ export default {
       billingRateMultiplierHint: '用于账号调度，并按用量记录保存的历史倍率计算成本',
       expiresAt: '过期时间',
       expiresAtHint: '留空表示不过期',
+      expiresAtTimezoneHint: '时间按浏览器时区（{timezone}）填写。',
       higherPriorityFirst: '数值越小优先级越高',
       mixedScheduling: '在 /v1/messages 中使用',
       mixedSchedulingHint: '启用后可参与 Anthropic/Gemini 分组的调度',

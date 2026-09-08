@@ -919,6 +919,7 @@ export default {
       billingRateMultiplierHint: 'Used for account scheduling and historical cost from the multiplier saved on each usage row',
       expiresAt: 'Expires At',
       expiresAtHint: 'Leave empty for no expiration',
+      expiresAtTimezoneHint: 'Times use your browser timezone ({timezone}).',
       higherPriorityFirst: 'Lower value means higher priority',
       mixedScheduling: 'Use in /v1/messages',
       mixedSchedulingHint: 'Enable to participate in Anthropic/Gemini group scheduling',

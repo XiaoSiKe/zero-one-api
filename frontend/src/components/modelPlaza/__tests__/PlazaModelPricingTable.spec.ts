@@ -324,11 +324,11 @@ describe('PlazaModelPricingTable', () => {
       ...model.pricing!.intervals[0], min_tokens: 0, max_tokens: 272000,
       tier_label: '<=272K', cache_write_multiplier: null, cache_read_multiplier: null
     })
-    const cells = mountTable([model], 1).findAll('tbody td')
-    expect(cells[3].text()).toContain('$12.50')
-    expect(cells[3].text()).toContain('$2.00')
-    expect(cells[3].text()).toContain('$25.00')
-    expect(cells[3].text()).toContain('$4.00')
+    const paidCacheCell = mountTable([model], 1).findAll('tbody td.pz-cell')[2]
+    expect(paidCacheCell.text()).toContain('$12.50')
+    expect(paidCacheCell.text()).toContain('$2.00')
+    expect(paidCacheCell.text()).toContain('$25.00')
+    expect(paidCacheCell.text()).toContain('$4.00')
   })
 
   it('生图独立倍率开启时,按图价格 × 独立倍率,不乘分组倍率;倍率列展示独立倍率', () => {

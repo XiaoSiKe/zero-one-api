@@ -59,12 +59,12 @@ func (c *paymentFulfillmentRedeemCacheStub) IncrementRedeemAttemptCount(context.
 	return nil
 }
 
-func (c *paymentFulfillmentRedeemCacheStub) AcquireRedeemLock(context.Context, string, time.Duration) (bool, error) {
+func (c *paymentFulfillmentRedeemCacheStub) AcquireRedeemLock(context.Context, string, time.Duration) (string, error) {
 	c.acquireCalls++
-	return true, nil
+	return "test-owner", nil
 }
 
-func (c *paymentFulfillmentRedeemCacheStub) ReleaseRedeemLock(context.Context, string) error {
+func (c *paymentFulfillmentRedeemCacheStub) ReleaseRedeemLock(context.Context, string, string) error {
 	c.releaseCalls++
 	return nil
 }

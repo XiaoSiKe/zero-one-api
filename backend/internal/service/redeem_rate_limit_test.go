@@ -36,12 +36,12 @@ func (c *redeemRateLimitCacheStub) IncrementRedeemAttemptCount(context.Context, 
 	return nil
 }
 
-func (c *redeemRateLimitCacheStub) AcquireRedeemLock(context.Context, string, time.Duration) (bool, error) {
+func (c *redeemRateLimitCacheStub) AcquireRedeemLock(context.Context, string, time.Duration) (string, error) {
 	c.acquireCalls++
-	return true, nil
+	return "test-owner", nil
 }
 
-func (c *redeemRateLimitCacheStub) ReleaseRedeemLock(context.Context, string) error {
+func (c *redeemRateLimitCacheStub) ReleaseRedeemLock(context.Context, string, string) error {
 	c.releaseCalls++
 	return nil
 }

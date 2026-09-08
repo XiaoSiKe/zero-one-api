@@ -143,8 +143,20 @@
               <template v-else>{{ paidPerMillion(m.pricing?.output_price) }}</template>
             </td>
             <td class="pz-cell px-3 py-2.5 align-middle">
+              <template v-if="hasTierCachePricing(tokenIntervals(m))">
+                <div
+                  v-for="(iv, idx) in tokenIntervals(m)"
+                  :key="idx"
+                  class="whitespace-nowrap font-mono text-xs leading-5 text-gray-800 dark:text-gray-200"
+                >
+                  <span class="font-sans font-normal text-gray-400 dark:text-dark-500">{{ t('modelPlaza.table.cacheWrite') }}</span>
+                  {{ paidPerMillion(iv.cache_write_price) }}
+                  <span class="ml-1 font-sans font-normal text-gray-400 dark:text-dark-500">{{ t('modelPlaza.table.cacheRead') }}</span>
+                  {{ paidPerMillion(iv.cache_read_price) }}
+                </div>
+              </template>
               <div
-                v-if="hasCachePricing(m)"
+                v-else-if="hasCachePricing(m)"
                 class="space-y-0.5 font-mono text-xs text-gray-800 dark:text-gray-200"
               >
                 <div>
@@ -337,6 +349,12 @@ function sortByContext(intervals: UserPricingInterval[]): UserPricingInterval[] 
 /** token 模式的阶梯定价(内联进输入/输出列)。 */
 function tokenIntervals(m: PlazaModel): UserPricingInterval[] {
   return sortByContext(m.pricing?.intervals ?? []).map(iv => resolveIntervalPrices(iv, m.pricing!))
+}
+
+function hasTierCachePricing(intervals: UserPricingInterval[]): boolean {
+  return intervals.some(iv =>
+    iv.cache_write_price != null || iv.cache_write_1h_price != null || iv.cache_read_price != null
+  )
 }
 
 /** 按次/按图模式的阶梯定价(仅保留配了按次价的档位)。 */
