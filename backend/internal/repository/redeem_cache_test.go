@@ -85,19 +85,19 @@ func newRedeemTestCache(t *testing.T) (*redeemCache, *miniredis.Miniredis) {
 	return &redeemCache{rdb: rdb}, server
 }
 
-func TestRedeemRateLimitUsesFixedOneHourWindow(t *testing.T) {
+func TestRedeemRateLimitUsesFixedTenMinuteWindow(t *testing.T) {
 	cache, server := newRedeemTestCache(t)
 	ctx := context.Background()
 	key := redeemRateLimitKey(123)
 	require.NoError(t, cache.IncrementRedeemAttemptCount(ctx, 123))
-	require.Equal(t, time.Hour, server.TTL(key))
-	server.FastForward(20 * time.Minute)
+	require.Equal(t, 10*time.Minute, server.TTL(key))
+	server.FastForward(2 * time.Minute)
 	require.NoError(t, cache.IncrementRedeemAttemptCount(ctx, 123))
-	require.Equal(t, 40*time.Minute, server.TTL(key), "another failure must not restart the window")
+	require.Equal(t, 8*time.Minute, server.TTL(key), "another failure must not restart the window")
 	count, err := cache.GetRedeemAttemptCount(ctx, 123)
 	require.NoError(t, err)
 	require.Equal(t, 2, count)
-	server.FastForward(40 * time.Minute)
+	server.FastForward(8 * time.Minute)
 	count, err = cache.GetRedeemAttemptCount(ctx, 123)
 	require.NoError(t, err)
 	require.Zero(t, count)
@@ -111,12 +111,12 @@ func TestRedeemRateLimitReadNormalizesLegacyWindowWithoutResettingCount(t *testi
 	count, err := cache.GetRedeemAttemptCount(ctx, 123)
 	require.NoError(t, err)
 	require.Equal(t, 20, count)
-	require.Equal(t, time.Hour, server.TTL(key))
-	server.FastForward(15 * time.Minute)
+	require.Equal(t, 10*time.Minute, server.TTL(key))
+	server.FastForward(3 * time.Minute)
 	count, err = cache.GetRedeemAttemptCount(ctx, 123)
 	require.NoError(t, err)
 	require.Equal(t, 20, count)
-	require.Equal(t, 45*time.Minute, server.TTL(key))
+	require.Equal(t, 7*time.Minute, server.TTL(key))
 }
 
 func TestRedeemRateLimitIncrementNormalizesLegacyWindow(t *testing.T) {
@@ -128,7 +128,7 @@ func TestRedeemRateLimitIncrementNormalizesLegacyWindow(t *testing.T) {
 	count, err := cache.GetRedeemAttemptCount(ctx, 123)
 	require.NoError(t, err)
 	require.Equal(t, 8, count)
-	require.Equal(t, time.Hour, server.TTL(key))
+	require.Equal(t, 10*time.Minute, server.TTL(key))
 }
 
 func TestRedeemRateLimitRepairsPersistentLegacyKey(t *testing.T) {
@@ -139,7 +139,7 @@ func TestRedeemRateLimitRepairsPersistentLegacyKey(t *testing.T) {
 	count, err := cache.GetRedeemAttemptCount(ctx, 123)
 	require.NoError(t, err)
 	require.Equal(t, 20, count)
-	require.Equal(t, time.Hour, server.TTL(key))
+	require.Equal(t, 10*time.Minute, server.TTL(key))
 }
 
 func TestRedeemLockKeyDoesNotContainPlaintext(t *testing.T) {

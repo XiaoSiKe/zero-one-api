@@ -135,7 +135,7 @@ func (s *RedeemCacheSuite) TestLegacyRateLimitCountAndWindowArePreserved() {
 	s.Require().Equal(20, count, "reading a previously blocked key must not clear its count")
 	ttl, err := s.rdb.PTTL(s.ctx, key).Result()
 	s.Require().NoError(err)
-	s.AssertTTLWithin(ttl, time.Second, time.Hour)
+	s.AssertTTLWithin(ttl, time.Second, redeemRateLimitWindow)
 	s.Require().NoError(s.rdb.PExpire(s.ctx, key, 40*time.Minute).Err())
 	s.Require().NoError(s.cache.IncrementRedeemAttemptCount(s.ctx, userID))
 	count, err = s.cache.GetRedeemAttemptCount(s.ctx, userID)
