@@ -68,7 +68,7 @@
             </div>
           </div>
 
-          <!-- New Users Today -->
+          <!-- Total Users -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-gray-100 p-2 dark:bg-dark-700">
@@ -76,13 +76,13 @@
               </div>
               <div>
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.newUsersToday') }}
+                  {{ t('admin.dashboard.totalUsers') }}
                 </p>
                 <p class="text-xl font-bold text-gray-900 dark:text-white">
-                  +{{ stats.today_new_users }}
+                  {{ formatNumber(stats.total_users) }}
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ t('common.total') }}: {{ formatNumber(stats.total_users) }}
+                  {{ t('admin.dashboard.newUsersToday') }}: +{{ stats.today_new_users }}
                 </p>
               </div>
             </div>
@@ -175,7 +175,7 @@
                 </p>
                 <div class="flex items-baseline gap-2">
                   <p class="text-xl font-bold text-gray-900 dark:text-white">
-                    {{ formatTokens(stats.rpm) }}
+                    {{ formatNumber(stats.rpm) }}
                   </p>
                   <span class="text-xs text-gray-500 dark:text-gray-400">RPM</span>
                 </div>
@@ -297,26 +297,34 @@
                 </div>
               </div>
             </div>
+            <p v-if="chartsError" class="mt-3 text-xs text-red-600 dark:text-red-400" role="status">
+              {{ t('admin.dashboard.trendLoadFailed') }}
+            </p>
+            <p v-else-if="trendUpdatedAt" class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+              {{ t('admin.dashboard.dataUpdatedAt', { time: formatUpdatedAt(trendUpdatedAt) }) }}
+            </p>
           </div>
 
-          <!-- Charts Grid -->
+          <!-- Consumption and token trends share the selected range. -->
           <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <ModelDistributionChart
-              :model-stats="modelStats"
-              :enable-ranking-view="true"
-              :ranking-items="rankingItems"
-              :ranking-total-actual-cost="rankingTotalActualCost"
-              :ranking-total-requests="rankingTotalRequests"
-              :ranking-total-tokens="rankingTotalTokens"
-              :loading="chartsLoading"
-              :ranking-loading="rankingLoading"
-              :ranking-error="rankingError"
-              :start-date="startDate"
-              :end-date="endDate"
-              @ranking-click="goToUserUsage"
-            />
-            <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" />
+            <ConsumptionTrend :trend-data="displayTrendData" :loading="chartsLoading" />
+            <TokenUsageTrend :trend-data="displayTrendData" :loading="chartsLoading" />
           </div>
+
+          <ModelDistributionChart
+            :model-stats="modelStats"
+            :enable-ranking-view="true"
+            :ranking-items="rankingItems"
+            :ranking-total-actual-cost="rankingTotalActualCost"
+            :ranking-total-requests="rankingTotalRequests"
+            :ranking-total-tokens="rankingTotalTokens"
+            :loading="chartsLoading"
+            :ranking-loading="rankingLoading"
+            :ranking-error="rankingError"
+            :start-date="startDate"
+            :end-date="endDate"
+            @ranking-click="goToUserUsage"
+          />
 
           <!-- User Usage Trend (Full Width) -->
           <div class="card p-4">
@@ -362,8 +370,10 @@ import Icon from '@/components/icons/Icon.vue'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import Select from '@/components/common/Select.vue'
 import ModelDistributionChart from '@/components/charts/ModelDistributionChart.vue'
+import ConsumptionTrend from '@/components/charts/ConsumptionTrend.vue'
 import TokenUsageTrend from '@/components/charts/TokenUsageTrend.vue'
 import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
+import { fillDashboardTrendBuckets, formatDashboardTokens } from '@/utils/dashboardTrend'
 
 import {
   Chart as ChartJS,
@@ -397,6 +407,8 @@ const chartsLoading = ref(false)
 const userTrendLoading = ref(false)
 const rankingLoading = ref(false)
 const rankingError = ref(false)
+const chartsError = ref(false)
+const trendUpdatedAt = ref('')
 
 // Chart data
 const trendData = ref<TrendDataPoint[]>([])
@@ -416,20 +428,30 @@ const formatLocalDate = (date: Date): string => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-const getLast24HoursRangeDates = (): { start: string; end: string } => {
-  const end = new Date()
-  const start = new Date(end.getTime() - 24 * 60 * 60 * 1000)
+const getTodayRangeDates = (): { start: string; end: string } => {
+  const today = formatLocalDate(new Date())
   return {
-    start: formatLocalDate(start),
-    end: formatLocalDate(end)
+    start: today,
+    end: today
   }
 }
 
 // Date range
 const granularity = ref<'day' | 'hour'>('hour')
-const defaultRange = getLast24HoursRangeDates()
+const defaultRange = getTodayRangeDates()
 const startDate = ref(defaultRange.start)
 const endDate = ref(defaultRange.end)
+const loadedTrendRange = ref<{
+  start: string
+  end: string
+  granularity: 'day' | 'hour'
+}>({ ...defaultRange, granularity: 'hour' })
+const displayTrendData = computed(() => fillDashboardTrendBuckets(
+  trendData.value,
+  loadedTrendRange.value.start,
+  loadedTrendRange.value.end,
+  loadedTrendRange.value.granularity
+))
 
 // Granularity options for Select component
 const granularityOptions = computed(() => [
@@ -573,16 +595,10 @@ const userTrendChartData = computed(() => {
 
 // Format helpers
 const formatTokens = (value: number | undefined): string => {
-  if (value === undefined || value === null) return '0'
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(2)}B`
-  } else if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(2)}M`
-  } else if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(2)}K`
-  }
-  return value.toLocaleString()
+  return formatDashboardTokens(value)
 }
+
+const formatUpdatedAt = (value: string): string => new Date(value).toLocaleString()
 
 const formatNumber = (value: number | null | undefined): string => {
   return toFiniteNumber(value).toLocaleString()
@@ -659,8 +675,16 @@ const loadDashboardSnapshot = async (includeStats: boolean, refresh = false) => 
     }
     trendData.value = response.trend || []
     modelStats.value = response.models || []
+    loadedTrendRange.value = {
+      start: startDate.value,
+      end: endDate.value,
+      granularity: granularity.value
+    }
+    trendUpdatedAt.value = response.generated_at
+    chartsError.value = false
   } catch (error) {
     if (currentSeq !== chartLoadSeq) return
+    chartsError.value = true
     appStore.showError(t('admin.dashboard.failedToLoad'))
     console.error('Error loading dashboard snapshot:', error)
   } finally {

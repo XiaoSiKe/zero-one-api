@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-06-convergence",
-  "baseline_commit": "d1a8c7f4e5ff9606f096fcd72ed851f7831e7408",
+  "baseline_ref": "ui-approved-2026-09-08-v023dashboard5",
+  "baseline_commit": "a3a20781201a1f022ea332b4368f8e451dcbf555",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -66,7 +66,9 @@
     "visual-regression/tests/landing.public-data.spec.ts",
     "visual-regression/tests/dashboard-spend.behavior.spec.ts",
     "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-cards.png",
-    "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-cards.png"
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-cards.png",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-trends.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-trends.png"
   ],
   "compatibility_paths": [
     "frontend/src/api/",
@@ -113,7 +115,8 @@
         "visual-regression/tests/__screenshots__/chromium-mobile/console-reset-password.png",
         "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2/",
         "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v3/",
-        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v4/"
+        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v4/",
+        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v5/"
       ]
     },
     {
@@ -372,7 +375,9 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v9/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v7/",
         "frontend/vite.adapter-boundary.ts"
       ]
     },
@@ -421,8 +426,10 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v9/",
         "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/",
         "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/",
+        "deploy/zero-one/recovered-frontend/console/assets/online-image-v16/",
         "frontend/vite.adapter-boundary.ts"
       ]
     },
@@ -491,9 +498,12 @@
         "deploy/zero-one/recovered-frontend/console/overrides/declared-cost-v1/index-BBEtrNVx.js",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v9/",
         "visual-regression/tests/dashboard-spend.behavior.spec.ts",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-cards.png",
-        "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-cards.png"
+        "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-cards.png",
+        "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-trends.png",
+        "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-trends.png"
       ]
     }
   ],

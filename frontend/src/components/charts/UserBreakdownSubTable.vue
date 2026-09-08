@@ -64,10 +64,10 @@ const formatTokens = (value: number): string => {
 }
 
 const formatCost = (value: number | undefined | null): string => {
-  if (value == null) return '待确认'
-  if (value >= 1000) return (value / 1000).toFixed(2) + 'K'
-  if (value >= 1) return value.toFixed(2)
-  if (value >= 0.01) return value.toFixed(3)
-  return value.toFixed(4)
+  const amount = value ?? 0
+  if (amount >= 1000) return (amount / 1000).toFixed(2) + 'K'
+  if (amount >= 1) return amount.toFixed(2)
+  if (amount >= 0.01) return amount.toFixed(3)
+  return amount.toFixed(4)
 }
 </script>

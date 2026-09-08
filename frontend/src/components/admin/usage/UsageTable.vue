@@ -209,7 +209,7 @@
               </div>
             </div>
             <div v-if="showAccountBilling" class="mt-0.5 text-[11px] text-zo-alert-500 dark:text-zo-alert-400">
-              {{ accountBilled(row) === null ? '成本待确认' : 'A $' + accountBilled(row)?.toFixed(6) }}
+              A ${{ accountBilled(row).toFixed(6) }}
             </div>
           </div>
         </template>
@@ -476,12 +476,12 @@
           <template v-if="showAccountBilling">
             <div class="flex items-center justify-between gap-6 border-t border-gray-700 pt-1.5">
               <span class="text-gray-400">{{ t('usage.accountMultiplier') }}</span>
-              <span class="font-semibold text-blue-400">{{ tooltipData?.upstream_rate_multiplier == null ? '待确认' : formatMultiplier(tooltipData.upstream_rate_multiplier) + 'x' }}</span>
+              <span class="font-semibold text-blue-400">{{ formatMultiplier(tooltipData?.account_rate_multiplier ?? 1) }}x</span>
             </div>
             <div class="flex items-center justify-between gap-6">
               <span class="text-gray-400">{{ t('usage.accountBilled') }}</span>
               <span class="font-semibold text-zo-signal-400">
-                {{ accountBilled(tooltipData ?? {}) === null ? '成本待确认' : '$' + accountBilled(tooltipData ?? {})?.toFixed(6) }}
+                ${{ accountBilled(tooltipData ?? {}).toFixed(6) }}
               </span>
             </div>
           </template>
@@ -531,11 +531,11 @@ import {
   hasImageInputCost,
 } from '@/utils/imageUsage'
 
-/** Confirmed cost only; no local multiplier fallback for legacy invoices. */
-function accountBilled(row: { total_cost?: number | null; account_stats_cost?: number | null; upstream_rate_multiplier?: number | null }): number | null {
+/** Historical account cost uses the billing values captured on the usage row. */
+function accountBilled(row: { total_cost?: number | null; account_stats_cost?: number | null; account_rate_multiplier?: number | null }): number {
   const base = row.account_stats_cost ?? row.total_cost
-  const rate = row.upstream_rate_multiplier
-  if (base == null || rate == null || !Number.isFinite(base) || !Number.isFinite(rate)) return null
+  const rate = row.account_rate_multiplier ?? 1
+  if (base == null || !Number.isFinite(base) || !Number.isFinite(rate)) return 0
   return base * rate
 }
 

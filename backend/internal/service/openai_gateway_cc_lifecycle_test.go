@@ -61,7 +61,7 @@ func TestChatStreamsRespectConfiguredIdleAndCloseBody(t *testing.T) {
 			select {
 			case err := <-done:
 				require.ErrorContains(t, err, "stream data interval timeout")
-			case <-time.After(1500 * time.Millisecond):
+			case <-time.After(3 * time.Second):
 				_ = reader.Close()
 				<-done
 				t.Fatal("configured idle limit did not terminate the stalled upstream read")

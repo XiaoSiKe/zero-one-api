@@ -74,7 +74,6 @@
     <div v-else-if="displayEndpointStats.length > 0" class="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
       <div class="h-48 w-48 shrink-0">
         <Doughnut v-if="chartData" :data="chartData" :options="doughnutOptions" />
-        <span v-else class="text-sm text-gray-500">成本待确认</span>
       </div>
       <div class="max-h-48 w-full min-w-0 flex-1 overflow-auto">
         <table class="w-full text-xs">
@@ -242,13 +241,14 @@ const displayEndpointStats = computed(() => {
 const chartData = computed(() => {
   if (!displayEndpointStats.value?.length) return null
 
-  const values = displayEndpointStats.value.map(item => props.metric === 'actual_cost' ? item.actual_cost : item.total_tokens)
-  if (values.some(value => value == null)) return null
+  const values = displayEndpointStats.value.map(item =>
+    props.metric === 'actual_cost' ? (item.actual_cost ?? 0) : item.total_tokens
+  )
   return {
     labels: displayEndpointStats.value.map((item) => item.endpoint),
     datasets: [
       {
-        data: values.filter((value): value is number => value !== null),
+        data: values,
         backgroundColor: chartColors.slice(0, displayEndpointStats.value.length),
         borderWidth: 0
       }
@@ -295,14 +295,14 @@ const formatNumber = (value: number): string => {
 }
 
 const formatCost = (value: number | null | undefined): string => {
-  if (value == null) return '待确认'
-  if (value >= 1000) {
-    return (value / 1000).toFixed(2) + 'K'
-  } else if (value >= 1) {
-    return value.toFixed(2)
-  } else if (value >= 0.01) {
-    return value.toFixed(3)
+  const amount = value ?? 0
+  if (amount >= 1000) {
+    return (amount / 1000).toFixed(2) + 'K'
+  } else if (amount >= 1) {
+    return amount.toFixed(2)
+  } else if (amount >= 0.01) {
+    return amount.toFixed(3)
   }
-  return value.toFixed(4)
+  return amount.toFixed(4)
 }
 </script>

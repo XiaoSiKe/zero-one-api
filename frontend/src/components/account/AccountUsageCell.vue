@@ -1550,8 +1550,7 @@ const formatKeyTokens = computed(() => {
 })
 
 const formatKeyCost = computed(() => {
-  if (props.todayStats?.cost == null) return '待确认'
-  return props.todayStats.cost.toFixed(2)
+  return (props.todayStats?.cost ?? 0).toFixed(2)
 })
 
 const formatKeyUserCost = computed(() => {

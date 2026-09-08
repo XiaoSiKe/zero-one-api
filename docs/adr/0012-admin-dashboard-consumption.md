@@ -1,8 +1,8 @@
 # ADR 0012：管理员仪表盘只保留消费卡片
 
-状态：已接受。取代 [ADR 0010](0010-admin-billing-finance-and-date-panels.md) 的仪表盘财务展示、逐日读取和自动刷新部分；不改变其历史成本证据、接口兼容、日期浮层修复与不可变资源决策。
+状态：部分被 [ADR 0015](0015-v023-cost-dashboard-and-rollback-compatibility.md) 取代。消费卡片、不可变资源和日期浮层继续有效；用户主数字、成本口径及消费／Token 趋势由新记录负责。
 
-后续说明：[ADR 0013](0013-affected-verification-policy.md) 取代本记录的无条件完整视觉执行要求。`cn-provider-shell-v7` 和 `password-recovery-v3` 保持不可变；本轮用户口径文案使用新的 v8/v4 命名空间。
+后续说明：[ADR 0013](0013-affected-verification-policy.md) 取代本记录的无条件完整视觉执行要求。`cn-provider-shell-v7`、v8 和 `password-recovery-v3`、v4 保持不可变；v0.2.3 使用新的 v9/v5 命名空间。
 
 ## 决策
 
@@ -10,7 +10,7 @@
 
 两张消费卡读取原生 `DashboardStats` 的 `total_actual_cost` 和 `today_actual_cost`，含义均为客户实际扣费。金额使用美元符号、千位分隔和固定两位小数。它们复用仪表盘既有 `snapshot-v2` 请求、缓存、错误处理与手动刷新，不建立第二套 API 客户端、逐日查询、轮询、身份恢复或 Chart 生命周期。
 
-当前 Console 不展示“今日收益”“总收益”“每日收益”，也不展示独立的每日财务趋势、财务明细、财务重新读取按钮或财务更新时间。`dashboard-finance-v4` 不再由入口加载。
+当前 Console 不展示“今日收益”“总收益”“每日收益”或独立财务明细。ADR 0015 增加的实际消费与 Token 趋势复用既有 `snapshot-v2` 和日期控件，不恢复 `dashboard-finance-v4`。
 
 后端已经持久化的上游成本证据、数据库迁移、`total_account_cost` 和 `finance` 兼容字段继续保留。它们仍服务账单明细、导出、成本审计、旧客户端和回滚，不因删除当前收益 UI 而反向删除或回写数据。
 
@@ -22,7 +22,7 @@ ADR 0010 的日期浮层修复继续有效。日期节点保留在 Vue 父节点
 
 已发布的 `dashboard-finance-v1` 至 `dashboard-finance-v4`、`cn-provider-shell-v1` 至 `cn-provider-shell-v6` 及 `password-recovery-v1` 至 `password-recovery-v2` 保持原 URL 和字节内容，避免缓存引用、旧页面与回滚失效。
 
-当前恢复版使用 `cn-provider-shell-v7`。生成器从已审查的 v6 覆盖模块派生，只允许修改 `DashboardView`；其余声明成本模块和既有中英文词条逐字节保持一致。密码找回同步生成到 `password-recovery-v3`，复用 v7 的 Vue、Router、API 和 Store，避免同页加载第二份运行时。
+当前恢复版使用 `cn-provider-shell-v9`。生成器从已审查的 v8 派生，将原生成本、用户总数和两张趋势图收口在新命名空间；已发布的 v7/v8 保持原字节。CN Provider 和 Online Image 叶子适配器分别使用新的 `cn-provider-admin-v7` 与 `online-image-v16`，v6/v15 继续作为不可变历史资源。密码找回同步生成到 `password-recovery-v5`，复用 v9 的 Vue、Router、API 和 Store，避免同页加载第二份运行时。
 
 ## 保护与验收
 

@@ -63,7 +63,7 @@
       "impact": { "landing": true, "visual_scope": "full" }
     },
     {
-      "patterns": ["visual-regression/tests/dashboard-spend.behavior.spec.ts", "visual-regression/tests/__screenshots__/**/console-dashboard-spend-cards.png"],
+      "patterns": ["visual-regression/tests/dashboard-spend.behavior.spec.ts", "visual-regression/tests/__screenshots__/**/console-dashboard-spend-*.png"],
       "impact": { "visual_scope": "dashboard" }
     },
     {

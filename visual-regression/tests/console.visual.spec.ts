@@ -131,7 +131,7 @@ test.describe('Console public auth contracts', () => {
     page.on('pageerror', (error) => pageErrors.push(error.message))
     page.on('request', (request) => {
       const pathname = new URL(request.url()).pathname
-      if (pathname === '/assets/cn-provider-shell-v8/LoginView-BbpS8aW1.js') {
+      if (pathname === '/assets/cn-provider-shell-v9/LoginView-BbpS8aW1.js') {
         loginChunkRequestedBeforeSettingsRelease ||= !settingsReleased
       }
       if (pathname === '/assets/cn-provider-admin-v1/cn-provider-admin.js') {
@@ -199,11 +199,11 @@ test.describe('Console public auth contracts', () => {
 
     page.on('pageerror', (error) => pageErrors.push(error.message))
 
-    await page.route('**/assets/online-image-v15/online-image.js', async (route) => {
+    await page.route('**/assets/online-image-v16/online-image.js', async (route) => {
       await stalledOnlineAdapter
       await route.fallback().catch(() => {})
     })
-    await page.route('**/assets/cn-provider-admin-v6/cn-provider-admin.js', (route) =>
+    await page.route('**/assets/cn-provider-admin-v7/cn-provider-admin.js', (route) =>
       route.fulfill({ status: 503, contentType: 'text/plain', body: 'simulated outage' }),
     )
 
@@ -219,7 +219,7 @@ test.describe('Console public auth contracts', () => {
 
     page.on('request', (request) => {
       const pathname = new URL(request.url()).pathname
-      if (pathname === '/assets/cn-provider-shell-v8/RegisterView-CP_DoJ_R.js') {
+      if (pathname === '/assets/cn-provider-shell-v9/RegisterView-CP_DoJ_R.js') {
         registrationChunkRequestedBeforeSettingsRelease ||= !settingsReleased
       }
     })
@@ -3364,9 +3364,9 @@ test.describe('Console visual contracts', () => {
     const response = await page.goto('http://127.0.0.1:4173/login')
     expect(response?.status()).toBe(200)
     const html = await response!.text()
-    expect(html).toContain('/assets/cn-provider-admin-v6/cn-provider-admin.js')
-    expect(html).toContain('/assets/cn-provider-shell-v8/index-9xJBhx8B.js')
-    expect(html).toContain('/assets/online-image-v15/online-image.js')
+    expect(html).toContain('/assets/cn-provider-admin-v7/cn-provider-admin.js')
+    expect(html).toContain('/assets/cn-provider-shell-v9/index-9xJBhx8B.js')
+    expect(html).toContain('/assets/online-image-v16/online-image.js')
     expect(html).toContain('/assets/zero-one-settings-unified-save-v1.js')
     expect(html).toContain('/assets/zero-one-local-preview-guard-v2.js')
     expect(html).toContain('/assets/zero-one-custom-page-security-v1.js')

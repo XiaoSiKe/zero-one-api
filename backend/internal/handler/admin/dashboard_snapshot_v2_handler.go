@@ -221,7 +221,7 @@ func (h *DashboardHandler) buildSnapshotV2Response(
 		if err != nil {
 			return nil, errors.New("failed to get usage trend")
 		}
-		resp.Trend = trend
+		resp.Trend = fillDashboardTrendBuckets(trend, startTime, endTime, granularity, time.Now())
 	}
 
 	if includeModels {
@@ -283,6 +283,51 @@ func (h *DashboardHandler) buildSnapshotV2Response(
 	}
 
 	return resp, nil
+}
+
+func fillDashboardTrendBuckets(
+	points []usagestats.TrendDataPoint,
+	startTime, endTime time.Time,
+	granularity string,
+	now time.Time,
+) []usagestats.TrendDataPoint {
+	if !endTime.After(startTime) {
+		return []usagestats.TrendDataPoint{}
+	}
+	location := startTime.Location()
+	byDate := make(map[string]usagestats.TrendDataPoint, len(points))
+	for _, point := range points {
+		byDate[point.Date] = point
+	}
+
+	format := "2006-01-02"
+	step := func(value time.Time) time.Time { return value.AddDate(0, 0, 1) }
+	cursor := time.Date(startTime.Year(), startTime.Month(), startTime.Day(), 0, 0, 0, 0, location)
+	limit := endTime.In(location)
+	if granularity == "hour" {
+		format = "2006-01-02 15:00"
+		step = func(value time.Time) time.Time { return value.Add(time.Hour) }
+		if now.In(location).Before(limit) {
+			limit = now.In(location).Add(time.Nanosecond)
+		}
+	} else {
+		today := time.Date(now.In(location).Year(), now.In(location).Month(), now.In(location).Day(), 0, 0, 0, 0, location)
+		if today.Before(limit) {
+			limit = today.AddDate(0, 0, 1)
+		}
+	}
+
+	result := make([]usagestats.TrendDataPoint, 0)
+	for cursor.Before(limit) && cursor.Before(endTime.In(location)) {
+		key := cursor.Format(format)
+		point, ok := byDate[key]
+		if !ok {
+			point = usagestats.TrendDataPoint{Date: key}
+		}
+		result = append(result, point)
+		cursor = step(cursor)
+	}
+	return result
 }
 
 func parseDashboardSnapshotV2Filters(c *gin.Context) (*dashboardSnapshotV2Filters, error) {

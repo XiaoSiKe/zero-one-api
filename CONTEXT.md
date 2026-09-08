@@ -139,5 +139,5 @@ _Avoid_: Console 渠道监控、渠道明细、公开监控数据
 _Avoid_: 从注册按钮推断权限、隐藏后端错误即启用、先读取再无条件删除令牌
 
 **Admin Dashboard Consumption（管理员仪表盘消费）**：
-管理员仪表盘第一行用原 API Key 卡片显示总消费、原 Provider Account 卡片显示今日消费，均读取原生 `DashboardStats` 的客户实际扣费并固定显示美元两位小数。当前 Console 不提供今日收益、总收益、每日收益趋势、独立财务明细或第二套财务刷新。上游成本证据、账单接口兼容字段和历史不可变资源继续保留，但不拥有当前仪表盘展示。实现与保护边界见 [ADR 0012](docs/adr/0012-admin-dashboard-consumption.md)，历史成本与日期浮层缘由见 [ADR 0010](docs/adr/0010-admin-billing-finance-and-date-panels.md)。
-_Avoid_: 新增财务卡片区、在前端重算收益、额外逐日请求、用标准价代替实际扣费、删除旧账单证据或已发布资源。
+管理员仪表盘第一行显示总消费、今日消费、今日请求和用户总数；用户卡副文案显示今日新增。消费读取客户实际扣费，成本统一读取账单保存的 `account_stats_cost/total_cost` 与 `account_rate_multiplier`，不依赖上游声明倍率或显示待确认。现有日期与粒度控件共同驱动实际消费和总 Token 趋势，今日卡片始终表示应用时区中的今天。当前 Console 不提供收益指标、独立财务接口或第二套刷新。实现与保护边界见 [ADR 0015](docs/adr/0015-v023-cost-dashboard-and-rollback-compatibility.md)。
+_Avoid_: 把用户 ID 当总数、用当前账号设置重算旧账、从前端重算成本、恢复收益卡片、删除旧账单证据或已发布资源。

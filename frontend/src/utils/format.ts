@@ -206,6 +206,15 @@ export function parseDateTimeLocalInput(value: string): number | null {
   return Math.floor(date.getTime() / 1000)
 }
 
+/** Return the browser's current IANA timezone for date-time form guidance. */
+export function getBrowserTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  } catch {
+    return 'UTC'
+  }
+}
+
 /**
  * 格式化 OpenAI reasoning effort（用于使用记录展示）
  * @param effort 原始 effort（如 "low" / "medium" / "high" / "xhigh"）
@@ -371,9 +380,8 @@ export function toFiniteNumber(value: unknown): number {
   return Number.isFinite(numberValue) ? numberValue : 0
 }
 
-/** Compact Console cost display, including an explicit unconfirmed amount. */
+/** Compact Console cost display; missing legacy values are displayed as zero. */
 export function formatCompactCost(value: number | null | undefined): string {
-  if (value == null) return '待确认'
   const safeValue = toFiniteNumber(value)
   if (safeValue >= 1000) {
     return (safeValue / 1000).toFixed(2) + 'K'

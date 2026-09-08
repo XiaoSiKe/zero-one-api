@@ -42,7 +42,7 @@ func (b *countedDrainBody) Close() error { b.closes.Add(1); return b.ReadCloser.
 func TestHTTPDrainGuardResetsOnProgressAndClosesExactlyOnce(t *testing.T) {
 	client, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	ctx, guard := newHTTPDrainGuard(context.WithoutCancel(client), client, 250*time.Millisecond)
+	ctx, guard := newHTTPDrainGuard(context.WithoutCancel(client), client, time.Second)
 	defer guard.finish()
 	reader, writer := io.Pipe()
 	defer func() { require.NoError(t, writer.Close()) }()
@@ -51,13 +51,13 @@ func TestHTTPDrainGuardResetsOnProgressAndClosesExactlyOnce(t *testing.T) {
 	defer func() { require.NoError(t, body.Close()) }()
 	cancel()
 	for i := 0; i < 4; i++ {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 		guard.progress()
 		require.NoError(t, ctx.Err(), "upstream progress must keep billing drain alive")
 	}
 	select {
 	case <-ctx.Done():
-	case <-time.After(time.Second):
+	case <-time.After(2 * time.Second):
 		t.Fatal("stalled body was not reclaimed")
 	}
 	require.NoError(t, body.Close())

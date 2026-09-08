@@ -202,7 +202,7 @@ func (r *usageLogRepository) fillDashboardUsageStatsAggregated(ctx context.Conte
 			COALESCE(SUM(cache_read_tokens), 0) as total_cache_read_tokens,
 			COALESCE(SUM(total_cost), 0) as total_cost,
 			COALESCE(SUM(actual_cost), 0) as total_actual_cost,
-			zero_one_cost_sum(CASE WHEN upstream_cost_computed_at = computed_at THEN upstream_account_cost END) as total_account_cost,
+			COALESCE(SUM(account_cost), 0) as total_account_cost,
 			COALESCE(SUM(total_duration_ms), 0) as total_duration_ms
 		FROM usage_dashboard_daily
 	`
@@ -238,7 +238,7 @@ func (r *usageLogRepository) fillDashboardUsageStatsAggregated(ctx context.Conte
 			cache_read_tokens as today_cache_read_tokens,
 			total_cost as today_cost,
 			actual_cost as today_actual_cost,
-			CASE WHEN upstream_cost_computed_at = computed_at THEN upstream_account_cost END as today_account_cost,
+			account_cost as today_account_cost,
 			active_users as active_users
 		FROM usage_dashboard_daily
 		WHERE bucket_date = $1::date
@@ -292,7 +292,7 @@ func (r *usageLogRepository) fillDashboardUsageStatsFromUsageLogs(ctx context.Co
 				cache_read_tokens,
 				total_cost,
 				actual_cost,
-				COALESCE(account_stats_cost, total_cost) * upstream_rate_multiplier AS account_cost,
+				COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1) AS account_cost,
 				COALESCE(duration_ms, 0) AS duration_ms
 			FROM usage_logs
 			WHERE created_at >= LEAST($1::timestamptz, $3::timestamptz)

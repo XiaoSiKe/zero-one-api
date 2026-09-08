@@ -827,7 +827,7 @@ const adminNavItems = computed((): NavItem[] => {
     { path: '/model-plaza', label: t('nav.modelPlaza'), icon: DashboardIcon, featureFlag: flagModelPlazaInSidebar },
     { path: '/admin/ops', label: t('nav.ops'), icon: ChartIcon, featureFlag: flagOpsMonitoring },
     { path: '/admin/users', label: t('nav.users'), icon: UsersIcon, hideInSimpleMode: true },
-    { path: '/admin/groups', label: t('nav.groups'), icon: FolderIcon, hideInSimpleMode: true },
+    { path: '/admin/groups', label: t('nav.groups'), icon: FolderIcon },
     {
       path: '/admin/channels',
       label: t('nav.channelManagement'),

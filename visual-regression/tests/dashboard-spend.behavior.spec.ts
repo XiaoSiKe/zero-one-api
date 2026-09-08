@@ -68,6 +68,13 @@ test.describe('Dashboard consumption cards and repeatable date selection', () =>
     await expect(coreCards.nth(1)).toContainText('今日消费')
     await expect(coreCards.nth(1)).toContainText('$57.09')
     await expect(coreCards.nth(1)).toContainText('实际')
+    await expect(coreCards.nth(3)).toContainText('用户总数')
+    await expect(coreCards.nth(3)).toContainText('107')
+    await expect(coreCards.nth(3)).toContainText('今日新增用户: +1')
+    await expect(page.locator('.date-picker-trigger').first()).toContainText('今天')
+    await expect(page.getByRole('heading', { name: '消费趋势' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Token 使用趋势' })).toBeVisible()
+    await expect(page.getByText('待确认', { exact: false })).toHaveCount(0)
     await expect(page.getByText('今日收益', { exact: true })).toHaveCount(0)
     await expect(page.getByText('总收益', { exact: true })).toHaveCount(0)
     await expect(page.getByText('每日收益', { exact: true })).toHaveCount(0)
@@ -75,6 +82,8 @@ test.describe('Dashboard consumption cards and repeatable date selection', () =>
     expect(financeRequests).toEqual([])
 
     await expect(coreRow).toHaveScreenshot('console-dashboard-spend-cards.png')
+    const trendGrid = page.getByRole('heading', { name: '消费趋势' }).locator('..').locator('..')
+    await expect(trendGrid).toHaveScreenshot('console-dashboard-spend-trends.png')
   })
 
   test('the real date picker fits a 320px screen after reopening', async ({ page }) => {
