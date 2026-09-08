@@ -89,6 +89,11 @@ only through the authoritative
 same operations manual owns settings, backup, monitoring, recovery and smoke
 tests.
 
+If the operator explicitly declines recurring backups, the operations manual
+also defines a signed, off-host `one_time_release` recovery point. It remains a
+real restored backup for the duration of the release, but it does not install or
+require a daily automation.
+
 The static repository checks are available as
 `sh deploy/zero-one/test-routing.sh`, `sh deploy/zero-one/test-compose.sh`,
 `sh deploy/zero-one/test-direct-upstream.sh`, and

@@ -130,6 +130,41 @@ class ReleaseTests(unittest.TestCase):
                     }
                 )
 
+    def test_backup_record_accepts_scheduled_or_one_time_evidence(self):
+        self.assertTrue(
+            release.backup_record_ready(
+                {"sha256_verified": True, "restore_verified": True, "scheduled_backup_healthy": True}
+            )
+        )
+        self.assertTrue(
+            release.backup_record_ready(
+                {
+                    "sha256_verified": True,
+                    "restore_verified": True,
+                    "backup_mode": "one_time_release",
+                    "backup_ready": True,
+                    "scheduled_backup_healthy": False,
+                }
+            )
+        )
+        for record in (
+            {"sha256_verified": True, "restore_verified": True, "scheduled_backup_healthy": False},
+            {
+                "sha256_verified": True,
+                "restore_verified": True,
+                "backup_mode": "one_time_release",
+                "backup_ready": False,
+                "scheduled_backup_healthy": False,
+            },
+            {
+                "sha256_verified": True,
+                "restore_verified": True,
+                "backup_mode": "unknown",
+                "backup_ready": True,
+            },
+        ):
+            self.assertFalse(release.backup_record_ready(record))
+
 
 class BackupTests(unittest.TestCase):
     def receipt(self):
@@ -236,6 +271,40 @@ class BackupTests(unittest.TestCase):
                 backup.verify_signed_receipt(receipt_path, signature, public_key, 101, "c" * 40, "fixture")
             receipt_path.write_text(receipt_path.read_text() + " ")
             with self.assertRaises(subprocess.CalledProcessError):
+                backup.verify_signed_receipt(receipt_path, signature, public_key, 101, "a" * 40, "fixture")
+
+    def test_signed_one_time_receipt_requires_verified_maintenance_copy_and_release_hold(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            receipt = self.receipt()
+            receipt.update(
+                {
+                    "schema_version": 2,
+                    "storage_provider": "maintenance_host",
+                    "off_host_copy": {"status": "VERIFIED", "location": "maintenance_host"},
+                    "backup_policy": {
+                        "mode": "one_time_release",
+                        "status": "HELD",
+                        "cleanup_after": "release_complete",
+                    },
+                }
+            )
+            receipt.pop("folder_id")
+            receipt.pop("schedule")
+            for item in receipt["files"]:
+                item.pop("drive_file_id")
+                item.pop("private")
+                item.pop("can_download")
+                item["off_host"] = True
+            receipt_path, signature, public_key = self.sign(root, receipt)
+            result = backup.verify_signed_receipt(receipt_path, signature, public_key, 101, "a" * 40, "fixture")
+            self.assertEqual(result["backup_mode"], "one_time_release")
+            self.assertEqual(result["storage_provider"], "maintenance_host")
+            self.assertFalse(result["scheduled_backup_healthy"])
+
+            receipt["off_host_copy"]["status"] = "PENDING"
+            receipt_path, signature, public_key = self.sign(root, receipt)
+            with self.assertRaises(ValueError):
                 backup.verify_signed_receipt(receipt_path, signature, public_key, 101, "a" * 40, "fixture")
 
 
