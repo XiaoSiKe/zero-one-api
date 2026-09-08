@@ -695,6 +695,14 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 	todayStart := truncateToDayUTC(now)
 	baseStats, err := s.repo.GetDashboardStats(s.ctx)
 	s.Require().NoError(err, "GetDashboardStats base")
+	baseTotalAccountCost := 0.0
+	if baseStats.TotalAccountCost != nil {
+		baseTotalAccountCost = *baseStats.TotalAccountCost
+	}
+	baseTodayAccountCost := 0.0
+	if baseStats.TodayAccountCost != nil {
+		baseTodayAccountCost = *baseStats.TodayAccountCost
+	}
 
 	userToday := mustCreateUser(s.T(), s.client, &service.User{
 		Email:     "today@example.com",
@@ -796,11 +804,13 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 	s.Require().Equal(baseStats.TotalTokens+int64(51), stats.TotalTokens, "TotalTokens mismatch")
 	s.Require().Equal(baseStats.TotalCost+2.3, stats.TotalCost, "TotalCost mismatch")
 	s.Require().Equal(baseStats.TotalActualCost+2.0, stats.TotalActualCost, "TotalActualCost mismatch")
-	// No stored declaration: historical local rates cannot confirm cost.
-	s.Require().Nil(stats.TotalAccountCost)
+	// Missing retained declarations fall back to the account rate saved on each bill.
+	s.Require().NotNil(stats.TotalAccountCost)
+	s.Require().Equal(baseTotalAccountCost+2.3, *stats.TotalAccountCost)
 	s.Require().GreaterOrEqual(stats.TodayRequests, int64(1), "expected TodayRequests >= 1")
 	s.Require().GreaterOrEqual(stats.TodayCost, 0.0, "expected TodayCost >= 0")
-	s.Require().Nil(stats.TodayAccountCost)
+	s.Require().NotNil(stats.TodayAccountCost)
+	s.Require().Equal(baseTodayAccountCost+1.6, *stats.TodayAccountCost)
 
 	wantRpm, wantTpm, err := s.repo.getPerformanceStats(s.ctx, 0)
 	s.Require().NoError(err, "getPerformanceStats")
@@ -879,8 +889,9 @@ func (s *UsageLogRepoSuite) TestDashboardStatsWithRange_Fallback() {
 	s.Require().Equal(int64(45), stats.TotalTokens)
 	s.Require().Equal(1.5, stats.TotalCost)
 	s.Require().Equal(1.4, stats.TotalActualCost)
-	// Missing historical declaration remains unknown.
-	s.Require().Nil(stats.TotalAccountCost)
+	// Missing retained declarations remain reportable from historical account rates.
+	s.Require().NotNil(stats.TotalAccountCost)
+	s.Require().Equal(1.5, *stats.TotalAccountCost)
 	s.Require().InEpsilon(150.0, stats.AverageDurationMs, 0.0001)
 }
 
