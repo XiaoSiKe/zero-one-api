@@ -49,7 +49,11 @@ func (c *redeemRateLimitCacheStub) ReleaseRedeemLock(context.Context, string, st
 func TestPublicRedeemAllowsLastAttemptBeforeLimit(t *testing.T) {
 	cache := &redeemRateLimitCacheStub{count: redeemMaxFailedAttempts - 1}
 	redeemRepo := &redeemRejectRepo{code: RedeemCode{Code: "OTHER"}}
-	svc := &RedeemService{redeemRepo: redeemRepo, cache: cache}
+	svc := &RedeemService{
+		redeemRepo: redeemRepo,
+		cache:      cache,
+		entClient:  newPaymentConfigServiceTestClient(t),
+	}
 
 	result, err := svc.Redeem(context.Background(), 42, "MISSING")
 
@@ -102,6 +106,7 @@ func TestPublicRedeemCountsOnlyConfiguredDomainFailures(t *testing.T) {
 			svc := &RedeemService{
 				redeemRepo: &redeemRejectRepo{code: tt.code},
 				cache:      cache,
+				entClient:  newPaymentConfigServiceTestClient(t),
 			}
 
 			result, err := svc.Redeem(context.Background(), 42, tt.input)
@@ -123,6 +128,7 @@ func TestPublicRedeemRateLimitFailsOpenWhenCounterReadFails(t *testing.T) {
 	svc := &RedeemService{
 		redeemRepo: &redeemRejectRepo{code: RedeemCode{Code: "OTHER"}},
 		cache:      cache,
+		entClient:  newPaymentConfigServiceTestClient(t),
 	}
 
 	result, err := svc.Redeem(context.Background(), 42, "MISSING")
@@ -138,6 +144,7 @@ func TestPublicRedeemCounterWriteFailurePreservesDomainError(t *testing.T) {
 	svc := &RedeemService{
 		redeemRepo: &redeemRejectRepo{code: RedeemCode{Code: "OTHER"}},
 		cache:      cache,
+		entClient:  newPaymentConfigServiceTestClient(t),
 	}
 
 	result, err := svc.Redeem(context.Background(), 42, "MISSING")

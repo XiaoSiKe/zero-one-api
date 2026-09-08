@@ -783,7 +783,11 @@ func TestPublicRedeemStillEnforcesFailureLimit(t *testing.T) {
 func TestPublicRedeemStillIncrementsInvalidCodeFailures(t *testing.T) {
 	cache := &paymentFulfillmentRedeemCacheStub{}
 	redeemRepo := &redeemRejectRepo{code: RedeemCode{Code: "OTHER"}}
-	svc := &RedeemService{redeemRepo: redeemRepo, cache: cache}
+	svc := &RedeemService{
+		redeemRepo: redeemRepo,
+		cache:      cache,
+		entClient:  newPaymentConfigServiceTestClient(t),
+	}
 
 	result, err := svc.Redeem(context.Background(), 42, "MISSING")
 
@@ -806,7 +810,11 @@ func TestPaymentRedeemDoesNotIncrementFailureLimit(t *testing.T) {
 		Value:  10,
 		Status: StatusExpired,
 	}}
-	svc := &RedeemService{redeemRepo: redeemRepo, cache: cache}
+	svc := &RedeemService{
+		redeemRepo: redeemRepo,
+		cache:      cache,
+		entClient:  newPaymentConfigServiceTestClient(t),
+	}
 
 	result, err := svc.redeemForPaymentFulfillment(ctx, 42, redeemRepo.code.Code)
 
