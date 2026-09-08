@@ -2,7 +2,7 @@
 
 状态：部分被 [ADR 0015](0015-v023-cost-dashboard-and-rollback-compatibility.md) 取代。消费卡片、不可变资源和日期浮层继续有效；用户主数字、成本口径及消费／Token 趋势由新记录负责。
 
-后续说明：[ADR 0013](0013-affected-verification-policy.md) 取代本记录的无条件完整视觉执行要求。`cn-provider-shell-v7` 和 `password-recovery-v3` 保持不可变；本轮用户口径文案使用新的 v8/v4 命名空间。
+后续说明：[ADR 0013](0013-affected-verification-policy.md) 取代本记录的无条件完整视觉执行要求。`cn-provider-shell-v7`、v8 和 `password-recovery-v3`、v4 保持不可变；v0.2.3 使用新的 v9/v5 命名空间。
 
 ## 决策
 
@@ -22,7 +22,7 @@ ADR 0010 的日期浮层修复继续有效。日期节点保留在 Vue 父节点
 
 已发布的 `dashboard-finance-v1` 至 `dashboard-finance-v4`、`cn-provider-shell-v1` 至 `cn-provider-shell-v6` 及 `password-recovery-v1` 至 `password-recovery-v2` 保持原 URL 和字节内容，避免缓存引用、旧页面与回滚失效。
 
-当前恢复版使用 `cn-provider-shell-v7`。生成器从已审查的 v6 覆盖模块派生，只允许修改 `DashboardView`；其余声明成本模块和既有中英文词条逐字节保持一致。密码找回同步生成到 `password-recovery-v3`，复用 v7 的 Vue、Router、API 和 Store，避免同页加载第二份运行时。
+当前恢复版使用 `cn-provider-shell-v9`。生成器从已审查的 v8 派生，将原生成本、用户总数和两张趋势图收口在新命名空间；已发布的 v7/v8 保持原字节。密码找回同步生成到 `password-recovery-v5`，复用 v9 的 Vue、Router、API 和 Store，避免同页加载第二份运行时。
 
 ## 保护与验收
 

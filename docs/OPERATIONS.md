@@ -597,7 +597,11 @@ systemd 临时 timer，20 分钟后调用同一脚本的 `watchdog RECOVERY_DIR`
 
 回滚使用**本次发布前恢复点**的源码、兼容双镜像及环境副本，保持业务密钥、挂载和数据库不变。恢复后重做路由、登录、API 和核心账单检查。已接受的新写入不得被旧 dump 覆盖；数据库恢复只用于已确认数据库损坏的独立恢复流程。
 
-成本声明迁移是增量：保留旧汇总列及约束，新版本使用独立上游成本列和匹配的计算时间。旧镜像重写汇总后，新版本会将陈旧上游成本视为待确认。完整口径见 [ADR 0010](adr/0010-admin-billing-finance-and-date-panels.md)。
+历史成本兼容字段保持增量且不删列。v0.2.3 及后续版本统一按
+`COALESCE(account_stats_cost, total_cost) × COALESCE(account_rate_multiplier, 1)`
+显示账号成本，客户实际消费继续使用 `actual_cost`。回滚到旧镜像时允许其读写保留字段，
+切回新镜像后不会以当前账号配置重算旧账。完整口径见
+[ADR 0015](adr/0015-v023-cost-dashboard-and-rollback-compatibility.md)。
 
 ### Safe Edge switch
 
