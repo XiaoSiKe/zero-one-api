@@ -15,6 +15,7 @@ func TestAdminFulfillmentBypassesLimitAndKeepsRedeemAffiliate(t *testing.T) {
 	client := newPaymentConfigServiceTestClient(t)
 	userID := int64(42)
 	inviterID := int64(9001)
+	boundAt := time.Now().Add(-30 * time.Minute)
 	code := &RedeemCode{
 		ID: 102, Code: "ADMIN-SUCCESS", Type: RedeemTypeBalance, Value: 20, Status: StatusUnused,
 	}
@@ -28,7 +29,7 @@ func TestAdminFulfillmentBypassesLimitAndKeepsRedeemAffiliate(t *testing.T) {
 	cache := &paymentFulfillmentRedeemCacheStub{count: redeemMaxFailedAttempts}
 	affiliateRepo := &paymentFulfillmentAffiliateRepoStub{
 		inviteeSummary: &AffiliateSummary{
-			UserID: userID, AffCode: "INVITEE", InviterID: &inviterID, CreatedAt: time.Now().Add(-time.Hour),
+			UserID: userID, AffCode: "INVITEE", InviterID: &inviterID, InviterBoundAt: &boundAt, CreatedAt: time.Now().Add(-time.Hour),
 		},
 		inviterSummary: &AffiliateSummary{
 			UserID: inviterID, AffCode: "INVITER", CreatedAt: time.Now().Add(-2 * time.Hour),
