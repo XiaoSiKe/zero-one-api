@@ -22,7 +22,7 @@ ADR 0010 的日期浮层修复继续有效。日期节点保留在 Vue 父节点
 
 已发布的 `dashboard-finance-v1` 至 `dashboard-finance-v4`、`cn-provider-shell-v1` 至 `cn-provider-shell-v6` 及 `password-recovery-v1` 至 `password-recovery-v2` 保持原 URL 和字节内容，避免缓存引用、旧页面与回滚失效。
 
-当前恢复版使用 `cn-provider-shell-v9`。生成器从已审查的 v8 派生，将原生成本、用户总数和两张趋势图收口在新命名空间；已发布的 v7/v8 保持原字节。密码找回同步生成到 `password-recovery-v5`，复用 v9 的 Vue、Router、API 和 Store，避免同页加载第二份运行时。
+当前恢复版使用 `cn-provider-shell-v9`。生成器从已审查的 v8 派生，将原生成本、用户总数和两张趋势图收口在新命名空间；已发布的 v7/v8 保持原字节。CN Provider 和 Online Image 叶子适配器分别使用新的 `cn-provider-admin-v7` 与 `online-image-v16`，v6/v15 继续作为不可变历史资源。密码找回同步生成到 `password-recovery-v5`，复用 v9 的 Vue、Router、API 和 Store，避免同页加载第二份运行时。
 
 ## 保护与验收
 
