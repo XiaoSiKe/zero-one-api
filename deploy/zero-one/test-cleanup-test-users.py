@@ -17,6 +17,8 @@ class CleanupTestUsersTest(unittest.TestCase):
         self.assertNotIn("DELETE FROM users", sql)
         self.assertIn("u.id IN (300,302)", sql)
         self.assertIn(MODULE.TARGET_NOTES, sql)
+        self.assertLess(sql.index("CREATE TEMP TABLE"), sql.index("BEGIN READ ONLY"))
+        self.assertIn("ON COMMIT PRESERVE ROWS", sql)
 
     def test_execute_is_transactional_and_checks_all_references(self):
         sql = MODULE.deletion_sql()

@@ -20,12 +20,12 @@ TARGET_NOTES = "Temporary zero-balance login verification for 0e52cd9a5716414a7e
 def inspection_sql() -> str:
     ids = ",".join(str(value) for value in TARGET_IDS)
     return f"""
-BEGIN READ ONLY;
 CREATE TEMP TABLE cleanup_candidate_refs (
     user_id bigint NOT NULL,
     source text NOT NULL,
     matches bigint NOT NULL
-) ON COMMIT DROP;
+) ON COMMIT PRESERVE ROWS;
+BEGIN READ ONLY;
 DO $$
 DECLARE ref record; candidate bigint; hits bigint;
 BEGIN
