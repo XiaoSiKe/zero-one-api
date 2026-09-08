@@ -33,7 +33,7 @@ const messages: Record<string, string> = {
   'usage.serviceTierFlex': 'Flex',
   'usage.serviceTierStandard': 'Standard',
   'usage.rate': 'Rate',
-  'usage.accountMultiplier': 'Upstream declared rate',
+  'usage.accountMultiplier': 'Account rate',
   'usage.original': 'Original',
   'usage.userBilled': 'User billed',
   'usage.accountBilled': 'Account billed',
@@ -137,13 +137,13 @@ describe('admin UsageTable tooltip', () => {
   })
 
   it.each([
-    [undefined, '成本待确认'],
-    [null, '成本待确认'],
+    [undefined, 'A $100.000000'],
+    [null, 'A $100.000000'],
     [0, 'A $0.000000'],
     [0.22, 'A $22.000000'],
-  ])('uses the saved declaration %s rather than local 1x for cost', (rate, expected) => {
+  ])('uses the saved account multiplier %s for historical cost', (rate, expected) => {
     const wrapper = mount(UsageTable, {
-      props: { data: [{ ...baseImageRow, billing_mode: 'token', total_cost: 100, account_rate_multiplier: 1, upstream_rate_multiplier: rate }], loading: false, columns: [] },
+      props: { data: [{ ...baseImageRow, billing_mode: 'token', total_cost: 100, account_rate_multiplier: rate }], loading: false, columns: [] },
       global: { stubs: { DataTable: DataTableStub, EmptyState: true, Icon: true, Teleport: true } },
     })
     expect(wrapper.text()).toContain(expected)
@@ -184,10 +184,9 @@ describe('admin UsageTable tooltip', () => {
   it('shows service tier and billing breakdown in cost tooltip', async () => {
     const row = {
       request_id: 'req-admin-1',
-      upstream_rate_multiplier: 0.22,
       actual_cost: 0.092883,
       total_cost: 0.092883,
-      account_rate_multiplier: 1,
+      account_rate_multiplier: 0.22,
       rate_multiplier: 1,
       service_tier: 'priority',
       input_cost: 0.020285,
@@ -223,12 +222,12 @@ describe('admin UsageTable tooltip', () => {
     expect(text).toContain('Fast')
     expect(text).toContain('Rate')
     expect(text).toContain('1.00x')
-    expect(text).toContain('Upstream declared rate')
+    expect(text).toContain('Account rate')
     expect(text).toContain('0.22x')
     expect(text).toContain('0.020434')
     expect(text).toContain('User billed')
     expect(text).toContain('Account billed')
-    expect(text).toContain('$0.092883')
+    expect(text).toContain('$0.020434')
     expect(text).toContain('$5.0000 / 1M tokens')
     expect(text).toContain('$30.0000 / 1M tokens')
     expect(text).toContain('$0.069568')

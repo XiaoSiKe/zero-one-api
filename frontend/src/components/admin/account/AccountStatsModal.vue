@@ -666,15 +666,15 @@ const handleClose = () => {
 
 // Format helpers
 const formatCost = (value: number | null | undefined): string => {
-  if (value == null) return '待确认'
-  if (value >= 1000) {
-    return (value / 1000).toFixed(2) + 'K'
-  } else if (value >= 1) {
-    return value.toFixed(2)
-  } else if (value >= 0.01) {
-    return value.toFixed(3)
+  const amount = value ?? 0
+  if (amount >= 1000) {
+    return (amount / 1000).toFixed(2) + 'K'
+  } else if (amount >= 1) {
+    return amount.toFixed(2)
+  } else if (amount >= 0.01) {
+    return amount.toFixed(3)
   }
-  return value.toFixed(4)
+  return amount.toFixed(4)
 }
 
 const formatNumber = (value: number): string => {

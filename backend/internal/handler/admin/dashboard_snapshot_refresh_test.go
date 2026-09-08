@@ -26,14 +26,18 @@ type dashboardRefreshRepo struct {
 }
 
 func (r *dashboardRefreshRepo) GetUsageTrendWithUsageFilters(
-	context.Context,
-	time.Time,
-	time.Time,
-	string,
-	usagestats.UsageLogFilters,
+	_ context.Context,
+	start time.Time,
+	_ time.Time,
+	granularity string,
+	_ usagestats.UsageLogFilters,
 ) ([]usagestats.TrendDataPoint, error) {
 	r.trendCalls.Add(1)
-	return []usagestats.TrendDataPoint{{Requests: r.trendRequests.Load()}}, nil
+	format := "2006-01-02"
+	if granularity == "hour" {
+		format = "2006-01-02 15:00"
+	}
+	return []usagestats.TrendDataPoint{{Date: start.Format(format), Requests: r.trendRequests.Load()}}, nil
 }
 
 func (r *dashboardRefreshRepo) GetDashboardStats(context.Context) (*usagestats.DashboardStats, error) {
@@ -147,8 +151,15 @@ func TestDashboardSnapshotV2RefreshBypassesNestedQueryCache(t *testing.T) {
 			} `json:"data"`
 		}
 		require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &body))
-		require.Len(t, body.Data.Trend, 1)
-		return body.Data.Trend[0].Requests
+		require.NotEmpty(t, body.Data.Trend)
+		var nonzero []int64
+		for _, point := range body.Data.Trend {
+			if point.Requests != 0 {
+				nonzero = append(nonzero, point.Requests)
+			}
+		}
+		require.Len(t, nonzero, 1, "the repository point must survive zero-bucket filling")
+		return nonzero[0]
 	}
 
 	require.Equal(t, int64(10), request(false))

@@ -287,7 +287,7 @@ export default {
     accountBilled: 'Account billed',
     resetNow: 'Now',
     resetPending: 'Pending refresh',
-    accountMultiplier: 'Upstream declared rate',
+    accountMultiplier: 'Account rate',
     avgDuration: 'Avg Duration',
     inSelectedRange: 'in selected range',
     perRequest: 'per request',

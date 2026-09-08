@@ -56,7 +56,7 @@ func TestAPIKeyAuthSnapshotGroupPricingRoundTrip(t *testing.T) {
 
 	snapshot := svc.snapshotFromAPIKey(context.Background(), apiKey)
 	require.NotNil(t, snapshot)
-	require.Equal(t, 23, snapshot.Version, "v23 preserves pricing isolation and adds the Codex manifest")
+	require.Equal(t, 24, snapshot.Version, "v24 preserves pricing isolation and adds the model allowlist")
 	require.NotNil(t, snapshot.Group)
 	require.True(t, snapshot.Group.LongContextPricingEnabled)
 	require.Len(t, snapshot.Group.ModelPricing, 1)

@@ -1,13 +1,13 @@
 {
   "schema_version": 4,
   "repository": "Wei-Shaw/sub2api",
-  "release": "v0.2.1",
-  "commit": "578785ee7fb35030b094b69624efe25670a36f5f",
+  "release": "v0.2.3",
+  "commit": "8fa67d477d6651a744754392a8982ea589c26ae6",
   "upstream_sync": {
-    "previous_release": "v0.2.0",
-    "previous_commit": "aa236488351eb71e120fc2b6fb32e36b0374c918",
-    "product_commit": "5809ad69d35aa5d8bd9ba9415f49ebe4b8f90a4b",
-    "merge_commit": "0e5e2f10b9d252197810a6d7352ba1b0d7579225"
+    "previous_release": "v0.2.1",
+    "previous_commit": "578785ee7fb35030b094b69624efe25670a36f5f",
+    "product_commit": "e9c6d86dc25bdd269c12965227263e19aac8bdb3",
+    "merge_commit": "25ec6609100ec10d4724ae4a7fe1d20614be4c4b"
   },
   "approved_backports": [],
   "preserve_on_upstream_sync": [
@@ -64,6 +64,7 @@
     "backend/internal/repository/user_repo.go",
     "backend/internal/repository/user_repo_sort_integration_test.go",
     "backend/internal/server/routes/admin.go",
+    "backend/internal/server/routes/gateway_model_allowlist_test.go",
     "backend/internal/server/routes/affiliate_routes_test.go",
     "backend/internal/service/affiliate_service.go",
     "backend/internal/service/affiliate_service_test.go",
@@ -93,6 +94,8 @@
     "deploy/zero-one/test-safe-edge-switch.sh",
     "deploy/zero-one/test-live-routing.sh",
     "deploy/zero-one/test-routing.sh",
+    "deploy/zero-one/cleanup-test-users.py",
+    "deploy/zero-one/test-cleanup-test-users.py",
     "deploy/zero-one/verify-online-image-console.mjs",
     "deploy/zero-one/recovered-frontend/console/assets/online-image-v12/index-BNE7pDGz.js",
     "deploy/zero-one/recovered-frontend/console/assets/online-image-v12/index-C6v02mW8.js",
@@ -169,6 +172,8 @@
     "frontend/src/utils/embedded-url.ts",
     "frontend/src/utils/image-tutorial.ts",
     "frontend/src/utils/online-recharge.ts",
+    "frontend/src/utils/dashboardTrend.ts",
+    "frontend/src/utils/__tests__/dashboardTrend.spec.ts",
     "frontend/src/router/index.ts",
     "frontend/src/router/meta.d.ts",
     "frontend/src/features/prompt-audit/PromptAuditView.vue",
@@ -178,6 +183,7 @@
     "frontend/src/views/admin/ChannelMonitorView.vue",
     "frontend/src/views/admin/ChannelsView.vue",
     "frontend/src/views/admin/DashboardView.vue",
+    "frontend/src/components/charts/ConsumptionTrend.vue",
     "frontend/src/views/admin/GroupsView.vue",
     "frontend/src/views/admin/ops/OpsDashboard.vue",
     "frontend/src/views/admin/PromoCodesView.vue",
@@ -578,6 +584,7 @@
     "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v1/dashboard-finance.css",
     "docs/adr/0010-admin-billing-finance-and-date-panels.md",
     "docs/adr/0012-admin-dashboard-consumption.md",
+    "docs/adr/0015-v023-cost-dashboard-and-rollback-compatibility.md",
     "frontend/src/views/admin/__tests__/DashboardView.spec.ts",
     "visual-regression/tests/dashboard-spend.behavior.spec.ts",
     "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-cards.png",
@@ -618,6 +625,11 @@
     "backend/internal/repository/usage_log_repo_stats.go",
     "backend/internal/repository/usage_log_repo_stats_integration_test.go",
     "backend/internal/repository/usage_log_repo_trend.go",
+    "backend/internal/handler/admin/group_handler_model_allowlist_compat_test.go",
+    "backend/internal/repository/group_model_allowlist_compat_migration_integration_test.go",
+    "backend/internal/repository/group_model_allowlist_repair_migration_integration_test.go",
+    "backend/migrations/237_group_model_allowlist_compat.sql",
+    "backend/migrations/group_model_allowlist_compat_migration_test.go",
     "backend/internal/repository/usage_log_session_id_unit_test.go",
     "backend/internal/service/account_usage_service.go",
     "backend/internal/service/gateway_usage_billing.go",
@@ -704,6 +716,8 @@
     "deploy/zero-one/test-migrate-only.mjs",
     "docs/upgrades/v0.2.1.md",
     "docs/upgrades/v0.2.1-change-map.json",
+    "docs/upgrades/v0.2.3.md",
+    "docs/upgrades/v0.2.3-change-map.json",
     "backend/internal/repository/usage_log_repo_insert_shape_unit_test.go",
     "backend/internal/config/config.go",
     "backend/internal/config/migration.go",
@@ -714,6 +728,7 @@
     ".github/scripts/run-affected-tests.mjs",
     ".github/scripts/run-affected-tests.test.mjs",
     "backend/internal/handler/admin/dashboard_snapshot_v2_handler.go",
+    "backend/internal/handler/admin/dashboard_trend_buckets_test.go",
     "backend/internal/handler/admin/dashboard_snapshot_refresh_test.go",
     "backend/internal/handler/admin/channel_monitor_handler.go",
     "backend/internal/handler/admin/snapshot_cache.go",
@@ -840,7 +855,7 @@
   "legacy_hotfixes": [
     {
       "name": "approved-v0.1.179-production-correctness-and-billing-compatibility",
-      "valid_for_release": "v0.2.1",
+      "valid_for_release": "v0.2.3",
       "exit_condition": "Remove each path when the first stable upstream release containing its equivalent production-correctness fix becomes the baseline; remove the entire block when no listed path remains.",
       "paths": [
         "backend/internal/handler/admin/admin_basic_handlers_test.go",
@@ -870,7 +885,7 @@
     },
     {
       "name": "approved-v0.1.179-version-metadata-alignment",
-      "valid_for_release": "v0.2.1",
+      "valid_for_release": "v0.2.3",
       "exit_condition": "Remove this metadata alignment when the first stable upstream release makes backend/cmd/server/VERSION match the baseline release.",
       "paths": [
         "backend/cmd/server/VERSION"
@@ -878,7 +893,7 @@
     },
     {
       "name": "approved-v0.1.179-race-safety",
-      "valid_for_release": "v0.2.1",
+      "valid_for_release": "v0.2.3",
       "exit_condition": "Remove each path when the first stable upstream release contains the equivalent race-safe runtime cache and asynchronous test fixture handling.",
       "paths": [
         "backend/internal/service/content_moderation.go",
@@ -892,19 +907,8 @@
       ]
     },
     {
-      "name": "approved-v0.1.179-go-format-normalization",
-      "valid_for_release": "v0.2.1",
-      "exit_condition": "Remove each path when the first stable upstream release contains the same Go 1.26 formatting normalization.",
-      "paths": [
-        "backend/internal/handler/auth_current_user_test.go",
-        "backend/internal/service/billing_cache_service_user_platform_quota_test.go",
-        "backend/internal/service/grok_oauth_service_test.go",
-        "backend/internal/service/sticky_session_test.go"
-      ]
-    },
-    {
       "name": "approved-v0.1.179-remove-unconditional-sticky-debug-logs",
-      "valid_for_release": "v0.2.1",
+      "valid_for_release": "v0.2.3",
       "exit_condition": "Remove this hotfix when the first stable upstream release removes or explicitly gates the equivalent per-request sticky-session debug logs.",
       "paths": [
         "backend/internal/service/gateway_scheduling.go"
@@ -912,7 +916,7 @@
     },
     {
       "name": "approved-v0.1.181-grok-mapping-test-isolation",
-      "valid_for_release": "v0.2.1",
+      "valid_for_release": "v0.2.3",
       "exit_condition": "Remove this hotfix when the first stable upstream release contains equivalent runtime model-mapping isolation in the canonical scheduling test.",
       "paths": [
         "backend/internal/service/openai_model_mapping_test.go"
@@ -920,7 +924,7 @@
     },
     {
       "name": "approved-v0.1.182-go-dependency-security-updates",
-      "valid_for_release": "v0.2.1",
+      "valid_for_release": "v0.2.3",
       "exit_condition": "Remove this hotfix when the first stable upstream release uses golang.org/x/image v0.45.0 or later, Testcontainers v0.44.0 or later, github.com/moby/go-archive v0.3.0 or later, and no longer depends on github.com/docker/docker.",
       "paths": [
         "backend/go.mod",
@@ -1000,6 +1004,7 @@
         "frontend/src/utils/image-tutorial.ts",
         "frontend/src/utils/billingMode.ts",
         "frontend/src/utils/codexCatalogConfig.ts",
+        "frontend/src/utils/dashboardTrend.ts",
         "frontend/src/utils/errorBadges.ts",
         "frontend/src/utils/format.ts",
         "frontend/src/utils/latencyHealth.ts",
@@ -1012,6 +1017,7 @@
         "frontend/src/utils/__tests__/branding.spec.ts",
         "frontend/src/utils/__tests__/ccswitchImport.spec.ts",
         "frontend/src/utils/__tests__/codexCatalogConfig.spec.ts",
+        "frontend/src/utils/__tests__/dashboardTrend.spec.ts",
         "frontend/src/utils/__tests__/formatDateTimeLocalInput.spec.ts",
         "frontend/src/utils/__tests__/formatReasoningEffort.spec.ts",
         "frontend/src/utils/__tests__/peak-rate.spec.ts",
@@ -1026,7 +1032,7 @@
         "frontend/src/views/admin/ChannelsView.vue",
         "frontend/src/views/admin/DashboardView.vue",
         "frontend/src/views/admin/GroupsView.vue",
-        "frontend/src/views/admin/__tests__/groupsModelsListLayout.spec.ts",
+        "frontend/src/views/admin/__tests__/groupModelAllowlistLayout.spec.ts",
         "frontend/src/views/admin/__tests__/groupsOpenAIFast.spec.ts",
         "frontend/src/views/admin/__tests__/groupsReasoningEffort.spec.ts",
         "frontend/src/views/admin/groupsOpenAIFast.ts",
@@ -1044,6 +1050,7 @@
         "frontend/src/views/admin/__tests__/AccountsView.priorityColumn.spec.ts",
         "frontend/src/views/admin/__tests__/ChannelMonitorView.checkModeBadge.spec.ts",
         "frontend/src/views/admin/__tests__/GroupsView.compositePlatforms.spec.ts",
+        "frontend/src/views/admin/__tests__/GroupsView.codexManifest.spec.ts",
         "frontend/src/views/admin/__tests__/GroupsView.duplicate.spec.ts",
         "frontend/src/views/admin/__tests__/MonitorFormDialog.accountSelector.spec.ts",
         "frontend/src/views/admin/__tests__/PluginsView.spec.ts",
@@ -1187,6 +1194,7 @@
         "backend/internal/server/routes/community_qr_route_test.go",
         "backend/internal/server/routes/public_announcement_test.go",
         "backend/internal/server/routes/admin.go",
+        "backend/internal/server/routes/gateway_model_allowlist_test.go",
         "backend/internal/server/routes/redeem_security_test.go",
         "backend/internal/service/announcement.go",
         "backend/internal/service/announcement_service.go",
@@ -1409,6 +1417,7 @@
         "backend/internal/handler/usage_handler_request_type_test.go",
         "backend/internal/handler/admin/account_upstream_billing_probe_test.go",
         "backend/internal/handler/admin/usage_handler_request_type_test.go",
+        "backend/internal/handler/admin/group_handler_model_allowlist_compat_test.go",
         "backend/internal/pkg/usagestats/account_stats.go",
         "backend/internal/pkg/usagestats/usage_log_types.go",
         "backend/internal/repository/dashboard_aggregation_repo.go",
@@ -1421,6 +1430,8 @@
         "backend/internal/repository/usage_log_repo_stats.go",
         "backend/internal/repository/usage_log_repo_stats_integration_test.go",
         "backend/internal/repository/usage_log_repo_trend.go",
+        "backend/internal/repository/group_model_allowlist_compat_migration_integration_test.go",
+        "backend/internal/repository/group_model_allowlist_repair_migration_integration_test.go",
         "backend/internal/repository/usage_log_session_id_unit_test.go",
         "backend/internal/service/account_usage_service.go",
         "backend/internal/service/gateway_usage_billing.go",
@@ -1435,6 +1446,8 @@
         "backend/internal/service/upstream_usage_cost_record_test.go",
         "backend/internal/service/upstream_usage_cost_test.go",
         "backend/migrations/234_upstream_declared_usage_cost.sql",
+        "backend/migrations/237_group_model_allowlist_compat.sql",
+        "backend/migrations/group_model_allowlist_compat_migration_test.go",
         "backend/internal/handler/dto/mappers_usage_test.go",
         "backend/internal/service/account_stats_pricing.go",
         "backend/cmd/server/main.go",
@@ -1449,6 +1462,7 @@
         "backend/internal/config/migration.go",
         "backend/internal/config/migration_test.go",
         "backend/internal/handler/admin/dashboard_snapshot_v2_handler.go",
+        "backend/internal/handler/admin/dashboard_trend_buckets_test.go",
         "backend/internal/handler/admin/dashboard_snapshot_refresh_test.go",
         "backend/internal/handler/admin/channel_monitor_handler.go",
         "backend/internal/handler/admin/snapshot_cache.go",
@@ -1531,10 +1545,13 @@
         "openspec/changes/add-openai-compatible-prompt-audit/tasks.md",
         "docs/adr/0011-online-image-result-errors.md",
         "docs/adr/0012-admin-dashboard-consumption.md",
+        "docs/adr/0015-v023-cost-dashboard-and-rollback-compatibility.md",
         "docs/adr/0013-affected-verification-policy.md",
         "docs/data-and-connectivity-audit-2026-09-06.md",
         "docs/upgrades/v0.2.1.md",
         "docs/upgrades/v0.2.1-change-map.json",
+        "docs/upgrades/v0.2.3.md",
+        "docs/upgrades/v0.2.3-change-map.json",
         "skills/sub2api-admin/references/admin-cli.md",
         "docs/adr/0014-retired-data-management-compatibility.md"
       ]

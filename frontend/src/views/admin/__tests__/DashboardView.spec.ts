@@ -96,6 +96,7 @@ describe('admin DashboardView', () => {
     getUserSpendingRanking.mockReset()
 
     getSnapshotV2.mockResolvedValue({
+      generated_at: '2026-09-08T03:00:00Z',
       stats: createDashboardStats(),
       trend: [],
       models: []
@@ -116,7 +117,7 @@ describe('admin DashboardView', () => {
     })
   })
 
-  it('uses last 24 hours as default dashboard range', async () => {
+  it('uses today as the default hourly dashboard range', async () => {
     mount(DashboardView, {
       global: {
         stubs: {
@@ -126,6 +127,7 @@ describe('admin DashboardView', () => {
           DateRangePicker: true,
           Select: true,
           ModelDistributionChart: true,
+          ConsumptionTrend: true,
           TokenUsageTrend: true,
           Line: true
         }
@@ -135,11 +137,9 @@ describe('admin DashboardView', () => {
     await flushPromises()
 
     const now = new Date()
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-
     expect(getSnapshotV2).toHaveBeenCalledTimes(1)
     expect(getSnapshotV2).toHaveBeenCalledWith(expect.objectContaining({
-      start_date: formatLocalDate(yesterday),
+      start_date: formatLocalDate(now),
       end_date: formatLocalDate(now),
       granularity: 'hour'
     }))
@@ -147,6 +147,7 @@ describe('admin DashboardView', () => {
 
   it('uses the existing API Key and Provider Account cards for total and today consumption', async () => {
     getSnapshotV2.mockResolvedValue({
+      generated_at: '2026-09-08T03:00:00Z',
       stats: createDashboardStats({
         total_api_keys: 89,
         total_accounts: 7,
@@ -166,6 +167,7 @@ describe('admin DashboardView', () => {
           DateRangePicker: true,
           Select: true,
           ModelDistributionChart: true,
+          ConsumptionTrend: true,
           TokenUsageTrend: true,
           Line: true
         }
@@ -183,8 +185,8 @@ describe('admin DashboardView', () => {
     expect(cards[1].text()).not.toContain('admin.dashboard.accounts')
     expect(cards[0].text()).toContain('admin.dashboard.actual')
     expect(cards[1].text()).toContain('admin.dashboard.actual')
+    expect(cards[3].text()).toContain('admin.dashboard.totalUsers')
     expect(cards[3].text()).toContain('admin.dashboard.newUsersToday')
-    expect(cards[3].text()).not.toContain('admin.dashboard.users')
   })
 
   it('marks the explicit refresh so both dashboard caches are bypassed', async () => {
@@ -197,6 +199,7 @@ describe('admin DashboardView', () => {
           DateRangePicker: true,
           Select: true,
           ModelDistributionChart: true,
+          ConsumptionTrend: true,
           TokenUsageTrend: true,
           Line: true
         }

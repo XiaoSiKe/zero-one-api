@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -170,6 +171,8 @@ func sanitizeCreateGroupRequestForSimpleMode(req *CreateGroupRequest) {
 	allowed := CreateGroupRequest{Name: req.Name, Description: req.Description, Platform: req.Platform}
 	allowed.RateMultiplier = 1
 	allowed.SubscriptionType = service.SubscriptionTypeStandard
+	disabled := false
+	allowed.LongContextPricingEnabled = &disabled
 	*req = allowed
 }
 
@@ -239,7 +242,8 @@ type CreateGroupRequest struct {
 	RequirePrivacySet           bool                                      `json:"require_privacy_set"`
 	DefaultMappedModel          string                                    `json:"default_mapped_model"`
 	MessagesDispatchModelConfig service.OpenAIMessagesDispatchModelConfig `json:"messages_dispatch_model_config"`
-	ModelAllowlist              service.GroupModelAllowlist               `json:"model_allowlist"`
+	ModelAllowlist              *service.GroupModelAllowlist              `json:"model_allowlist"`
+	LegacyModelsListConfig      *service.GroupModelAllowlist              `json:"models_list_config"`
 	// 固定账号 manifest 配置；创建路径禁止开启，仅编辑可配置。
 	CodexModelsManifestConfig service.GroupCodexModelsManifestConfig `json:"codex_models_manifest_config"`
 	// 分组 RPM 上限（0 = 不限制）
@@ -315,6 +319,7 @@ type UpdateGroupRequest struct {
 	DefaultMappedModel          *string                                    `json:"default_mapped_model"`
 	MessagesDispatchModelConfig *service.OpenAIMessagesDispatchModelConfig `json:"messages_dispatch_model_config"`
 	ModelAllowlist              *service.GroupModelAllowlist               `json:"model_allowlist"`
+	LegacyModelsListConfig      *service.GroupModelAllowlist               `json:"models_list_config"`
 	// 固定账号 manifest 配置；nil 表示不修改。
 	CodexModelsManifestConfig *service.GroupCodexModelsManifestConfig `json:"codex_models_manifest_config"`
 	// 分组 RPM 上限（0 = 不限制）；nil 表示未提供不改动
@@ -327,6 +332,37 @@ type UpdateGroupRequest struct {
 	ReasoningEffortMappings *[]service.ReasoningEffortMapping `json:"reasoning_effort_mappings"`
 	// 从指定分组复制账号（同步操作：先清空当前分组的账号绑定，再绑定源分组的账号）
 	CopyAccountsFromGroupIDs []int64 `json:"copy_accounts_from_group_ids"`
+}
+
+func equalGroupModelAllowlist(left, right service.GroupModelAllowlist) bool {
+	return left.Enabled == right.Enabled && slices.Equal(left.Models, right.Models)
+}
+
+func resolveCreateGroupModelAllowlist(
+	current, legacy *service.GroupModelAllowlist,
+) (service.GroupModelAllowlist, error) {
+	if current != nil && legacy != nil && !equalGroupModelAllowlist(*current, *legacy) {
+		return service.GroupModelAllowlist{}, fmt.Errorf("model_allowlist conflicts with models_list_config")
+	}
+	if current != nil {
+		return *current, nil
+	}
+	if legacy != nil {
+		return *legacy, nil
+	}
+	return service.GroupModelAllowlist{}, nil
+}
+
+func resolveUpdateGroupModelAllowlist(
+	current, legacy *service.GroupModelAllowlist,
+) (*service.GroupModelAllowlist, error) {
+	if current != nil && legacy != nil && !equalGroupModelAllowlist(*current, *legacy) {
+		return nil, fmt.Errorf("model_allowlist conflicts with models_list_config")
+	}
+	if current != nil {
+		return current, nil
+	}
+	return legacy, nil
 }
 
 type CompositeRouteRequest struct {
@@ -648,6 +684,11 @@ func (h *GroupHandler) Create(c *gin.Context) {
 	if h.isSimpleMode() {
 		sanitizeCreateGroupRequestForSimpleMode(&req)
 	}
+	modelAllowlist, err := resolveCreateGroupModelAllowlist(req.ModelAllowlist, req.LegacyModelsListConfig)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
 
 	if err := service.ValidatePeakRateConfig(req.SubscriptionType, req.PeakRateEnabled, req.PeakStart, req.PeakEnd, float64ValueOrDefault(req.PeakRateMultiplier, 1.0)); err != nil {
 		response.BadRequest(c, err.Error())
@@ -715,7 +756,7 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		RequirePrivacySet:               req.RequirePrivacySet,
 		DefaultMappedModel:              req.DefaultMappedModel,
 		MessagesDispatchModelConfig:     req.MessagesDispatchModelConfig,
-		ModelAllowlist:                  req.ModelAllowlist,
+		ModelAllowlist:                  modelAllowlist,
 		CodexModelsManifestConfig:       req.CodexModelsManifestConfig,
 		RPMLimit:                        req.RPMLimit,
 		MaxReasoningEffort:              req.MaxReasoningEffort,
@@ -805,6 +846,11 @@ func (h *GroupHandler) Update(c *gin.Context) {
 	if h.isSimpleMode() {
 		sanitizeUpdateGroupRequestForSimpleMode(&req)
 	}
+	modelAllowlist, err := resolveUpdateGroupModelAllowlist(req.ModelAllowlist, req.LegacyModelsListConfig)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
 
 	group, err := h.adminService.UpdateGroup(c.Request.Context(), groupID, &service.UpdateGroupInput{
 		Name:                            req.Name,
@@ -861,7 +907,7 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		RequirePrivacySet:               req.RequirePrivacySet,
 		DefaultMappedModel:              req.DefaultMappedModel,
 		MessagesDispatchModelConfig:     req.MessagesDispatchModelConfig,
-		ModelAllowlist:                  req.ModelAllowlist,
+		ModelAllowlist:                  modelAllowlist,
 		CodexModelsManifestConfig:       req.CodexModelsManifestConfig,
 		RPMLimit:                        req.RPMLimit,
 		MaxReasoningEffort:              req.MaxReasoningEffort,

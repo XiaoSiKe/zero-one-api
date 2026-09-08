@@ -12,7 +12,7 @@ import {
   CN_PROVIDER_SHELL_ASSET,
   CN_PROVIDER_SHELL_DIRECTORY,
   patchApprovedShell,
-  dashboardUserClarityShellOverrides,
+  nativeCostDashboardOverrides,
 } from './build-cn-provider-shell.mjs'
 
 function read(path, label) {
@@ -107,7 +107,7 @@ export function verifyCNProviderConsole(consoleDir) {
   if (actualShellEntries.join('\n') !== expectedShellEntries.join('\n')) {
     throw new Error('CN Provider approved shell namespace is missing or contains extra assets')
   }
-  const overrides = dashboardUserClarityShellOverrides(assetsDirectory)
+  const overrides = nativeCostDashboardOverrides(assetsDirectory)
   for (const name of expectedLinks) {
     const linkPath = resolve(shellDirectory, name)
     if (overrides.has(name)) {

@@ -1,6 +1,6 @@
 # ADR 0012：管理员仪表盘只保留消费卡片
 
-状态：已接受。取代 [ADR 0010](0010-admin-billing-finance-and-date-panels.md) 的仪表盘财务展示、逐日读取和自动刷新部分；不改变其历史成本证据、接口兼容、日期浮层修复与不可变资源决策。
+状态：部分被 [ADR 0015](0015-v023-cost-dashboard-and-rollback-compatibility.md) 取代。消费卡片、不可变资源和日期浮层继续有效；用户主数字、成本口径及消费／Token 趋势由新记录负责。
 
 后续说明：[ADR 0013](0013-affected-verification-policy.md) 取代本记录的无条件完整视觉执行要求。`cn-provider-shell-v7` 和 `password-recovery-v3` 保持不可变；本轮用户口径文案使用新的 v8/v4 命名空间。
 
@@ -10,7 +10,7 @@
 
 两张消费卡读取原生 `DashboardStats` 的 `total_actual_cost` 和 `today_actual_cost`，含义均为客户实际扣费。金额使用美元符号、千位分隔和固定两位小数。它们复用仪表盘既有 `snapshot-v2` 请求、缓存、错误处理与手动刷新，不建立第二套 API 客户端、逐日查询、轮询、身份恢复或 Chart 生命周期。
 
-当前 Console 不展示“今日收益”“总收益”“每日收益”，也不展示独立的每日财务趋势、财务明细、财务重新读取按钮或财务更新时间。`dashboard-finance-v4` 不再由入口加载。
+当前 Console 不展示“今日收益”“总收益”“每日收益”或独立财务明细。ADR 0015 增加的实际消费与 Token 趋势复用既有 `snapshot-v2` 和日期控件，不恢复 `dashboard-finance-v4`。
 
 后端已经持久化的上游成本证据、数据库迁移、`total_account_cost` 和 `finance` 兼容字段继续保留。它们仍服务账单明细、导出、成本审计、旧客户端和回滚，不因删除当前收益 UI 而反向删除或回写数据。
 

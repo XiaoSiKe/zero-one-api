@@ -166,18 +166,17 @@ edge image. Image rollback does not reverse a database migration; see
 合回 `main`。每次同步同时更新本节的 tag 与完整提交 SHA。
 主题改动保持集中，使新增上游页面继承设计系统，避免逐页分叉。
 
-当前 Upstream Baseline 是 `v0.2.1`，解引用源码提交为
-`578785ee7fb35030b094b69624efe25670a36f5f`。本次通过真实双父合并引入 Astra、
-Ultrafast、固定账号 Codex 模型清单、上游请求标识、reasoning 定价、热加载及
-网关、WS、图片和支付补单修复。整合、接口兼容与四个增量迁移的完整约定见
-[升级记录](upgrades/v0.2.1.md)。
+当前 Upstream Baseline 是 `v0.2.3`，解引用源码提交为
+`8fa67d477d6651a744754392a8982ea589c26ae6`。本次通过真实双父合并引入分组模型
+白名单、鉴权快照 v24、峰谷成本计价、Ollama Cloud、网关和支付履约修复；
+整合、接口兼容与三个增量迁移的完整约定见 [升级记录](upgrades/v0.2.3.md)。
 
 继续保留 Zero One 的分组与账号长上下文计费双重开关、定价快照隔离、
-历史上游声明成本、兑换领取证明、请求首 Token 和生图错误语义。鉴权快照升级至
-v23，新字段经过隔离复制；不重算旧账或变更现有生产配置。新增上游 Console
+历史上游声明证据、兑换领取证明、请求首 Token 和生图错误语义。当前成本报表恢复
+账单保存的原生账号倍率；鉴权快照升级至 v24，新字段经过隔离复制。新增上游 Console
 控件不进入 Approved UI Snapshot，后台能力通过管理 API 保持可用。
 
-Go 版本保持 `1.27.0`，`approved_backports` 为空。七组 legacy hotfix 继续按
+Go 版本保持 `1.27.0`，`approved_backports` 为空。六组 legacy hotfix 继续按
 各自退出条件审查：与上游重叠的业务修复已整合，未达到等价条件的精确路径保留。
 
 The repository's dedicated Zero One CI keeps the established required check

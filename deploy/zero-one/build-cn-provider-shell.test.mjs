@@ -9,6 +9,7 @@ import {
   CN_PROVIDER_SHELL_ASSET,
   CN_PROVIDER_SHELL_DIRECTORY,
   DASHBOARD_SPEND_SHELL_DIRECTORY,
+  DASHBOARD_USER_CLARITY_SHELL_DIRECTORY,
   DECLARED_COST_SHELL_DIRECTORY,
   LEGACY_CN_PROVIDER_SHELL_DIRECTORY,
   PREVIOUS_CN_PROVIDER_SHELL_DIRECTORY,
@@ -20,6 +21,8 @@ import {
   declaredCostShellOverrides,
   dashboardSpendShellOverrides,
   dashboardUserClarityShellOverrides,
+  nativeCostDashboardOverrides,
+  patchDashboardTrendModule,
   patchDashboardSpendCards,
   DECLARED_COST_OVERRIDE_FILES,
   RECOVERY_SHELL_DIRECTORY,
@@ -140,6 +143,40 @@ test('current shell clarifies the new-users card and preserves the dashboard spe
   )
   assert.match(current.get(dashboardName), /admin\.dashboard\.newUsersToday/)
   assert.doesNotMatch(current.get(dashboardName), /admin\.dashboard\.users/)
+})
+
+test('v9 restores native cost display and adds range-aware spend and token trends', () => {
+  const previous = dashboardUserClarityShellOverrides(assetsDirectory)
+  const current = nativeCostDashboardOverrides(assetsDirectory)
+  const dashboardName = 'DashboardView-CYAPqspo.js'
+  assert.equal(
+    readFileSync(resolve(assetsDirectory, DASHBOARD_USER_CLARITY_SHELL_DIRECTORY, dashboardName), 'utf8'),
+    previous.get(dashboardName),
+  )
+  assert.equal(
+    readFileSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, dashboardName), 'utf8'),
+    current.get(dashboardName),
+  )
+  assert.match(current.get(dashboardName), /admin\.dashboard\.totalUsers/)
+  assert.match(current.get(dashboardName), /admin\.dashboard\.newUsersToday/)
+  assert.match(current.get(dashboardName), /metric:"cost"/)
+  assert.match(current.get(dashboardName), /metric:"tokens"/)
+  assert.match(current.get(dashboardName), /refresh:!0/)
+  assert.doesNotMatch(current.get(dashboardName), /待确认|成本待确认/)
+  for (const name of DECLARED_COST_OVERRIDE_FILES) {
+    assert.doesNotMatch(current.get(name), /待确认|成本待确认|upstream_rate_multiplier/)
+  }
+  const sourceTrend = readFileSync(
+    resolve(assetsDirectory, 'TokenUsageTrend.vue_vue_type_script_setup_true_lang-BKMiSAe-.js'),
+    'utf8',
+  )
+  const trend = patchDashboardTrendModule(sourceTrend)
+  assert.equal(
+    readFileSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, 'TokenUsageTrend.vue_vue_type_script_setup_true_lang-BKMiSAe-.js'), 'utf8'),
+    trend,
+  )
+  assert.match(trend, /admin\.dashboard\.consumptionTrend/)
+  assert.match(trend, /admin\.dashboard\.totalTokens/)
 })
 
 

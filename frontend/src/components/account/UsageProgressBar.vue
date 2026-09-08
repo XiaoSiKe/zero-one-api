@@ -209,8 +209,7 @@ const formatTokens = computed(() => {
 })
 
 const formatAccountCost = computed(() => {
-  if (props.windowStats?.cost == null) return '待确认'
-  return props.windowStats.cost.toFixed(2)
+  return (props.windowStats?.cost ?? 0).toFixed(2)
 })
 
 const formatUserCost = computed(() => {

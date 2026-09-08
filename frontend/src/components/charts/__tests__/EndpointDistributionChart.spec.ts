@@ -8,7 +8,7 @@ vi.mock('vue-i18n', async () => ({
 }))
 vi.mock('vue-chartjs', () => ({ Doughnut: { props: ['data'], template: '<div class="chart-data">{{ JSON.stringify(data) }}</div>' } }))
 
-it('keeps pending endpoint costs visible without drawing invented cost shares', () => {
+it('normalizes missing legacy endpoint costs to zero and keeps the chart usable', () => {
   const wrapper = mount(EndpointDistributionChart, {
     props: { endpointStats: [
       { endpoint: '/known', requests: 1, total_tokens: 100, actual_cost: 0.22, cost: 1 },
@@ -16,8 +16,8 @@ it('keeps pending endpoint costs visible without drawing invented cost shares', 
     ], metric: 'actual_cost' },
   })
   expect(wrapper.findAll('tbody tr')).toHaveLength(2)
-  expect(wrapper.text()).toContain('成本待确认')
-  expect(wrapper.find('.chart-data').exists()).toBe(false)
+  expect(wrapper.text()).not.toContain('成本待确认')
+  expect(JSON.parse(wrapper.get('.chart-data').text()).datasets[0].data).toEqual([0.22, 0])
 })
 
 it('retains a confirmed zero cost and token counts in charts', () => {

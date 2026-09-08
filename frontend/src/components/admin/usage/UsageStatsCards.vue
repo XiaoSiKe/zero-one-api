@@ -69,7 +69,7 @@
         </p>
         <p class="text-xs text-gray-400">
           <template v-if="showAccountCost">
-            <span class="text-zo-alert-500">{{ t('usage.accountCost') }} ${{ totalAccountCost == null ? '待确认' : totalAccountCost.toFixed(4) }}</span>
+            <span class="text-zo-alert-500">{{ t('usage.accountCost') }} ${{ (totalAccountCost ?? 0).toFixed(4) }}</span>
             <span> · </span>
           </template>
           <span>

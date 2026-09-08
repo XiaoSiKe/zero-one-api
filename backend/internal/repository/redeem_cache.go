@@ -12,13 +12,14 @@ import (
 )
 
 const (
-	redeemRateLimitKeyPrefix = "redeem:ratelimit:"
+	redeemRateLimitKeyPrefix = "redeem:ratelimit:v2:"
 	redeemLockKeyPrefix      = "redeem:lock:"
 	redeemRateLimitDuration  = service.RedeemRateLimitDuration
+	redeemRateLimitWindow    = redeemRateLimitDuration
 )
 
-// Read and increment both repair legacy 24-hour/no-expiry keys while preserving
-// their count. Subsequent failures cannot extend a live one-hour window.
+// Read and increment both repair legacy long/no-expiry keys while preserving
+// their count. Subsequent failures cannot extend the fixed ten-minute window.
 var redeemAttemptScript = redis.NewScript(`
 local count
 if ARGV[2] == '1' then

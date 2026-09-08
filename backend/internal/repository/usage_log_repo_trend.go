@@ -448,9 +448,9 @@ func (r *usageLogRepository) getModelStatsWithFiltersBySource(ctx context.Contex
 	actualCostExpr := "COALESCE(SUM(actual_cost), 0) as actual_cost"
 	// 仅按 account_id 聚合时，实际费用使用账单上游声明成本；缺少依据为 NULL。
 	if accountID > 0 && userID == 0 && apiKeyID == 0 {
-		actualCostExpr = "zero_one_cost_sum(COALESCE(account_stats_cost, total_cost) * upstream_rate_multiplier) as actual_cost"
+		actualCostExpr = "COALESCE(SUM(COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1)), 0) as actual_cost"
 	}
-	accountCostExpr := "zero_one_cost_sum(COALESCE(account_stats_cost, total_cost) * upstream_rate_multiplier) as account_cost"
+	accountCostExpr := "COALESCE(SUM(COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1)), 0) as account_cost"
 	modelExpr := resolveModelDimensionExpression(source)
 
 	query := fmt.Sprintf(`
@@ -540,7 +540,7 @@ func (r *usageLogRepository) getGroupStatsWithFilters(ctx context.Context, start
 			COALESCE(SUM(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens), 0) as total_tokens,
 			COALESCE(SUM(ul.total_cost), 0) as cost,
 			COALESCE(SUM(ul.actual_cost), 0) as actual_cost,
-			zero_one_cost_sum(COALESCE(ul.account_stats_cost, ul.total_cost) * ul.upstream_rate_multiplier) as account_cost
+			COALESCE(SUM(COALESCE(ul.account_stats_cost, ul.total_cost) * COALESCE(ul.account_rate_multiplier, 1)), 0) as account_cost
 		FROM usage_logs ul
 		LEFT JOIN groups g ON g.id = ul.group_id
 		WHERE ul.created_at >= $1 AND ul.created_at < $2
@@ -626,7 +626,7 @@ func (r *usageLogRepository) GetUserBreakdownStats(ctx context.Context, startTim
 			COALESCE(SUM(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens), 0) as total_tokens,
 			COALESCE(SUM(ul.total_cost), 0) as cost,
 			COALESCE(SUM(ul.actual_cost), 0) as actual_cost,
-			zero_one_cost_sum(COALESCE(ul.account_stats_cost, ul.total_cost) * ul.upstream_rate_multiplier) as account_cost
+			COALESCE(SUM(COALESCE(ul.account_stats_cost, ul.total_cost) * COALESCE(ul.account_rate_multiplier, 1)), 0) as account_cost
 		FROM usage_logs ul
 		LEFT JOIN users u ON u.id = ul.user_id
 		WHERE ul.created_at >= $1 AND ul.created_at < $2

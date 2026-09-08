@@ -721,6 +721,8 @@ export default {
       modelRestriction: 'Model Restriction (Optional)',
       modelWhitelist: 'Model Whitelist',
       modelMapping: 'Model Mapping',
+      fromModel: 'Request model',
+      toModel: 'Target model',
       selectAllowedModels: 'Select allowed models. Leave empty to support all models.',
       mapRequestModels:
         'Map request models to actual models. Left is the requested model, right is the actual model sent to API.',
@@ -914,7 +916,7 @@ export default {
       priority: 'Priority',
       priorityHint: 'Lower value accounts are used first',
       billingRateMultiplier: 'Billing Rate Multiplier',
-      billingRateMultiplierHint: 'Local account billing and scheduling; cost reports independently use valid upstream declared rates',
+      billingRateMultiplierHint: 'Used for account scheduling and historical cost from the multiplier saved on each usage row',
       expiresAt: 'Expires At',
       expiresAtHint: 'Leave empty for no expiration',
       higherPriorityFirst: 'Lower value means higher priority',
