@@ -513,6 +513,17 @@ def backup_health_command(backup):
     return [sys.executable, checker, backup_dir]
 
 
+def backup_record_ready(backup):
+    if not backup.get("sha256_verified") or not backup.get("restore_verified"):
+        return False
+    mode = backup.get("backup_mode", "scheduled")
+    if mode == "scheduled":
+        return backup.get("scheduled_backup_healthy") is True
+    if mode == "one_time_release":
+        return backup.get("backup_ready") is True and backup.get("scheduled_backup_healthy") is False
+    return False
+
+
 def execute(action):
     if action == "watchdog":
         if not STATE.exists() or state()["phase"] in (
@@ -533,9 +544,7 @@ def execute(action):
         assert not STATE.exists(), "cutover already initialized"
         assert not ACTIVE.exists(), "another release transaction is active"
         backup = json.loads((ROOT / "OFFHOST_BACKUP_VERIFIED.json").read_text())
-        assert backup["sha256_verified"] and backup["restore_verified"] and backup["scheduled_backup_healthy"], (
-            "verified off-host backup and schedule required"
-        )
+        assert backup_record_ready(backup), "verified off-host release backup required"
         applied = {x["filename"] for x in json.loads(sql("SELECT jsonb_agg(to_jsonb(m)) FROM schema_migrations m"))}
         target = set(
             run(
@@ -552,10 +561,12 @@ def execute(action):
         target = {path.rsplit("/", 1)[-1] for path in target if path.endswith(".sql")}
         assert set(META["expected_migrations"]) == target - applied, "migration delta does not match target source"
         live_backup = json.loads(run(backup_health_command(backup)))
-        assert live_backup["sha256_verified"]
+        assert live_backup["sha256_verified"] and live_backup["backup_ready"]
         if backup.get("mode") == "signed_receipt":
             assert live_backup["restore_verified"]
-        assert live_backup["scheduled_backup_healthy"]
+        assert live_backup["backup_mode"] == backup.get("backup_mode", "scheduled")
+        if live_backup["backup_mode"] == "scheduled":
+            assert live_backup["scheduled_backup_healthy"]
         assert backup["snapshot_id"] == META["id"] and backup["source_sha"] == META["merge_sha"]
         before = healthy()
         assert all(before[n]["image"] == META["old_images"][n] for n in [APP, EDGE])

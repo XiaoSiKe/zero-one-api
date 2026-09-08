@@ -69,7 +69,12 @@ def verify_signed_receipt(receipt_path, signature_path, public_key_path, now, ex
         stderr=subprocess.DEVNULL,
     )
     receipt = json.loads(receipt_path.read_text())
-    if receipt.get("schema_version") != 1 or receipt.get("storage_provider") != "google_drive":
+    schema_version = receipt.get("schema_version")
+    storage_provider = receipt.get("storage_provider")
+    if (schema_version, storage_provider) not in (
+        (1, "google_drive"),
+        (2, "maintenance_host"),
+    ):
         raise ValueError("unsupported signed backup receipt")
     completed = receipt.get("completed_at_epoch")
     if not isinstance(completed, int) or isinstance(completed, bool):
@@ -85,8 +90,6 @@ def verify_signed_receipt(receipt_path, signature_path, public_key_path, now, ex
         raise ValueError("signed backup receipt has no safe snapshot ID")
     if source != expected_source or snapshot != expected_snapshot:
         raise ValueError("signed backup receipt belongs to another release")
-    if not re.fullmatch(r"[A-Za-z0-9_-]{10,}", str(receipt.get("folder_id", ""))):
-        raise ValueError("signed backup receipt has no valid Drive folder")
     files = receipt.get("files")
     if not isinstance(files, list):
         raise ValueError("signed backup receipt has no file inventory")
@@ -95,14 +98,30 @@ def verify_signed_receipt(receipt_path, signature_path, public_key_path, now, ex
     if set(by_name) != required:
         raise ValueError("signed backup receipt file inventory is incomplete")
     for name, item in by_name.items():
-        if Path(name).name != name or item.get("private") is not True or item.get("can_download") is not True:
+        if Path(name).name != name:
             raise ValueError("signed backup receipt contains an unsafe file record")
         if not isinstance(item.get("size"), int) or isinstance(item["size"], bool) or item["size"] <= 0:
             raise ValueError("signed backup receipt contains an invalid file size")
         if not re.fullmatch(r"[0-9a-f]{64}", str(item.get("sha256", ""))):
             raise ValueError("signed backup receipt contains an invalid checksum")
-        if not re.fullmatch(r"[A-Za-z0-9_-]{10,}", str(item.get("drive_file_id", ""))):
-            raise ValueError("signed backup receipt contains an invalid Drive file ID")
+    if storage_provider == "google_drive":
+        if not re.fullmatch(r"[A-Za-z0-9_-]{10,}", str(receipt.get("folder_id", ""))):
+            raise ValueError("signed backup receipt has no valid Drive folder")
+        for item in by_name.values():
+            if item.get("private") is not True or item.get("can_download") is not True:
+                raise ValueError("signed backup receipt contains an unsafe Drive file record")
+            if not re.fullmatch(r"[A-Za-z0-9_-]{10,}", str(item.get("drive_file_id", ""))):
+                raise ValueError("signed backup receipt contains an invalid Drive file ID")
+    else:
+        off_host_copy = receipt.get("off_host_copy")
+        if (
+            not isinstance(off_host_copy, dict)
+            or off_host_copy.get("status") != "VERIFIED"
+            or off_host_copy.get("location") != "maintenance_host"
+        ):
+            raise ValueError("signed one-time backup receipt lacks a verified off-host copy")
+        if any(item.get("off_host") is not True for item in by_name.values()):
+            raise ValueError("signed one-time backup receipt contains an on-host file record")
     restored = receipt.get("restore")
     if not isinstance(restored, dict) or restored.get("postgres_dump_restored") is not True:
         raise ValueError("signed backup receipt lacks an actual restore")
@@ -112,17 +131,33 @@ def verify_signed_receipt(receipt_path, signature_path, public_key_path, now, ex
         value = restored.get(field)
         if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
             raise ValueError(f"signed backup receipt has invalid {field}")
-    schedule = receipt.get("schedule")
-    if not isinstance(schedule, dict) or schedule.get("status") != "ACTIVE":
-        raise ValueError("signed backup receipt lacks an active schedule")
-    if not re.fullmatch(r"[A-Za-z0-9._-]+", str(schedule.get("automation_id", ""))):
-        raise ValueError("signed backup receipt has no valid schedule identity")
+    scheduled_backup_healthy = False
+    backup_mode = "one_time_release"
+    if storage_provider == "google_drive":
+        schedule = receipt.get("schedule")
+        if not isinstance(schedule, dict) or schedule.get("status") != "ACTIVE":
+            raise ValueError("signed backup receipt lacks an active schedule")
+        if not re.fullmatch(r"[A-Za-z0-9._-]+", str(schedule.get("automation_id", ""))):
+            raise ValueError("signed backup receipt has no valid schedule identity")
+        scheduled_backup_healthy = True
+        backup_mode = "scheduled"
+    else:
+        policy = receipt.get("backup_policy")
+        if (
+            not isinstance(policy, dict)
+            or policy.get("mode") != "one_time_release"
+            or policy.get("status") != "HELD"
+            or policy.get("cleanup_after") != "release_complete"
+        ):
+            raise ValueError("signed one-time backup receipt lacks an active release hold")
     return {
+        "backup_ready": True,
+        "backup_mode": backup_mode,
         "sha256_verified": True,
         "restore_verified": True,
-        "scheduled_backup_healthy": True,
+        "scheduled_backup_healthy": scheduled_backup_healthy,
         "age_seconds": int(age),
-        "storage_provider": "google_drive",
+        "storage_provider": storage_provider,
     }
 
 
@@ -184,7 +219,13 @@ def main():
             ).strip()
             if status != "success":
                 raise ValueError("latest scheduled backup failed")
-            result = {**result, "scheduled_backup_healthy": True, "storage_provider": "mounted_filesystem"}
+            result = {
+                **result,
+                "backup_ready": True,
+                "backup_mode": "scheduled",
+                "scheduled_backup_healthy": True,
+                "storage_provider": "mounted_filesystem",
+            }
         print(json.dumps(result))
     except (
         OSError,

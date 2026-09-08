@@ -301,6 +301,19 @@ or scheduler state is absent. The private signing key and age identity must neve
 be copied to production. A signed receipt attests the exact observed upload; it
 does not make Google Drive public or allow production to download the backup.
 
+When an operator explicitly declines a recurring backup schedule, a release may
+instead use a schema-v2 signed `maintenance_host` receipt for one bounded
+`one_time_release`. The encrypted PostgreSQL dump, deployment-state archive and
+manifest must be copied off the production host, checksummed and actually
+restored there before signing. The receipt marks each logical archive as
+off-host and keeps an active release hold with
+`cleanup_after=release_complete`. The controller rejects a pending copy, an
+on-host-only file, an unknown backup mode or a one-time record presented as
+scheduled health. Keep the recovery set until the 30-minute observation and
+`complete` phase succeed; only then may the operator remove it. This exception
+does not create or imply a recurring automation and cannot be reused for another
+release.
+
 `BACKUP_DIR` must itself be an off-host filesystem mount point; a subdirectory on
 the production root filesystem does not satisfy the backup requirement. After
 mounting it, create the sentinel inside the mounted filesystem:
@@ -550,10 +563,13 @@ GoReleaser archives 均声明携带这三份根级材料。镜像文件位于
 `expected_migrations` 完整新增文件名列表、公开 age `recipient` 和随机
 `probe_secret`。新增迁移列表必须等于目标源码与当前账本的差集。
 `OFFHOST_BACKUP_VERIFIED.json` 绑定本次 `snapshot_id`、`source_sha`，记录
-`sha256_verified`、`restore_verified`、`scheduled_backup_healthy`。挂载模式保存
-实际 `backup_dir`；Google Drive 模式保存 `mode=signed_receipt`、本次回执和
+`sha256_verified`、`restore_verified` 和 `backup_mode`。挂载或定时 Google Drive
+模式仍需 `scheduled_backup_healthy=true`；明确不保留定时任务时可使用
+`backup_mode=one_time_release`、`backup_ready=true` 的一次性维护机恢复点。
+挂载模式保存实际 `backup_dir`；签名回执模式保存 `mode=signed_receipt`、本次回执和
 签名文件名，以及固定的 `/etc/zero-one/backup-receipt.pub`。preflight 会重新
-验签并核对目标 SHA 和发布 ID，不能只填写布尔值放行。
+验签并核对目标 SHA、发布 ID、保存位置、实际恢复和发布期持有状态，不能只填写
+布尔值放行。
 
 执行顺序为 `preflight` → `drain-backup` → `migrate-backend` → `edge` →
 `open` → `complete`。迁移阶段另需本次最终备份的异地校验与实际恢复证明；
