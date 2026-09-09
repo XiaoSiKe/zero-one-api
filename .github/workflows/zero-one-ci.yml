@@ -171,14 +171,14 @@ jobs:
         if: contains(env.ASSET_SCOPES, 'cn_provider') || env.ASSET_SCOPES == 'all'
         working-directory: frontend
         run: pnpm run build:cn-provider-admin
-      - name: Build password recovery views
-        if: contains(env.ASSET_SCOPES, 'password') || contains(env.ASSET_SCOPES, 'shell') || env.ASSET_SCOPES == 'all'
-        working-directory: frontend
-        run: pnpm run build:password-recovery
       - name: Build approved Console namespace
         if: contains(env.ASSET_SCOPES, 'shell') || env.ASSET_SCOPES == 'all'
         working-directory: frontend
         run: pnpm run build:cn-provider-shell
+      - name: Build password recovery views
+        if: contains(env.ASSET_SCOPES, 'password') || contains(env.ASSET_SCOPES, 'shell') || env.ASSET_SCOPES == 'all'
+        working-directory: frontend
+        run: pnpm run build:password-recovery
       - name: Build Online Images route adapter
         if: contains(env.ASSET_SCOPES, 'online') || env.ASSET_SCOPES == 'all'
         working-directory: frontend

@@ -210,6 +210,22 @@ test('automatic validation executes ordinary, unit, integration and full Console
   assert.ok(!source.includes('continue-on-error:'), 'automatic gates must not hide failures')
 })
 
+test('the Console workflow regenerates current adapters in dependency order', () => {
+  const source = readFileSync(new URL('../workflows/zero-one-ci.yml', import.meta.url), 'utf8')
+  const commands = [
+    'run: pnpm run build:cn-provider-admin',
+    'run: pnpm run build:cn-provider-shell',
+    'run: pnpm run build:password-recovery',
+    'run: pnpm run build:online-image',
+  ]
+  let previous = -1
+  for (const command of commands) {
+    const current = source.indexOf(command)
+    assert.ok(current > previous, `${command} must follow the preceding generator`)
+    previous = current
+  }
+})
+
 test('required checks record exactly one successful affected-or-not-applicable decision path', () => {
   const product = workflowJobs(readFileSync(new URL('../workflows/zero-one-ci.yml', import.meta.url), 'utf8'))
   for (const id of ['landing', 'console', 'backend', 'deployment', 'shell', 'golangci-lint', 'chromium-calibration']) {
