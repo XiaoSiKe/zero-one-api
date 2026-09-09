@@ -107,9 +107,13 @@ describe('isHeaderOverrideCapable', () => {
     expect(isHeaderOverrideCapable('deepseek', 'apikey')).toBe(true)
     expect(isHeaderOverrideCapable('anthropic', 'oauth')).toBe(false)
     expect(isHeaderOverrideCapable('openai', 'oauth')).toBe(false)
-    expect(isHeaderOverrideCapable('kimi', 'oauth')).toBe(false)
-    expect(isHeaderOverrideCapable('zhipu', 'oauth')).toBe(false)
-    expect(isHeaderOverrideCapable('deepseek', 'oauth')).toBe(false)
+  })
+
+  it('CN providers only support header overrides for API-key accounts', () => {
+    for (const platform of ['kimi', 'zhipu', 'deepseek', 'minimax']) {
+      expect(isHeaderOverrideCapable(platform, 'apikey')).toBe(true)
+      expect(isHeaderOverrideCapable(platform, 'oauth')).toBe(false)
+    }
   })
 
   it('grok supports both apikey and oauth accounts', () => {

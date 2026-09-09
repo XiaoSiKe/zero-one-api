@@ -197,7 +197,7 @@
     </div>
 
     <!-- Footer -->
-    <template v-if="!backendModeEnabled" #footer>
+    <template v-if="!backendModeEnabled && publicSettingsLoaded && registrationEnabled" #footer>
       <router-link to="/register" class="btn btn-secondary btn-specular w-full py-3">
         <span>{{ t('auth.dontHaveAccount') }}</span>
         <span>{{ t('auth.signUp') }}</span>
@@ -264,6 +264,7 @@ const showPassword = ref<boolean>(false)
 const publicSettingsLoaded = ref<boolean>(false)
 
 // Public settings
+const registrationEnabled = ref<boolean>(false)
 const turnstileEnabled = ref<boolean>(false)
 const turnstileSiteKey = ref<string>('')
 const tencentCaptchaEnabled = ref<boolean>(false)
@@ -376,6 +377,7 @@ onMounted(async () => {
   try {
     const settings = await appStore.fetchPublicSettings(true)
     if (!settings) throw new Error('Public Settings unavailable')
+    registrationEnabled.value = settings.registration_enabled === true
     turnstileEnabled.value = settings.turnstile_enabled
     turnstileSiteKey.value = settings.turnstile_site_key || ''
     tencentCaptchaEnabled.value = settings.tencent_captcha_enabled === true
