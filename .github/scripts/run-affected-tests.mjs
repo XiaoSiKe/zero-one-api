@@ -40,11 +40,11 @@ export function commandsForImpact(impact) {
   if (assetScopes.has('cn_provider') || assetScopes.has('all')) {
     commands.push('pnpm --dir frontend run build:cn-provider-admin')
   }
-  if (assetScopes.has('password') || assetScopes.has('shell') || assetScopes.has('all')) {
-    commands.push('pnpm --dir frontend run build:password-recovery')
-  }
   if (assetScopes.has('shell') || assetScopes.has('all')) {
     commands.push('pnpm --dir frontend run build:cn-provider-shell')
+  }
+  if (assetScopes.has('password') || assetScopes.has('shell') || assetScopes.has('all')) {
+    commands.push('pnpm --dir frontend run build:password-recovery')
   }
   if (assetScopes.has('online') || assetScopes.has('all')) {
     commands.push('pnpm --dir frontend run build:online-image')

@@ -21,6 +21,11 @@ test('Console behavior and adapter generation are independently selectable', () 
   assert.ok(behavior.every((command) => !command.includes('build:cn-provider-shell')))
   const assets = commandsForImpact({ ...none, console: true, console_asset_scopes: 'shell' })
   assert.ok(assets.some((command) => command.includes('build:cn-provider-shell')))
+  assert.ok(
+    assets.indexOf('pnpm --dir frontend run build:cn-provider-shell') <
+      assets.indexOf('pnpm --dir frontend run build:password-recovery'),
+    'password recovery must be the final writer after the shell compatibility generator',
+  )
 })
 
 test('visual impact uses the pinned cross-platform runner', () => {
