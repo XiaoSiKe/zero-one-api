@@ -64,8 +64,6 @@
           ]
           const optionalAdapterPreloads = [
             "/assets/online-image-v17/online-image.js",
-            "/assets/cn-provider-admin-v1/cn-provider-admin.js",
-            "/assets/cn-provider-admin-v7/cn-provider-admin.js",
             "/assets/cn-provider-admin-v8/cn-provider-admin.js",
           ]
           for (const href of registrationModulePreloads) {
@@ -218,9 +216,7 @@
               window.__ZERO_ONE_ONLINE_IMAGE_ACCESS__?.setClient(pendingOnlineImageClient)
             }
           }),
-          import("/assets/cn-provider-admin-v1/cn-provider-admin.js")
-            .then(() => import("/assets/cn-provider-admin-v7/cn-provider-admin.js"))
-            .then(() => import("/assets/cn-provider-admin-v8/cn-provider-admin.js")),
+          import("/assets/cn-provider-admin-v8/cn-provider-admin.js"),
         ])
         await import("/assets/cn-provider-shell-v10/index-9xJBhx8B.js")
         await registrationMounted
@@ -263,9 +259,7 @@
               import("/assets/zero-one-ccswitch-launch-v1.js?v=2"),
               import("/assets/zero-one-affiliate-admin-v1.js?v=6"),
               import("/assets/online-image-v17/online-image.js"),
-              import("/assets/cn-provider-admin-v1/cn-provider-admin.js")
-                .then(() => import("/assets/cn-provider-admin-v7/cn-provider-admin.js"))
-                .then(() => import("/assets/cn-provider-admin-v8/cn-provider-admin.js")),
+              import("/assets/cn-provider-admin-v8/cn-provider-admin.js"),
             ])
           }
           if ("requestIdleCallback" in window) {
@@ -287,8 +281,6 @@
         await import("/assets/zero-one-ccswitch-launch-v1.js?v=2")
         await import("/assets/zero-one-affiliate-admin-v1.js?v=6")
         await import("/assets/online-image-v17/online-image.js")
-        await import("/assets/cn-provider-admin-v1/cn-provider-admin.js")
-        await import("/assets/cn-provider-admin-v7/cn-provider-admin.js")
         await import("/assets/cn-provider-admin-v8/cn-provider-admin.js")
         await import("/assets/cn-provider-shell-v10/index-9xJBhx8B.js")
       }

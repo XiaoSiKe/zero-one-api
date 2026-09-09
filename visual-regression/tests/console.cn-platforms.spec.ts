@@ -20,8 +20,8 @@ async function openCreateGroup(page: Page) {
     reconciliation: typeof (window as typeof window & { __ZERO_ONE_NAVIGATION_RECONCILIATION__?: unknown })
       .__ZERO_ONE_NAVIGATION_RECONCILIATION__,
   }))).toEqual({ mountedHook: 'function', reconciliation: 'object' })
-  const host = page.locator('#zero-one-cn-provider-admin')
-  await expect(host).toHaveAttribute('data-zero-one-cn-provider-admin', 'groups')
+  const host = page.locator('#zero-one-provider-catalog-admin')
+  await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'groups')
   await host.locator('[data-tour="groups-create-btn"]').click()
   await expect(page.locator('form#create-group-form')).toBeVisible()
 }
@@ -29,6 +29,13 @@ async function openCreateGroup(page: Page) {
 async function selectGroupPlatform(page: Page, label: string) {
   await page.locator('[data-tour="group-form-platform"]').click()
   await page.getByText(label, { exact: true }).last().click()
+}
+
+async function loadLegacyAccountAdapter(page: Page) {
+  await expect.poll(() => page.evaluate(() => typeof (
+    window as typeof window & { __ZERO_ONE_NAVIGATION_RECONCILIATION__?: unknown }
+  ).__ZERO_ONE_NAVIGATION_RECONCILIATION__)).toBe('object')
+  await page.evaluate((url) => import(url), '/assets/cn-provider-admin-v1/cn-provider-admin.js')
 }
 
 async function openCreateAccount(page: Page) {
@@ -67,6 +74,7 @@ test.describe('Recovered CN Provider management contracts', () => {
       ['Kimi', 'kimi'],
       ['Zhipu GLM', 'zhipu'],
       ['DeepSeek', 'deepseek'],
+      ['MiniMax', 'minimax'],
     ] as const
 
     for (const [label, platform] of cases) {
@@ -90,7 +98,7 @@ test.describe('Recovered CN Provider management contracts', () => {
     const runtimeErrors = collectRuntimeErrors(page)
     await openCreateAccount(page)
 
-    for (const label of ['Kimi', 'Zhipu GLM', 'DeepSeek']) {
+    for (const label of ['Kimi', 'Zhipu GLM', 'DeepSeek', 'MiniMax']) {
       await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible()
     }
 
@@ -106,7 +114,11 @@ test.describe('Recovered CN Provider management contracts', () => {
 
     await page.getByRole('button', { name: 'Kimi', exact: true }).click()
     await expect(page.getByRole('button', { name: /^Coding Plan / })).toBeVisible()
-    await expect(page.getByRole('button', { name: /^Responses / })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /^Responses / })).toBeVisible()
+
+    await page.getByRole('button', { name: 'MiniMax', exact: true }).click()
+    await expect(page.getByRole('button', { name: /^Coding Plan / })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^Responses / })).toBeVisible()
 
     await page.getByRole('button', { name: 'Zhipu GLM', exact: true }).click()
     await expect(page.getByRole('button', { name: 'Zhipu GLM', exact: true })).toHaveCSS(
@@ -136,8 +148,8 @@ test.describe('Recovered CN Provider management contracts', () => {
     await page.goto(`${consoleOrigin}/admin/accounts`)
 
     await expect.poll(() => runtimeErrors).toEqual([])
-    await expect(page.locator('#zero-one-cn-provider-admin')).toHaveAttribute(
-      'data-zero-one-cn-provider-admin',
+    await expect(page.locator('#zero-one-provider-catalog-admin')).toHaveAttribute(
+      'data-zero-one-provider-catalog-admin',
       'accounts',
     )
     if (testInfo.project.name === 'chromium-mobile') {
@@ -160,15 +172,15 @@ test.describe('Recovered CN Provider management contracts', () => {
     const runtimeErrors = collectRuntimeErrors(page)
 
     await openCreateChannel(page)
-    for (const label of ['Kimi', 'Zhipu GLM', 'DeepSeek']) {
+    for (const label of ['Kimi', 'Zhipu GLM', 'DeepSeek', 'MiniMax']) {
       await expect(page.getByText(label, { exact: true }).last()).toBeVisible()
     }
-    await page.getByText('DeepSeek', { exact: true }).last().scrollIntoViewIfNeeded()
+    await page.getByText('MiniMax', { exact: true }).last().scrollIntoViewIfNeeded()
     await page.evaluate(() => document.fonts.ready)
     await expect(page).toHaveScreenshot('console-channels-cn-platform-options.png')
 
     await openCreateMonitor(page)
-    for (const platform of ['kimi', 'zhipu', 'deepseek']) {
+    for (const platform of ['kimi', 'zhipu', 'deepseek', 'minimax']) {
       await expect(page.getByTestId(`monitor-provider-${platform}`)).toBeVisible()
     }
     await page.evaluate(() => document.fonts.ready)
@@ -186,10 +198,10 @@ test.describe('Recovered CN Provider management contracts', () => {
     await page.waitForTimeout(1_000)
     expect(runtimeErrors).toEqual([])
     await host.getByTestId('ops-platform-filter').locator('.select-trigger').click()
-    for (const label of ['Kimi', 'Zhipu GLM', 'DeepSeek']) {
+    for (const label of ['Kimi', 'Zhipu GLM', 'DeepSeek', 'MiniMax']) {
       await expect(page.getByRole('option', { name: label, exact: true })).toBeVisible()
     }
-    await page.getByRole('option', { name: 'DeepSeek', exact: true }).scrollIntoViewIfNeeded()
+    await page.getByRole('option', { name: 'MiniMax', exact: true }).scrollIntoViewIfNeeded()
     await page.evaluate(() => document.fonts.ready)
     await expect(page).toHaveScreenshot('console-ops-cn-platform-options.png')
 
@@ -197,10 +209,10 @@ test.describe('Recovered CN Provider management contracts', () => {
     host = page.locator('#zero-one-provider-catalog-admin')
     await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'subscriptions')
     await host.getByTestId('subscription-platform-filter').locator('.select-trigger').click()
-    for (const label of ['Kimi', 'Zhipu GLM', 'DeepSeek']) {
+    for (const label of ['Kimi', 'Zhipu GLM', 'DeepSeek', 'MiniMax']) {
       await expect(page.getByRole('option', { name: label, exact: true })).toBeVisible()
     }
-    await page.getByRole('option', { name: 'DeepSeek', exact: true }).scrollIntoViewIfNeeded()
+    await page.getByRole('option', { name: 'MiniMax', exact: true }).scrollIntoViewIfNeeded()
     await page.evaluate(() => document.fonts.ready)
     await expect(page).toHaveScreenshot('console-subscriptions-cn-platform-options.png')
 
@@ -243,6 +255,20 @@ test.describe('Recovered CN Provider management contracts', () => {
         base_url: 'https://api.deepseek.com',
       },
     },
+    {
+      label: 'MiniMax',
+      platform: 'minimax',
+      expectedCredentials: {
+        account_mode: 'payg',
+        api_protocol: 'adaptive',
+        base_url: 'https://api.minimaxi.com/v1',
+        api_base_urls: {
+          chat_completions: 'https://api.minimaxi.com/v1',
+          anthropic: 'https://api.minimaxi.com/anthropic',
+          responses: 'https://api.minimaxi.com/v1',
+        },
+      },
+    },
   ] as const) {
     test(`Accounts submits complete ${testCase.label} credentials`, async ({ page }) => {
       const runtimeErrors = collectRuntimeErrors(page)
@@ -272,6 +298,7 @@ test.describe('Recovered CN Provider management contracts', () => {
   test('Groups keeps the approved shell while exposing CN platforms', async ({ page }) => {
     await openCreateGroup(page)
     await page.locator('[data-tour="group-form-platform"]').click()
+    await page.getByText('MiniMax', { exact: true }).last().scrollIntoViewIfNeeded()
     await page.evaluate(() => document.fonts.ready)
     await expect(page).toHaveScreenshot('console-groups-cn-platform-options.png')
   })
@@ -309,10 +336,10 @@ test.describe('Recovered CN Provider management contracts', () => {
       }
     })
     await page.goto(`${consoleOrigin}/admin/accounts`)
-    const host = page.locator('#zero-one-cn-provider-admin')
-    await expect(host).toHaveAttribute('data-zero-one-cn-provider-admin', 'accounts')
+    const host = page.locator('#zero-one-provider-catalog-admin')
+    await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'accounts')
     await expect(host).not.toBeEmpty()
-    await expect(page.locator('#zero-one-cn-provider-admin-style')).toHaveCount(1)
+    await expect(page.locator('#zero-one-provider-catalog-admin-style')).toHaveCount(1)
     expect(getCounts.get('/admin/accounts')).toBe(1)
 
     const groupsLink = page.locator(
@@ -323,7 +350,7 @@ test.describe('Recovered CN Provider management contracts', () => {
     ).first()
     await groupsLink.evaluate((link: HTMLAnchorElement) => link.click())
     await expect(page).toHaveURL(`${consoleOrigin}/admin/groups`)
-    await expect(host).toHaveAttribute('data-zero-one-cn-provider-admin', 'groups')
+    await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'groups')
     await expect(host).not.toBeEmpty()
     expect(getCounts.get('/admin/groups')).toBe(1)
     expect(getCounts.get('/admin/groups/live-capability')).toBe(1)
@@ -332,16 +359,16 @@ test.describe('Recovered CN Provider management contracts', () => {
 
     await accountsLink.evaluate((link: HTMLAnchorElement) => link.click())
     await expect(page).toHaveURL(`${consoleOrigin}/admin/accounts`)
-    await expect(host).toHaveAttribute('data-zero-one-cn-provider-admin', 'accounts')
+    await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'accounts')
     await expect(host).not.toBeEmpty()
 
     await page.goBack()
     await expect(page).toHaveURL(`${consoleOrigin}/admin/groups`)
-    await expect(host).toHaveAttribute('data-zero-one-cn-provider-admin', 'groups')
+    await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'groups')
     await expect(host).not.toBeEmpty()
     await page.goBack()
     await expect(page).toHaveURL(`${consoleOrigin}/admin/accounts`)
-    await expect(host).toHaveAttribute('data-zero-one-cn-provider-admin', 'accounts')
+    await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'accounts')
     await expect(host).not.toBeEmpty()
     expect(getCounts.get('/admin/accounts')).toBe(3)
     expect(getCounts.get('/admin/groups')).toBe(2)
@@ -377,9 +404,9 @@ test.describe('Recovered CN Provider management contracts', () => {
     ).first().evaluate((link: HTMLAnchorElement) => link.click())
     await expect(page).toHaveURL(`${consoleOrigin}/admin/dashboard`)
     await expect(host).toHaveCount(0)
-    await expect(page.locator('#zero-one-cn-provider-admin-style')).toHaveCount(0)
-    await expect(page.locator('[data-zero-one-cn-provider-hidden]')).toHaveCount(0)
-    await expect(page.locator('body.zero-one-cn-provider-admin-active')).toHaveCount(0)
+    await expect(page.locator('#zero-one-provider-catalog-admin-style')).toHaveCount(0)
+    await expect(page.locator('[data-zero-one-provider-catalog-hidden]')).toHaveCount(0)
+    await expect(page.locator('body.zero-one-provider-catalog-admin-active')).toHaveCount(0)
     await expect.poll(() => page.evaluate(() => (
       window as typeof window & { __zeroOneVisibleRouteFrames?: number[] }
     ).__zeroOneVisibleRouteFrames?.length || 0)).toBe(8)
@@ -401,6 +428,8 @@ test.describe('Recovered CN Provider management contracts', () => {
     })
     const host = page.locator('#zero-one-provider-catalog-admin')
     const routes = [
+      ['/admin/accounts', 'accounts'],
+      ['/admin/groups', 'groups'],
       ['/admin/channels/pricing', 'channels'],
       ['/admin/channels/monitor', 'channel-monitor'],
       ['/admin/ops', 'ops'],
@@ -434,7 +463,7 @@ test.describe('Recovered CN Provider management contracts', () => {
 
   test('route adapter follows the approved shell simple mode', async ({ page }) => {
     await page.goto(`${consoleOrigin}/admin/accounts`)
-    await expect(page.locator('#zero-one-cn-provider-admin')).not.toBeEmpty()
+    await expect(page.locator('#zero-one-provider-catalog-admin')).not.toBeEmpty()
     await expect(page.getByRole('columnheader', { name: '分组', exact: true })).toHaveCount(0)
   })
 
@@ -442,16 +471,12 @@ test.describe('Recovered CN Provider management contracts', () => {
     const adapterAssets: string[] = []
     page.on('request', (request) => {
       const path = new URL(request.url()).pathname
-      if (
-        path.startsWith('/assets/cn-provider-admin-v7/') ||
-        path.startsWith('/assets/cn-provider-admin-v8/')
-      ) adapterAssets.push(path)
+      if (path.startsWith('/assets/cn-provider-admin-v8/')) adapterAssets.push(path)
     })
 
     await page.goto(`${consoleOrigin}/admin/dashboard`)
     await expect(page.locator('.app-shell')).toBeVisible()
     await expect.poll(() => adapterAssets).toEqual([
-      '/assets/cn-provider-admin-v7/cn-provider-admin.js',
       '/assets/cn-provider-admin-v8/cn-provider-admin.js',
     ])
     await expect(page.locator('#zero-one-cn-provider-admin')).toHaveCount(0)
@@ -460,7 +485,7 @@ test.describe('Recovered CN Provider management contracts', () => {
     await expect(page.locator('#zero-one-provider-catalog-admin-style')).toHaveCount(0)
   })
 
-  test('leaf load failure keeps the approved shell and a retry action', async ({ page }) => {
+  test('legacy v1 leaf load failure keeps the approved shell and a retry action', async ({ page }) => {
     const pageErrors: string[] = []
     let leafRequests = 0
     page.on('pageerror', (error) => pageErrors.push(error.message))
@@ -476,6 +501,7 @@ test.describe('Recovered CN Provider management contracts', () => {
     })
 
     await page.goto(`${consoleOrigin}/admin/accounts`)
+    await loadLegacyAccountAdapter(page)
     await expect(page.locator('.app-shell')).toBeVisible()
     await expect(page.getByRole('alert')).toContainText('管理页面加载失败')
     const retry = page.getByRole('button', { name: '重试', exact: true })
@@ -485,6 +511,7 @@ test.describe('Recovered CN Provider management contracts', () => {
       'accounts',
     )
     await retry.click()
+    await loadLegacyAccountAdapter(page)
     await expect(page.locator('#zero-one-cn-provider-admin')).toHaveAttribute(
       'data-zero-one-cn-provider-admin',
       'accounts',
@@ -524,6 +551,7 @@ test.describe('Recovered CN Provider management contracts', () => {
 
     for (historicalLeaf of historicalLeaves) {
       await page.goto(`${consoleOrigin}/admin/accounts`)
+      await loadLegacyAccountAdapter(page)
       await expect(page.locator('.app-shell')).toBeVisible()
       await expect(page.getByRole('button', { name: '添加账号', exact: true })).toBeVisible()
       await expect(page.getByRole('alert')).toHaveCount(0)
@@ -535,7 +563,7 @@ test.describe('Recovered CN Provider management contracts', () => {
     const pageErrors: string[] = []
     let leafRequests = 0
     page.on('pageerror', (error) => pageErrors.push(error.message))
-    await page.route('**/assets/cn-provider-admin-v7/cnProviderAdminLeaf-*.js', (route) => {
+    await page.route('**/assets/cn-provider-admin-v8/cnProviderAdminLeaf-*.js', (route) => {
       leafRequests += 1
       if (leafRequests === 1) {
         return route.fulfill({ status: 503, contentType: 'text/javascript', body: '' })

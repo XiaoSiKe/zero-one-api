@@ -67,18 +67,12 @@ export function verifyCNProviderConsole(consoleDir) {
   }
   const registrationEntry = index.slice(registrationStart, standardStart)
   const standardEntry = index.slice(standardStart, entryEnd)
-  const legacyAdapterImport = 'import("/assets/cn-provider-admin-v1/cn-provider-admin.js")'
-  const catalogAdapterImport = 'import("/assets/cn-provider-admin-v7/cn-provider-admin.js")'
   const adapterImport = 'import("/assets/cn-provider-admin-v8/cn-provider-admin.js")'
   const shellImport = `import("/assets/${CN_PROVIDER_SHELL_ASSET}")`
-  requireMarkers(registrationEntry, [legacyAdapterImport, catalogAdapterImport, adapterImport, shellImport], 'Registration Console entry')
-  requireMarkers(standardEntry, [`await ${legacyAdapterImport}`, `await ${catalogAdapterImport}`, `await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
+  requireMarkers(registrationEntry, [adapterImport, shellImport], 'Registration Console entry')
+  requireMarkers(standardEntry, [`await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
   if (
-    registrationEntry.indexOf(legacyAdapterImport) > registrationEntry.indexOf(catalogAdapterImport) ||
-    registrationEntry.indexOf(catalogAdapterImport) > registrationEntry.indexOf(adapterImport) ||
     registrationEntry.indexOf(adapterImport) > registrationEntry.indexOf(shellImport) ||
-    standardEntry.indexOf(legacyAdapterImport) > standardEntry.indexOf(catalogAdapterImport) ||
-    standardEntry.indexOf(catalogAdapterImport) > standardEntry.indexOf(adapterImport) ||
     standardEntry.indexOf(adapterImport) > standardEntry.indexOf(shellImport)
   ) {
     throw new Error('CN Provider route seam must start before the approved Console shell')

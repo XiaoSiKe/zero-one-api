@@ -111,9 +111,7 @@ assert_text "$asset_headers" 'Cache-Control: public, max-age=31536000, immutable
 console=$(curl -fsS -H "Host: $request_host" "$edge_url/login")
 assert_text "$console" '<title>零一 API - AI API Gateway</title>' 'primary login did not return the recovered console'
 assert_text "$console" 'fetch("/api/v1/settings/public"' 'recovered console did not bootstrap live public settings'
-assert_text "$console" 'await import("/assets/cn-provider-admin-v1/cn-provider-admin.js")' 'recovered console CN Provider account/group adapter is missing'
-assert_text "$console" 'await import("/assets/cn-provider-admin-v7/cn-provider-admin.js")' 'recovered console Provider catalog route adapter is missing'
-assert_text "$console" 'await import("/assets/cn-provider-admin-v8/cn-provider-admin.js")' 'recovered console Provider catalog route adapter is missing'
+assert_text "$console" 'await import("/assets/cn-provider-admin-v8/cn-provider-admin.js")' 'recovered console unified Provider catalog route adapter is missing'
 assert_text "$console" 'await import("/assets/cn-provider-shell-v10/index-9xJBhx8B.js")' 'recovered console approved shell seam is missing'
 assert_text "$console" 'await import("/assets/zero-one-local-preview-guard-v2.js")' 'recovered console local preview guard is missing'
 assert_text "$console" 'await import("/assets/zero-one-custom-page-security-v1.js")' 'recovered console custom page security guard is missing'
