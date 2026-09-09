@@ -134,7 +134,7 @@ test.describe('Console public auth contracts', () => {
       if (pathname === '/assets/cn-provider-shell-v10/LoginView-BbpS8aW1.js') {
         loginChunkRequestedBeforeSettingsRelease ||= !settingsReleased
       }
-      if (pathname === '/assets/cn-provider-admin-v1/cn-provider-admin.js') {
+      if (pathname === '/assets/cn-provider-admin-v8/cn-provider-admin.js') {
         adapterRequested = true
       }
     })
@@ -148,7 +148,7 @@ test.describe('Console public auth contracts', () => {
       await stalledSettings
       await route.fallback().catch(() => {})
     })
-    await page.route('**/assets/cn-provider-admin-v1/cn-provider-admin.js', async (route) => {
+    await page.route('**/assets/cn-provider-admin-v8/cn-provider-admin.js', async (route) => {
       await stalledAdapter
       await route.fallback().catch(() => {})
     })
@@ -3365,7 +3365,8 @@ test.describe('Console visual contracts', () => {
     expect(response?.status()).toBe(200)
     const html = await response!.text()
     expect(html).toContain('/assets/cn-provider-admin-v8/cn-provider-admin.js')
-    expect(html).toContain('/assets/cn-provider-admin-v7/cn-provider-admin.js')
+    expect(html).not.toContain('import("/assets/cn-provider-admin-v1/cn-provider-admin.js")')
+    expect(html).not.toContain('import("/assets/cn-provider-admin-v7/cn-provider-admin.js")')
     expect(html).toContain('/assets/cn-provider-shell-v10/index-9xJBhx8B.js')
     expect(html).toContain('/assets/online-image-v17/online-image.js')
     expect(html).toContain('/assets/zero-one-settings-unified-save-v1.js')

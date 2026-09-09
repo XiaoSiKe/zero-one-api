@@ -51,7 +51,9 @@ test.describe('Phone UI layout', () => {
       await expectWithinViewport(actions.locator('button'), width)
       await actions.getByRole('button', { name: /创建 API 密钥/ }).click()
       await expect(page).toHaveURL(/\/keys$/)
-      await expect(page.locator('main')).not.toHaveAttribute('data-zero-one-dashboard-layout')
+      const activeMain = page.locator('main:visible')
+      await expect(activeMain).toHaveCount(1)
+      await expect(activeMain).not.toHaveAttribute('data-zero-one-dashboard-layout')
     })
   }
 })
