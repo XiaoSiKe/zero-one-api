@@ -116,7 +116,8 @@
         "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2/",
         "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v3/",
         "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v4/",
-        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v5/"
+        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v5/",
+        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6/"
       ]
     },
     {
@@ -376,8 +377,10 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v9/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v10/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v7/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/",
         "frontend/vite.adapter-boundary.ts"
       ]
     },
@@ -499,6 +502,7 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v9/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v10/",
         "visual-regression/tests/dashboard-spend.behavior.spec.ts",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-cards.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-cards.png",

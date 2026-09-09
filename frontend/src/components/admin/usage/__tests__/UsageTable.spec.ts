@@ -32,11 +32,14 @@ const messages: Record<string, string> = {
   'usage.serviceTierPriority': 'Fast',
   'usage.serviceTierFlex': 'Flex',
   'usage.serviceTierStandard': 'Standard',
-  'usage.rate': 'Rate',
-  'usage.accountMultiplier': 'Account rate',
+  'usage.userRateMultiplier': 'User billing rate',
+  'usage.accountMultiplier': 'Request-time upstream rate',
+  'usage.accountMultiplierHint': 'Saved upstream request snapshot',
+  'usage.accountCostPending': 'Pending calculation',
+  'usage.providerAccount': 'Provider Account',
   'usage.original': 'Original',
   'usage.userBilled': 'User billed',
-  'usage.accountBilled': 'Account billed',
+  'usage.accountBilled': 'Account cost',
   'usage.imageUnit': ' images',
   'usage.imageCount': 'Image count',
   'usage.imageBillingSize': 'Billing size',
@@ -84,6 +87,7 @@ const DataTableStub = {
     <div>
       <div v-for="row in data" :key="row.request_id">
         <slot name="cell-model" :row="row" :value="row.model" />
+        <slot name="cell-account" :row="row" />
         <slot name="cell-billing_mode" :row="row" />
         <slot name="cell-tokens" :row="row" />
         <slot name="cell-cost" :row="row" />
@@ -95,6 +99,8 @@ const DataTableStub = {
 
 const baseImageRow = {
   request_id: 'req-admin-image',
+  account_id: 198,
+  account: { id: 198, name: 'xin' },
   model: 'gpt-image-2',
   actual_cost: 0.4,
   total_cost: 0.4,
@@ -137,16 +143,83 @@ describe('admin UsageTable tooltip', () => {
   })
 
   it.each([
-    [undefined, 'A $100.000000'],
-    [null, 'A $100.000000'],
-    [0, 'A $0.000000'],
-    [0.22, 'A $22.000000'],
-  ])('uses the saved account multiplier %s for historical cost', (rate, expected) => {
+    [undefined, 'Account cost Pending calculation'],
+    [null, 'Account cost Pending calculation'],
+    [0, 'Account cost $0.000000'],
+    [0.22, 'Account cost $22.000000'],
+  ])('uses the saved upstream multiplier %s for historical cost', (rate, expected) => {
     const wrapper = mount(UsageTable, {
-      props: { data: [{ ...baseImageRow, billing_mode: 'token', total_cost: 100, account_rate_multiplier: rate }], loading: false, columns: [] },
+      props: { data: [{ ...baseImageRow, billing_mode: 'token', total_cost: 100, account_rate_multiplier: 8, upstream_rate_multiplier: rate }], loading: false, columns: [] },
       global: { stubs: { DataTable: DataTableStub, EmptyState: true, Icon: true, Teleport: true } },
     })
     expect(wrapper.text()).toContain(expected)
+  })
+
+  it('prefers the saved account stats cost and identifies the exact Provider Account', () => {
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [{
+          ...baseImageRow,
+          billing_mode: 'token',
+          total_cost: 100,
+          account_stats_cost: 7,
+          account_rate_multiplier: 8,
+          upstream_rate_multiplier: 0.22,
+        }],
+        loading: false,
+        columns: [],
+      },
+      global: { stubs: { DataTable: DataTableStub, EmptyState: true, Icon: true, Teleport: true } },
+    })
+
+    const identity = wrapper.get('[data-testid="usage-account-identity"]')
+    expect(identity.text()).toContain('xin')
+    expect(identity.text()).toContain('#198')
+    expect(wrapper.get('[data-testid="usage-account-cost"]').text()).toContain('Account cost $1.540000')
+  })
+
+  it.each([
+    [null, 'Pending calculation', 'Account cost Pending calculation'],
+    [0, '0.00x', '$0.000000'],
+    [0.22, '0.22x', '$22.000000'],
+  ])('renders saved upstream rate %s without confusing null and zero', async (rate, expectedRate, expectedCost) => {
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [{ ...baseImageRow, billing_mode: 'token', total_cost: 100, account_rate_multiplier: 8, upstream_rate_multiplier: rate }],
+        loading: false,
+        columns: [],
+      },
+      global: { stubs: { DataTable: DataTableStub, EmptyState: true, Icon: true, Teleport: true } },
+    })
+
+    await wrapper.get('[data-testid="cost-tooltip-trigger"]').trigger('mouseenter')
+    await nextTick()
+
+    const detail = wrapper.get('[data-testid="usage-account-identity-detail"]')
+    expect(detail.text()).toContain('Provider Account')
+    expect(detail.text()).toContain('xin #198')
+    expect(wrapper.text()).toContain('Request-time upstream rate')
+    expect(wrapper.text()).toContain(expectedRate)
+    expect(wrapper.text()).toContain(expectedCost)
+  })
+
+  it('keeps Provider Account cost fields out of the regular-user table', async () => {
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [{ ...baseImageRow, billing_mode: 'token', total_cost: 100, account_rate_multiplier: 8, upstream_rate_multiplier: 0.22 }],
+        loading: false,
+        columns: [],
+        showAccountBilling: false,
+      },
+      global: { stubs: { DataTable: DataTableStub, EmptyState: true, Icon: true, Teleport: true } },
+    })
+
+    expect(wrapper.find('[data-testid="usage-account-cost"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="cost-tooltip-trigger"]').trigger('mouseenter')
+    await nextTick()
+    expect(wrapper.text()).not.toContain('Account cost')
+    expect(wrapper.text()).not.toContain('Request-time upstream rate')
+    expect(wrapper.find('[data-testid="usage-account-identity-detail"]').exists()).toBe(false)
   })
 
   it('marks only usage rows that actually applied long-context billing', () => {
@@ -184,9 +257,12 @@ describe('admin UsageTable tooltip', () => {
   it('shows service tier and billing breakdown in cost tooltip', async () => {
     const row = {
       request_id: 'req-admin-1',
+      account_id: 198,
+      account: { id: 198, name: 'xin' },
       actual_cost: 0.092883,
       total_cost: 0.092883,
-      account_rate_multiplier: 0.22,
+      account_rate_multiplier: 8,
+      upstream_rate_multiplier: 0.22,
       rate_multiplier: 1,
       service_tier: 'priority',
       input_cost: 0.020285,
@@ -213,24 +289,64 @@ describe('admin UsageTable tooltip', () => {
       },
     })
 
-    const tooltipTriggers = wrapper.findAll('.group.relative')
-    await tooltipTriggers[tooltipTriggers.length - 1].trigger('mouseenter')
+    await wrapper.get('[data-testid="cost-tooltip-trigger"]').trigger('mouseenter')
     await nextTick()
 
     const text = wrapper.text()
     expect(text).toContain('Service tier')
     expect(text).toContain('Fast')
-    expect(text).toContain('Rate')
+    expect(text).toContain('User billing rate')
     expect(text).toContain('1.00x')
-    expect(text).toContain('Account rate')
+    expect(text).toContain('Request-time upstream rate')
     expect(text).toContain('0.22x')
     expect(text).toContain('0.020434')
     expect(text).toContain('User billed')
-    expect(text).toContain('Account billed')
+    expect(text).toContain('Account cost')
     expect(text).toContain('$0.020434')
     expect(text).toContain('$5.0000 / 1M tokens')
     expect(text).toContain('$30.0000 / 1M tokens')
     expect(text).toContain('$0.069568')
+    expect(text).toContain('xin #198')
+  })
+
+  it('keeps the reported user charge for the screenshot-sized GPT-5.6 request', async () => {
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [{
+          ...baseImageRow,
+          request_id: 'req-screenshot-reconciliation',
+          model: 'gpt-5.6-sol',
+          billing_mode: 'token',
+          service_tier: 'standard',
+          input_tokens: 229_417,
+          output_tokens: 433,
+          cache_read_tokens: 4_864,
+          input_cost: 0.32788709,
+          output_cost: 0.00299,
+          cache_read_cost: 0.000432,
+          total_cost: 0.33130909,
+          account_stats_cost: 0.33130909,
+          rate_multiplier: 0.39,
+          actual_cost: 0.013849,
+          account_rate_multiplier: 1,
+          upstream_rate_multiplier: 0.22,
+        }],
+        loading: false,
+        columns: [],
+      },
+      global: { stubs: { DataTable: DataTableStub, EmptyState: true, Icon: true, Teleport: true } },
+    })
+
+    expect(wrapper.text()).toContain('$0.013849')
+    expect(wrapper.text()).toContain('Account cost $0.072888')
+
+    await wrapper.get('[data-testid="cost-tooltip-trigger"]').trigger('mouseenter')
+    await nextTick()
+    expect(wrapper.text()).toContain('0.39x')
+    expect(wrapper.text()).toContain('0.22x')
+    expect(wrapper.text()).toContain('$0.331309')
+    expect(wrapper.text()).toContain('$0.072888')
+    expect(wrapper.text()).toContain('$0.013849')
   })
 
   it('shows requested and upstream models separately for admin rows', () => {

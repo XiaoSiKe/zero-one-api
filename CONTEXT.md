@@ -139,5 +139,5 @@ _Avoid_: Console 渠道监控、渠道明细、公开监控数据
 _Avoid_: 从注册按钮推断权限、隐藏后端错误即启用、先读取再无条件删除令牌
 
 **Admin Dashboard Consumption（管理员仪表盘消费）**：
-管理员仪表盘第一行显示总消费、今日消费、今日请求和用户总数；用户卡副文案显示今日新增。消费读取客户实际扣费，成本统一读取账单保存的 `account_stats_cost/total_cost` 与 `account_rate_multiplier`，不依赖上游声明倍率或显示待确认。现有日期与粒度控件共同驱动实际消费和总 Token 趋势，今日卡片始终表示应用时区中的今天。当前 Console 不提供收益指标、独立财务接口或第二套刷新。实现与保护边界见 [ADR 0015](docs/adr/0015-v023-cost-dashboard-and-rollback-compatibility.md)。
-_Avoid_: 把用户 ID 当总数、用当前账号设置重算旧账、从前端重算成本、恢复收益卡片、删除旧账单证据或已发布资源。
+管理员仪表盘第一行显示总消费、今日消费、今日请求和用户总数；用户卡副文案显示今日新增。消费读取客户实际扣费。Provider Account 成本统一读取账单保存的 `account_stats_cost/total_cost` 与请求时 `upstream_rate_multiplier`；缺少上游声明证据时保持待核算，不用本地账号倍率或当前探测结果补算。账号管理将当前账号倍率与上游声明观测倍率分列展示，账单明确标记请求快照与 Provider Account ID；见 [ADR 0017](docs/adr/0017-upstream-declared-account-cost.md)。现有日期与粒度控件共同驱动实际消费和总 Token 趋势，今日卡片始终表示应用时区中的今天。当前 Console 不提供收益指标、独立财务接口或第二套刷新。
+_Avoid_: 把用户 ID 当总数、用本地或当前账号设置重算旧账、把未知上游成本当 1x/0x、从前端重新推导倍率、恢复收益卡片、删除旧账单证据或已发布资源。

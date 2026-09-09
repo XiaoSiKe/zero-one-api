@@ -127,6 +127,35 @@ test.describe('Recovered CN Provider management contracts', () => {
     expect(runtimeErrors).toEqual([])
   })
 
+  test('Accounts shows current and observed rates together after migrating an old layout', async ({ page }, testInfo) => {
+    const runtimeErrors = collectRuntimeErrors(page)
+    await page.addInitScript(() => {
+      localStorage.setItem('account-hidden-columns', JSON.stringify(['notes', 'rate_multiplier']))
+      localStorage.setItem('account-hidden-columns-version', 'scheduler-score-hidden-by-default')
+    })
+    await page.goto(`${consoleOrigin}/admin/accounts`)
+
+    await expect.poll(() => runtimeErrors).toEqual([])
+    await expect(page.locator('#zero-one-cn-provider-admin')).toHaveAttribute(
+      'data-zero-one-cn-provider-admin',
+      'accounts',
+    )
+    if (testInfo.project.name === 'chromium-mobile') {
+      await page.locator('button[title="更多操作"]').click()
+      await expect(page.getByText('当前账号倍率', { exact: true }).last()).toBeVisible()
+      await expect(page.getByText('上游声明倍率（观测）', { exact: true }).last()).toBeVisible()
+    } else {
+      await expect(page.getByText('当前账号倍率', { exact: true })).toBeVisible()
+      await expect(page.getByText('上游声明倍率（观测）', { exact: true })).toBeVisible()
+    }
+    const hiddenColumns = await page.evaluate(() => JSON.parse(
+      localStorage.getItem('account-hidden-columns') || '[]',
+    ) as string[])
+    expect(hiddenColumns).toContain('notes')
+    expect(hiddenColumns).not.toContain('scheduler_score')
+    expect(hiddenColumns).not.toContain('rate_multiplier')
+  })
+
   test('Channels and monitoring expose every CN Provider platform', async ({ page }) => {
     const runtimeErrors = collectRuntimeErrors(page)
 
@@ -413,13 +442,17 @@ test.describe('Recovered CN Provider management contracts', () => {
     const adapterAssets: string[] = []
     page.on('request', (request) => {
       const path = new URL(request.url()).pathname
-      if (path.startsWith('/assets/cn-provider-admin-v7/')) adapterAssets.push(path)
+      if (
+        path.startsWith('/assets/cn-provider-admin-v7/') ||
+        path.startsWith('/assets/cn-provider-admin-v8/')
+      ) adapterAssets.push(path)
     })
 
     await page.goto(`${consoleOrigin}/admin/dashboard`)
     await expect(page.locator('.app-shell')).toBeVisible()
     await expect.poll(() => adapterAssets).toEqual([
       '/assets/cn-provider-admin-v7/cn-provider-admin.js',
+      '/assets/cn-provider-admin-v8/cn-provider-admin.js',
     ])
     await expect(page.locator('#zero-one-cn-provider-admin')).toHaveCount(0)
     await expect(page.locator('#zero-one-cn-provider-admin-style')).toHaveCount(0)
@@ -431,6 +464,9 @@ test.describe('Recovered CN Provider management contracts', () => {
     const pageErrors: string[] = []
     let leafRequests = 0
     page.on('pageerror', (error) => pageErrors.push(error.message))
+    await page.route('**/assets/cn-provider-admin-v8/cn-provider-admin.js', (route) => {
+      return route.fulfill({ status: 200, contentType: 'text/javascript', body: 'export {}' })
+    })
     await page.route('**/assets/cn-provider-admin-v1/cnProviderAdminLeaf-*.js', (route) => {
       leafRequests += 1
       if (leafRequests === 1) {
@@ -467,6 +503,9 @@ test.describe('Recovered CN Provider management contracts', () => {
     ]
     const requestedHistoricalLeaves = new Set<string>()
     let historicalLeaf = historicalLeaves[0]
+    await page.route('**/assets/cn-provider-admin-v8/cn-provider-admin.js', (route) => {
+      return route.fulfill({ status: 200, contentType: 'text/javascript', body: 'export {}' })
+    })
     page.on('request', (request) => {
       const requestedLeaf = historicalLeaves.find((leaf) =>
         new URL(request.url()).pathname.endsWith(`/${leaf}`),

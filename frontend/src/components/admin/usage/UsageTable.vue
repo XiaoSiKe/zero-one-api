@@ -49,7 +49,10 @@
         </template>
 
         <template #cell-account="{ row }">
-          <span class="text-sm text-gray-900 dark:text-white">{{ row.account?.name || '-' }}</span>
+          <div data-testid="usage-account-identity" class="flex items-baseline gap-1 text-sm">
+            <span class="text-gray-900 dark:text-white">{{ row.account?.name || '-' }}</span>
+            <span class="font-mono text-xs text-gray-500 dark:text-gray-400">#{{ row.account_id }}</span>
+          </div>
         </template>
 
         <template #cell-model="{ row }">
@@ -200,6 +203,7 @@
               <!-- Cost Detail Tooltip -->
               <div
                 class="group relative"
+                data-testid="cost-tooltip-trigger"
                 @mouseenter="showTooltip($event, row)"
                 @mouseleave="hideTooltip"
               >
@@ -208,8 +212,12 @@
                 </div>
               </div>
             </div>
-            <div v-if="showAccountBilling" class="mt-0.5 text-[11px] text-zo-alert-500 dark:text-zo-alert-400">
-              A ${{ accountBilled(row).toFixed(6) }}
+            <div
+              v-if="showAccountBilling"
+              data-testid="usage-account-cost"
+              class="mt-0.5 text-[11px] text-zo-alert-500 dark:text-zo-alert-400"
+            >
+              {{ t('usage.accountBilled') }} {{ formatAccountBilled(row) }}
             </div>
           </div>
         </template>
@@ -461,8 +469,8 @@
             <span class="font-semibold text-cyan-300">{{ getUsageServiceTierLabel(tooltipData?.service_tier, t) }}</span>
           </div>
           <div class="flex items-center justify-between gap-6">
-            <span class="text-gray-400">{{ t('usage.rate') }}</span>
-            <span class="font-semibold text-blue-400">{{ formatMultiplier(tooltipData?.rate_multiplier || 1) }}x</span>
+            <span class="text-gray-400">{{ t('usage.userRateMultiplier') }}</span>
+            <span class="font-semibold text-blue-400">{{ formatMultiplier(tooltipData?.rate_multiplier ?? 1) }}x</span>
           </div>
           <div class="flex items-center justify-between gap-6">
             <span class="text-gray-400">{{ t('usage.original') }}</span>
@@ -475,13 +483,23 @@
           <!-- Account billing (separated from user billing) -->
           <template v-if="showAccountBilling">
             <div class="flex items-center justify-between gap-6 border-t border-gray-700 pt-1.5">
-              <span class="text-gray-400">{{ t('usage.accountMultiplier') }}</span>
-              <span class="font-semibold text-blue-400">{{ formatMultiplier(tooltipData?.account_rate_multiplier ?? 1) }}x</span>
+              <span class="text-gray-400" :title="t('usage.accountMultiplierHint')">{{ t('usage.accountMultiplier') }}</span>
+              <span class="font-semibold text-blue-400">
+                {{ tooltipData?.upstream_rate_multiplier == null
+                  ? t('usage.accountCostPending')
+                  : `${formatMultiplier(tooltipData.upstream_rate_multiplier)}x` }}
+              </span>
+            </div>
+            <div data-testid="usage-account-identity-detail" class="flex items-center justify-between gap-6">
+              <span class="text-gray-400">{{ t('usage.providerAccount') }}</span>
+              <span class="font-medium text-white">
+                {{ tooltipData?.account?.name || '-' }} #{{ tooltipData?.account_id ?? '-' }}
+              </span>
             </div>
             <div class="flex items-center justify-between gap-6">
               <span class="text-gray-400">{{ t('usage.accountBilled') }}</span>
               <span class="font-semibold text-zo-signal-400">
-                ${{ accountBilled(tooltipData ?? {}).toFixed(6) }}
+                {{ formatAccountBilled(tooltipData ?? {}) }}
               </span>
             </div>
           </template>
@@ -531,12 +549,17 @@ import {
   hasImageInputCost,
 } from '@/utils/imageUsage'
 
-/** Historical account cost uses the billing values captured on the usage row. */
-function accountBilled(row: { total_cost?: number | null; account_stats_cost?: number | null; account_rate_multiplier?: number | null }): number {
+/** Historical account cost requires the upstream declaration frozen on the usage row. */
+function accountBilled(row: { total_cost?: number | null; account_stats_cost?: number | null; upstream_rate_multiplier?: number | null }): number | null {
   const base = row.account_stats_cost ?? row.total_cost
-  const rate = row.account_rate_multiplier ?? 1
-  if (base == null || !Number.isFinite(base) || !Number.isFinite(rate)) return 0
+  const rate = row.upstream_rate_multiplier
+  if (base == null || rate == null || !Number.isFinite(base) || !Number.isFinite(rate)) return null
   return base * rate
+}
+
+function formatAccountBilled(row: { total_cost?: number | null; account_stats_cost?: number | null; upstream_rate_multiplier?: number | null }): string {
+  const value = accountBilled(row)
+  return value == null ? t('usage.accountCostPending') : `$${value.toFixed(6)}`
 }
 
 
