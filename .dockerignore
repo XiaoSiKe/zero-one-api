@@ -31,7 +31,6 @@ Thumbs.db
 # Build artifacts
 dist/
 build/
-artifacts/design-qa/
 
 # Managed marketing sources are versioned but never copied into images.
 assets/marketing/

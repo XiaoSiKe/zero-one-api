@@ -6,7 +6,6 @@ const frontendRoot = resolve(__dirname, '../../../..')
 const stripeConsumers = [
   'src/views/user/StripePaymentView.vue',
   'src/views/user/StripePopupView.vue',
-  'src/components/payment/StripePaymentInline.vue',
 ]
 
 function readFrontendFile(path: string): string {

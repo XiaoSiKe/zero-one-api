@@ -455,7 +455,7 @@ TTFT parser tests use fake streams, not a production upstream account pool.
 ## Upstream Provenance And GitHub Fork Metadata
 
 本产品来源于 `Wei-Shaw/sub2api`，固定基线为
-`v0.2.1@578785ee7fb35030b094b69624efe25670a36f5f`。托管迁移保留了完整 Git
+`v0.2.4@5de5e2bed035d43591a2e10e51f420ef6a84eb98`。托管迁移保留了完整 Git
 历史，且基线是产品 `main` 的祖先。`origin` 指向 `XiaoSiKe/zero-one-api`，
 `upstream` 指向原仓库并设置 push URL 为 `DISABLED`；这不改变上游许可证或作者。
 
@@ -474,7 +474,7 @@ TTFT parser tests use fake streams, not a production upstream account pool.
 ```bash
 gh api repos/XiaoSiKe/zero-one-api --jq '{full_name,fork,parent:.parent.full_name,source:.source.full_name}'
 git remote -v
-git merge-base --is-ancestor e8cb019fabf8b55199436229044cbf9aa7a82564 main
+git merge-base --is-ancestor 5de5e2bed035d43591a2e10e51f420ef6a84eb98 main
 git rev-parse --is-shallow-repository
 ```
 
@@ -535,11 +535,10 @@ GoReleaser archives 均声明携带这三份根级材料。镜像文件位于
 新脚本已精确登记永久保留，清单增加至 441 项，Overlay 仍为五类。
 这次发现是未来工作目录构建的风险，不能据此声称此前干净 CI 构建已泄露信息。
 
-可选 `compose.production-baseline-preview.yml` 原先仍固定旧账号 v0.1.179。
-当前已更新为下面这次实际发布/部署的 v0.1.183 Backend digest，并同步精确 Compose
-断言；仍由最后一层 overlay 清除开发 `build`，保留回环绑定，不使用浮动 tag。
-该变更没有启动本机预览，也不连接生产数据库；旧 v0.1.179 的源码/镜像记录仍属于
-历史证据，不把不可访问的旧 registry 地址机械改成新 owner。
+旧 `compose.production-baseline-preview.yml` 曾把本地预览固定到一次 v0.1.183
+生产镜像。该专用预览路径不再代表当前 Upstream Baseline，已由
+[ADR 0018](adr/0018-codebase-convergence.md) 退役；本地验证使用当前源码预览，生产
+回滚只允许走本节后续的受支持恢复点和不可变镜像流程。
 
 ## Release And Rollback
 
@@ -613,11 +612,12 @@ systemd 临时 timer，20 分钟后调用同一脚本的 `watchdog RECOVERY_DIR`
 
 回滚使用**本次发布前恢复点**的源码、兼容双镜像及环境副本，保持业务密钥、挂载和数据库不变。恢复后重做路由、登录、API 和核心账单检查。已接受的新写入不得被旧 dump 覆盖；数据库恢复只用于已确认数据库损坏的独立恢复流程。
 
-历史成本兼容字段保持增量且不删列。v0.2.3 及后续版本统一按
-`COALESCE(account_stats_cost, total_cost) × COALESCE(account_rate_multiplier, 1)`
-显示账号成本，客户实际消费继续使用 `actual_cost`。回滚到旧镜像时允许其读写保留字段，
-切回新镜像后不会以当前账号配置重算旧账。完整口径见
-[ADR 0015](adr/0015-v023-cost-dashboard-and-rollback-compatibility.md)。
+历史成本兼容字段保持增量且不删列。当前版本统一按
+`COALESCE(account_stats_cost, total_cost) × upstream_rate_multiplier`
+显示 Provider Account 成本，客户实际消费继续使用 `actual_cost`。上游倍率缺失时成本
+保持待核算，显式零倍率才是已确认零成本；不得用本地账号倍率或当前探测结果补算。
+回滚到旧镜像时允许其读写保留字段，切回新镜像后仍不重算历史账。完整口径见
+[ADR 0017](adr/0017-upstream-declared-account-cost.md)。
 
 ### Safe Edge switch
 
@@ -693,6 +693,7 @@ maintenance window.
 
 ## Required Smoke Tests
 
+- For v0.2.4, confirm both full filenames `237_group_model_allowlist_compat.sql` and `237_add_minimax_platform.sql` are present in `schema_migrations`. Run the MiniMax migration twice in an isolated empty schema and against a populated v0.2.3-shaped schema; existing row count, primary key and business-column fingerprints must remain unchanged. Confirm MiniMax succeeds in all four constrained tables while an unknown platform is still rejected.
 - For v0.2.3, verify `235_group_model_allowlist.sql`, `236_group_model_allowlist_repair.sql` and `237_group_model_allowlist_compat.sql` in the migration-only sequence documented in [the upgrade contract](upgrades/v0.2.3.md). Confirm `model_allowlist` and `models_list_config` contain identical JSON after new-only and old-only writes, conflicting dual writes fail, and old business-column fingerprints are unchanged before starting workers.
 
 - For releases based on v0.2.0, confirm `schema_migrations` contains both `226_channel_monitor_quota_mode.sql` and `226_add_usage_log_effective_model_indexes_notx.sql`, followed by `227_composite_routes_add_cn_providers.sql`, `228_channel_pricing_multipliers.sql`, the existing 229–230 product/plugin migrations, all three 231 migrations, `232_channel_cache_write_1h_pricing.sql`, `232_group_force_openai_fast.sql`, `232_group_reasoning_effort_over_limit.sql`, and `233_group_free_openai_fast.sql`; migration identity is the complete filename. Verify `usage_logs.native_compaction_v2` is non-null with default `false`, `usage_logs.requested_reasoning_effort` remains nullable, `users.restrict_public_groups` is non-null with default `false`, all four `cache_write_1h_price` columns remain nullable, both Fast flags default to `false`, and `groups.max_reasoning_effort_over_limit` defaults to `downgrade`. Also verify the effective-model indexes, nullable positive channel multipliers, `groups.long_context_pricing_enabled=true`, the group auth-cache trigger, and the Zero One group-and-account long-context billing gate.

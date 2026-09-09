@@ -26,7 +26,6 @@ const expectedSha256 = new Map([
 const expectedDockerIgnores = [
   'assets/marketing/',
   'assets/posters/',
-  'artifacts/design-qa/',
 ]
 const runtimeExtensions = new Set([
   '.cjs',

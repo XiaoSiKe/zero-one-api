@@ -3815,7 +3815,7 @@ import {
   resolveOpenAIWSModeConcurrencyHintKey,
   type OpenAIWSMode
 } from '@/utils/openaiWsMode'
-import OAuthAuthorizationFlow from './OAuthAuthorizationFlow.vue'
+import OAuthAuthorizationFlow from '@/components/account/OAuthAuthorizationFlow.vue'
 
 // Type for exposed OAuthAuthorizationFlow component
 // Note: defineExpose automatically unwraps refs, so we use the unwrapped types

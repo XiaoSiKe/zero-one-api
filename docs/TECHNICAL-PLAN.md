@@ -3,7 +3,7 @@
 ## Baseline And Change Boundary
 
 项目的稳定技术基线为
-[`Wei-Shaw/sub2api v0.2.1@578785ee7fb35030b094b69624efe25670a36f5f`](https://github.com/Wei-Shaw/sub2api/tree/578785ee7fb35030b094b69624efe25670a36f5f)。
+[`Wei-Shaw/sub2api v0.2.4@5de5e2bed035d43591a2e10e51f420ef6a84eb98`](https://github.com/Wei-Shaw/sub2api/tree/5de5e2bed035d43591a2e10e51f420ef6a84eb98)。
 产品仓库 [`XiaoSiKe/zero-one-api`](https://github.com/XiaoSiKe/zero-one-api)
 配置为 `origin`，官方仓库 `Wei-Shaw/sub2api` 配置为只读
 `upstream`。`main` 是零一 API 唯一产品、CI 和发布分支；不保留第二产品分支。
@@ -20,7 +20,7 @@
 | `Console Skin` | Console 表面、共享壳层、色板与展示组件；不授权数据或权限语义变更。 |
 | `Public Capabilities` | Public Site、公告、公开状态，以及受鉴权的邀请归属等产品合约；只拥有列出的路径和具名 immutable 单文件例外。 |
 | `Supported Preview` | Zero One Compose、Caddy、镜像与 CI 合约；不授权通用上游部署路径。 |
-| `Visual Regression` | 固定环境的像素门禁及设计核对源 artifact；历史 `artifacts/design-qa/` 不是正式 snapshot baseline。 |
+| `Visual Regression` | 固定环境的像素门禁及正式 Playwright snapshots；历史手工 design-qa 只通过不可变 Git commit 留存。 |
 | `Marketing Source Assets` | 四张受管海报及用途清单；不得进入运行时镜像或被产品代码引用。 |
 
 Owner 表示路径的冲突审阅责任，不允许重复 owner。机械色板迁移若必须触及
@@ -59,7 +59,7 @@ The React app lives in `landing/`, uses Vite with base `/_landing/`, and is buil
 | Authentication, billing, redeem and affiliate data | Existing route/service/repository contracts and integration tests own the invariants; migrations and original business records remain immutable. |
 | Console and Landing | Source, generated adapters and Approved UI Snapshot have separate roles. Versioned asset URLs and byte content remain available for old pages and rollback; identical byte storage already shares the immutable pool. |
 | Generated code and dependencies | Ent/Wire output follows its generator. Frontend API/type exports and optional provider/plugin integrations are not classified as dead merely because the current UI does not import them. |
-| Legacy hotfixes | All seven registered groups retain their existing exit conditions. The fixed upstream VERSION is still 0.2.0, so the 0.2.1 product correction remains necessary. Billing, race, formatting, sticky-log, Grok-test and dependency fixes are not retired without an equivalent baseline and passing regressions. |
+| Legacy hotfixes | All six registered groups retain their existing exit conditions. The v0.2.4 tag still carries `backend/cmd/server/VERSION=0.2.3`, so the product version-alignment correction remains necessary. Billing, race, formatting, sticky-log, Grok-test and dependency fixes are not retired without an equivalent baseline and passing regressions. |
 | Operations and historical evidence | Release/backup entry points live under `deploy/zero-one`; recovery material stays outside Git. Historical design evidence, completed plans and provenance records do not define current runtime behavior. |
 
 The active maintenance commands and release prerequisites are owned by
@@ -166,15 +166,18 @@ edge image. Image rollback does not reverse a database migration; see
 合回 `main`。每次同步同时更新本节的 tag 与完整提交 SHA。
 主题改动保持集中，使新增上游页面继承设计系统，避免逐页分叉。
 
-当前 Upstream Baseline 是 `v0.2.3`，解引用源码提交为
-`8fa67d477d6651a744754392a8982ea589c26ae6`。本次通过真实双父合并引入分组模型
-白名单、鉴权快照 v24、峰谷成本计价、Ollama Cloud、网关和支付履约修复；
-整合、接口兼容与三个增量迁移的完整约定见 [升级记录](upgrades/v0.2.3.md)。
+当前 Upstream Baseline 是 `v0.2.4`，解引用源码提交为
+`5de5e2bed035d43591a2e10e51f420ef6a84eb98`，annotated tag object 为
+`d681d0798064ee0ffff376d19687d12f09fe600f`。本次通过真实双父合并引入 MiniMax
+平台目录、长流 keepalive、跨实例缓存失效、持久化 cooldown、Grok 媒体资格、
+OpenAI Image 2.5 及网关、代理和管理界面修复；266 个上游变化路径的整合决定见
+[v0.2.4 升级记录](upgrades/v0.2.4.md)与对应 change map。
 
 继续保留 Zero One 的分组与账号长上下文计费双重开关、定价快照隔离、
-历史上游声明证据、兑换领取证明、请求首 Token 和生图错误语义。当前成本报表恢复
-账单保存的原生账号倍率；鉴权快照升级至 v24，新字段经过隔离复制。新增上游 Console
-控件不进入 Approved UI Snapshot，后台能力通过管理 API 保持可用。
+历史上游声明证据、兑换领取证明、请求首 Token 和生图错误语义。当前 Provider
+Account 成本只使用请求时冻结的上游声明有效倍率，缺失证据保持待核算；本地账号倍率
+继续用于调度和额度核算，不重算历史账。新增上游 Console 能力通过 v8/v10/v17
+恢复资源接入，并保持所有已发布历史 URL 不变。
 
 Go 版本保持 `1.27.0`，`approved_backports` 为空。六组 legacy hotfix 继续按
 各自退出条件审查：与上游重叠的业务修复已整合，未达到等价条件的精确路径保留。

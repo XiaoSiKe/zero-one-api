@@ -1,6 +1,6 @@
 /**
  * Shared utility functions for payment order display.
- * Used by AdminOrderDetail, AdminOrderTable, AdminRefundDialog, AdminOrdersView, etc.
+ * Shared by the current refund dialog and order-management views.
  */
 
 const STATUS_BADGE_MAP: Record<string, string> = {

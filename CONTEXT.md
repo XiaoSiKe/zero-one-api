@@ -32,6 +32,10 @@ _Avoid_: 最新前端、自动构建产物、临时截图
 对固定 Upstream Baseline 之后的每个产品差异逐路径证明保留策略的发布门禁；每个差异必须由 `preserve_on_upstream_sync`、Approved UI Snapshot、带退出条件的临时修补或精确 backport 之一覆盖，仅有 Overlay 归属不代表更新时会保留。后续明确取代旧产品行为时，只能通过逐文件、绑定 owner 与受保护 ADR 的 `retired_preserved_paths` 墓碑退役旧保护，不能静默删除。
 _Avoid_: Overlay 允许清单、人工记忆、测试通过即代表不会被覆盖、删除保护记录却不留退役决策
 
+**Code Retirement（代码退役）**:
+在当前 Upstream Baseline 的路由、动态 import、生成器和测试入口上重新证明零生产引用后，删除被现有 owner 取代的实现，并用精确路径墓碑阻止后续同步静默复活。Console、Public Capabilities、Supported Preview 与 Visual Regression 的归属及 v0.2.4 本轮退役清单见 [ADR 0018](docs/adr/0018-codebase-convergence.md)。
+_Avoid_: 只因文件旧或大就删除、保留只测试死模块的测试、把未发布中间资源当不可变历史、无 ADR 恢复退役路径
+
 **Affected Verification（按实际影响验证）**:
 根据当前完整差异、共享依赖和最终交付资源选择需要执行的功能、构建、安全与视觉检查；未知路径、历史缺失或策略自身变化回退到完整验证。它与 Product Change Protection 分工不同：保护决定上游同步必须保留的产品差异，影响验证决定本次变化需要重跑的证据。权威策略见 [ADR 0013](docs/adr/0013-affected-verification-policy.md)。
 _Avoid_: 永久保护等于每次全量重测、普通 skipped 代表不适用、按 PR 标题猜测影响
