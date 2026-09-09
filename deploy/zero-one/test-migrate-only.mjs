@@ -32,7 +32,8 @@ try {
   assert.equal(migration.status, 0, `${migration.stdout}\n${migration.stderr}`)
   assert.doesNotMatch(`${migration.stdout}\n${migration.stderr}`, /TOTP encryption key auto-generated|JWT secret appears weak|Auto setup mode enabled/)
   const expected = ['232_add_usage_log_upstream_request_id.sql', '233_add_usage_log_upstream_request_id_index_notx.sql',
-    '234_channel_max_reasoning_effort_multiplier.sql', '234_group_codex_models_manifest_config.sql', '234_upstream_declared_usage_cost.sql']
+    '234_channel_max_reasoning_effort_multiplier.sql', '234_group_codex_models_manifest_config.sql', '234_upstream_declared_usage_cost.sql',
+    '237_group_model_allowlist_compat.sql', '237_add_minimax_platform.sql']
   for (const filename of expected) assert.equal(sql(`SELECT count(*) FROM schema_migrations WHERE filename='${filename}'`), '1')
   assert.equal(sql('SELECT count(*) FROM users'), '0', 'Migration-only must not create an administrator')
   assert.equal(sql("SELECT count(*) FROM settings WHERE key ILIKE '%secret%' OR key ILIKE '%encryption%'"), '0', 'Migration-only must not generate secrets')
