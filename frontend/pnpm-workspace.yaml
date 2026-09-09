@@ -16,7 +16,7 @@ overrides:
   "brace-expansion@>=2.0.0 <2.1.4": 2.1.4
   "browserslist@<=4.28.6": 4.28.7
   "flatted@<3.4.4": 3.4.4
-  "js-yaml@<4.3.1": 4.3.1
+  "js-yaml@<4.3.2": 4.3.2
   "lodash@<4.18.1": 4.18.1
   "minimatch@<3.1.4": 3.1.4
   "minimatch@>=9.0.0 <9.0.9": 9.0.9
