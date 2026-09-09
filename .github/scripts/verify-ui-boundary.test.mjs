@@ -179,7 +179,6 @@ test('validates the approved UI baseline manifest', () => {
     'frontend/src/views/admin/affiliates/AdminAffiliateCustomerDetail.vue',
     'frontend/src/views/admin/affiliates/AdminAffiliateCustomers.vue',
     'frontend/src/views/admin/affiliates/AdminAffiliateInvitesView.vue',
-    'frontend/src/views/admin/affiliates/AdminAffiliateRebatesView.vue',
     'frontend/src/views/admin/affiliates/AdminAffiliateSettingsPanel.vue',
     'frontend/src/views/admin/affiliates/AdminAffiliateRecordsTable.vue',
     'frontend/src/views/admin/affiliates/AdminAffiliateTransfersView.vue',
@@ -214,6 +213,13 @@ test('validates the approved UI baseline manifest', () => {
     'visual-regression/tests/console.visual.spec.ts',
     'visual-regression/tests/fixtures/api.ts',
   ])
+})
+
+test('accepts a multi-segment immutable UI approval slug', () => {
+  assert.doesNotThrow(() => validateManifest({
+    ...manifest,
+    baseline_ref: 'ui-approved-2026-09-09-v024-convergence',
+  }))
 })
 
 test('rejects protected UI changes while allowing API compatibility files', () => {
