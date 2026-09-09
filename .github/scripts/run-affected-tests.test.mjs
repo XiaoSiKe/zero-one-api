@@ -23,6 +23,15 @@ test('Console behavior and adapter generation are independently selectable', () 
   assert.ok(assets.some((command) => command.includes('build:cn-provider-shell')))
 })
 
+test('visual impact uses the pinned cross-platform runner', () => {
+  const full = commandsForImpact({ ...none, visual_scope: 'full' })
+  assert.ok(full.includes('sh deploy/zero-one/test-visual.sh'))
+  const dashboard = commandsForImpact({ ...none, visual_scope: 'dashboard' })
+  assert.ok(dashboard.includes(
+    'sh deploy/zero-one/test-visual.sh tests/dashboard-spend.behavior.spec.ts',
+  ))
+})
+
 test('redeem selection does not invoke unrelated backend or visual suites', () => {
   const commands = commandsForImpact({ ...none, backend_scope: 'redeem', lint: true })
   assert.ok(commands.some((command) => command.includes('Redeem|Benefit|Mystery|Balance')))

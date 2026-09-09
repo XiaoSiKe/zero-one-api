@@ -95,6 +95,7 @@
     "deploy/zero-one/safe-edge-switch.sh",
     "deploy/zero-one/test-safe-edge-switch.sh",
     "deploy/zero-one/test-live-routing.sh",
+    "deploy/zero-one/test-visual.sh",
     "deploy/zero-one/test-routing.sh",
     "deploy/zero-one/cleanup-test-users.py",
     "deploy/zero-one/test-cleanup-test-users.py",
