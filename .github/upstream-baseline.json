@@ -1,13 +1,13 @@
 {
   "schema_version": 4,
   "repository": "Wei-Shaw/sub2api",
-  "release": "v0.2.3",
-  "commit": "8fa67d477d6651a744754392a8982ea589c26ae6",
+  "release": "v0.2.4",
+  "commit": "5de5e2bed035d43591a2e10e51f420ef6a84eb98",
   "upstream_sync": {
-    "previous_release": "v0.2.1",
-    "previous_commit": "578785ee7fb35030b094b69624efe25670a36f5f",
-    "product_commit": "e9c6d86dc25bdd269c12965227263e19aac8bdb3",
-    "merge_commit": "25ec6609100ec10d4724ae4a7fe1d20614be4c4b"
+    "previous_release": "v0.2.3",
+    "previous_commit": "8fa67d477d6651a744754392a8982ea589c26ae6",
+    "product_commit": "1410aa8b21c30c484200b9fea0b9971a99824b89",
+    "merge_commit": "57c89db44a20376a2165d85383153de073dae06a"
   },
   "approved_backports": [],
   "preserve_on_upstream_sync": [
@@ -183,6 +183,7 @@
     "frontend/src/views/admin/AnnouncementsView.vue",
     "frontend/src/views/admin/AuditLogView.vue",
     "frontend/src/views/admin/ChannelMonitorView.vue",
+    "frontend/src/views/admin/__tests__/ChannelMonitorView.grok.spec.ts",
     "frontend/src/views/admin/ChannelsView.vue",
     "frontend/src/views/admin/DashboardView.vue",
     "frontend/src/components/charts/ConsumptionTrend.vue",
@@ -227,7 +228,6 @@
     "frontend/src/views/admin/affiliates/AdminAffiliateCustomerDetail.vue",
     "frontend/src/views/admin/affiliates/AdminAffiliateCustomers.vue",
     "frontend/src/views/admin/affiliates/AdminAffiliateInvitesView.vue",
-    "frontend/src/views/admin/affiliates/AdminAffiliateRebatesView.vue",
     "frontend/src/views/admin/affiliates/AdminAffiliateRecordsTable.vue",
     "frontend/src/views/admin/affiliates/AdminAffiliateSettingsPanel.vue",
     "frontend/src/views/admin/affiliates/AdminAffiliateTransfersView.vue",
@@ -266,38 +266,6 @@
     "README.md",
     "README_CN.md",
     "THIRD_PARTY_NOTICES.md",
-    "artifacts/design-qa/034-exact-ui-functional-status.png",
-    "artifacts/design-qa/034-ui-column-settings-layer-fixed.png",
-    "artifacts/design-qa/comparison-1440-final.jpg",
-    "artifacts/design-qa/comparison-brand-mark-header.jpg",
-    "artifacts/design-qa/comparison-quick-start-scroll.jpg",
-    "artifacts/design-qa/comparison.html",
-    "artifacts/design-qa/current-1440-billing.png",
-    "artifacts/design-qa/current-1440-model-plaza.png",
-    "artifacts/design-qa/current-1440-pricing.png",
-    "artifacts/design-qa/current-1440-status.png",
-    "artifacts/design-qa/latest-desktop-scroll-1440x900.png",
-    "artifacts/design-qa/latest-desktop-top-1440x900.png",
-    "artifacts/design-qa/latest-mobile-scroll-390x844.png",
-    "artifacts/design-qa/latest-mobile-top-390x844.png",
-    "artifacts/design-qa/local-1440-pricing-final.png",
-    "artifacts/design-qa/local-1440-pricing.png",
-    "artifacts/design-qa/local-1440-top-final.png",
-    "artifacts/design-qa/local-1440-top.png",
-    "artifacts/design-qa/local-390-menu-final.png",
-    "artifacts/design-qa/local-390-menu.png",
-    "artifacts/design-qa/local-390-pricing-final.png",
-    "artifacts/design-qa/local-390-pricing.png",
-    "artifacts/design-qa/local-390-top-final.png",
-    "artifacts/design-qa/local-390-top.png",
-    "artifacts/design-qa/local-900x520-final.png",
-    "artifacts/design-qa/recovered-old-1440-billing.png",
-    "artifacts/design-qa/recovered-old-1440-pricing.png",
-    "artifacts/design-qa/recovered-old-1440-status.png",
-    "artifacts/design-qa/reference-1440-pricing.png",
-    "artifacts/design-qa/reference-1440-top.png",
-    "artifacts/design-qa/restored-2026-08-18-status-desktop.png",
-    "artifacts/design-qa/restored-2026-08-18-status.png",
     "assets/MARKETING-SOURCES.md",
     "assets/marketing/zero-one-api-price-poster-v1.png",
     "assets/posters/zero-one-api-pricing-poster-v1.png",
@@ -392,7 +360,6 @@
     "deploy/zero-one/benchmark-ttft.mjs",
     "deploy/zero-one/benchmark-ttft.test.mjs",
     "deploy/zero-one/compose.bootstrap.yml",
-    "deploy/zero-one/compose.production-baseline-preview.yml",
     "deploy/zero-one/compose.yml",
     "deploy/zero-one/restore-drill.sh",
     "deploy/zero-one/test-compose.sh",
@@ -402,7 +369,6 @@
     "deploy/zero-one/verify-console-asset-closure.mjs",
     "deploy/zero-one/verify-marketing-sources.mjs",
     "deploy/zero-one/verify-public-settings.mjs",
-    "design-qa.md",
     "docs/adr/0001-separate-public-site-and-console.md",
     "docs/adr/0002-exact-root-routing-on-primary-api-domain.md",
     "docs/adr/0003-public-capabilities-and-coherent-release.md",
@@ -533,6 +499,7 @@
     "frontend/src/i18n/passwordRecovery.ts",
     "frontend/src/utils/passwordRecovery.ts",
     "frontend/src/views/auth/__tests__/PasswordRecovery.spec.ts",
+    "frontend/src/views/auth/__tests__/LoginView.spec.ts",
     "frontend/src/views/auth/__tests__/recoveredPasswordRecovery.spec.ts",
     "frontend/src/views/auth/__tests__/TencentCaptchaActionGate.spec.ts",
     "frontend/vite.password-recovery.config.mjs",
@@ -604,7 +571,6 @@
     "Makefile",
     "backend/Makefile",
     "backend/internal/integration/e2e_user_flow_test.go",
-    "backend/internal/integration/e2e_helpers_test.go",
     "backend/ent/schema/usage_log.go",
     "backend/ent/usagelog.go",
     "backend/ent/usagelog/usagelog.go",
@@ -678,6 +644,7 @@
     "frontend/src/utils/format.ts",
     "openspec/changes/add-openai-compatible-prompt-audit/implementation-guide.md",
     "openspec/changes/add-openai-compatible-prompt-audit/tasks.md",
+    "openspec/changes/add-openai-compatible-prompt-audit/verification.md",
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v4/cn-provider-admin.js",
     "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/dashboard-finance.css",
     "deploy/zero-one/recovered-frontend/console/assets/dashboard-finance-v2/dashboard-finance.js",
@@ -720,6 +687,8 @@
     "docs/upgrades/v0.2.1-change-map.json",
     "docs/upgrades/v0.2.3.md",
     "docs/upgrades/v0.2.3-change-map.json",
+    "docs/upgrades/v0.2.4.md",
+    "docs/upgrades/v0.2.4-change-map.json",
     "backend/internal/repository/usage_log_repo_insert_shape_unit_test.go",
     "backend/internal/config/config.go",
     "backend/internal/config/migration.go",
@@ -1030,6 +999,63 @@
     "deploy/zero-one/recovered-frontend/console/assets/shared-immutable/bda978e6a23e3857264d4825071ea07b406feff2af006ae5de8ecdaf9fe4289e.js",
     "docs/adr/0016-billing-rate-display-clarity.md",
     "docs/adr/0017-upstream-declared-account-cost.md",
+    "docs/adr/0018-codebase-convergence.md",
+    "backend/internal/repository/minimax_platform_migration_integration_test.go",
+    "backend/migrations/237_add_minimax_platform.sql",
+    "backend/migrations/minimax_platform_migration_test.go",
+    "frontend/src/components/admin/payment/__tests__/orderCurrencyDisplay.spec.ts",
+    "frontend/src/components/common/README.md",
+    "frontend/src/components/payment/orderUtils.ts",
+    "frontend/src/views/user/__tests__/ProfileView.spec.ts",
+    "frontend/src/views/user/__tests__/stripeLazyLoading.spec.ts",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/AccountsView-XsoxEMgW.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/ChannelMonitorView-CZZ8o6mn.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/ChannelsView-DaXoOgW1.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/EmptyState.vue_vue_type_script_setup_true_lang-7SE9Jis_.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/GroupBadge.vue_vue_type_script_setup_true_lang-BMIXgIqy.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/GroupsView-CK3nlHUi.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/HelpTooltip.vue_vue_type_script_setup_true_lang-Bi07Op2h.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/ModelTagInput.vue_vue_type_script_setup_true_lang-gEQjzuRj.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/OpsDashboard-BOlT__Rt.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/PlatformIcon.vue_vue_type_script_setup_true_lang-D5-_2Rvn.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/SubscriptionsView-BRuWmwmF.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/Toggle.vue_vue_type_script_setup_true_lang-D6oIi9q8.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/apiError-i2TfMBqu.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/cnProviderAdminLeaf-CHNemIo-.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/format-Dqf1XZPq.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/index-DxqD1oCG.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/index-POjM2mMU.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/index-nOqJvpbb.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/passwordRecovery-B_mr17oP.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/platformColors-scCzdASK.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/platforms-PDcpwPD4.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/stableObjectKey-BMHEGo9U.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/useKeyedDebouncedSearch-BLmtxvyp.js",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v17/index-POjM2mMU.js",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v17/index-nOqJvpbb.js",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v17/online-image.css",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v17/online-image.js",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v17/onlineImageLeaf-B25RYiuL.js",
+    "deploy/zero-one/recovered-frontend/console/assets/online-image-v17/passwordRecovery-B_mr17oP.js",
+    "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6/_plugin-vue_export-helper-B3GXwK9m.js",
+    "deploy/zero-one/recovered-frontend/console/assets/shared-immutable/97bf0968883628387ef3142b2898961db113d82eec87212bb17f71c52c673df5.js",
+    "deploy/zero-one/recovered-frontend/console/assets/shared-immutable/eac0054edf7f9e09510ddd9cee340596fe5980f5bbed8648060c23b1a180c4c2.js",
+    "frontend/src/components/account/AccountEditorDialog.vue",
+    "frontend/src/components/account/CreateAccountModal.vue",
+    "frontend/src/components/account/EditAccountModal.vue",
+    "frontend/src/components/account/editor/CreateAccountEditorPanel.vue",
+    "frontend/src/components/account/editor/EditAccountEditorPanel.vue",
+    "frontend/src/components/account/__tests__/CreateAccountModal.grok.spec.ts",
+    "frontend/src/components/admin/group/GroupEditorDialog.vue",
+    "frontend/src/views/admin/settings/SecuritySettingsTab.vue",
+    "frontend/src/views/admin/settings/GatewaySettingsTab.vue",
+    "frontend/src/views/admin/settings/UsersSettingsTab.vue",
+    "frontend/src/views/admin/settings/GeneralSettingsTab.vue",
+    "frontend/src/views/admin/settings/AgreementSettingsTab.vue",
+    "frontend/src/views/admin/settings/FeaturesSettingsTab.vue",
+    "frontend/src/views/admin/settings/PaymentSettingsTab.vue",
+    "frontend/src/views/admin/settings/EmailSettingsTab.vue",
+    "frontend/src/views/admin/settings/BackupSettingsTab.vue",
     "frontend/src/utils/formatters.ts",
     "frontend/src/utils/__tests__/formatMultiplier.spec.ts",
     "frontend/src/views/admin/__tests__/AccountsView.schedulerScore.spec.ts",
@@ -1234,19 +1260,12 @@
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v10/zero-one-settings-unified-save-v1.js",
     "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6/ForgotPasswordView.js",
     "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6/ResetPasswordView.js",
-    "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6/_plugin-vue_export-helper-BzMx7MZG.js",
     "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6/assets/ForgotPasswordView-BbIC1f0l.css",
     "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6/assets/ResetPasswordView-DBZ0VY4g.css",
     "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6/logo.svg",
-    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/AccountsView-CqGntwat.js",
-    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/GroupsView-BoyyLsHH.js",
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/cn-provider-admin.css",
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/cn-provider-admin.js",
-    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/cnProviderAdminLeaf-BhlEtnfM.js",
-    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/index-Cd_2Lby2.js",
-    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/index-DIg8WdAu.js",
-    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/logo.svg",
-    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/platforms-DPfm85ol.js"
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/logo.svg"
   ],
   "retired_preserved_paths": [
     {
@@ -1302,12 +1321,396 @@
       "path": "backend/internal/service/data_management_grpc_test.go",
       "decision": "docs/adr/0014-retired-data-management-compatibility.md",
       "reason": "The retired agent keeps its HTTP validation and deprecated response; unreachable internal RPC methods and their tests are replaced by the compatibility types and HTTP contract tests."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "frontend/src/api/codex.ts",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "No production entry imports the legacy Codex client helper; current API clients own supported requests."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "frontend/src/api/__tests__/codex.spec.ts",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "This test only exercised the retired Codex client helper."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/components/admin/payment/AdminOrderDetail.vue",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "AdminOrdersView owns the current order detail surface."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/components/admin/payment/AdminOrderTable.vue",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The shared OrderTable owns the current admin order table surface."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/components/admin/payment/PaymentMethodChart.vue",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "No current payment or dashboard route renders the legacy chart."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/components/admin/payment/TopUsersLeaderboard.vue",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "No current payment or dashboard route renders the legacy leaderboard."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/components/common/Skeleton.vue",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "No production component imports this superseded loading primitive."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/components/common/StatCard.vue",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "Current dashboards own their metric-card semantics directly."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/components/common/StatusBadge.vue",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "Current domain-specific status badges replace the unused generic wrapper."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/components/common/index.ts",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "Direct component imports replace the unused common barrel."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/components/payment/PaymentQRDialog.vue",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "Current payment routes own QR presentation and status handling."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/components/payment/StripePaymentInline.vue",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The current Stripe payment view replaces this unused inline wrapper."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/components/payment/__tests__/PaymentQRDialog.spec.ts",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "This test only exercised the retired QR dialog."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/components/user/profile/ProfileAccountBindingsCard.vue",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "ProfileView owns the surviving account-binding surface."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/composables/useForm.ts",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "No production form imports the legacy generic wrapper."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/composables/__tests__/useForm.spec.ts",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "This test only exercised the retired generic form wrapper."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/views/admin/affiliates/AdminAffiliateRebatesView.vue",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The router redirects this retired wrapper to the current affiliate owner."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/views/admin/ops/components/OpsEmailNotificationCard.vue",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The unified settings owner replaces this unused Ops settings card."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/views/admin/ops/components/OpsRuntimeSettingsCard.vue",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The unified settings owner replaces this unused Ops settings card."
+    },
+    {
+      "owner": "Console Skin",
+      "path": "frontend/src/views/auth/index.ts",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "Auth routes import views directly; the barrel had no consumer."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "landing/src/components/SpecularAction.tsx",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "Landing imports the canonical Action component directly."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "landing/src/components/SpecularAction.test.tsx",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "This test duplicated the canonical Action component coverage."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "design-qa.md",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual QA narrative is replaced by an immutable Git history link and the formal Playwright baseline."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/034-exact-ui-functional-status.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/034-ui-column-settings-layer-fixed.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/comparison-1440-final.jpg",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/comparison-brand-mark-header.jpg",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/comparison-quick-start-scroll.jpg",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/comparison.html",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/current-1440-billing.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/current-1440-model-plaza.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/current-1440-pricing.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/current-1440-status.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/latest-desktop-scroll-1440x900.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/latest-desktop-top-1440x900.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/latest-mobile-scroll-390x844.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/latest-mobile-top-390x844.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/local-1440-pricing-final.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/local-1440-pricing.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/local-1440-top-final.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/local-1440-top.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/local-390-menu-final.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/local-390-menu.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/local-390-pricing-final.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/local-390-pricing.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/local-390-top-final.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/local-390-top.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/local-900x520-final.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/recovered-old-1440-billing.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/recovered-old-1440-pricing.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/recovered-old-1440-status.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/reference-1440-pricing.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/reference-1440-top.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/restored-2026-08-18-status-desktop.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "artifacts/design-qa/restored-2026-08-18-status.png",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The mutable manual design-QA artifact is retained through an immutable Git commit; formal Playwright snapshots remain authoritative."
+    },
+    {
+      "owner": "Supported Preview",
+      "path": "deploy/zero-one/compose.production-baseline-preview.yml",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The old production-image preview no longer represents the supported source preview or rollback workflow."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/integration/e2e_helpers_test.go",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The upstream integration suite no longer uses the obsolete shared E2E helper."
+    },
+    {
+      "owner": "Supported Preview",
+      "path": "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6/_plugin-vue_export-helper-BzMx7MZG.js",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The unpublished generated v0.2.4 namespace replaced this intermediate hashed asset; no immutable published URL referenced it."
+    },
+    {
+      "owner": "Supported Preview",
+      "path": "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/AccountsView-CqGntwat.js",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The unpublished generated v0.2.4 namespace replaced this intermediate hashed asset; no immutable published URL referenced it."
+    },
+    {
+      "owner": "Supported Preview",
+      "path": "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/GroupsView-BoyyLsHH.js",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The unpublished generated v0.2.4 namespace replaced this intermediate hashed asset; no immutable published URL referenced it."
+    },
+    {
+      "owner": "Supported Preview",
+      "path": "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/cnProviderAdminLeaf-BhlEtnfM.js",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The unpublished generated v0.2.4 namespace replaced this intermediate hashed asset; no immutable published URL referenced it."
+    },
+    {
+      "owner": "Supported Preview",
+      "path": "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/index-Cd_2Lby2.js",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The unpublished generated v0.2.4 namespace replaced this intermediate hashed asset; no immutable published URL referenced it."
+    },
+    {
+      "owner": "Supported Preview",
+      "path": "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/index-DIg8WdAu.js",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The unpublished generated v0.2.4 namespace replaced this intermediate hashed asset; no immutable published URL referenced it."
+    },
+    {
+      "owner": "Supported Preview",
+      "path": "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/platforms-DPfm85ol.js",
+      "decision": "docs/adr/0018-codebase-convergence.md",
+      "reason": "The unpublished generated v0.2.4 namespace replaced this intermediate hashed asset; no immutable published URL referenced it."
     }
   ],
   "legacy_hotfixes": [
     {
       "name": "approved-v0.1.179-production-correctness-and-billing-compatibility",
-      "valid_for_release": "v0.2.3",
+      "valid_for_release": "v0.2.4",
       "exit_condition": "Remove each path when the first stable upstream release containing its equivalent production-correctness fix becomes the baseline; remove the entire block when no listed path remains.",
       "paths": [
         "backend/internal/handler/admin/admin_basic_handlers_test.go",
@@ -1337,7 +1740,7 @@
     },
     {
       "name": "approved-v0.1.179-version-metadata-alignment",
-      "valid_for_release": "v0.2.3",
+      "valid_for_release": "v0.2.4",
       "exit_condition": "Remove this metadata alignment when the first stable upstream release makes backend/cmd/server/VERSION match the baseline release.",
       "paths": [
         "backend/cmd/server/VERSION"
@@ -1345,7 +1748,7 @@
     },
     {
       "name": "approved-v0.1.179-race-safety",
-      "valid_for_release": "v0.2.3",
+      "valid_for_release": "v0.2.4",
       "exit_condition": "Remove each path when the first stable upstream release contains the equivalent race-safe runtime cache and asynchronous test fixture handling.",
       "paths": [
         "backend/internal/service/content_moderation.go",
@@ -1360,7 +1763,7 @@
     },
     {
       "name": "approved-v0.1.179-remove-unconditional-sticky-debug-logs",
-      "valid_for_release": "v0.2.3",
+      "valid_for_release": "v0.2.4",
       "exit_condition": "Remove this hotfix when the first stable upstream release removes or explicitly gates the equivalent per-request sticky-session debug logs.",
       "paths": [
         "backend/internal/service/gateway_scheduling.go"
@@ -1368,7 +1771,7 @@
     },
     {
       "name": "approved-v0.1.181-grok-mapping-test-isolation",
-      "valid_for_release": "v0.2.3",
+      "valid_for_release": "v0.2.4",
       "exit_condition": "Remove this hotfix when the first stable upstream release contains equivalent runtime model-mapping isolation in the canonical scheduling test.",
       "paths": [
         "backend/internal/service/openai_model_mapping_test.go"
@@ -1376,7 +1779,7 @@
     },
     {
       "name": "approved-v0.1.182-go-dependency-security-updates",
-      "valid_for_release": "v0.2.3",
+      "valid_for_release": "v0.2.4",
       "exit_condition": "Remove this hotfix when the first stable upstream release uses golang.org/x/image v0.45.0 or later, Testcontainers v0.44.0 or later, github.com/moby/go-archive v0.3.0 or later, and no longer depends on github.com/docker/docker.",
       "paths": [
         "backend/go.mod",
@@ -1483,6 +1886,7 @@
         "frontend/src/views/admin/AuditLogView.vue",
         "frontend/src/views/admin/BackupView.vue",
         "frontend/src/views/admin/ChannelMonitorView.vue",
+        "frontend/src/views/admin/__tests__/ChannelMonitorView.grok.spec.ts",
         "frontend/src/views/admin/ChannelsView.vue",
         "frontend/src/views/admin/DashboardView.vue",
         "frontend/src/views/admin/GroupsView.vue",
@@ -1522,6 +1926,7 @@
         "frontend/src/views/admin/settings/",
         "frontend/src/views/auth/ForgotPasswordView.vue",
         "frontend/src/views/auth/LoginView.vue",
+        "frontend/src/views/auth/__tests__/LoginView.spec.ts",
         "frontend/src/views/auth/README.md",
         "frontend/src/views/auth/ResetPasswordView.vue",
         "frontend/src/views/auth/USAGE_EXAMPLES.md",
@@ -1579,6 +1984,11 @@
         "frontend/src/i18n/__tests__/localeIsolation.spec.ts",
         "frontend/src/router/__tests__/localeTitle.spec.ts",
         "frontend/vite.adapter-boundary.ts"
+        ,"frontend/src/composables/useForm.ts"
+        ,"frontend/src/composables/__tests__/useForm.spec.ts"
+        ,"frontend/src/views/auth/index.ts"
+        ,"frontend/src/views/user/__tests__/ProfileView.spec.ts"
+        ,"frontend/src/views/user/__tests__/stripeLazyLoading.spec.ts"
       ]
     },
     {
@@ -1947,6 +2357,12 @@
         "backend/internal/service/data_management_grpc.go",
         "backend/internal/service/data_management_grpc_test.go",
         "backend/internal/server/routes/data_management_test.go"
+        ,"frontend/src/api/codex.ts"
+        ,"frontend/src/api/__tests__/codex.spec.ts"
+        ,"docs/adr/0018-codebase-convergence.md"
+        ,"backend/internal/repository/minimax_platform_migration_integration_test.go"
+        ,"backend/migrations/237_add_minimax_platform.sql"
+        ,"backend/migrations/minimax_platform_migration_test.go"
       ]
     },
     {
@@ -2000,6 +2416,7 @@
         "docs/adr/0010-admin-billing-finance-and-date-panels.md",
         "openspec/changes/add-openai-compatible-prompt-audit/implementation-guide.md",
         "openspec/changes/add-openai-compatible-prompt-audit/tasks.md",
+        "openspec/changes/add-openai-compatible-prompt-audit/verification.md",
         "docs/adr/0011-online-image-result-errors.md",
         "docs/adr/0012-admin-dashboard-consumption.md",
         "docs/adr/0015-v023-cost-dashboard-and-rollback-compatibility.md",
@@ -2011,6 +2428,8 @@
         "docs/upgrades/v0.2.1-change-map.json",
         "docs/upgrades/v0.2.3.md",
         "docs/upgrades/v0.2.3-change-map.json",
+        "docs/upgrades/v0.2.4.md",
+        "docs/upgrades/v0.2.4-change-map.json",
         "skills/sub2api-admin/references/admin-cli.md",
         "docs/adr/0014-retired-data-management-compatibility.md"
       ]
@@ -2161,6 +2580,18 @@
       "name": "public-capabilities-user-redeem-api",
       "owner": "Public Capabilities",
       "path": "frontend/src/api/redeem.ts",
+      "immutable_path": "frontend/src/api/"
+    },
+    {
+      "name": "public-capabilities-retired-codex-api",
+      "owner": "Public Capabilities",
+      "path": "frontend/src/api/codex.ts",
+      "immutable_path": "frontend/src/api/"
+    },
+    {
+      "name": "public-capabilities-retired-codex-api-test",
+      "owner": "Public Capabilities",
+      "path": "frontend/src/api/__tests__/codex.spec.ts",
       "immutable_path": "frontend/src/api/"
     }
   ]

@@ -128,7 +128,7 @@ case "$console" in
 esac
 assert_text "$console" 'await import("/assets/zero-one-redeem-actions-v1.js?v=1")' 'recovered console redeem actions adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=6")' 'recovered console affiliate administration adapter is missing'
-assert_text "$console" 'await import("/assets/online-image-v16/online-image.js")' 'recovered console online image adapter is missing'
+assert_text "$console" 'await import("/assets/online-image-v17/online-image.js")' 'recovered console online image adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-settings-unified-save-v1.js")' 'recovered console unified settings save adapter is missing'
 assert_text "$console" 'await import("/assets/zero-one-floating-panels-v1.js?v=3")' 'recovered console floating overlay is missing'
 
@@ -177,7 +177,7 @@ for namespace_dir in "$test_dir"/console/assets/cn-provider-admin-v* "$test_dir"
 	done
 done
 
-for online_image_version in online-image-v15 online-image-v16; do
+for online_image_version in online-image-v15 online-image-v16 online-image-v17; do
 	for online_image_asset_path in "$test_dir"/console/assets/$online_image_version/*; do
 		[ -f "$online_image_asset_path" ] || continue
 		online_image_asset=$(basename "$online_image_asset_path")

@@ -1,4 +1,5 @@
-const e = {
+import { p as e } from "./passwordRecovery-B_mr17oP.js";
+const t = {
   batchImageGuide: {
     title: "图片批量生成",
     description: "一次提交多条提示词，任务完成后可统一下载图片结果"
@@ -251,7 +252,7 @@ const e = {
     }
   }
   // Common
-}, t = {
+}, i = {
   common: {
     loading: "加载中...",
     submitting: "提交中...",
@@ -265,6 +266,13 @@ const e = {
     delete: "删除",
     edit: "编辑",
     create: "创建",
+    apply: "应用",
+    clear: "清除",
+    creating: "创建中...",
+    required: "必填",
+    sending: "发送中...",
+    tryAgain: "请重试",
+    retry: "重试",
     update: "更新",
     confirm: "确认",
     reset: "重置",
@@ -674,7 +682,7 @@ const e = {
     sendResetLink: "发送重置链接",
     sendingResetLink: "发送中...",
     sendResetLinkFailed: "发送重置链接失败，请重试。",
-    resetEmailSent: "重置链接已发送",
+    ...e.zh,
     resetEmailSentHint: "如果该邮箱已注册，您将很快收到密码重置链接。请检查您的收件箱和垃圾邮件文件夹。",
     backToLogin: "返回登录",
     rememberedPassword: "想起密码了？",
@@ -706,7 +714,7 @@ const e = {
     adminApiKeyForbidden: "管理 API Key 无法执行此操作，请使用已通过二次验证的管理员会话。"
   }
   // Dashboard
-}, i = {
+}, o = {
   dashboard: {
     title: "仪表盘",
     welcomeMessage: "欢迎回来！这是您账户的概览。",
@@ -887,6 +895,38 @@ const e = {
         codexNote: "导出 SUB2API_API_KEY，将 config.toml 保存到 ~/.codex（可用 mkdir -p ~/.codex）。优先 env_key，勿提交密钥。",
         codexNoteWindows: "设置 $env:SUB2API_API_KEY，将 config.toml 保存到 %USERPROFILE%\\.codex。优先 env_key，勿提交密钥。"
       },
+      deepseek: {
+        description: "通过当前 DeepSeek 分组配置 Claude Code、Codex 或 OpenCode。",
+        codexDescription: "使用 API Key 配置 Codex，并通过当前 DeepSeek 分组发送请求。",
+        codexConfigTomlHint: "下载下方模型目录，将两个文件保存到 Codex 配置目录后重启 Codex。",
+        codexNote: "启动 Codex 前先导出 SUB2API_API_KEY。下载的目录只包含模型元数据，不包含 API Key。"
+      },
+      minimax: {
+        description: "通过当前 MiniMax 分组配置 Claude Code、Codex 或 OpenCode。",
+        codexDescription: "使用 API Key 配置 Codex，并通过当前 MiniMax 分组发送请求。",
+        codexConfigTomlHint: "下载下方模型目录，将两个文件保存到 Codex 配置目录后重启 Codex。",
+        codexNote: "启动 Codex 前先导出 SUB2API_API_KEY。下载的目录只包含模型元数据，不包含 API Key。"
+      },
+      composite: {
+        description: "通过当前 Composite 路由分组配置受支持的客户端。",
+        codexDescription: "使用 API Key 和当前 Composite 分组的完整模型目录配置 Codex。",
+        codexConfigTomlHint: "下载下方模型目录，将两个文件保存到 Codex 配置目录后重启 Codex。",
+        codexNote: "启动 Codex 前先导出 SUB2API_API_KEY；分组会根据目录中选中的模型路由请求。"
+      },
+      routedCodex: {
+        description: "使用当前路由分组的完整模型目录配置 Codex。",
+        configTomlHint: "下载下方模型目录，将两个文件保存到 Codex 配置目录后重启 Codex。",
+        note: "启动 Codex 前先导出 SUB2API_API_KEY。下载的目录只包含模型元数据，不包含 API Key。"
+      },
+      codexModelCatalog: {
+        title: "Codex 模型目录",
+        description: "使用当前 API Key 获取目录，并保存到 config.toml 引用的路径。",
+        fetch: "获取目录",
+        retry: "重试",
+        download: "下载目录",
+        modelsCount: "已获取 {count} 个模型",
+        errorDescription: "无法使用当前 API Key 获取模型目录。"
+      },
       opencode: {
         title: "OpenCode 配置示例",
         subtitle: "opencode.json",
@@ -910,6 +950,7 @@ const e = {
     ipBlacklistHint: "每行一个 IP 或 CIDR，这些 IP 将被禁止使用此密钥",
     ipRestrictionEnabled: "已配置 IP 限制",
     ccSwitchNotInstalled: "未检测到 CC-Switch 自动打开。请确认已安装并允许浏览器打开外部应用，或手动复制 API 密钥。",
+    ccSwitchLaunchRequested: "正在尝试打开 CC-Switch。如果没有启动，请确认已安装并允许浏览器打开外部应用，或手动复制 API 密钥。",
     ccsClientSelect: {
       title: "选择客户端",
       description: "请选择您要导入到 CC-Switch 的客户端类型：",
@@ -981,10 +1022,14 @@ const e = {
     actualCost: "实际",
     accountCost: "成本",
     userBilled: "用户扣费",
-    accountBilled: "账号计费",
+    accountBilled: "账号成本",
     resetNow: "现在",
     resetPending: "待刷新",
-    accountMultiplier: "账号倍率",
+    userRateMultiplier: "用户计费倍率",
+    accountMultiplier: "请求时上游倍率",
+    accountMultiplierHint: "请求发起时保存的上游声明有效倍率，包含当时适用的高峰系数；当前账号设置不会改写这笔账单。",
+    accountCostPending: "待核算",
+    providerAccount: "上游账号",
     avgDuration: "平均耗时",
     inSelectedRange: "所选范围内",
     perRequest: "每次请求",
@@ -1149,7 +1194,8 @@ const e = {
       antigravity: "Antigravity",
       kimi: "Kimi",
       zhipu: "智谱 GLM",
-      deepseek: "DeepSeek"
+      deepseek: "DeepSeek",
+      minimax: "MiniMax"
     },
     // 检查模式（监控条目的工作方式）
     checkMode: {
@@ -1670,7 +1716,7 @@ const e = {
     selectDateRange: "选择日期范围"
   }
   // Admin
-}, o = {
+}, a = {
   channelMonitorV2: {
     title: "渠道监控",
     updating: "正在更新数据",
@@ -1775,12 +1821,14 @@ const e = {
     errorDetail: { http: "HTTP {code}", upstream: "上游 {code}", noMessage: "无错误消息", empty: "仅展示分类占比（样本消息仅管理员可见）" },
     errorCategories: {
       content_policy: "内容策略",
-      authentication: "认证失败",
+      authentication: "用户认证",
+      upstream_authentication: "上游认证",
       context_limit: "上下文超限",
       invalid_request: "请求格式",
       model_unsupported: "模型不支持",
       group_access: "分组权限",
-      quota_or_balance: "额度或余额",
+      quota_or_balance: "用户额度或余额",
+      upstream_quota_or_balance: "上游额度或余额",
       account_pool_unavailable: "账号池不可用",
       rate_or_capacity: "限流或容量",
       timeout: "超时",
@@ -1859,7 +1907,7 @@ const e = {
       tabV1History: "V1 历史（当前模式未启用探测）"
     }
   }
-}, a = {
+}, r = {
   batchImage: {
     columns: {
       taskName: "任务名称",
@@ -2070,7 +2118,7 @@ const e = {
       httpStatusRef: "HTTP 状态：{status}"
     }
   }
-}, r = {
+}, n = {
   imageGeneration: {
     title: "在线生图",
     description: "使用已开启生图权限的 API Key 生成图片，并在浏览器里直接预览或下载。",
@@ -2138,6 +2186,7 @@ const e = {
       generated: "图片生成成功。",
       noImages: "接口没有返回可预览的图片。",
       downloadFailed: "图片下载失败。",
+      mobileSaveHint: "已打开图片，请长按图片保存。",
       historyLoadFailed: "加载本地历史失败。",
       historySaveFailed: "图片已生成，但保存本地历史失败。",
       historyClearFailed: "清空本地历史失败。",
@@ -2146,7 +2195,7 @@ const e = {
       referenceImageTooLarge: "单张参考图不能超过 20MB。"
     }
   }
-}, n = {
+}, s = {
   // Dashboard
   dashboard: {
     title: "管理控制台",
@@ -2189,6 +2238,10 @@ const e = {
     metricTokens: "按 Token",
     metricActualCost: "按实际消费",
     tokenUsageTrend: "Token 使用趋势",
+    consumptionTrend: "消费趋势",
+    actualConsumption: "实际消费",
+    trendLoadFailed: "趋势数据读取失败，当前显示上次成功结果。",
+    dataUpdatedAt: "数据更新时间：{time}",
     userUsageTrend: "用户使用趋势（Top 12）",
     noDataAvailable: "暂无数据",
     model: "模型",
@@ -2690,6 +2743,7 @@ const e = {
     leaveEmptyToKeep: "留空则保持原密码不变",
     generatePassword: "生成随机密码",
     copyPassword: "复制密码",
+    passwordCopied: "密码已复制",
     creating: "创建中...",
     updating: "更新中...",
     columns: {
@@ -3032,19 +3086,36 @@ const e = {
       rpmLimitHint: "每用户在本分组每分钟最大请求数，0 = 不限制；一旦设置即接管该用户的限流（覆盖用户级 rpm_limit）",
       maxReasoningEffort: "推理强度上限",
       maxReasoningEffortUnlimited: "不限制（跟随请求）",
-      maxReasoningEffortHint: "仅限制客户端主动请求的 OpenAI reasoning effort；Composite 分组仅对解析到 OpenAI 的请求生效。超过上限时自动降档，不会为缺省请求主动开启推理。上限优先级高于推理强度映射。",
+      maxReasoningEffortHint: "仅限制客户端主动请求的 Anthropic/OpenAI 推理强度；Composite 分组按实际目标平台生效。不会为缺省请求主动开启推理。上限优先级高于推理强度映射。",
+      maxReasoningEffortOverLimit: "超限访问控制",
+      maxReasoningEffortOverLimitDowngrade: "超过上限时自动降档",
+      maxReasoningEffortOverLimitDeny: "拒绝访问",
+      maxReasoningEffortOverLimitHint: "设置上限后生效。自动降档会将超过上限的请求改写为上限值后转发；拒绝访问则直接返回错误。",
       reasoningEffortMappings: "推理强度映射",
+      reasoningEffortMappingsHint: "类型和模型均可留空，表示匹配全部模型。同一类型和模型下可添加多条请求值映射，例如前缀 gpt 同时将 high、xhigh 转到 medium。转发值可选拒绝，命中对应请求值时直接返回错误。精确优先于前后缀，更长前后缀优先。",
       addReasoningEffortMapping: "添加映射",
+      addReasoningEffortPair: "添加请求值",
       removeReasoningEffortMapping: "删除映射",
+      removeReasoningEffortPair: "删除请求值",
+      reasoningEffortMatchType: "类型",
+      reasoningEffortModel: "模型",
+      reasoningEffortMatchExact: "精确",
+      reasoningEffortMatchPrefix: "前缀",
+      reasoningEffortMatchSuffix: "后缀",
+      reasoningEffortMatchTypePlaceholder: "全匹配",
+      reasoningEffortModelPlaceholder: "留空则全部 / gpt / gpt-5.4",
       reasoningEffortFrom: "请求值",
       reasoningEffortTo: "转发值",
+      reasoningEffortToDeny: "拒绝",
       reasoningEffortFromPlaceholder: "请选择 A",
       reasoningEffortToPlaceholder: "请选择 B",
       fromRequired: "请选择请求值 A",
       toRequired: "请选择转发值 B",
       unsupportedFrom: "请求值不受当前平台支持",
       unsupportedTo: "转发值不受当前平台支持",
-      duplicateFrom: "请求值 A 不能重复",
+      unsupportedMatchType: "匹配类型仅支持精确、前缀或后缀",
+      duplicateFrom: "同一模型范围内请求值不能重复",
+      duplicateScope: "类型和模型组合不能重复",
       exclusiveLabel: "专属分组",
       exclusiveHint: "专属分组，可以手动指定给用户",
       platformLabel: "平台限制",
@@ -3078,6 +3149,7 @@ const e = {
       kimi: "Kimi",
       zhipu: "Zhipu GLM",
       deepseek: "DeepSeek",
+      minimax: "MiniMax",
       composite: "Composite"
     },
     saving: "保存中...",
@@ -3236,14 +3308,36 @@ const e = {
       bufferRangeError: "安全缓冲应在 0 到 99.99 之间",
       sumTooHigh: "最低毛利率与安全缓冲之和必须小于 100%，否则将排除全部账号"
     },
-    modelsList: {
-      title: "自定义 /v1/models 模型列表",
-      hint: "仅影响 /v1/models 展示结果，不影响白名单模型调用和账号调度。",
-      loading: "正在加载模型列表...",
-      empty: "暂无可展示模型",
+    modelAllowlist: {
+      title: "模型白名单",
+      hint: "开启后，不在白名单中的模型会被拒绝（404 model_not_found），模型列表接口也只展示白名单内的模型。条目支持精确模型 ID 与末尾 * 通配。注意：Claude Code 会用 haiku 系小模型做标题/摘要等探测，/messages/count_tokens 同样受白名单控制，请一并勾选所需的小模型。",
+      loading: "正在加载候选模型...",
+      empty: "暂无候选模型，可在下方手工添加条目",
       selectedSummary: "已选 {selected} / {total}",
       selectAll: "全选",
-      invertSelection: "反选"
+      invertSelection: "反选",
+      wildcardTag: "通配",
+      customPlaceholder: "自定义条目，如 claude-* 或 gpt-5.5-codex",
+      addCustom: "添加",
+      emptySelectionError: "模型白名单已开启，请至少选择或添加一个模型条目",
+      errors: {
+        empty: "请输入模型条目",
+        invalid_wildcard: "通配符 * 只能出现在条目末尾",
+        duplicate: "该条目已存在"
+      }
+    },
+    codexModelsManifest: {
+      title: "固定账号获取模型列表",
+      hint: "开启后，普通模型列表与 Codex Model Manifest 均优先从选定账号获取并合并，再应用账号映射和分组列表过滤；限流/过载中的选定账号仍会被使用。",
+      enable: "使用特定账号获取模型列表",
+      enabledHint: "账号来源限定为当前分组内的 OpenAI 账号，最多选择 10 个。",
+      disabledHint: "未启用：普通列表使用本地映射或默认模型；Codex 优先使用本地目录，无本地目录时由调度器选账。",
+      accounts: "选定账号",
+      searchPlaceholder: "搜索账号（当前分组内 OpenAI 账号）",
+      searchEmpty: "未找到匹配账号",
+      fallback: "选定账号全部不可用时回退调度器",
+      fallbackHint: "关闭时返回 503 / 上游错误；开启时回退到现有调度器选账路径。",
+      selectAtLeastOne: "开启固定账号后至少选择一个账号"
     },
     compositeRoutes: {
       action: "路由",
@@ -3361,18 +3455,18 @@ const e = {
       selectAccounts: "选择账号",
       noAccounts: "此分组暂无账号",
       loadingAccounts: "加载账号中...",
-      claudeMaxSimulation: {
-        title: "Claude Max 用量模拟",
-        tooltip: "启用后，对于没有上游缓存写入用量的 Claude 模型，系统会确定性地将 token 映射为少量输入加 1h 缓存创建，同时保持总 token 不变。",
-        enabled: "已启用（模拟 1h 缓存）",
-        disabled: "已禁用",
-        hint: "仅调整用量计费日志中的 token 类别。不会持久化每个请求的映射状态。"
-      },
       removeRule: "删除规则",
       noRules: "暂无路由规则",
       noRulesHint: "添加路由规则以将特定模型请求优先路由到指定账号",
       searchAccountPlaceholder: "搜索账号...",
       accountsHint: "选择此模型模式优先使用的账号"
+    },
+    claudeMaxSimulation: {
+      title: "Claude Max 用量模拟",
+      tooltip: "启用后，对于没有上游缓存写入用量的 Claude 模型，系统会确定性地将 token 映射为少量输入加 1h 缓存创建，同时保持总 token 不变。",
+      enabled: "已启用（模拟 1h 缓存）",
+      disabled: "已禁用",
+      hint: "仅调整用量计费日志中的 token 类别。不会持久化每个请求的映射状态。"
     },
     mcpXml: {
       title: "MCP XML 协议注入",
@@ -3390,7 +3484,7 @@ const e = {
     }
   }
   // Available Channels (aggregated read-only view)
-}, s = {
+}, l = {
   availableChannels: {
     title: "可用渠道",
     description: "按渠道聚合查看关联分组与支持模型（已展开通配符）",
@@ -3453,6 +3547,8 @@ const e = {
     updateError: "更新渠道失败",
     deleteError: "删除渠道失败",
     nameRequired: "请输入渠道名称",
+    noGroupsSelected: "请为 {platform} 至少选择一个分组",
+    emptyModelsInPricing: "请为 {platform} 定价规则至少添加一个模型",
     duplicateModels: "模型「{0}」在多个定价条目中重复",
     modelConflict: "模型模式 '{model1}' 和 '{model2}' 冲突：匹配范围重叠。模型名称按大小写不敏感匹配，已有条目已覆盖其所有大小写变体，无需重复添加。",
     mappingConflict: "模型映射源 '{model1}' 和 '{model2}' 冲突：匹配范围重叠。源模式按大小写不敏感匹配，已有条目已覆盖其所有大小写变体。",
@@ -4143,7 +4239,7 @@ anthropic-beta: claude-code-20250219`,
     }
   }
   // Accounts Management
-}, l = {
+}, d = {
   accounts: {
     title: "账号管理",
     description: "管理 AI 平台账号和 Cookie",
@@ -4452,7 +4548,8 @@ anthropic-beta: claude-code-20250219`,
       grok: "Grok",
       kimi: "Kimi",
       zhipu: "Zhipu GLM",
-      deepseek: "DeepSeek"
+      deepseek: "DeepSeek",
+      minimax: "MiniMax"
     },
     cnProviders: {
       apiKeyHint: "请输入与所选账号类型及端点匹配的供应商 API Key",
@@ -4603,7 +4700,9 @@ anthropic-beta: claude-code-20250219`,
       grokLastProbe: "探测 {time}",
       grokLastHeadersSeen: "响应头 {time}",
       passiveSampled: "被动采样",
-      activeQuery: "查询"
+      activeQuery: "查询",
+      estimatedTotalCost: "预计总费用 ${cost}",
+      estimatedTotalCostTooltip: "根据当前窗口费用和使用率估算达到 100% 使用率时的总费用"
     },
     openaiQuotaReset: {
       count: "次数",
@@ -4911,6 +5010,8 @@ anthropic-beta: claude-code-20250219`,
     modelRestriction: "模型限制（可选）",
     modelWhitelist: "模型白名单",
     modelMapping: "模型映射",
+    fromModel: "请求模型",
+    toModel: "目标模型",
     selectAllowedModels: "选择允许的模型。留空则支持所有模型。",
     mapRequestModels: "将请求模型映射到实际模型。左边是请求的模型，右边是发送到 API 的实际模型。",
     selectedModels: "已选择 {count} 个模型",
@@ -4993,6 +5094,30 @@ anthropic-beta: claude-code-20250219`,
     grokClientToolCache: {
       title: "客户端工具缓存（可能改变自动工具选择）",
       hint: "仅对已识别为 Free 的 Grok OAuth 账号生效，默认会为 Codex、Trae 等客户端函数工具请求启用上游提示缓存；如不接受自动工具选择行为，可关闭此开关退出。"
+    },
+    grokMediaEligibility: {
+      title: "媒体生成资格",
+      hint: "控制该 Grok OAuth 账号是否可被图片和视频生成请求选中。",
+      auto: "自动判断",
+      enabled: "强制启用",
+      disabled: "强制禁用",
+      current: "当前判定：",
+      eligible: "可用",
+      ineligible: "不可用",
+      loading: "正在读取媒体资格…",
+      loadFailed: "无法读取媒体资格",
+      autoHint: "自动判断只会清除手工覆盖，不会主动触发媒体请求。",
+      forceEnableWarning: "强制启用会绕过自动资格检查，仅应对已确认支持生图/生视频的账号使用。",
+      partialSave: "账号其他配置可能已保存，但媒体资格未更新，请重试。",
+      reasons: {
+        eligible: "已确认付费资格",
+        billing_inconclusive: "Billing 信息不明确",
+        billing_forbidden: "Billing 接口拒绝访问",
+        billing_free_tier: "Free 账号",
+        billing_unobserved: "尚未探测到 Billing",
+        override_enabled: "手工强制启用",
+        override_disabled: "手工强制禁用"
+      }
     },
     autoPauseOnExpired: "过期自动暂停调度",
     autoPauseOnExpiredDesc: "启用后，账号过期将自动暂停调度",
@@ -5095,10 +5220,11 @@ anthropic-beta: claude-code-20250219`,
     loadFactorHint: "提高负载因子可以提高对账号的调度频率",
     priority: "优先级",
     priorityHint: "优先级越小的账号优先使用",
-    billingRateMultiplier: "当前账号计费倍率",
-    billingRateMultiplierHint: "0 表示本地账号调度和额度核算不计费；Provider Account 成本报表改用请求时保存的上游声明倍率。",
+    billingRateMultiplier: "账号计费倍率",
+    billingRateMultiplierHint: "用于本地账号调度和额度核算；Provider Account 成本报表改用请求时保存的上游声明倍率。",
     expiresAt: "过期时间",
     expiresAtHint: "留空表示不过期",
+    expiresAtTimezoneHint: "时间按浏览器时区（{timezone}）填写。",
     higherPriorityFirst: "数值越小优先级越高",
     mixedScheduling: "在 /v1/messages 中使用",
     mixedSchedulingHint: "启用后可参与 Anthropic/Gemini 分组的调度",
@@ -5619,7 +5745,7 @@ sk-ant-sid01-yyyyy...`,
     }
   }
   // Scheduled Tests
-}, d = {
+}, c = {
   scheduledTests: {
     title: "定时测试",
     addPlan: "添加计划",
@@ -6234,7 +6360,7 @@ https://user:pass{'@'}proxy.example.com:443`,
     }
   }
   // Ops Monitoring
-}, c = {
+}, p = {
   ops: {
     title: "运维监控",
     description: "运维监控与排障",
@@ -6278,8 +6404,11 @@ https://user:pass{'@'}proxy.example.com:443`,
       samplingInitial: "采样初始条数",
       samplingThereafter: "后续采样间隔",
       retentionDays: "保留天数",
+      retentionDaysHint: "由定时数据清理任务执行。",
       caller: "调用方",
       sampling: "采样",
+      persistAccessLogs: "将访问日志写入数据库",
+      persistAccessLogsHint: "默认关闭，因为访问日志会为每个请求新增一条带索引的数据库记录。警告、错误和审计日志始终会保留。",
       saveAndApply: "保存并应用",
       resetDefaults: "重置默认值",
       latestWriteError: "最近写入错误：",
@@ -6805,6 +6934,16 @@ https://user:pass{'@'}proxy.example.com:443`,
       alertTitle: "告警评估器",
       groupAvailabilityTitle: "分组可用性监控",
       evalIntervalSeconds: "评估间隔（秒）",
+      metricThresholds: "指标阈值配置",
+      metricThresholdsHint: "配置各项指标的告警阈值，超出阈值时将以红色显示",
+      slaMinPercent: "SLA 最低百分比",
+      slaMinPercentHint: "SLA 低于此值时显示为红色（默认：99.5%）",
+      ttftP99MaxMs: "TTFT P99 最大值（毫秒）",
+      ttftP99MaxMsHint: "TTFT P99 高于此值时显示为红色（默认：500ms）",
+      requestErrorRateMaxPercent: "请求错误率最大值（%）",
+      requestErrorRateMaxPercentHint: "请求错误率高于此值时显示为红色（默认：5%）",
+      upstreamErrorRateMaxPercent: "上游错误率最大值（%）",
+      upstreamErrorRateMaxPercentHint: "上游错误率高于此值时显示为红色（默认：5%）",
       silencing: {
         title: "告警静默（维护模式）",
         enabled: "启用静默",
@@ -7040,7 +7179,7 @@ https://user:pass{'@'}proxy.example.com:443`,
     }
   }
   // Settings
-}, p = {
+}, u = {
   settings: {
     title: "系统设置",
     description: "管理注册、邮箱验证、默认值和 SMTP 设置",
@@ -7075,7 +7214,9 @@ https://user:pass{'@'}proxy.example.com:443`,
         hideThroughput: "对用户隐藏吞吐速率（RPM / TPM）",
         hideThroughputHint: "开启后，用户端渠道监控页面与用户 API 不返回 RPM/TPM，避免用「速率 × 时间窗」反推集群规模。管理员仍可见完整指标；错误率、延迟、缓存率照常展示。",
         showQuota: "向用户展示渠道用量/余额",
-        showQuotaHint: "开启后，配额模式的渠道监控会在用户端渠道状态页展示关联账号的用量滚动窗口/余额。默认关闭；管理员始终可见。"
+        showQuotaHint: "开启后，配额模式的渠道监控会在用户端渠道状态页展示关联账号的用量滚动窗口/余额。默认关闭；管理员始终可见。",
+        hideUserRanking: "对用户隐藏用户排行",
+        hideUserRankingHint: "开启后，用户端渠道监控 V2 不再显示「用户排行」页，用户 API 也不返回排行数据。管理员仍可查看。"
       },
       availableChannels: {
         title: "可用渠道",
@@ -7492,7 +7633,7 @@ https://user:pass{'@'}proxy.example.com:443`,
       grokDefaultTextModel: "默认 Grok 文本模型",
       grokDefaultTextModelHint: "用于空模型值；仅在右侧开关开启时也用于其他客户端模型命名空间。允许填写自定义 Grok 模型 ID。",
       grokCrossClientMap: "映射其他客户端模型到 Grok",
-      grokCrossClientMapHint: "默认关闭。开启后，GPT、Codex、o 系列和 Claude 模型 ID 会路由到左侧默认 Grok 文本模型。",
+      grokCrossClientMapHint: "为兼容客户端，默认开启。GPT、Codex、o 系列和 Claude 模型 ID 会路由到左侧默认 Grok 文本模型；关闭后必须使用 Grok 模型 ID。",
       grokDefaultBaseURLMode: "默认 Grok 上游",
       grokDefaultBaseURLModeHint: "仅用于 Grok 账号未配置显式 base URL 的文本请求；媒体和语音仍使用官方 API 主机。",
       grokBaseURLModeCLI: "CLI 聊天代理",
@@ -7699,7 +7840,7 @@ https://user:pass{'@'}proxy.example.com:443`,
       contactInfoPlaceholder: "例如：QQ: 123456789",
       contactInfoHint: "填写客服联系方式，将展示在兑换页面、个人资料等位置",
       docUrl: "开源知识库链接",
-      docUrlHint: "用于官网和控制台顶部导航的“开源知识库”入口。留空则隐藏该入口。",
+      docUrlHint: "用于官网等页面的“开源知识库”入口。留空则隐藏这些入口。",
       docUrlPlaceholder: "https://docs.example.com",
       imageTutorialMenu: "生图教程（特殊自定义菜单）",
       imageTutorialMenuPlaceholder: "https://docs.example.com/image-generation",
@@ -8540,7 +8681,7 @@ model not supported`,
     saveFailed: "保存模板失败",
     deleteFailed: "删除模板失败"
   }
-}, u = {
+}, m = {
   audit: {
     title: "操作日志",
     description: "记录管理员与用户的管理面操作，请求头凭证仅保留首尾、请求体已脱敏。日志无法单条删除，全量清理需二次验证。",
@@ -8591,7 +8732,7 @@ model not supported`,
       failed: "清理操作日志失败"
     }
   }
-}, m = {
+}, g = {
   promptAudit: {
     title: "提示词审计",
     description: "通过 OpenAI 兼容 Qwen3Guard 节点异步复核或同步阻止用户输入；事件的完整提示词会入库保存，仅供管理员复核。",
@@ -8785,16 +8926,16 @@ model not supported`,
       prompt_audit_scanners_required: "至少需要启用一个风险分类。"
     }
   }
-}, g = {
-  ...n,
+}, y = {
   ...s,
   ...l,
   ...d,
   ...c,
   ...p,
   ...u,
-  ...m
-}, y = {
+  ...m,
+  ...g
+}, h = {
   // Subscription Progress (Header component)
   subscriptionProgress: {
     title: "我的订阅",
@@ -9409,16 +9550,16 @@ model not supported`,
       }
     }
   }
-}, h = {
-  ...e,
+}, f = {
   ...t,
   ...i,
   ...o,
   ...a,
   ...r,
-  admin: g,
-  ...y
+  ...n,
+  admin: y,
+  ...h
 };
 export {
-  h as default
+  f as default
 };

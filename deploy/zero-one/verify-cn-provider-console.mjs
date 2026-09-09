@@ -197,17 +197,18 @@ export function verifyCNProviderConsole(consoleDir) {
   )
 
   requireMarkers(moduleSource, [
-    '/admin/accounts',
-    '__ZERO_ONE_NAVIGATION_RECONCILIATION__', 'zero-one-cn-provider-admin',
+    '/admin/accounts', '/admin/groups', '/admin/channels/pricing',
+    '/admin/channels/monitor', '/admin/ops', '/admin/subscriptions',
+    '__ZERO_ONE_NAVIGATION_RECONCILIATION__', 'provider-catalog-admin',
     '__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__', 'Management page failed to load',
     '/assets/cn-provider-admin-v8/cn-provider-admin.css',
-    'Current Account Rate', 'Upstream Declared Rate (Observed)',
+    'Current Account Rate', 'Upstream Declared Rate (Observed)', 'MiniMax',
   ], 'CN Provider Admin route adapter')
   requireMarkers(stylesheet, [
     'table-page-layout', 'table-scroll-container',
-    'body.zero-one-cn-provider-admin-active .border-pink-500',
-    'body.zero-one-cn-provider-admin-active .border-indigo-500',
-    'body.zero-one-cn-provider-admin-active .border-teal-500',
+    'body.zero-one-provider-catalog-admin-active .border-pink-500',
+    'body.zero-one-provider-catalog-admin-active .border-indigo-500',
+    'body.zero-one-provider-catalog-admin-active .border-teal-500',
   ], 'CN Provider Admin stylesheet')
 
   return {

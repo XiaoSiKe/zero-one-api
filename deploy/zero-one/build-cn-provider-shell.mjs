@@ -555,109 +555,23 @@ export function writeCurrentPasswordRecoveryVariant(assetsDirectory) {
   return targetDirectory
 }
 
-export const BILLING_CLARITY_CN_PROVIDER_ADMIN_FILES = [
-  'AccountsView-CqGntwat.js',
-  'GroupsView-BoyyLsHH.js',
-  'cn-provider-admin.css',
-  'cn-provider-admin.js',
-  'cnProviderAdminLeaf-BhlEtnfM.js',
-  'index-Cd_2Lby2.js',
-  'index-DIg8WdAu.js',
-  'logo.svg',
-  'platforms-DPfm85ol.js',
-]
-
-export function patchBillingClarityLegacyAccountsModule(source) {
-  const replacements = [
-    [
-      '["today_stats", "proxy", "notes", "priority", "scheduler_score", "rate_multiplier"]',
-      '["today_stats", "proxy", "notes", "priority", "scheduler_score"]',
-      'legacy account default hidden columns',
-    ],
-    [
-      'ii = "scheduler-score-hidden-by-default"',
-      'ii = "billing-rate-visible-by-default"',
-      'legacy account column layout version',
-    ],
-    [
-      'localStorage.getItem(ri) !== ii && (xe.add("scheduler_score"), localStorage.setItem(al, JSON.stringify([...xe])), localStorage.setItem(ri, ii))',
-      'localStorage.getItem(ri) !== ii && (xe.delete("rate_multiplier"), localStorage.setItem(al, JSON.stringify([...xe])), localStorage.setItem(ri, ii))',
-      'legacy account column layout migration',
-    ],
-  ]
-  return replacements.reduce(
-    (output, [before, after, label]) => replaceExactlyOnce(output, before, after, label),
-    source,
-  )
-}
-
-export function patchBillingClarityLegacyAccountLocale(source) {
-  const english = source.includes('billingRateMultiplier: "Billing Rate"')
-  const chinese = source.includes('billingRateMultiplier: "账号倍率"')
-  if (english === chinese) throw new Error('legacy account locale seam changed')
-  const replacements = english ? [
-    ['billingRateMultiplier: "Billing Rate",', 'billingRateMultiplier: "Current Account Rate",', 'legacy English account rate column'],
-    ['upstreamBillingRate: "Upstream Declared Rate",', 'upstreamBillingRate: "Upstream Declared Rate (Observed)",', 'legacy English upstream rate column'],
-    [
-      'trustWarning: "This rate is declared by the upstream site for the current API key. Sub2API cannot verify that it matches actual charges. The upstream site or an intermediary may return forged, stale, or modified data. Verify it against bills, balance changes, and actual usage.",',
-      'trustWarning: \'This is an observed value. Probing does not change the current account rate. Only "Sync upstream declared rate" writes the successfully detected base rate, excluding peak hours, to the current account rate for future requests. Sub2API cannot verify that the upstream declaration matches actual charges; verify it against bills, balance changes, and actual usage.\',',
-      'legacy English upstream rate warning',
-    ],
-    ['manualProbe: "Probe upstream rate now",', 'manualProbe: "Probe upstream rate now (does not sync automatically)",', 'legacy English probe action'],
-    ['billingRateMultiplier: "Billing Rate Multiplier",', 'billingRateMultiplier: "Current Account Billing Rate",', 'legacy English account rate field'],
-    [
-      'billingRateMultiplierHint: "0 = free, affects account billing only",',
-      'billingRateMultiplierHint: "0 means free for local account scheduling and quota accounting. Provider Account cost reports use the request-time upstream declaration instead.",',
-      'legacy English account rate hint',
-    ],
-  ] : [
-    ['billingRateMultiplier: "账号倍率",', 'billingRateMultiplier: "当前账号倍率",', 'legacy Chinese account rate column'],
-    ['upstreamBillingRate: "上游声明倍率",', 'upstreamBillingRate: "上游声明倍率（观测）",', 'legacy Chinese upstream rate column'],
-    [
-      'trustWarning: "此倍率由上游站点针对当前 API Key 自行声明。Sub2API 无法验证该值是否与实际扣费一致；上游站点或中间代理可能返回伪造、过期或被篡改的数据。请结合账单、余额变化和实际用量自行核验。",',
-      'trustWarning: "这是观测值；手动探测不会修改当前账号倍率。只有开启“同步上游声明倍率”后，成功探测才会把不含高峰的基准倍率写入当前账号倍率，并且只影响后续请求。该数据由上游站点声明，Sub2API 无法验证它是否与实际扣费一致，请结合账单、余额变化和实际用量复核。",',
-      'legacy Chinese upstream rate warning',
-    ],
-    ['manualProbe: "立即探测上游倍率",', 'manualProbe: "立即探测上游倍率（不自动同步）",', 'legacy Chinese probe action'],
-    ['billingRateMultiplier: "账号计费倍率",', 'billingRateMultiplier: "当前账号计费倍率",', 'legacy Chinese account rate field'],
-    [
-      'billingRateMultiplierHint: "0 表示不计费，仅影响账号计费",',
-      'billingRateMultiplierHint: "0 表示本地账号调度和额度核算不计费；Provider Account 成本报表改用请求时保存的上游声明倍率。",',
-      'legacy Chinese account rate hint',
-    ],
-  ]
-  return replacements.reduce(
-    (output, [before, after, label]) => replaceExactlyOnce(output, before, after, label),
-    source,
-  )
-}
-
-export function writeBillingClarityAccountAdminVariant(assetsDirectory) {
-  const sourceDirectory = resolve(assetsDirectory, LEGACY_CN_PROVIDER_ADMIN_DIRECTORY)
+export function verifyCurrentCNProviderAdminVariant(assetsDirectory) {
   const targetDirectory = resolve(assetsDirectory, BILLING_CLARITY_CN_PROVIDER_ADMIN_DIRECTORY)
-  rmSync(targetDirectory, { recursive: true, force: true })
-  mkdirSync(targetDirectory, { recursive: true })
-  for (const name of BILLING_CLARITY_CN_PROVIDER_ADMIN_FILES) {
-    // The immutable v1 directory deduplicates some modules through symlinks.
-    // v8 must own regular files before patching so writes cannot mutate the
-    // shared immutable target used by historical URLs.
-    writeFileSync(resolve(targetDirectory, name), readFileSync(resolve(sourceDirectory, name)))
-  }
-
-  const entryPath = resolve(targetDirectory, 'cn-provider-admin.js')
-  const entry = replaceExactlyOnce(
-    readFileSync(entryPath, 'utf8'),
-    '/assets/cn-provider-admin-v1/cn-provider-admin.css',
+  const entry = readFileSync(resolve(targetDirectory, 'cn-provider-admin.js'), 'utf8')
+  const required = [
     '/assets/cn-provider-admin-v8/cn-provider-admin.css',
-    'billing clarity account adapter stylesheet',
-  )
-  writeFileSync(entryPath, entry)
-
-  const accountsPath = resolve(targetDirectory, 'AccountsView-CqGntwat.js')
-  writeFileSync(accountsPath, patchBillingClarityLegacyAccountsModule(readFileSync(accountsPath, 'utf8')))
-  for (const name of ['index-Cd_2Lby2.js', 'index-DIg8WdAu.js']) {
-    const localePath = resolve(targetDirectory, name)
-    writeFileSync(localePath, patchBillingClarityLegacyAccountLocale(readFileSync(localePath, 'utf8')))
+    '/admin/accounts',
+    '/admin/groups',
+    '/admin/channels/pricing',
+    '/admin/channels/monitor',
+    '/admin/ops',
+    '/admin/subscriptions',
+  ]
+  for (const marker of required) {
+    if (!entry.includes(marker)) throw new Error(`current CN Provider Admin is missing: ${marker}`)
+  }
+  if (entry.includes('/assets/cn-provider-admin-v7/cn-provider-admin.css')) {
+    throw new Error('current CN Provider Admin still loads the immutable v7 stylesheet')
   }
   return targetDirectory
 }
@@ -838,7 +752,7 @@ export function buildCNProviderShell(consoleAssetsDirectory) {
     writeFileSync(resolve(consoleAssetsDirectory, NATIVE_COST_SHELL_DIRECTORY, name), content)
   }
   writeCurrentPasswordRecoveryVariant(consoleAssetsDirectory)
-  writeBillingClarityAccountAdminVariant(consoleAssetsDirectory)
+  verifyCurrentCNProviderAdminVariant(consoleAssetsDirectory)
   const currentOverrides = billingClarityShellOverrides(consoleAssetsDirectory)
   const currentTargetPath = writeShellVariant(consoleAssetsDirectory, CN_PROVIDER_SHELL_DIRECTORY,
     patchApprovedShell(source), new Set(currentOverrides.keys()))

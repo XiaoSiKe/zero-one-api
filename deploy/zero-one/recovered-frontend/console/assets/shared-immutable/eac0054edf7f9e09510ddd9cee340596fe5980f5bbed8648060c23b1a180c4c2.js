@@ -1,4 +1,5 @@
-const e = {
+import { p as e } from "./passwordRecovery-B_mr17oP.js";
+const t = {
   batchImageGuide: {
     title: "Batch Image Generation",
     description: "Submit multiple prompts in one job and download the generated images when complete"
@@ -251,7 +252,7 @@ const e = {
     }
   }
   // Common
-}, t = {
+}, a = {
   common: {
     loading: "Loading...",
     submitting: "Submitting...",
@@ -265,6 +266,13 @@ const e = {
     delete: "Delete",
     edit: "Edit",
     create: "Create",
+    apply: "Apply",
+    clear: "Clear",
+    creating: "Creating...",
+    required: "Required",
+    sending: "Sending...",
+    tryAgain: "Please try again",
+    retry: "Retry",
     update: "Update",
     confirm: "Confirm",
     reset: "Reset",
@@ -674,7 +682,7 @@ const e = {
     sendResetLink: "Send Reset Link",
     sendingResetLink: "Sending...",
     sendResetLinkFailed: "Failed to send reset link. Please try again.",
-    resetEmailSent: "Reset Link Sent",
+    ...e.en,
     resetEmailSentHint: "If an account exists with this email, you will receive a password reset link shortly. Please check your inbox and spam folder.",
     backToLogin: "Back to Login",
     rememberedPassword: "Remembered your password?",
@@ -706,7 +714,7 @@ const e = {
     adminApiKeyForbidden: "Admin API keys cannot perform this operation. Use a two-factor verified admin session."
   }
   // Dashboard
-}, a = {
+}, o = {
   dashboard: {
     title: "Dashboard",
     welcomeMessage: "Welcome back! Here's an overview of your account.",
@@ -887,6 +895,38 @@ const e = {
         codexNote: "Export SUB2API_API_KEY, save config.toml under ~/.codex (mkdir -p ~/.codex). Prefer env_key auth; do not commit secrets.",
         codexNoteWindows: "Set $env:SUB2API_API_KEY, save config.toml under %USERPROFILE%\\.codex. Prefer env_key auth; do not commit secrets."
       },
+      deepseek: {
+        description: "Configure Claude Code, Codex, or OpenCode through the current DeepSeek group.",
+        codexDescription: "Configure Codex with API key authentication through the current DeepSeek group.",
+        codexConfigTomlHint: "Download the model catalog below, save both files under the Codex config directory, and restart Codex.",
+        codexNote: "Export SUB2API_API_KEY before starting Codex. The downloaded catalog contains model metadata only, not your API key."
+      },
+      minimax: {
+        description: "Configure Claude Code, Codex, or OpenCode through the current MiniMax group.",
+        codexDescription: "Configure Codex with API key authentication through the current MiniMax group.",
+        codexConfigTomlHint: "Download the model catalog below, save both files under the Codex config directory, and restart Codex.",
+        codexNote: "Export SUB2API_API_KEY before starting Codex. The downloaded catalog contains model metadata only, not your API key."
+      },
+      composite: {
+        description: "Configure supported clients through the current Composite routing group.",
+        codexDescription: "Configure Codex with API key authentication and the complete model catalog for this Composite group.",
+        codexConfigTomlHint: "Download the model catalog below, save both files under the Codex config directory, and restart Codex.",
+        codexNote: "Export SUB2API_API_KEY before starting Codex. Model requests are routed by the selected catalog slug."
+      },
+      routedCodex: {
+        description: "Configure Codex with the complete model catalog for the current routed group.",
+        configTomlHint: "Download the model catalog below, save both files under the Codex config directory, and restart Codex.",
+        note: "Export SUB2API_API_KEY before starting Codex. The downloaded catalog contains model metadata only, not your API key."
+      },
+      codexModelCatalog: {
+        title: "Codex model catalog",
+        description: "Fetch with this API key, then save the catalog at the path referenced by config.toml.",
+        fetch: "Fetch catalog",
+        retry: "Retry",
+        download: "Download catalog",
+        modelsCount: "{count} models ready to download",
+        errorDescription: "The catalog could not be fetched with this API key."
+      },
       opencode: {
         title: "OpenCode Example",
         subtitle: "opencode.json",
@@ -910,6 +950,7 @@ const e = {
     ipBlacklistHint: "One IP or CIDR per line. These IPs will be blocked from using this key.",
     ipRestrictionEnabled: "IP restriction enabled",
     ccSwitchNotInstalled: "CC-Switch did not open automatically. Make sure it is installed and allow the browser to open external applications, or manually copy the API key.",
+    ccSwitchLaunchRequested: "Opening CC-Switch. If it does not start, make sure it is installed and allow the browser to open external applications, or manually copy the API key.",
     ccsClientSelect: {
       title: "Select Client",
       description: "Please select the client type to import to CC-Switch:",
@@ -981,10 +1022,14 @@ const e = {
     actualCost: "Actual",
     accountCost: "Cost",
     userBilled: "User billed",
-    accountBilled: "Account billed",
+    accountBilled: "Account cost",
     resetNow: "Now",
     resetPending: "Pending refresh",
-    accountMultiplier: "Account rate",
+    userRateMultiplier: "User billing rate",
+    accountMultiplier: "Request-time upstream rate",
+    accountMultiplierHint: "The effective upstream-declared rate saved when this request started, including the declared peak window. Current account settings do not rewrite this bill.",
+    accountCostPending: "Pending calculation",
+    providerAccount: "Provider Account",
     avgDuration: "Avg Duration",
     inSelectedRange: "in selected range",
     perRequest: "per request",
@@ -1149,7 +1194,8 @@ const e = {
       antigravity: "Antigravity",
       kimi: "Kimi",
       zhipu: "Zhipu GLM",
-      deepseek: "DeepSeek"
+      deepseek: "DeepSeek",
+      minimax: "MiniMax"
     },
     // Check modes (how a monitor performs its checks)
     checkMode: {
@@ -1670,7 +1716,7 @@ const e = {
     selectDateRange: "Select date range"
   }
   // Admin
-}, o = {
+}, i = {
   channelMonitorV2: {
     title: "Channel Monitor",
     updating: "Updating data",
@@ -1775,12 +1821,14 @@ const e = {
     errorDetail: { http: "HTTP {code}", upstream: "Upstream {code}", noMessage: "No error message", empty: "Category rates only (sample messages are admin-only)" },
     errorCategories: {
       content_policy: "Content policy",
-      authentication: "Authentication",
+      authentication: "User authentication",
+      upstream_authentication: "Upstream authentication",
       context_limit: "Context limit",
       invalid_request: "Invalid request",
       model_unsupported: "Unsupported model",
       group_access: "Group access",
-      quota_or_balance: "Quota or balance",
+      quota_or_balance: "User quota or balance",
+      upstream_quota_or_balance: "Upstream quota or balance",
       account_pool_unavailable: "Account pool unavailable",
       rate_or_capacity: "Rate or capacity",
       timeout: "Timeout",
@@ -1859,7 +1907,7 @@ const e = {
       tabV1History: "V1 history (probes not active in current mode)"
     }
   }
-}, i = {
+}, r = {
   batchImage: {
     columns: {
       taskName: "Task name",
@@ -2070,7 +2118,7 @@ const e = {
       httpStatusRef: "HTTP status: {status}"
     }
   }
-}, r = {
+}, n = {
   imageGeneration: {
     title: "Online Image Generation",
     description: "Generate images with an API key that has image access, then preview or download them in the browser.",
@@ -2139,6 +2187,7 @@ const e = {
       noImages: "The API returned no previewable images.",
       downloadFailed: "Image download failed.",
       historyLoadFailed: "Failed to load local history.",
+      mobileSaveHint: "The image is open. Touch and hold it to save.",
       historySaveFailed: "The image was generated, but local history could not be saved.",
       historyClearFailed: "Failed to clear local history.",
       referenceImagesLimit: "You can select up to four reference images.",
@@ -2146,7 +2195,7 @@ const e = {
       referenceImageTooLarge: "Each reference image must be 20MB or smaller."
     }
   }
-}, n = {
+}, s = {
   // Dashboard
   dashboard: {
     title: "Admin Dashboard",
@@ -2186,6 +2235,10 @@ const e = {
     metricTokens: "By Tokens",
     metricActualCost: "By Actual Cost",
     tokenUsageTrend: "Token Usage Trend",
+    consumptionTrend: "Consumption Trend",
+    actualConsumption: "Actual Consumption",
+    trendLoadFailed: "Trend data could not be refreshed. Showing the last successful result.",
+    dataUpdatedAt: "Data updated: {time}",
     userUsageTrend: "User Usage Trend (Top 12)",
     model: "Model",
     group: "Group",
@@ -2690,6 +2743,7 @@ const e = {
     leaveEmptyToKeep: "Leave empty to keep current password",
     generatePassword: "Generate random password",
     copyPassword: "Copy password",
+    passwordCopied: "Password copied",
     creating: "Creating...",
     updating: "Updating...",
     form: {
@@ -3018,7 +3072,7 @@ const e = {
     accountsAvailable: "Avail:",
     accountsRateLimited: "Limited:",
     accountsTotal: "Total:",
-    accountsUnit: "",
+    accountsUnit: "accounts",
     rateAndAccounts: "{rate}x rate · {count} accounts",
     accountsCount: "{count} accounts",
     rateLabel: "rate",
@@ -3048,19 +3102,36 @@ const e = {
       rpmLimitHint: "Max requests per minute for each user in this group; 0 = unlimited. Once set, it takes over per-user rate limiting in this group (overrides the user-level rpm_limit fallback).",
       maxReasoningEffort: "Max reasoning effort",
       maxReasoningEffortUnlimited: "Unlimited (follow request)",
-      maxReasoningEffortHint: "Limits explicit OpenAI reasoning effort requests only. For Composite groups, it applies only to requests resolved to OpenAI. Higher values are capped; omitted effort stays omitted. The ceiling takes precedence over reasoning effort mappings.",
+      maxReasoningEffortHint: "Limits explicit Anthropic and OpenAI reasoning effort requests. For Composite groups, it applies to the resolved target platform. Omitted effort stays omitted. The ceiling takes precedence over reasoning effort mappings.",
+      maxReasoningEffortOverLimit: "Over-limit access control",
+      maxReasoningEffortOverLimitDowngrade: "Automatically downgrade when over limit",
+      maxReasoningEffortOverLimitDeny: "Deny access",
+      maxReasoningEffortOverLimitHint: "Applies after a ceiling is set. Downgrade rewrites values above the ceiling to the ceiling. Deny rejects the request.",
       reasoningEffortMappings: "Reasoning effort mappings",
+      reasoningEffortMappingsHint: "Type and model can both be left empty to match every model. One type and model can hold multiple request mappings, for example prefix gpt mapping both high and xhigh to medium. Choose Deny as the forwarded value to reject that request value. Exact matches beat affixes, and longer affixes beat shorter ones.",
       addReasoningEffortMapping: "Add mapping",
+      addReasoningEffortPair: "Add request value",
       removeReasoningEffortMapping: "Remove mapping",
+      removeReasoningEffortPair: "Remove request value",
+      reasoningEffortMatchType: "Type",
+      reasoningEffortModel: "Model",
+      reasoningEffortMatchExact: "Exact",
+      reasoningEffortMatchPrefix: "Prefix",
+      reasoningEffortMatchSuffix: "Suffix",
+      reasoningEffortMatchTypePlaceholder: "All models",
+      reasoningEffortModelPlaceholder: "Empty = all / gpt / gpt-5.4",
       reasoningEffortFrom: "Request value",
       reasoningEffortTo: "Forwarded value",
+      reasoningEffortToDeny: "Deny",
       reasoningEffortFromPlaceholder: "Select A",
       reasoningEffortToPlaceholder: "Select B",
       fromRequired: "Select request value A",
       toRequired: "Select forwarded value B",
       unsupportedFrom: "Request value is not supported by this platform",
       unsupportedTo: "Forwarded value is not supported by this platform",
-      duplicateFrom: "Request value A must be unique",
+      unsupportedMatchType: "Match type must be exact, prefix, or suffix",
+      duplicateFrom: "Request value A must be unique within the same model scope",
+      duplicateScope: "Type and model combination must be unique",
       exclusiveLabel: "Exclusive Group",
       exclusiveHint: "Exclusive group, can be manually assigned to users",
       platformLabel: "Platform Restriction",
@@ -3145,6 +3216,7 @@ const e = {
       kimi: "Kimi",
       zhipu: "Zhipu GLM",
       deepseek: "DeepSeek",
+      minimax: "MiniMax",
       composite: "Composite"
     },
     deleteConfirm: "Are you sure you want to delete '{name}'? All associated API keys will no longer belong to any group.",
@@ -3236,14 +3308,36 @@ const e = {
       bufferRangeError: "Safety buffer must be between 0 and 99.99",
       sumTooHigh: "Min gross margin plus safety buffer must be less than 100%, otherwise every account would be excluded"
     },
-    modelsList: {
-      title: "Custom /v1/models Model List",
-      hint: "Only changes the /v1/models response. Whitelist model calls and account routing are unchanged.",
-      loading: "Loading model list...",
-      empty: "No displayable models",
+    modelAllowlist: {
+      title: "Model Allowlist",
+      hint: "When enabled, models outside the allowlist are rejected with 404 model_not_found, and model listing endpoints only show allowlisted models. Entries support exact model IDs and trailing * wildcards. Note: Claude Code probes with haiku-family models for titles/summaries and /messages/count_tokens is also allowlist-controlled, so make sure the small models you need are selected too.",
+      loading: "Loading candidate models...",
+      empty: "No candidate models; add custom entries below",
       selectedSummary: "Selected {selected} / {total}",
       selectAll: "Select all",
-      invertSelection: "Invert"
+      invertSelection: "Invert",
+      wildcardTag: "wildcard",
+      customPlaceholder: "Custom entry, e.g. claude-* or gpt-5.5-codex",
+      addCustom: "Add",
+      emptySelectionError: "The model allowlist is enabled; select or add at least one model entry",
+      errors: {
+        empty: "Please enter a model entry",
+        invalid_wildcard: "Wildcard * is only allowed at the end of an entry",
+        duplicate: "This entry already exists"
+      }
+    },
+    codexModelsManifest: {
+      title: "Pinned Accounts for Model Lists",
+      hint: "When enabled, ordinary model lists and Codex Model Manifest are discovered from the pinned accounts first, then merged and filtered using account mappings and the group model list. Rate-limited or overloaded pinned accounts are still used.",
+      enable: "Fetch model lists with specific accounts",
+      enabledHint: "Accounts are limited to OpenAI accounts bound to this group, at most 10.",
+      disabledHint: "Disabled: ordinary lists use local mappings or defaults; Codex uses a local catalog when configured, otherwise scheduler discovery.",
+      accounts: "Pinned accounts",
+      searchPlaceholder: "Search accounts (OpenAI accounts in this group)",
+      searchEmpty: "No matching accounts",
+      fallback: "Fall back to the scheduler when all pinned accounts are unavailable",
+      fallbackHint: "Off: return 503 / the upstream error. On: fall back to the existing scheduler path.",
+      selectAtLeastOne: "Select at least one account after enabling pinned accounts"
     },
     compositeRoutes: {
       action: "Routes",
@@ -3367,18 +3461,18 @@ const e = {
       searchAccountPlaceholder: "Search accounts...",
       accountsHint: "Select accounts to prioritize for this model pattern"
     },
-    mcpXml: {
-      title: "MCP XML Protocol Injection",
-      tooltip: "When enabled, if the request contains MCP tools, an XML format call protocol prompt will be injected into the system prompt. Disable this to avoid interference with certain clients.",
-      enabled: "Enabled",
-      disabled: "Disabled"
-    },
     claudeMaxSimulation: {
       title: "Claude Max Usage Simulation",
       tooltip: "When enabled, for Claude models without upstream cache-write usage, the system deterministically maps tokens to a small input plus 1h cache creation while keeping total tokens unchanged.",
       enabled: "Enabled (simulate 1h cache)",
       disabled: "Disabled",
       hint: "Only token categories in usage billing logs are adjusted. No per-request mapping state is persisted."
+    },
+    mcpXml: {
+      title: "MCP XML Protocol Injection",
+      tooltip: "When enabled, if the request contains MCP tools, an XML format call protocol prompt will be injected into the system prompt. Disable this to avoid interference with certain clients.",
+      enabled: "Enabled",
+      disabled: "Disabled"
     },
     supportedScopes: {
       title: "Supported Model Families",
@@ -3390,7 +3484,7 @@ const e = {
     }
   }
   // Available Channels (aggregated read-only view)
-}, s = {
+}, l = {
   availableChannels: {
     title: "Available Channels",
     description: "Aggregated view: each channel with its linked groups and supported models (wildcards expanded)",
@@ -3453,6 +3547,8 @@ const e = {
     updateError: "Failed to update channel",
     deleteError: "Failed to delete channel",
     nameRequired: "Please enter a channel name",
+    noGroupsSelected: "Select at least one group for {platform}",
+    emptyModelsInPricing: "Add at least one model to the {platform} pricing rule",
     duplicateModels: 'Model "{0}" appears in multiple pricing entries',
     modelConflict: "Model patterns '{model1}' and '{model2}' conflict: overlapping match range. Model names are matched case-insensitively, so an existing entry already covers all case variants — no need to add the variant separately.",
     mappingConflict: "Mapping source patterns '{model1}' and '{model2}' conflict: overlapping match range. Source patterns are matched case-insensitively, so an existing entry already covers all case variants.",
@@ -4143,7 +4239,7 @@ anthropic-beta: claude-code-20250219`,
     }
   }
   // Accounts
-}, l = {
+}, d = {
   accounts: {
     title: "Account Management",
     description: "Manage AI platform accounts and credentials",
@@ -4248,7 +4344,8 @@ anthropic-beta: claude-code-20250219`,
       grok: "Grok",
       kimi: "Kimi",
       zhipu: "Zhipu GLM",
-      deepseek: "DeepSeek"
+      deepseek: "DeepSeek",
+      minimax: "MiniMax"
     },
     cnProviders: {
       apiKeyHint: "Enter the provider API key that matches the selected account type and endpoint.",
@@ -4833,6 +4930,8 @@ anthropic-beta: claude-code-20250219`,
     modelRestriction: "Model Restriction (Optional)",
     modelWhitelist: "Model Whitelist",
     modelMapping: "Model Mapping",
+    fromModel: "Request model",
+    toModel: "Target model",
     selectAllowedModels: "Select allowed models. Leave empty to support all models.",
     mapRequestModels: "Map request models to actual models. Left is the requested model, right is the actual model sent to API.",
     selectedModels: "Selected {count} model(s)",
@@ -4915,6 +5014,30 @@ anthropic-beta: claude-code-20250219`,
     grokClientToolCache: {
       title: "Client Tool Cache (May Change Automatic Tool Selection)",
       hint: "For detected Grok Free OAuth accounts, this is enabled by default for client function tools such as Codex and Trae. Turn it off to opt out if the automatic tool-selection behavior is not acceptable."
+    },
+    grokMediaEligibility: {
+      title: "Media Generation Eligibility",
+      hint: "Controls whether this Grok OAuth account may be selected for image and video generation.",
+      auto: "Automatic detection",
+      enabled: "Force enable",
+      disabled: "Force disable",
+      current: "Current decision:",
+      eligible: "Eligible",
+      ineligible: "Not eligible",
+      loading: "Loading eligibility…",
+      loadFailed: "Unable to load media eligibility",
+      autoHint: "Automatic detection only clears the manual override; it does not trigger a media request.",
+      forceEnableWarning: "Force enable bypasses automatic eligibility checks. Use only for accounts confirmed to support image/video generation.",
+      partialSave: "Other account settings may have been saved, but media eligibility was not updated. Please retry.",
+      reasons: {
+        eligible: "Paid entitlement confirmed",
+        billing_inconclusive: "Billing information inconclusive",
+        billing_forbidden: "Billing endpoint forbidden",
+        billing_free_tier: "Free tier account",
+        billing_unobserved: "Billing not observed yet",
+        override_enabled: "Manually forced enabled",
+        override_disabled: "Manually forced disabled"
+      }
     },
     autoPauseOnExpired: "Auto Pause On Expired",
     autoPauseOnExpiredDesc: "When enabled, the account will auto pause scheduling after it expires",
@@ -5017,10 +5140,11 @@ anthropic-beta: claude-code-20250219`,
     loadFactorHint: "Higher load factor increases scheduling frequency",
     priority: "Priority",
     priorityHint: "Lower value accounts are used first",
-    billingRateMultiplier: "Current Account Billing Rate",
-    billingRateMultiplierHint: "0 means free for local account scheduling and quota accounting. Provider Account cost reports use the request-time upstream declaration instead.",
+    billingRateMultiplier: "Billing Rate Multiplier",
+    billingRateMultiplierHint: "Used for local account scheduling and quota accounting. Provider Account cost reports use the request-time upstream declaration instead.",
     expiresAt: "Expires At",
     expiresAtHint: "Leave empty for no expiration",
+    expiresAtTimezoneHint: "Times use your browser timezone ({timezone}).",
     higherPriorityFirst: "Lower value means higher priority",
     mixedScheduling: "Use in /v1/messages",
     mixedSchedulingHint: "Enable to participate in Anthropic/Gemini group scheduling",
@@ -5571,7 +5695,9 @@ Supports multiple tokens, one per line`,
       grokLastProbe: "Probe {time}",
       grokLastHeadersSeen: "Headers {time}",
       passiveSampled: "Passive",
-      activeQuery: "Query"
+      activeQuery: "Query",
+      estimatedTotalCost: "Est. total ${cost}",
+      estimatedTotalCostTooltip: "Estimated total cost at 100% utilization, based on current window cost and utilization"
     },
     openaiQuotaReset: {
       count: "Credits",
@@ -5618,7 +5744,7 @@ Supports multiple tokens, one per line`,
     usageError: "Fetch Error"
   }
   // Scheduled Tests
-}, d = {
+}, c = {
   scheduledTests: {
     title: "Scheduled Tests",
     addPlan: "Add Plan",
@@ -6231,7 +6357,7 @@ https://user:pass{'@'}proxy.example.com:443`,
     }
   }
   // Ops Monitoring
-}, c = {
+}, u = {
   ops: {
     title: "Ops Monitoring",
     description: "Operational monitoring and troubleshooting",
@@ -6275,8 +6401,11 @@ https://user:pass{'@'}proxy.example.com:443`,
       samplingInitial: "Sampling initial",
       samplingThereafter: "Sampling thereafter",
       retentionDays: "Retention days",
+      retentionDaysHint: "Applied by the scheduled data-cleanup job.",
       caller: "caller",
       sampling: "sampling",
+      persistAccessLogs: "Store access logs in database",
+      persistAccessLogsHint: "Disabled by default because access logs add one indexed database row per request. Warning, error, and audit logs are always stored.",
       saveAndApply: "Save and apply",
       resetDefaults: "Reset defaults",
       latestWriteError: "Latest write error:",
@@ -6802,6 +6931,16 @@ https://user:pass{'@'}proxy.example.com:443`,
       alertTitle: "Alert Evaluator",
       groupAvailabilityTitle: "Group Availability Monitor",
       evalIntervalSeconds: "Evaluation Interval (seconds)",
+      metricThresholds: "Metric Thresholds",
+      metricThresholdsHint: "Configure alert thresholds for metrics, values exceeding thresholds will be displayed in red",
+      slaMinPercent: "SLA Minimum Percentage",
+      slaMinPercentHint: "SLA below this value will be displayed in red (default: 99.5%)",
+      ttftP99MaxMs: "TTFT P99 Maximum (ms)",
+      ttftP99MaxMsHint: "TTFT P99 above this value will be displayed in red (default: 500ms)",
+      requestErrorRateMaxPercent: "Request Error Rate Maximum (%)",
+      requestErrorRateMaxPercentHint: "Request error rate above this value will be displayed in red (default: 5%)",
+      upstreamErrorRateMaxPercent: "Upstream Error Rate Maximum (%)",
+      upstreamErrorRateMaxPercentHint: "Upstream error rate above this value will be displayed in red (default: 5%)",
       silencing: {
         title: "Alert Silencing (Maintenance Mode)",
         enabled: "Enable silencing",
@@ -7037,7 +7176,7 @@ https://user:pass{'@'}proxy.example.com:443`,
     }
   }
   // Settings
-}, u = {
+}, p = {
   settings: {
     title: "System Settings",
     description: "Manage registration, email verification, default values, and SMTP settings",
@@ -7072,7 +7211,9 @@ https://user:pass{'@'}proxy.example.com:443`,
         hideThroughput: "Hide throughput rates from users (RPM / TPM)",
         hideThroughputHint: "When on, the user Channel Monitor page and user APIs omit RPM and TPM so fleet volume cannot be reverse-estimated from rates × window. Admins still see full metrics. Error rates, latency, and cache rates remain visible.",
         showQuota: "Show channel usage/balance to users",
-        showQuotaHint: "When on, quota-mode channel monitors expose the linked account usage windows/balance on the user Channel Status page. Disabled by default; admins always see it."
+        showQuotaHint: "When on, quota-mode channel monitors expose the linked account usage windows/balance on the user Channel Status page. Disabled by default; admins always see it.",
+        hideUserRanking: "Hide user ranking from users",
+        hideUserRankingHint: "When on, the user Channel Monitor V2 page hides the user ranking tab and the user API returns no ranking rows. Admins still see the ranking."
       },
       availableChannels: {
         title: "Available Channels",
@@ -7489,7 +7630,7 @@ https://user:pass{'@'}proxy.example.com:443`,
       grokDefaultTextModel: "Default Grok text model",
       grokDefaultTextModelHint: "Used for empty model values and, only when the switch is enabled, requests from other client model namespaces. Custom Grok model IDs are accepted.",
       grokCrossClientMap: "Map other clients to Grok",
-      grokCrossClientMapHint: "Disabled by default. When enabled, GPT, Codex, o-series, and Claude model IDs are routed to the default Grok text model above.",
+      grokCrossClientMapHint: "Enabled by default for client compatibility. GPT, Codex, o-series, and Claude model IDs are routed to the default Grok text model above. Disable this to require Grok model IDs.",
       grokDefaultBaseURLMode: "Default Grok upstream",
       grokDefaultBaseURLModeHint: "Used only when a Grok account has no explicit base URL. Media and voice endpoints continue to use their official API hosts.",
       grokBaseURLModeCLI: "CLI chat proxy",
@@ -7697,7 +7838,7 @@ https://user:pass{'@'}proxy.example.com:443`,
       contactInfoHint: "Customer support contact info, displayed on redeem page, profile, etc.",
       docUrl: "Open-source Knowledge Base URL",
       docUrlPlaceholder: "https://docs.example.com",
-      docUrlHint: "Used by the “Open-source Knowledge Base” links on the public site and Console header. Leave empty to hide them.",
+      docUrlHint: "Used by the “Open-source Knowledge Base” links on the public site and other documentation entry points. Leave empty to hide those links.",
       imageTutorialMenu: "Image Tutorial (Special Custom Menu)",
       imageTutorialMenuPlaceholder: "https://docs.example.com/image-generation",
       imageTutorialMenuHint: "This is still a standard custom-menu page. It is fixed in the sidebar, and the Online Images tutorial button opens the same /custom/image-tutorial iframe page. The target must allow iframe embedding; clear the field to remove the menu.",
@@ -8537,7 +8678,7 @@ model not supported`,
     saveFailed: "Failed to save profile",
     deleteFailed: "Failed to delete profile"
   }
-}, p = {
+}, m = {
   audit: {
     title: "Audit Logs",
     description: "Records management-plane operations by admins and users. Header credentials keep only their first/last characters and request bodies are redacted. Entries cannot be deleted individually; clearing all requires two-factor verification.",
@@ -8588,7 +8729,7 @@ model not supported`,
       failed: "Failed to clear audit logs"
     }
   }
-}, m = {
+}, h = {
   promptAudit: {
     title: "Prompt Audit",
     description: "Review user input asynchronously or block it synchronously through OpenAI-compatible Qwen3Guard nodes. Full prompts are stored with events for admin review.",
@@ -8782,16 +8923,16 @@ model not supported`,
       prompt_audit_scanners_required: "Enable at least one risk category."
     }
   }
-}, h = {
-  ...n,
+}, g = {
   ...s,
   ...l,
   ...d,
   ...c,
   ...u,
   ...p,
-  ...m
-}, g = {
+  ...m,
+  ...h
+}, y = {
   // Subscription Progress (Header component)
   subscriptionProgress: {
     title: "My Subscriptions",
@@ -9406,16 +9547,16 @@ You can restart it anytime from the user menu in the top right corner.`,
       }
     }
   }
-}, y = {
-  ...e,
+}, b = {
   ...t,
   ...a,
   ...o,
   ...i,
   ...r,
-  admin: h,
-  ...g
+  ...n,
+  admin: g,
+  ...y
 };
 export {
-  y as default
+  b as default
 };

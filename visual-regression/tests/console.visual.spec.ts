@@ -199,7 +199,7 @@ test.describe('Console public auth contracts', () => {
 
     page.on('pageerror', (error) => pageErrors.push(error.message))
 
-    await page.route('**/assets/online-image-v16/online-image.js', async (route) => {
+    await page.route('**/assets/online-image-v17/online-image.js', async (route) => {
       await stalledOnlineAdapter
       await route.fallback().catch(() => {})
     })
@@ -3367,7 +3367,7 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/cn-provider-admin-v8/cn-provider-admin.js')
     expect(html).toContain('/assets/cn-provider-admin-v7/cn-provider-admin.js')
     expect(html).toContain('/assets/cn-provider-shell-v10/index-9xJBhx8B.js')
-    expect(html).toContain('/assets/online-image-v16/online-image.js')
+    expect(html).toContain('/assets/online-image-v17/online-image.js')
     expect(html).toContain('/assets/zero-one-settings-unified-save-v1.js')
     expect(html).toContain('/assets/zero-one-local-preview-guard-v2.js')
     expect(html).toContain('/assets/zero-one-custom-page-security-v1.js')

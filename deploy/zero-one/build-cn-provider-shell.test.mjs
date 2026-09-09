@@ -37,11 +37,8 @@ import {
   RECOVERY_SHELL_DIRECTORY,
   CURRENT_PASSWORD_RECOVERY_DIRECTORY,
   NATIVE_COST_PASSWORD_RECOVERY_DIRECTORY,
-  LEGACY_CN_PROVIDER_ADMIN_DIRECTORY,
   BILLING_CLARITY_CN_PROVIDER_ADMIN_DIRECTORY,
-  BILLING_CLARITY_CN_PROVIDER_ADMIN_FILES,
-  patchBillingClarityLegacyAccountsModule,
-  patchBillingClarityLegacyAccountLocale,
+  verifyCurrentCNProviderAdminVariant,
   patchApprovedShell,
   patchLegacyApprovedShell,
   patchPriorApprovedShell,
@@ -252,39 +249,24 @@ test('v10 clarifies account identity and uses request-time upstream account cost
   assert.throws(() => patchBillingClarityLocale('unrelated'), /billing clarity locale seam changed/)
 })
 
-test('v8 account adapter patches only the immutable v1 account-rate seams', () => {
-  const sourceDirectory = resolve(assetsDirectory, LEGACY_CN_PROVIDER_ADMIN_DIRECTORY)
+test('v8 Provider catalog adapter owns all six current admin surfaces', () => {
   const targetDirectory = resolve(assetsDirectory, BILLING_CLARITY_CN_PROVIDER_ADMIN_DIRECTORY)
-  assert.deepEqual(readdirSync(targetDirectory).sort(), [...BILLING_CLARITY_CN_PROVIDER_ADMIN_FILES].sort())
-  for (const name of BILLING_CLARITY_CN_PROVIDER_ADMIN_FILES) {
-    assert.ok(lstatSync(resolve(targetDirectory, name)).isFile(), `v8 asset must be a regular file: ${name}`)
-  }
+  assert.equal(verifyCurrentCNProviderAdminVariant(assetsDirectory), targetDirectory)
 
-  const accountsSource = readFileSync(resolve(sourceDirectory, 'AccountsView-CqGntwat.js'), 'utf8')
-  const accounts = readFileSync(resolve(targetDirectory, 'AccountsView-CqGntwat.js'), 'utf8')
-  assert.equal(accounts, patchBillingClarityLegacyAccountsModule(accountsSource))
-  assert.match(accounts, /billing-rate-visible-by-default/)
-  assert.match(accounts, /delete\("rate_multiplier"\)/)
-
-  for (const name of ['index-Cd_2Lby2.js', 'index-DIg8WdAu.js']) {
-    const source = readFileSync(resolve(sourceDirectory, name), 'utf8')
-    const current = readFileSync(resolve(targetDirectory, name), 'utf8')
-    assert.equal(current, patchBillingClarityLegacyAccountLocale(source))
+  const assets = readdirSync(targetDirectory).filter((name) => name.endsWith('.js'))
+  assert.ok(assets.length > 0)
+  for (const name of assets) {
+    const asset = lstatSync(resolve(targetDirectory, name))
+    assert.ok(asset.isFile() || asset.isSymbolicLink(), `v8 asset must be a file or immutable-pool alias: ${name}`)
   }
-  assert.match(readFileSync(resolve(targetDirectory, 'index-Cd_2Lby2.js'), 'utf8'), /Current Account Rate/)
-  assert.match(readFileSync(resolve(targetDirectory, 'index-DIg8WdAu.js'), 'utf8'), /上游声明倍率（观测）/)
-
-  for (const name of ['GroupsView-BoyyLsHH.js', 'cnProviderAdminLeaf-BhlEtnfM.js', 'platforms-DPfm85ol.js', 'logo.svg']) {
-    assert.equal(
-      readFileSync(resolve(targetDirectory, name), 'utf8'),
-      readFileSync(resolve(sourceDirectory, name), 'utf8'),
-      `unrelated v1 adapter asset changed: ${name}`,
-    )
-  }
-  assert.throws(() => patchBillingClarityLegacyAccountsModule('unrelated'), /legacy account default hidden columns seam count changed/)
-  assert.throws(() => patchBillingClarityLegacyAccountLocale('unrelated'), /legacy account locale seam changed/)
+  const source = assets
+    .sort()
+    .map((name) => readFileSync(resolve(targetDirectory, name), 'utf8'))
+    .join('\n')
+  assert.match(source, /minimax/)
+  assert.match(source, /Upstream Declared Rate \(Observed\)/)
+  assert.match(source, /上游声明倍率（观测）/)
 })
-
 
 test('current password recovery imports the same Vue and application runtime as the current shell', () => {
   for (const name of ['ForgotPasswordView.js', 'ResetPasswordView.js']) {
