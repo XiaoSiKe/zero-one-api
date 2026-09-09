@@ -726,50 +726,54 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 	mustCreateAccount(s.T(), s.client, &service.Account{Name: "a-ov", OverloadUntil: &resetAt, Schedulable: true})
 
 	d1, d2, d3 := 100, 200, 300
+	declaredRate := 1.0
 	logToday := &service.UsageLog{
-		UserID:              userToday.ID,
-		APIKeyID:            apiKey1.ID,
-		AccountID:           accNormal.ID,
-		Model:               "claude-3",
-		GroupID:             &group.ID,
-		InputTokens:         10,
-		OutputTokens:        20,
-		CacheCreationTokens: 3,
-		CacheReadTokens:     4,
-		TotalCost:           1.5,
-		ActualCost:          1.2,
-		DurationMs:          &d1,
-		CreatedAt:           testMaxTime(todayStart.Add(2*time.Minute), now.Add(-2*time.Minute)),
+		UserID:                 userToday.ID,
+		APIKeyID:               apiKey1.ID,
+		AccountID:              accNormal.ID,
+		Model:                  "claude-3",
+		GroupID:                &group.ID,
+		InputTokens:            10,
+		OutputTokens:           20,
+		CacheCreationTokens:    3,
+		CacheReadTokens:        4,
+		TotalCost:              1.5,
+		ActualCost:             1.2,
+		UpstreamRateMultiplier: &declaredRate,
+		DurationMs:             &d1,
+		CreatedAt:              testMaxTime(todayStart.Add(2*time.Minute), now.Add(-2*time.Minute)),
 	}
 	_, err = s.repo.Create(s.ctx, logToday)
 	s.Require().NoError(err, "Create logToday")
 
 	logOld := &service.UsageLog{
-		UserID:       userOld.ID,
-		APIKeyID:     apiKey1.ID,
-		AccountID:    accNormal.ID,
-		Model:        "claude-3",
-		InputTokens:  5,
-		OutputTokens: 6,
-		TotalCost:    0.7,
-		ActualCost:   0.7,
-		DurationMs:   &d2,
-		CreatedAt:    todayStart.Add(-1 * time.Hour),
+		UserID:                 userOld.ID,
+		APIKeyID:               apiKey1.ID,
+		AccountID:              accNormal.ID,
+		Model:                  "claude-3",
+		InputTokens:            5,
+		OutputTokens:           6,
+		TotalCost:              0.7,
+		ActualCost:             0.7,
+		UpstreamRateMultiplier: &declaredRate,
+		DurationMs:             &d2,
+		CreatedAt:              todayStart.Add(-1 * time.Hour),
 	}
 	_, err = s.repo.Create(s.ctx, logOld)
 	s.Require().NoError(err, "Create logOld")
 
 	logPerf := &service.UsageLog{
-		UserID:       userToday.ID,
-		APIKeyID:     apiKey1.ID,
-		AccountID:    accNormal.ID,
-		Model:        "claude-3",
-		InputTokens:  1,
-		OutputTokens: 2,
-		TotalCost:    0.1,
-		ActualCost:   0.1,
-		DurationMs:   &d3,
-		CreatedAt:    now.Add(-30 * time.Second),
+		UserID:                 userToday.ID,
+		APIKeyID:               apiKey1.ID,
+		AccountID:              accNormal.ID,
+		Model:                  "claude-3",
+		InputTokens:            1,
+		OutputTokens:           2,
+		TotalCost:              0.1,
+		ActualCost:             0.1,
+		UpstreamRateMultiplier: &declaredRate,
+		DurationMs:             &d3,
+		CreatedAt:              now.Add(-30 * time.Second),
 	}
 	_, err = s.repo.Create(s.ctx, logPerf)
 	s.Require().NoError(err, "Create logPerf")
@@ -804,7 +808,7 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 	s.Require().Equal(baseStats.TotalTokens+int64(51), stats.TotalTokens, "TotalTokens mismatch")
 	s.Require().Equal(baseStats.TotalCost+2.3, stats.TotalCost, "TotalCost mismatch")
 	s.Require().Equal(baseStats.TotalActualCost+2.0, stats.TotalActualCost, "TotalActualCost mismatch")
-	// Missing retained declarations fall back to the account rate saved on each bill.
+	// All fixture rows carry a confirmed request-time upstream declaration.
 	s.Require().NotNil(stats.TotalAccountCost)
 	s.Require().Equal(baseTotalAccountCost+2.3, *stats.TotalAccountCost)
 	s.Require().GreaterOrEqual(stats.TodayRequests, int64(1), "expected TodayRequests >= 1")
@@ -831,50 +835,54 @@ func (s *UsageLogRepoSuite) TestDashboardStatsWithRange_Fallback() {
 	account := mustCreateAccount(s.T(), s.client, &service.Account{Name: "acc-range"})
 
 	d1, d2, d3 := 100, 200, 300
+	declaredRate := 1.0
 	logOutside := &service.UsageLog{
-		UserID:       user1.ID,
-		APIKeyID:     apiKey1.ID,
-		AccountID:    account.ID,
-		Model:        "claude-3",
-		InputTokens:  7,
-		OutputTokens: 8,
-		TotalCost:    0.8,
-		ActualCost:   0.7,
-		DurationMs:   &d3,
-		CreatedAt:    rangeStart.Add(-1 * time.Hour),
+		UserID:                 user1.ID,
+		APIKeyID:               apiKey1.ID,
+		AccountID:              account.ID,
+		Model:                  "claude-3",
+		InputTokens:            7,
+		OutputTokens:           8,
+		TotalCost:              0.8,
+		ActualCost:             0.7,
+		UpstreamRateMultiplier: &declaredRate,
+		DurationMs:             &d3,
+		CreatedAt:              rangeStart.Add(-1 * time.Hour),
 	}
 	_, err := s.repo.Create(s.ctx, logOutside)
 	s.Require().NoError(err)
 
 	logRange := &service.UsageLog{
-		UserID:              user1.ID,
-		APIKeyID:            apiKey1.ID,
-		AccountID:           account.ID,
-		Model:               "claude-3",
-		InputTokens:         10,
-		OutputTokens:        20,
-		CacheCreationTokens: 1,
-		CacheReadTokens:     2,
-		TotalCost:           1.0,
-		ActualCost:          0.9,
-		DurationMs:          &d1,
-		CreatedAt:           rangeStart.Add(2 * time.Hour),
+		UserID:                 user1.ID,
+		APIKeyID:               apiKey1.ID,
+		AccountID:              account.ID,
+		Model:                  "claude-3",
+		InputTokens:            10,
+		OutputTokens:           20,
+		CacheCreationTokens:    1,
+		CacheReadTokens:        2,
+		TotalCost:              1.0,
+		ActualCost:             0.9,
+		UpstreamRateMultiplier: &declaredRate,
+		DurationMs:             &d1,
+		CreatedAt:              rangeStart.Add(2 * time.Hour),
 	}
 	_, err = s.repo.Create(s.ctx, logRange)
 	s.Require().NoError(err)
 
 	logToday := &service.UsageLog{
-		UserID:          user2.ID,
-		APIKeyID:        apiKey2.ID,
-		AccountID:       account.ID,
-		Model:           "claude-3",
-		InputTokens:     5,
-		OutputTokens:    6,
-		CacheReadTokens: 1,
-		TotalCost:       0.5,
-		ActualCost:      0.5,
-		DurationMs:      &d2,
-		CreatedAt:       now,
+		UserID:                 user2.ID,
+		APIKeyID:               apiKey2.ID,
+		AccountID:              account.ID,
+		Model:                  "claude-3",
+		InputTokens:            5,
+		OutputTokens:           6,
+		CacheReadTokens:        1,
+		TotalCost:              0.5,
+		ActualCost:             0.5,
+		UpstreamRateMultiplier: &declaredRate,
+		DurationMs:             &d2,
+		CreatedAt:              now,
 	}
 	_, err = s.repo.Create(s.ctx, logToday)
 	s.Require().NoError(err)
@@ -889,7 +897,7 @@ func (s *UsageLogRepoSuite) TestDashboardStatsWithRange_Fallback() {
 	s.Require().Equal(int64(45), stats.TotalTokens)
 	s.Require().Equal(1.5, stats.TotalCost)
 	s.Require().Equal(1.4, stats.TotalActualCost)
-	// Missing retained declarations remain reportable from historical account rates.
+	// Both rows carry request-time upstream declarations, so account cost is confirmed.
 	s.Require().NotNil(stats.TotalAccountCost)
 	s.Require().Equal(1.5, *stats.TotalAccountCost)
 	s.Require().InEpsilon(150.0, stats.AverageDurationMs, 0.0001)
@@ -919,8 +927,9 @@ func (s *UsageLogRepoSuite) TestGetAccountTodayStats() {
 
 	createdAt := timezone.Today().Add(1 * time.Hour)
 
-	m1 := 1.5
-	m2 := 0.0
+	localRate := 1.0
+	upstreamRate := 0.22
+	baseAccountCost := 0.33130909
 	_, err := s.repo.Create(s.ctx, &service.UsageLog{
 		UserID:                 user.ID,
 		APIKeyID:               apiKey.ID,
@@ -929,40 +938,28 @@ func (s *UsageLogRepoSuite) TestGetAccountTodayStats() {
 		Model:                  "claude-3",
 		InputTokens:            10,
 		OutputTokens:           20,
-		TotalCost:              1.0,
-		ActualCost:             2.0,
-		AccountRateMultiplier:  &m1,
-		UpstreamRateMultiplier: &m1,
+		TotalCost:              baseAccountCost,
+		ActualCost:             0.013849,
+		AccountRateMultiplier:  &localRate,
+		UpstreamRateMultiplier: &upstreamRate,
+		AccountStatsCost:       &baseAccountCost,
 		CreatedAt:              createdAt,
 	})
 	s.Require().NoError(err)
-	_, err = s.repo.Create(s.ctx, &service.UsageLog{
-		UserID:                 user.ID,
-		APIKeyID:               apiKey.ID,
-		AccountID:              account.ID,
-		RequestID:              uuid.New().String(),
-		Model:                  "claude-3",
-		InputTokens:            5,
-		OutputTokens:           5,
-		TotalCost:              0.5,
-		ActualCost:             1.0,
-		AccountRateMultiplier:  &m2,
-		UpstreamRateMultiplier: &m2,
-		CreatedAt:              createdAt,
-	})
-	s.Require().NoError(err)
+	_, err = s.client.Account.UpdateOneID(account.ID).SetRateMultiplier(8).Save(s.ctx)
+	s.Require().NoError(err, "changing the current local account rate must not rewrite history")
 
 	stats, err := s.repo.GetAccountTodayStats(s.ctx, account.ID)
 	s.Require().NoError(err, "GetAccountTodayStats")
-	s.Require().Equal(int64(2), stats.Requests)
-	s.Require().Equal(int64(40), stats.Tokens)
-	// account cost uses the recorded upstream declaration.
+	s.Require().Equal(int64(1), stats.Requests)
+	s.Require().Equal(int64(30), stats.Tokens)
+	// The screenshot case: 0.33130909 × 0.22 = 0.0728879998, independent of local 8x.
 	s.Require().NotNil(stats.Cost)
-	s.Require().InEpsilon(1.5, *stats.Cost, 0.0001)
+	s.Require().InDelta(0.072888, *stats.Cost, 0.0000005)
 	// standard cost = SUM(total_cost)
-	s.Require().InEpsilon(1.5, stats.StandardCost, 0.0001)
+	s.Require().InDelta(baseAccountCost, stats.StandardCost, 0.000000001)
 	// user cost = SUM(actual_cost)
-	s.Require().InEpsilon(3.0, stats.UserCost, 0.0001)
+	s.Require().InDelta(0.013849, stats.UserCost, 0.000000001)
 }
 
 func (s *UsageLogRepoSuite) TestDashboardAggregationConsistency() {

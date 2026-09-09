@@ -146,27 +146,6 @@ Confirmation dialog built on top of Modal component.
 
 ---
 
-### StatCard.vue
-
-Statistics card component for displaying metrics with optional change indicators.
-
-**Props:**
-
-- `title: string` - Card title
-- `value: number | string` - Main value to display
-- `icon?: Component` - Icon component
-- `change?: number` - Percentage change value
-- `changeType?: 'up' | 'down' | 'neutral'` - Change direction (default: 'neutral')
-- `formatValue?: (value) => string` - Custom value formatter
-
-**Usage:**
-
-```vue
-<StatCard title="Total Users" :value="1234" :icon="UserIcon" :change="12.5" change-type="up" />
-```
-
----
-
 ### Toast.vue
 
 Toast notification component that automatically displays toasts from the app store.
@@ -247,13 +226,7 @@ Empty state placeholder with icon, message, and optional action button.
 
 ## Import
 
-You can import components individually:
-
-```typescript
-import { DataTable, Pagination, Modal } from '@/components/common'
-```
-
-Or import specific components:
+Import components directly so each dependency remains explicit:
 
 ```typescript
 import DataTable from '@/components/common/DataTable.vue'

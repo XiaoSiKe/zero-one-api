@@ -35,8 +35,8 @@ export function validateManifest(value) {
     throw new Error('UI baseline must be a JSON object')
   }
   if (value.schema_version !== 1) throw new Error('unsupported UI baseline schema_version')
-  if (!/^ui-approved-\d{4}-\d{2}-\d{2}(?:-[a-z0-9]+)?$/.test(value.baseline_ref || '')) {
-    throw new Error('UI baseline_ref must be a dated ui-approved tag with an optional revision suffix')
+  if (!/^ui-approved-\d{4}-\d{2}-\d{2}(?:-[a-z0-9]+)*$/.test(value.baseline_ref || '')) {
+    throw new Error('UI baseline_ref must be a dated ui-approved tag with an optional slug suffix')
   }
   if (!/^[0-9a-f]{40}$/.test(value.baseline_commit || '')) {
     throw new Error('UI baseline_commit must be a lowercase 40-character SHA')

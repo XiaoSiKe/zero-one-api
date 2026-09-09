@@ -44,7 +44,7 @@
         </div>
 
         <!-- Tab: Security — Admin API Key -->
-        <div v-show="activeTab === 'security'" class="space-y-6">
+        <SecuritySettingsTab v-show="activeTab === 'security'">
           <!-- Admin API Key Settings -->
           <div class="card">
             <div
@@ -197,11 +197,11 @@
               </div>
             </div>
           </div>
-        </div>
+        </SecuritySettingsTab>
         <!-- /Tab: Security — Admin API Key -->
 
         <!-- Tab: Gateway -->
-        <div v-show="activeTab === 'gateway'" class="space-y-6">
+        <GatewaySettingsTab v-show="activeTab === 'gateway'">
           <!-- Overload Cooldown (529) Settings -->
           <div class="card" data-testid="overload-cooldown-settings">
             <div
@@ -1241,11 +1241,27 @@
               </div>
             </div>
           </div>
-        </div>
+          <div v-if="form.channel_monitor_mode === 'v2'" class="card">
+            <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ t('admin.settings.features.channelMonitor.hideUserRanking') }}
+              </h2>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {{ t('admin.settings.features.channelMonitor.hideUserRankingHint') }}
+              </p>
+            </div>
+            <div class="flex items-center justify-between gap-4 p-6">
+              <span class="text-sm text-gray-700 dark:text-gray-300">
+                {{ t('admin.settings.features.channelMonitor.hideUserRanking') }}
+              </span>
+              <Toggle v-model="form.channel_monitor_hide_user_ranking" />
+            </div>
+          </div>
+        </GatewaySettingsTab>
         <!-- /Tab: Gateway -->
 
         <!-- Tab: Security — Registration, Turnstile, LinuxDo -->
-        <div v-show="activeTab === 'security'" class="space-y-6">
+        <SecuritySettingsTab v-show="activeTab === 'security'">
           <!-- Registration Settings -->
           <div class="card">
             <div
@@ -3605,11 +3621,11 @@
               </div>
             </div>
           </div>
-        </div>
+        </SecuritySettingsTab>
         <!-- /Tab: Security — Registration, Turnstile, LinuxDo, OIDC -->
 
         <!-- Tab: Users -->
-        <div v-show="activeTab === 'users'" class="space-y-6">
+        <UsersSettingsTab v-show="activeTab === 'users'">
           <!-- Default Settings -->
           <div class="card">
             <div
@@ -4221,11 +4237,11 @@
               </div>
             </div>
           </div>
-        </div>
+        </UsersSettingsTab>
         <!-- /Tab: Users -->
 
         <!-- Tab: Gateway — Claude Code, Scheduling -->
-        <div v-show="activeTab === 'gateway'" class="space-y-6">
+        <GatewaySettingsTab v-show="activeTab === 'gateway'">
           <!-- Claude Code Settings -->
           <div class="card">
             <div
@@ -5973,11 +5989,11 @@
             </div>
           </div>
         </div>
-        </div>
+        </GatewaySettingsTab>
         <!-- /Tab: Gateway — Claude Code, Scheduling -->
 
         <!-- Tab: General -->
-        <div v-show="activeTab === 'general'" class="space-y-6">
+        <GeneralSettingsTab v-show="activeTab === 'general'">
           <!-- Site Settings -->
           <div class="card">
             <div
@@ -7006,11 +7022,11 @@
               </button>
             </div>
           </div>
-	        </div>
+	        </GeneralSettingsTab>
 	        <!-- /Tab: General -->
 
 	        <!-- Tab: Login Agreement -->
-	        <div v-show="activeTab === 'agreement'" class="space-y-6">
+	        <AgreementSettingsTab v-show="activeTab === 'agreement'">
 	          <div class="card">
 	            <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
 	              <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -7208,11 +7224,11 @@
               </div>
             </div>
           </div>
-        </div>
+        </AgreementSettingsTab>
         <!-- /Tab: Login Agreement -->
 
 	        <!-- Tab: Features (功能开关) -->
-        <div v-show="activeTab === 'features'" class="space-y-6">
+        <FeaturesSettingsTab v-show="activeTab === 'features'">
 
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
@@ -7320,16 +7336,18 @@
                 </p>
               </div>
 
-              <div v-if="form.channel_monitor_mode === 'v2'" class="flex items-start justify-between gap-4">
-                <div class="min-w-0">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">
-                    {{ t('admin.settings.features.channelMonitor.hideThroughput') }}
-                  </p>
-                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {{ t('admin.settings.features.channelMonitor.hideThroughputHint') }}
-                  </p>
+              <div v-if="form.channel_monitor_mode === 'v2'" class="space-y-4">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">
+                      {{ t('admin.settings.features.channelMonitor.hideThroughput') }}
+                    </p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.settings.features.channelMonitor.hideThroughputHint') }}
+                    </p>
+                  </div>
+                  <Toggle v-model="form.channel_monitor_hide_throughput" />
                 </div>
-                <Toggle v-model="form.channel_monitor_hide_throughput" />
               </div>
 
               <div v-if="form.channel_monitor_mode === 'v1'" class="flex items-start justify-between gap-4">
@@ -7488,11 +7506,11 @@
           </div>
         </div>
 
-        </div><!-- /Tab: Features -->
+        </FeaturesSettingsTab><!-- /Tab: Features -->
 
         <!-- Tab: Email -->
         <!-- Tab: Payment -->
-        <div v-show="activeTab === 'payment'" class="space-y-6">
+        <PaymentSettingsTab v-show="activeTab === 'payment'">
           <!-- Payment System Settings -->
           <div class="card">
             <div
@@ -8041,9 +8059,9 @@
             @toggle-type="handleToggleType"
             @reorder="handleReorderProviders"
           />
-        </div>
+        </PaymentSettingsTab>
 
-        <div v-show="activeTab === 'email'" class="space-y-6">
+        <EmailSettingsTab v-show="activeTab === 'email'">
           <!-- Email disabled hint - show when email_verify_enabled is off -->
           <div v-if="!form.email_verify_enabled" class="card">
             <div class="p-6">
@@ -8461,13 +8479,13 @@
               </div>
             </div>
           </div>
-        </div>
+        </EmailSettingsTab>
         <!-- /Tab: Email -->
 
         <!-- Tab: Backup -->
-        <div v-show="activeTab === 'backup'">
+        <BackupSettingsTab v-show="activeTab === 'backup'">
           <BackupSettings />
-        </div>
+        </BackupSettingsTab>
 
         <!-- Save Button -->
         <div v-show="activeTab !== 'backup'" class="flex justify-end">
@@ -8587,6 +8605,15 @@ import {
 import BackupSettings from "@/views/admin/BackupView.vue";
 import EmailTemplateEditor from "@/views/admin/settings/EmailTemplateEditor.vue";
 import OpenAIFastPolicyUserSelector from "@/views/admin/settings/OpenAIFastPolicyUserSelector.vue";
+import SecuritySettingsTab from "@/views/admin/settings/SecuritySettingsTab.vue";
+import GatewaySettingsTab from "@/views/admin/settings/GatewaySettingsTab.vue";
+import UsersSettingsTab from "@/views/admin/settings/UsersSettingsTab.vue";
+import GeneralSettingsTab from "@/views/admin/settings/GeneralSettingsTab.vue";
+import AgreementSettingsTab from "@/views/admin/settings/AgreementSettingsTab.vue";
+import FeaturesSettingsTab from "@/views/admin/settings/FeaturesSettingsTab.vue";
+import PaymentSettingsTab from "@/views/admin/settings/PaymentSettingsTab.vue";
+import EmailSettingsTab from "@/views/admin/settings/EmailSettingsTab.vue";
+import BackupSettingsTab from "@/views/admin/settings/BackupSettingsTab.vue";
 import { useClipboard } from "@/composables/useClipboard";
 import {
   useStepUp,
@@ -9312,6 +9339,7 @@ type SettingsForm = Omit<
   /** Form always binds a concrete boolean (SystemSettings marks this optional). */
   channel_monitor_hide_throughput: boolean;
   channel_monitor_show_quota: boolean;
+  channel_monitor_hide_user_ranking: boolean;
   community_qr_enabled: boolean;
   community_qr_image: string;
   community_qr_title: string;
@@ -9651,6 +9679,7 @@ const form = reactive<SettingsForm>({
   channel_monitor_default_interval_seconds: 60,
   channel_monitor_hide_throughput: false,
   channel_monitor_show_quota: false,
+  channel_monitor_hide_user_ranking: false,
   // Available Channels feature switch
   available_channels_enabled: false,
   // Model Plaza feature switches + description
@@ -10919,6 +10948,9 @@ async function loadSettings() {
     form.channel_monitor_show_quota = Boolean(
       settings.channel_monitor_show_quota
     );
+    form.channel_monitor_hide_user_ranking = Boolean(
+      settings.channel_monitor_hide_user_ranking
+    );
     form.login_agreement_updated_at =
       settings.login_agreement_updated_at || "2026-03-31";
     form.login_agreement_documents =
@@ -11581,6 +11613,7 @@ async function saveSettings() {
         Number(form.channel_monitor_default_interval_seconds) || 60,
       channel_monitor_hide_throughput: Boolean(form.channel_monitor_hide_throughput),
       channel_monitor_show_quota: Boolean(form.channel_monitor_show_quota),
+      channel_monitor_hide_user_ranking: Boolean(form.channel_monitor_hide_user_ranking),
       // Available Channels feature switch
       available_channels_enabled: form.available_channels_enabled,
       // Model Plaza feature switches + description

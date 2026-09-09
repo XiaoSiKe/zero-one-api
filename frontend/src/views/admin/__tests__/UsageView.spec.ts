@@ -37,6 +37,8 @@ const messages: Record<string, string> = {
 	'usage.sentUpstreamModel': 'Sent upstream model',
 	'usage.upstreamResponseModel': 'Upstream response model',
 	'usage.upstreamModelMismatch': 'Upstream model mismatch',
+	'usage.accountMultiplier': 'Request-time upstream rate',
+	'usage.accountBilled': 'Account cost',
 	'common.yes': 'Yes',
 	'common.no': 'No',
 }
@@ -634,7 +636,7 @@ describe('admin UsageView model audit export', () => {
 		vi.useFakeTimers()
 		list.mockReset().mockResolvedValue({ items: [], total: 0, pages: 0 })
 		exportList.mockReset().mockResolvedValue({
-			items: [{
+				items: [{
 				id: 1,
 				created_at: '2026-08-04T00:00:00Z',
 				model: 'gpt-5.6-sol',
@@ -645,10 +647,29 @@ describe('admin UsageView model audit export', () => {
 				input_tokens: 1,
 				output_tokens: 1,
 				cache_read_tokens: 0,
-				cache_creation_tokens: 0,
-				duration_ms: 10,
-			}],
-			total: 1,
+					cache_creation_tokens: 0,
+					total_cost: 100,
+					actual_cost: 3,
+					account_stats_cost: 7,
+					account_rate_multiplier: 8,
+					upstream_rate_multiplier: 0.22,
+					duration_ms: 10,
+				}, {
+					id: 2,
+					created_at: '2026-08-04T00:01:00Z',
+					model: 'gpt-5.6-sol',
+					request_type: 'sync',
+					input_tokens: 1,
+					output_tokens: 1,
+					cache_read_tokens: 0,
+					cache_creation_tokens: 0,
+					total_cost: 100,
+					actual_cost: 3,
+					account_rate_multiplier: 8,
+					upstream_rate_multiplier: null,
+					duration_ms: 10,
+				}],
+				total: 2,
 			pages: 1,
 		})
 		getStats.mockReset().mockResolvedValue({
@@ -682,8 +703,15 @@ describe('admin UsageView model audit export', () => {
 			'Upstream response model',
 			'Upstream model mismatch',
 		])
-		const row = sheetAddAoa.mock.calls[0][1][0]
-		expect(row.slice(4, 8)).toEqual(['gpt-5.6-sol', 'gpt-5.5', 'gpt-5.4', 'Yes'])
-		expect(saveAs).toHaveBeenCalledTimes(1)
+			const row = sheetAddAoa.mock.calls[0][1][0]
+			expect(row.slice(4, 8)).toEqual(['gpt-5.6-sol', 'gpt-5.5', 'gpt-5.4', 'Yes'])
+			const upstreamRateIndex = headers.indexOf('Request-time upstream rate')
+			const accountCostIndex = headers.indexOf('Account cost')
+			expect(row[upstreamRateIndex]).toBe('0.2200')
+			expect(row[accountCostIndex]).toBe('1.540000')
+			const unknownRow = sheetAddAoa.mock.calls[0][1][1]
+			expect(unknownRow[upstreamRateIndex]).toBe('')
+			expect(unknownRow[accountCostIndex]).toBe('')
+			expect(saveAs).toHaveBeenCalledTimes(1)
 	})
 })

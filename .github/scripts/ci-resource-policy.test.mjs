@@ -58,7 +58,7 @@ const jobPolicies = {
       'run: pnpm run build:cn-provider-admin',
       'run: pnpm run build:cn-provider-shell',
       'run: pnpm run build:online-image',
-      'run: test -z "$(git status --porcelain --untracked-files=all -- deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v2 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v3 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v4 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v5 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v7 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v2 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v3 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v4 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v9 deploy/zero-one/recovered-frontend/console/assets/online-image-v7 deploy/zero-one/recovered-frontend/console/assets/online-image-v8 deploy/zero-one/recovered-frontend/console/assets/online-image-v9 deploy/zero-one/recovered-frontend/console/assets/online-image-v10 deploy/zero-one/recovered-frontend/console/assets/online-image-v11 deploy/zero-one/recovered-frontend/console/assets/online-image-v12 deploy/zero-one/recovered-frontend/console/assets/online-image-v13 deploy/zero-one/recovered-frontend/console/assets/online-image-v14 deploy/zero-one/recovered-frontend/console/assets/online-image-v15 deploy/zero-one/recovered-frontend/console/assets/online-image-v16 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v1 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v3 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v4 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v5 deploy/zero-one/recovered-frontend/console/assets/shared-immutable)"',
+      'run: test -z "$(git status --porcelain --untracked-files=all -- deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v2 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v3 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v4 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v5 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v7 deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v1 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v2 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v3 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v4 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v5 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v6 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v9 deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v10 deploy/zero-one/recovered-frontend/console/assets/online-image-v7 deploy/zero-one/recovered-frontend/console/assets/online-image-v8 deploy/zero-one/recovered-frontend/console/assets/online-image-v9 deploy/zero-one/recovered-frontend/console/assets/online-image-v10 deploy/zero-one/recovered-frontend/console/assets/online-image-v11 deploy/zero-one/recovered-frontend/console/assets/online-image-v12 deploy/zero-one/recovered-frontend/console/assets/online-image-v13 deploy/zero-one/recovered-frontend/console/assets/online-image-v14 deploy/zero-one/recovered-frontend/console/assets/online-image-v15 deploy/zero-one/recovered-frontend/console/assets/online-image-v16 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v1 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v3 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v4 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v5 deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6 deploy/zero-one/recovered-frontend/console/assets/shared-immutable)"',
     ]],
     backend: [30, ['run: go test ./...', 'run: make test-unit', 'run: make test-integration']],
     deployment: [45, [
@@ -208,6 +208,22 @@ test('automatic validation executes ordinary, unit, integration and full Console
   assert.ok(!commands.includes('run: make test-frontend'), 'the full Console suite includes the critical subset')
   assert.ok(!commands.includes('run: make test'), 'Go lint runs only in its dedicated job')
   assert.ok(!source.includes('continue-on-error:'), 'automatic gates must not hide failures')
+})
+
+test('the Console workflow regenerates current adapters in dependency order', () => {
+  const source = readFileSync(new URL('../workflows/zero-one-ci.yml', import.meta.url), 'utf8')
+  const commands = [
+    'run: pnpm run build:cn-provider-admin',
+    'run: pnpm run build:cn-provider-shell',
+    'run: pnpm run build:password-recovery',
+    'run: pnpm run build:online-image',
+  ]
+  let previous = -1
+  for (const command of commands) {
+    const current = source.indexOf(command)
+    assert.ok(current > previous, `${command} must follow the preceding generator`)
+    previous = current
+  }
 })
 
 test('required checks record exactly one successful affected-or-not-applicable decision path', () => {

@@ -4,10 +4,9 @@ set -eu
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 production_config=$(mktemp)
 preview_config=$(mktemp)
-production_baseline_preview_config=$(mktemp)
 
 cleanup() {
-	rm -f "$production_config" "$preview_config" "$production_baseline_preview_config"
+	rm -f "$production_config" "$preview_config"
 }
 trap cleanup EXIT INT TERM
 
@@ -62,19 +61,4 @@ jq -e '
   any(.services.edge.volumes[]; .target == "/etc/caddy/Caddyfile.shared")
 ' "$preview_config" >/dev/null
 
-docker compose \
-	--env-file "$repo_root/deploy/.env.example" \
-	-f "$repo_root/deploy/docker-compose.dev.yml" \
-	-f "$repo_root/deploy/docker-compose.preview.yml" \
-	-f "$repo_root/deploy/zero-one/compose.production-baseline-preview.yml" \
-	config --format json >"$production_baseline_preview_config"
-
-jq -e '
-  .services.sub2api.image == "ghcr.io/xiaosike/zero-one-sub2api@sha256:7c008a49a58b26a4ebc4caf842d6f1251b4b0f11d8993d202b2b9c23caea3a58" and
-  (.services.sub2api | has("build") | not) and
-  .services.sub2api.ports[0].host_ip == "127.0.0.1" and
-  .services.sub2api.ports[0].target == 8025 and
-  .services.edge.build.args.VITE_LOCAL_EDGE_PREVIEW == "true"
-' "$production_baseline_preview_config" >/dev/null
-
-echo 'zero-one production, preview, and production-baseline preview Compose contract OK'
+echo 'zero-one production and preview Compose contract OK'

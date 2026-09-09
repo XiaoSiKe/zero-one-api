@@ -1,16 +1,16 @@
 # ADR 0015：v0.2.3 成本、仪表盘与回滚兼容
 
-状态：已接受。取代 ADR 0010 的当前成本展示口径，并扩展 ADR 0012 的管理员仪表盘展示；两份旧记录继续解释不可变历史资源和日期浮层。
+状态：成本来源已由 [ADR 0017](0017-upstream-declared-account-cost.md) 取代；v0.2.3 白名单兼容、管理员仪表盘和测试用户清理决策继续有效。倍率术语、默认列和 v10 资源由 [ADR 0016](0016-billing-rate-display-clarity.md) 扩展。
 
 ## 成本口径
 
-管理员账单、账号统计、模型／分组／端点统计与仪表盘统一使用账单保存的原生账号成本：
+以下是 v0.2.3 集成时采用、现已被 ADR 0017 取代的历史口径：
 
 `COALESCE(account_stats_cost, total_cost) × COALESCE(account_rate_multiplier, 1)`。
 
 零倍率和零成本是有效值。缺少历史账号倍率时按原生默认 1 倍处理，不显示“待确认”，也不使用当前账号配置回算旧账。客户消费继续读取 `actual_cost`，标准金额继续读取 `total_cost`。
 
-`upstream_rate_multiplier`、旧聚合列和探测配置继续保留，用于历史兼容、调度和旧镜像回滚。当前报表不读取它们；兼容聚合列写入同一原生成本，避免形成第二套成本规则。
+`account_rate_multiplier`、旧聚合列和探测配置继续保留，用于本地调度、额度核算和旧镜像回滚；当前 Provider Account 成本报表读取请求时 `upstream_rate_multiplier`。
 
 ## 管理员仪表盘
 

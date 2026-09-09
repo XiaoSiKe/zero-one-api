@@ -14,7 +14,7 @@ import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import './cnProviderAdmin.css'
 
-type AdminSurface = 'channels' | 'channel-monitor' | 'ops' | 'subscriptions'
+type AdminSurface = 'accounts' | 'groups' | 'channels' | 'channel-monitor' | 'ops' | 'subscriptions'
 type LocaleCode = 'en' | 'zh'
 type RunMode = 'standard' | 'simple'
 
@@ -30,6 +30,8 @@ interface PreparedSurface {
 }
 
 const surfaceLoaders = {
+  accounts: () => import('@/views/admin/AccountsView.vue'),
+  groups: () => import('@/views/admin/GroupsView.vue'),
   channels: () => import('@/views/admin/ChannelsView.vue'),
   'channel-monitor': () => import('@/views/admin/ChannelMonitorView.vue'),
   ops: () => import('@/views/admin/ops/OpsDashboard.vue'),

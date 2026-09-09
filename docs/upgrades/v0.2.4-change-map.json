@@ -1,0 +1,1077 @@
+{
+  "previous_upstream": "8fa67d477d6651a744754392a8982ea589c26ae6",
+  "upstream": "5de5e2bed035d43591a2e10e51f420ef6a84eb98",
+  "product": "1410aa8b21c30c484200b9fea0b9971a99824b89",
+  "merge": "57c89db44a20376a2165d85383153de073dae06a",
+  "summary": {
+    "preserve-product": 10,
+    "adopt-upstream": 163,
+    "integrate-with-product": 93
+  },
+  "changes": [
+    {
+      "path": "README.md",
+      "decision": "preserve-product"
+    },
+    {
+      "path": "README_CN.md",
+      "decision": "preserve-product"
+    },
+    {
+      "path": "README_JA.md",
+      "decision": "preserve-product"
+    },
+    {
+      "path": "assets/partners/logos/cola-proxy.jpg",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "assets/partners/logos/ppdog.png",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/cmd/server/VERSION",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/cmd/server/wire_gen.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/ent/channelmonitor/channelmonitor.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/channelmonitorrequesttemplate/channelmonitorrequesttemplate.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/client.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/migrate/schema.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/ent/mutation.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/ent/proxy.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/proxy/proxy.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/proxy/where.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/proxy_create.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/proxy_query.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/proxy_update.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/schema/channel_monitor.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/schema/channel_monitor_request_template.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/schema/proxy.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/ent/schema/user_platform_quota.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/go.mod",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/go.sum",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/config/config.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/config/config_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/domain/constants.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/admin/account_data.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/admin/channel_handler.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/admin/channel_handler_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/admin/channel_monitor_handler.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/admin/grok_media_eligibility_handler.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/admin/grok_media_eligibility_handler_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/admin/group_handler.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/admin/group_handler_platform_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/admin/proxy_data.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/admin/proxy_handler.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/admin/proxy_partial_update_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/admin/setting_handler.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/admin/setting_handler_update.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/composite_platform_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/dto/settings.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/gateway_handler.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/gateway_helper.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/gateway_helper_hotpath_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/gateway_models_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/model_plaza_handler.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/model_plaza_handler_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/openai_client_disconnect_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/openai_gateway_cn_dispatch_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/openai_gateway_handler.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/handler/openai_gateway_handler_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/handler/setting_handler.go",
+      "decision": "preserve-product"
+    },
+    {
+      "path": "backend/internal/model/error_passthrough_rule.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/model/error_passthrough_rule_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/pkg/openai/constants.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/pkg/openai/constants_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/account_repo_ollama_cloud_usage.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/account_repo_ollama_cloud_usage_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/channel_cache.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/channel_cache_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/concurrency_cache.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/http_upstream.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/http_upstream_http2_keepalive_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/http_upstream_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/proxy_backup_reference_integration_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/proxy_repeated_expiry_integration_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/proxy_repo.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/proxy_repo_upstream_billing_probe_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/user_msg_queue_cache.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/user_platform_quota_repo_integration_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/repository/wire.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/server/api_contract_test.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/server/routes/admin.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/server/routes/gateway.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/account.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/account_header_override.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/account_scheduling_threshold_eval.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/account_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/account_test_models_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/account_test_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/account_test_service_openai_image_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/admin_group.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/admin_proxy.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/admin_proxy_date_validation_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/admin_proxy_partial_update_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/admin_service.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/admin_service_composite_group_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/announcement_service.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/antigravity_oauth_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/antigravity_oauth_service_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/api_key_group_visibility_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/api_key_service.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/billing_token_cost_request_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/channel_available_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/channel_monitor_checker.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/channel_monitor_const.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/channel_monitor_quota_fetcher.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/channel_monitor_quota_fetcher_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/channel_monitor_quota_mode_test.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/channel_monitor_v2.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/channel_monitor_v2_test.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/channel_monitor_validate.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/channel_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/channel_service_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/claude_code_validator.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/claude_code_validator_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/cn_provider_balance_check_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/cn_provider_balance_check_service_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/cn_provider_foraccount_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/cn_provider_quota_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/cn_providers_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/composite_platform.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/composite_platform_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/content_moderation_runtime_cache_test.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/domain_constants.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/http_upstream_profile.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/http_upstream_profile_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/json_time.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/json_time_validation_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/model_plaza_service_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/model_pricing_resolver_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ollama_cloud_usage.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ollama_cloud_usage_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_account_runtime_block_fastpath.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_account_runtime_block_fastpath_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_account_runtime_transient_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_models_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_models_service_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_transform.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_chat_completions.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_chat_completions_cancellation_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_chat_completions_raw.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_cn_fixes_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_grok.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_scheduling.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_images.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/openai_images_model_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_images_responses.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_responses_tool_schema_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_upstream_transport_error.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_forwarder_client_cancel_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_forwarder_v2.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_cleanup_overlay_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_cleanup_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_log_runtime.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_log_runtime_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_runtime_snapshot_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_settings.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_settings_advanced_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_settings_models.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_system_log_sink.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ops_system_log_sink_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/plugin_package.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/plugin_package_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/pricing_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/proxy_update_probe_invalidation_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ratelimit_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/ratelimit_service_openai_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_bulk_event_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_full_rebuild_lifecycle_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_group_lifecycle_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_retirement_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_service.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/internal/service/setting_parse.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/setting_public.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/setting_service_public_test.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/setting_update.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/settings_view.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/upstream_billing_probe.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/internal/service/upstream_billing_probe_multiplatform_test.go",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "backend/migrations/237_add_minimax_platform.sql",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/migrations/minimax_platform_migration_test.go",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "backend/resources/model-pricing/model_prices_and_context_window.json",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "deploy/.env.example",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "deploy/APPLE_CONTAINER.md",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "deploy/apple-container.sh",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "deploy/docker-compose.dev.yml",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "deploy/docker-compose.local.yml",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "deploy/docker-compose.standalone.yml",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "deploy/docker-compose.yml",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "deploy/tests/apple-container-test.sh",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "deploy/tests/fixtures/bin/container",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "docs/COMPOSITE_GROUPS.md",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/api/__tests__/admin.proxies.spec.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/api/admin/accounts.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/api/admin/antigravity.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/api/admin/channelMonitor.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/api/admin/ops.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/api/admin/proxies.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/api/admin/settings.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/account/AccountUsageCell.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/account/CnBaseUrlPresets.vue",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/components/account/CreateAccountModal.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/account/EditAccountModal.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/account/ModelWhitelistSelector.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/account/UsageProgressBar.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/AccountUsageCell.spec.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/BulkEditAccountModal.spec.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/CreateAccountModal.spec.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/EditAccountModal.grokMediaEligibility.spec.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/EditAccountModal.spec.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/credentialsBuilder.cnAdaptive.spec.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/credentialsBuilder.spec.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/account/credentialsBuilder.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/admin/account/AccountActionMenu.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/admin/account/__tests__/AccountActionMenu.position.spec.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/components/admin/account/__tests__/AccountActionMenu.spark_shadow.spec.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/components/admin/monitor/MonitorFiltersBar.vue",
+      "decision": "preserve-product"
+    },
+    {
+      "path": "frontend/src/components/admin/monitor/MonitorFormDialog.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/admin/monitor/MonitorTemplateManagerDialog.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/common/GroupBadge.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/common/GroupSelector.vue",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/components/common/PlatformIcon.vue",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/components/common/PlatformTypeBadge.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/common/__tests__/PlatformTypeBadge.grok.spec.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/components/keys/UseKeyModal.vue",
+      "decision": "preserve-product"
+    },
+    {
+      "path": "frontend/src/components/keys/__tests__/UseKeyModal.spec.ts",
+      "decision": "preserve-product"
+    },
+    {
+      "path": "frontend/src/components/user/PlatformUsageBreakdown.vue",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/components/user/dashboard/UserDashboardStats.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/components/user/monitor/ProviderIcon.vue",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/composables/__tests__/useAntigravityOAuth.spec.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/composables/useAntigravityOAuth.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/composables/useChannelMonitorFormat.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/composables/useModelWhitelist.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/constants/__tests__/platforms.spec.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/constants/channelMonitor.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/constants/platforms.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/features/channel-monitor-v2/MetricCell.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/features/channel-monitor-v2/MonitorSettingsPanel.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/features/channel-monitor-v2/__tests__/MetricCell.spec.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/features/channel-monitor-v2/__tests__/monitorFormat.spec.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/features/channel-monitor-v2/monitorFormat.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/accounts.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/ops.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/overview.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/settings.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/dashboard.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/accounts.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/ops.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/overview.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/settings.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/dashboard.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/types/index.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/utils/featureFlags.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/utils/platformColors.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/views/admin/AccountsView.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/views/admin/AnnouncementsView.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/views/admin/ChannelsView.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/views/admin/GroupsView.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/views/admin/ProxiesView.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/views/admin/SettingsView.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/AccountsView.lite.spec.ts",
+      "decision": "preserve-product"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/AccountsView.selectAllResults.spec.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/GroupsView.compositePlatforms.spec.ts",
+      "decision": "preserve-product"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/channelPlatformOptions.spec.ts",
+      "decision": "preserve-product"
+    },
+    {
+      "path": "frontend/src/views/admin/ops/components/OpsSystemLogTable.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/views/admin/ops/components/__tests__/OpsSystemLogTable.spec.ts",
+      "decision": "adopt-upstream"
+    },
+    {
+      "path": "frontend/src/views/auth/LoginView.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/views/auth/__tests__/LoginView.spec.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/views/user/ChannelStatusV2View.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/views/user/CustomPageView.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/views/user/PaymentView.vue",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/views/user/__tests__/CustomPageView.spec.ts",
+      "decision": "integrate-with-product"
+    },
+    {
+      "path": "frontend/src/views/user/__tests__/PaymentView.spec.ts",
+      "decision": "integrate-with-product"
+    }
+  ]
+}

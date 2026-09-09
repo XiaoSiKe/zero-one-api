@@ -4,7 +4,7 @@
     :title="title || undefined"
   >
     <div
-      v-if="state"
+      v-if="resolvedState"
       class="mt-1 h-2 w-2 shrink-0 rounded-full"
       :class="dotClass"
       aria-hidden="true"
@@ -56,18 +56,25 @@ const detailParts = computed(() => {
     .filter(Boolean)
 })
 
+const missingValue = computed(() => {
+  const value = (props.value || '').trim()
+  return value === '' || value === '-' || value === '—'
+})
+
+const resolvedState = computed(() => (missingValue.value ? undefined : props.state))
+
 const stateClass = computed(() => {
-  if (!props.state) return 'text-gray-900 dark:text-white'
-  if (props.state === 'healthy') return 'text-zo-signal-600 dark:text-zo-signal-400'
-  if (props.state === 'warning') return 'text-zo-alert-600 dark:text-zo-alert-400'
-  if (props.state === 'critical') return 'text-red-600 dark:text-red-400'
+  if (!resolvedState.value) return missingValue.value ? 'text-gray-500 dark:text-dark-400' : 'text-gray-900 dark:text-white'
+  if (resolvedState.value === 'healthy') return 'text-zo-signal-600 dark:text-zo-signal-400'
+  if (resolvedState.value === 'warning') return 'text-zo-alert-600 dark:text-zo-alert-400'
+  if (resolvedState.value === 'critical') return 'text-red-600 dark:text-red-400'
   return 'text-gray-500 dark:text-dark-400'
 })
 
 const dotClass = computed(() => {
-  if (props.state === 'healthy') return 'bg-zo-signal-500'
-  if (props.state === 'warning') return 'bg-zo-alert-500'
-  if (props.state === 'critical') return 'bg-red-500'
+  if (resolvedState.value === 'healthy') return 'bg-zo-signal-500'
+  if (resolvedState.value === 'warning') return 'bg-zo-alert-500'
+  if (resolvedState.value === 'critical') return 'bg-red-500'
   return 'bg-gray-300 dark:bg-dark-600'
 })
 </script>

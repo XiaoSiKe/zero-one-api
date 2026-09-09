@@ -208,6 +208,17 @@ describe('admin AccountsView scheduler score column', () => {
     expect(ungroupedCell.text()).not.toBe('-')
   })
 
+  it('shows current account rate beside the observed upstream rate by default', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    const columns = wrapper.findComponent(DataTableStub).props('columns') as Array<{ key: string }>
+    const keys = columns.map(column => column.key)
+    expect(keys).toContain('rate_multiplier')
+    expect(keys).toContain('upstream_billing_rate')
+    expect(keys.indexOf('upstream_billing_rate')).toBe(keys.indexOf('rate_multiplier') + 1)
+  })
+
   it('renders per-group scores for grouped accounts', async () => {
     const wrapper = mountView()
     await flushPromises()
@@ -218,21 +229,24 @@ describe('admin AccountsView scheduler score column', () => {
     expect(groupedCell.text()).toContain('2')
   })
 
-  it('keeps scheduler score hidden for old saved column settings until the admin opts in again', async () => {
-    localStorage.setItem('account-hidden-columns', JSON.stringify(['today_stats']))
+  it('migrates old saved layouts by showing only the account rate and preserving other preferences', async () => {
+    localStorage.setItem('account-hidden-columns', JSON.stringify(['today_stats', 'notes', 'rate_multiplier']))
 
     mountView()
     await flushPromises()
 
     expect(listAccounts.mock.calls[0]?.[2]).toEqual(expect.objectContaining({
-      include_scheduler_score: '0'
+      include_scheduler_score: '1'
     }))
-    expect(JSON.parse(localStorage.getItem('account-hidden-columns') || '[]')).toContain('scheduler_score')
+    const hidden = JSON.parse(localStorage.getItem('account-hidden-columns') || '[]') as string[]
+    expect(hidden).not.toContain('scheduler_score')
+    expect(hidden).toContain('notes')
+    expect(hidden).not.toContain('rate_multiplier')
   })
 
   it('requests scheduler scores when the migrated column settings explicitly show the column', async () => {
     localStorage.setItem('account-hidden-columns', JSON.stringify(['today_stats']))
-    localStorage.setItem('account-hidden-columns-version', 'scheduler-score-hidden-by-default')
+    localStorage.setItem('account-hidden-columns-version', 'billing-rate-visible-by-default')
 
     mountView()
     await flushPromises()

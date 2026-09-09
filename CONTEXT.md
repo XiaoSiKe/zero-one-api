@@ -32,6 +32,10 @@ _Avoid_: 最新前端、自动构建产物、临时截图
 对固定 Upstream Baseline 之后的每个产品差异逐路径证明保留策略的发布门禁；每个差异必须由 `preserve_on_upstream_sync`、Approved UI Snapshot、带退出条件的临时修补或精确 backport 之一覆盖，仅有 Overlay 归属不代表更新时会保留。后续明确取代旧产品行为时，只能通过逐文件、绑定 owner 与受保护 ADR 的 `retired_preserved_paths` 墓碑退役旧保护，不能静默删除。
 _Avoid_: Overlay 允许清单、人工记忆、测试通过即代表不会被覆盖、删除保护记录却不留退役决策
 
+**Code Retirement（代码退役）**:
+在当前 Upstream Baseline 的路由、动态 import、生成器和测试入口上重新证明零生产引用后，删除被现有 owner 取代的实现，并用精确路径墓碑阻止后续同步静默复活。Console、Public Capabilities、Supported Preview 与 Visual Regression 的归属及 v0.2.4 本轮退役清单见 [ADR 0018](docs/adr/0018-codebase-convergence.md)。
+_Avoid_: 只因文件旧或大就删除、保留只测试死模块的测试、把未发布中间资源当不可变历史、无 ADR 恢复退役路径
+
 **Affected Verification（按实际影响验证）**:
 根据当前完整差异、共享依赖和最终交付资源选择需要执行的功能、构建、安全与视觉检查；未知路径、历史缺失或策略自身变化回退到完整验证。它与 Product Change Protection 分工不同：保护决定上游同步必须保留的产品差异，影响验证决定本次变化需要重跑的证据。权威策略见 [ADR 0013](docs/adr/0013-affected-verification-policy.md)。
 _Avoid_: 永久保护等于每次全量重测、普通 skipped 代表不适用、按 PR 标题猜测影响
@@ -139,5 +143,5 @@ _Avoid_: Console 渠道监控、渠道明细、公开监控数据
 _Avoid_: 从注册按钮推断权限、隐藏后端错误即启用、先读取再无条件删除令牌
 
 **Admin Dashboard Consumption（管理员仪表盘消费）**：
-管理员仪表盘第一行显示总消费、今日消费、今日请求和用户总数；用户卡副文案显示今日新增。消费读取客户实际扣费，成本统一读取账单保存的 `account_stats_cost/total_cost` 与 `account_rate_multiplier`，不依赖上游声明倍率或显示待确认。现有日期与粒度控件共同驱动实际消费和总 Token 趋势，今日卡片始终表示应用时区中的今天。当前 Console 不提供收益指标、独立财务接口或第二套刷新。实现与保护边界见 [ADR 0015](docs/adr/0015-v023-cost-dashboard-and-rollback-compatibility.md)。
-_Avoid_: 把用户 ID 当总数、用当前账号设置重算旧账、从前端重算成本、恢复收益卡片、删除旧账单证据或已发布资源。
+管理员仪表盘第一行显示总消费、今日消费、今日请求和用户总数；用户卡副文案显示今日新增。消费读取客户实际扣费。Provider Account 成本统一读取账单保存的 `account_stats_cost/total_cost` 与请求时 `upstream_rate_multiplier`；缺少上游声明证据时保持待核算，不用本地账号倍率或当前探测结果补算。账号管理将当前账号倍率与上游声明观测倍率分列展示，账单明确标记请求快照与 Provider Account ID；见 [ADR 0017](docs/adr/0017-upstream-declared-account-cost.md)。现有日期与粒度控件共同驱动实际消费和总 Token 趋势，今日卡片始终表示应用时区中的今天。当前 Console 不提供收益指标、独立财务接口或第二套刷新。
+_Avoid_: 把用户 ID 当总数、用本地或当前账号设置重算旧账、把未知上游成本当 1x/0x、从前端重新推导倍率、恢复收益卡片、删除旧账单证据或已发布资源。

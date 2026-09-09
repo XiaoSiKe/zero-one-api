@@ -104,8 +104,8 @@ export default {
         capacity: '容量',
         notes: '备注',
         priority: '优先级',
-        billingRateMultiplier: '账号倍率',
-        upstreamBillingRate: '上游声明倍率',
+        billingRateMultiplier: '当前账号倍率',
+        upstreamBillingRate: '上游声明倍率（观测）',
         weight: '权重',
         schedulerScore: '调度权值',
         status: '状态',
@@ -176,14 +176,14 @@ export default {
         }
       },
       upstreamBilling: {
-        trustWarning: '此倍率由上游站点针对当前 API Key 自行声明。Sub2API 无法验证该值是否与实际扣费一致；上游站点或中间代理可能返回伪造、过期或被篡改的数据。请结合账单、余额变化和实际用量自行核验。',
+        trustWarning: '这是观测值；手动探测不会修改当前账号倍率。只有开启“同步上游声明倍率”后，成功探测才会把不含高峰的基准倍率写入当前账号倍率，并且只影响后续请求。该数据由上游站点声明，Sub2API 无法验证它是否与实际扣费一致，请结合账单、余额变化和实际用量复核。',
         autoProbe: '自动探测上游声明倍率',
         autoProbeHint: '启用后按全局周期刷新上游声明倍率；此开关本身不会修改账号倍率。',
         syncRate: '同步上游声明倍率',
         syncRateHint: '成功探测后自动更新账号倍率，同步的是不含高峰的基准倍率；探测失败或声明超出允许范围时保持不变。开启本项会同时打开“自动探测上游声明倍率”。',
         syncRateManagedHint: '当前倍率由上游声明的基准倍率（不含高峰）自动维护。',
         syncedRateTooltip: '该账号倍率由上游声明的基准倍率（不含高峰）自动同步',
-        manualProbe: '立即探测上游倍率',
+        manualProbe: '立即探测上游倍率（不自动同步）',
         stale: '已过期',
         unsupported: '不支持',
         failed: '失败',
@@ -310,6 +310,7 @@ export default {
         kimi: 'Kimi',
         zhipu: 'Zhipu GLM',
         deepseek: 'DeepSeek',
+        minimax: 'MiniMax',
       },
       cnProviders: {
         apiKeyHint: '请输入与所选账号类型及端点匹配的供应商 API Key',
@@ -463,7 +464,9 @@ export default {
         grokLastProbe: '探测 {time}',
         grokLastHeadersSeen: '响应头 {time}',
         passiveSampled: '被动采样',
-        activeQuery: '查询'
+        activeQuery: '查询',
+        estimatedTotalCost: '预计总费用 ${cost}',
+        estimatedTotalCostTooltip: '根据当前窗口费用和使用率估算达到 100% 使用率时的总费用'
       },
       openaiQuotaReset: {
         count: '次数',
@@ -878,6 +881,30 @@ export default {
         title: '客户端工具缓存（可能改变自动工具选择）',
         hint: '仅对已识别为 Free 的 Grok OAuth 账号生效，默认会为 Codex、Trae 等客户端函数工具请求启用上游提示缓存；如不接受自动工具选择行为，可关闭此开关退出。'
       },
+      grokMediaEligibility: {
+        title: '媒体生成资格',
+        hint: '控制该 Grok OAuth 账号是否可被图片和视频生成请求选中。',
+        auto: '自动判断',
+        enabled: '强制启用',
+        disabled: '强制禁用',
+        current: '当前判定：',
+        eligible: '可用',
+        ineligible: '不可用',
+        loading: '正在读取媒体资格…',
+        loadFailed: '无法读取媒体资格',
+        autoHint: '自动判断只会清除手工覆盖，不会主动触发媒体请求。',
+        forceEnableWarning: '强制启用会绕过自动资格检查，仅应对已确认支持生图/生视频的账号使用。',
+        partialSave: '账号其他配置可能已保存，但媒体资格未更新，请重试。',
+        reasons: {
+          eligible: '已确认付费资格',
+          billing_inconclusive: 'Billing 信息不明确',
+          billing_forbidden: 'Billing 接口拒绝访问',
+          billing_free_tier: 'Free 账号',
+          billing_unobserved: '尚未探测到 Billing',
+          override_enabled: '手工强制启用',
+          override_disabled: '手工强制禁用'
+        }
+      },
       autoPauseOnExpired: '过期自动暂停调度',
       autoPauseOnExpiredDesc: '启用后，账号过期将自动暂停调度',
 	  autoPause5hThreshold: '5h 用量阈值(%)',
@@ -980,7 +1007,7 @@ export default {
       priority: '优先级',
       priorityHint: '优先级越小的账号优先使用',
       billingRateMultiplier: '账号计费倍率',
-      billingRateMultiplierHint: '用于账号调度，并按用量记录保存的历史倍率计算成本',
+      billingRateMultiplierHint: '用于本地账号调度和额度核算；Provider Account 成本报表改用请求时保存的上游声明倍率。',
       expiresAt: '过期时间',
       expiresAtHint: '留空表示不过期',
       expiresAtTimezoneHint: '时间按浏览器时区（{timezone}）填写。',

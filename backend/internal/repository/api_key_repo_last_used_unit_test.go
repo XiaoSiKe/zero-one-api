@@ -181,7 +181,10 @@ func TestAPIKeyRepository_UpdateLastUsed(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, before.LastUsedAt)
 
-	target := time.Now().UTC().Add(2 * time.Minute).Truncate(time.Second)
+	// Use the row's persisted location and clock as the comparison base. SQLite
+	// stores timestamps as text, so mixing UTC with a local-offset updated_at can
+	// turn the test into a timezone-dependent lexical comparison.
+	target := before.UpdatedAt.Add(2 * time.Minute).Truncate(time.Second)
 	require.NoError(t, repo.UpdateLastUsed(ctx, key.ID, target))
 
 	after, err := repo.GetByID(ctx, key.ID)
@@ -204,7 +207,7 @@ func TestAPIKeyRepository_UpdateLastUsedNeverMovesTimestampsBackwards(t *testing
 	afterOld, err := repo.GetByID(ctx, key.ID)
 	require.NoError(t, err)
 	require.Equal(t, created.UpdatedAt, afterOld.UpdatedAt, "delayed bookkeeping must not undo later key edits")
-	latest := time.Now().UTC().Add(time.Hour).Truncate(time.Second)
+	latest := created.UpdatedAt.Add(time.Hour).Truncate(time.Second)
 	require.NoError(t, repo.UpdateLastUsed(ctx, key.ID, latest))
 	require.NoError(t, repo.UpdateLastUsed(ctx, key.ID, latest.Add(-time.Minute)))
 	after, err := repo.GetByID(ctx, key.ID)

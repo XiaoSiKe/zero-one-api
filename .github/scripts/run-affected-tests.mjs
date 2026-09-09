@@ -40,11 +40,11 @@ export function commandsForImpact(impact) {
   if (assetScopes.has('cn_provider') || assetScopes.has('all')) {
     commands.push('pnpm --dir frontend run build:cn-provider-admin')
   }
-  if (assetScopes.has('password') || assetScopes.has('shell') || assetScopes.has('all')) {
-    commands.push('pnpm --dir frontend run build:password-recovery')
-  }
   if (assetScopes.has('shell') || assetScopes.has('all')) {
     commands.push('pnpm --dir frontend run build:cn-provider-shell')
+  }
+  if (assetScopes.has('password') || assetScopes.has('shell') || assetScopes.has('all')) {
+    commands.push('pnpm --dir frontend run build:password-recovery')
   }
   if (assetScopes.has('online') || assetScopes.has('all')) {
     commands.push('pnpm --dir frontend run build:online-image')
@@ -82,9 +82,9 @@ export function commandsForImpact(impact) {
     '/bin/sh deploy/tests/docker-compose-security-test.sh',
   )
   if (impact.visual_scope === 'dashboard') {
-    commands.push('npm test --prefix visual-regression -- tests/dashboard-spend.behavior.spec.ts')
+    commands.push('sh deploy/zero-one/test-visual.sh tests/dashboard-spend.behavior.spec.ts')
   } else if (impact.visual_scope === 'full') {
-    commands.push('npm test --prefix visual-regression')
+    commands.push('sh deploy/zero-one/test-visual.sh')
   }
   if (impact.backend_security) commands.push('cd backend && govulncheck ./...')
   if (impact.frontend_security) commands.push('pnpm --dir frontend audit --audit-level=high')

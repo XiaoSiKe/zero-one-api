@@ -1,4 +1,4 @@
-type AdminSurface = 'channels' | 'channel-monitor' | 'ops' | 'subscriptions'
+type AdminSurface = 'accounts' | 'groups' | 'channels' | 'channel-monitor' | 'ops' | 'subscriptions'
 type RunMode = 'standard' | 'simple'
 type LocaleCode = 'en' | 'zh'
 
@@ -41,6 +41,8 @@ const HOST_ID = 'zero-one-provider-catalog-admin'
 const STYLE_ID = 'zero-one-provider-catalog-admin-style'
 const BODY_ACTIVE_CLASS = 'zero-one-provider-catalog-admin-active'
 const TARGET_PATHS: Record<AdminSurface, string> = {
+  accounts: '/admin/accounts',
+  groups: '/admin/groups',
   channels: '/admin/channels/pricing',
   'channel-monitor': '/admin/channels/monitor',
   ops: '/admin/ops',
@@ -55,6 +57,8 @@ let failedSurface: AdminSurface | null = null
 let mountRevision = 0
 
 function requestedSurface(): AdminSurface | null {
+  if (window.location.pathname === TARGET_PATHS.accounts) return 'accounts'
+  if (window.location.pathname === TARGET_PATHS.groups) return 'groups'
   if (window.location.pathname === TARGET_PATHS.channels) return 'channels'
   if (window.location.pathname === TARGET_PATHS['channel-monitor']) return 'channel-monitor'
   if (window.location.pathname === TARGET_PATHS.ops) return 'ops'
@@ -85,7 +89,7 @@ function restoreApprovedRouteRoots() {
 
 function ensureRouteStyles() {
   document.body.classList.add(BODY_ACTIVE_CLASS)
-  const href = '/assets/cn-provider-admin-v7/cn-provider-admin.css'
+  const href = '/assets/cn-provider-admin-v8/cn-provider-admin.css'
   const existing = document.getElementById(STYLE_ID) as HTMLLinkElement | null
   if (existing?.getAttribute('href') === href) return
   existing?.remove()

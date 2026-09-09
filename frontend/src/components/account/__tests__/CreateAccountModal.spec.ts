@@ -340,20 +340,32 @@ describe('CreateAccountModal OpenAI long-context billing', () => {
     })
   })
 
-  it('keeps native Responses available only for DeepSeek', async () => {
+  it('submits adaptive MiniMax protocol endpoints', async () => {
     const wrapper = mountModal()
-    await selectButtonByText(wrapper, 'Kimi')
-    expect(wrapper.text()).not.toContain('admin.accounts.cnProviders.apiProtocol.responsesDesc')
+    await selectButtonByText(wrapper, 'MiniMax')
+    await wrapper.get('form#create-account-form input[type="text"]').setValue('MiniMax adaptive')
+    await wrapper.get('form#create-account-form input[type="password"]').setValue('sk-minimax')
 
-    await selectButtonByText(wrapper, 'DeepSeek')
-    expect(wrapper.text()).toContain('admin.accounts.cnProviders.apiProtocol.responsesDesc')
-    expect(wrapper.text()).not.toContain('admin.accounts.cnProviders.accountMode.codingDesc')
+    await wrapper.get('form#create-account-form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(createAccountMock).toHaveBeenCalledTimes(1)
+    expect(createAccountMock.mock.calls[0]?.[0]?.credentials).toMatchObject({
+      account_mode: 'payg',
+      api_protocol: 'adaptive',
+      base_url: 'https://api.minimaxi.com/v1',
+      api_base_urls: {
+        chat_completions: 'https://api.minimaxi.com/v1',
+        anthropic: 'https://api.minimaxi.com/anthropic',
+        responses: 'https://api.minimaxi.com/v1'
+      }
+    })
   })
 
   it('uses provider API key guidance for every CN provider', async () => {
     const wrapper = mountModal()
 
-    for (const platform of ['Kimi', 'Zhipu GLM', 'DeepSeek']) {
+    for (const platform of ['Kimi', 'Zhipu GLM', 'DeepSeek', 'MiniMax']) {
       await selectButtonByText(wrapper, platform)
       expect(wrapper.text()).toContain('admin.accounts.cnProviders.apiKeyHint')
       expect(wrapper.text()).not.toContain('admin.accounts.apiKeyHint')

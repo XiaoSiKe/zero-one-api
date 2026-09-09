@@ -12,7 +12,7 @@ import {
   CN_PROVIDER_SHELL_ASSET,
   CN_PROVIDER_SHELL_DIRECTORY,
   patchApprovedShell,
-  nativeCostDashboardOverrides,
+  billingClarityShellOverrides,
 } from './build-cn-provider-shell.mjs'
 
 function read(path, label) {
@@ -67,15 +67,12 @@ export function verifyCNProviderConsole(consoleDir) {
   }
   const registrationEntry = index.slice(registrationStart, standardStart)
   const standardEntry = index.slice(standardStart, entryEnd)
-  const legacyAdapterImport = 'import("/assets/cn-provider-admin-v1/cn-provider-admin.js")'
-  const adapterImport = 'import("/assets/cn-provider-admin-v7/cn-provider-admin.js")'
+  const adapterImport = 'import("/assets/cn-provider-admin-v8/cn-provider-admin.js")'
   const shellImport = `import("/assets/${CN_PROVIDER_SHELL_ASSET}")`
-  requireMarkers(registrationEntry, [legacyAdapterImport, adapterImport, shellImport], 'Registration Console entry')
-  requireMarkers(standardEntry, [`await ${legacyAdapterImport}`, `await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
+  requireMarkers(registrationEntry, [adapterImport, shellImport], 'Registration Console entry')
+  requireMarkers(standardEntry, [`await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
   if (
-    registrationEntry.indexOf(legacyAdapterImport) > registrationEntry.indexOf(adapterImport) ||
     registrationEntry.indexOf(adapterImport) > registrationEntry.indexOf(shellImport) ||
-    standardEntry.indexOf(legacyAdapterImport) > standardEntry.indexOf(adapterImport) ||
     standardEntry.indexOf(adapterImport) > standardEntry.indexOf(shellImport)
   ) {
     throw new Error('CN Provider route seam must start before the approved Console shell')
@@ -107,7 +104,7 @@ export function verifyCNProviderConsole(consoleDir) {
   if (actualShellEntries.join('\n') !== expectedShellEntries.join('\n')) {
     throw new Error('CN Provider approved shell namespace is missing or contains extra assets')
   }
-  const overrides = nativeCostDashboardOverrides(assetsDirectory)
+  const overrides = billingClarityShellOverrides(assetsDirectory)
   for (const name of expectedLinks) {
     const linkPath = resolve(shellDirectory, name)
     if (overrides.has(name)) {
@@ -162,7 +159,20 @@ export function verifyCNProviderConsole(consoleDir) {
     'https://api.deepseek.com',
   ], 'Legacy CN Provider Admin route adapter')
 
-  const adapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v7')
+  const catalogAdapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v7')
+  const catalogModuleSource = collectJavaScriptClosure(
+    catalogAdapterDirectory,
+    ['cn-provider-admin.js'],
+    'CN Provider catalog',
+  )
+  requireMarkers(catalogModuleSource, [
+    '/admin/channels/pricing', '/admin/channels/monitor', '/admin/ops', '/admin/subscriptions',
+    '__ZERO_ONE_NAVIGATION_RECONCILIATION__', 'provider-catalog-admin',
+    '/assets/cn-provider-admin-v7/cn-provider-admin.css',
+    'ops-platform-filter', 'subscription-platform-filter',
+  ], 'CN Provider catalog route adapter')
+
+  const adapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v8')
   const adapterEntry = read(
     resolve(adapterDirectory, 'cn-provider-admin.js'),
     'CN Provider Admin route adapter',
@@ -181,13 +191,12 @@ export function verifyCNProviderConsole(consoleDir) {
   )
 
   requireMarkers(moduleSource, [
-    '/admin/channels/pricing', '/admin/channels/monitor',
-    '/admin/ops', '/admin/subscriptions',
+    '/admin/accounts', '/admin/groups', '/admin/channels/pricing',
+    '/admin/channels/monitor', '/admin/ops', '/admin/subscriptions',
     '__ZERO_ONE_NAVIGATION_RECONCILIATION__', 'provider-catalog-admin',
     '__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__', 'Management page failed to load',
-    '/assets/cn-provider-admin-v7/cn-provider-admin.css',
-    'Kimi', 'Zhipu GLM', 'DeepSeek',
-    'ops-platform-filter', 'subscription-platform-filter',
+    '/assets/cn-provider-admin-v8/cn-provider-admin.css',
+    'Current Account Rate', 'Upstream Declared Rate (Observed)', 'MiniMax',
   ], 'CN Provider Admin route adapter')
   requireMarkers(stylesheet, [
     'table-page-layout', 'table-scroll-container',
@@ -199,8 +208,9 @@ export function verifyCNProviderConsole(consoleDir) {
   return {
     shell: `/assets/${CN_PROVIDER_SHELL_ASSET}`,
     legacyModule: '/assets/cn-provider-admin-v1/cn-provider-admin.js',
-    module: '/assets/cn-provider-admin-v7/cn-provider-admin.js',
-    stylesheet: '/assets/cn-provider-admin-v7/cn-provider-admin.css',
+    catalogModule: '/assets/cn-provider-admin-v7/cn-provider-admin.js',
+    module: '/assets/cn-provider-admin-v8/cn-provider-admin.js',
+    stylesheet: '/assets/cn-provider-admin-v8/cn-provider-admin.css',
   }
 }
 

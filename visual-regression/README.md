@@ -19,10 +19,11 @@ a blocking `Chromium visual regression` check. It runs in the versioned
 or mismatched snapshots fail the check, while their Playwright report, actual,
 diff and trace files are uploaded when produced.
 
-The files under `artifacts/design-qa/` are manual review artifacts. They do not
-record this module's network fixture, frozen time, Linux image, font set or
-browser revision, so they must not be copied or renamed into
-`tests/__screenshots__/` as baselines.
+The retired manual design-QA working set remains available at the immutable
+[b2ac872ce tree](https://github.com/XiaoSiKe/zero-one-api/tree/b2ac872ce4b3e1592b6fd472ca4eb28cd49877e0/artifacts/design-qa).
+It does not record this module's network fixture, frozen time, Linux image,
+font set or browser revision, so it must not be copied into
+`tests/__screenshots__/` as a baseline.
 
 Generate candidate baselines only in the same pinned Playwright image with the
 explicit `npm run test:update` command. Commit the resulting

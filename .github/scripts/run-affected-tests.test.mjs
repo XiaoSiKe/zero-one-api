@@ -21,6 +21,20 @@ test('Console behavior and adapter generation are independently selectable', () 
   assert.ok(behavior.every((command) => !command.includes('build:cn-provider-shell')))
   const assets = commandsForImpact({ ...none, console: true, console_asset_scopes: 'shell' })
   assert.ok(assets.some((command) => command.includes('build:cn-provider-shell')))
+  assert.ok(
+    assets.indexOf('pnpm --dir frontend run build:cn-provider-shell') <
+      assets.indexOf('pnpm --dir frontend run build:password-recovery'),
+    'password recovery must be the final writer after the shell compatibility generator',
+  )
+})
+
+test('visual impact uses the pinned cross-platform runner', () => {
+  const full = commandsForImpact({ ...none, visual_scope: 'full' })
+  assert.ok(full.includes('sh deploy/zero-one/test-visual.sh'))
+  const dashboard = commandsForImpact({ ...none, visual_scope: 'dashboard' })
+  assert.ok(dashboard.includes(
+    'sh deploy/zero-one/test-visual.sh tests/dashboard-spend.behavior.spec.ts',
+  ))
 })
 
 test('redeem selection does not invoke unrelated backend or visual suites', () => {

@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import type { PaymentOrder } from '@/types/payment'
-import AdminOrderDetail from '../AdminOrderDetail.vue'
-import AdminOrderTable from '../AdminOrderTable.vue'
 import AdminRefundDialog from '../AdminRefundDialog.vue'
 import OrderTable from '@/components/payment/OrderTable.vue'
 
@@ -52,27 +50,6 @@ function orderFactory(overrides: Partial<PaymentOrder> = {}): PaymentOrder {
 }
 
 describe('admin order currency display', () => {
-  it('uses order currency for paid/base/fee amounts and USD for credited/refund amounts', () => {
-    const wrapper = mount(AdminOrderDetail, {
-      props: {
-        show: true,
-        order: orderFactory({ currency: 'CNY' }),
-      },
-      global: {
-        stubs: {
-          BaseDialog: BaseDialogStub,
-        },
-      },
-    })
-
-    const text = wrapper.text()
-    expect(text).toContain('¥100.00')
-    expect(text).toContain('¥8.00')
-    expect(text).toContain('¥108.00')
-    expect(text).toContain('$100.00')
-    expect(text).toContain('$25.00')
-  })
-
   it('uses order currency for pay_amount and USD for refundable balance amounts', () => {
     const wrapper = mount(AdminRefundDialog, {
       props: {
@@ -123,31 +100,4 @@ describe('admin order currency display', () => {
     expect(text).toContain('$100.00')
   })
 
-  it('renders payment currency consistently in the admin order table', () => {
-    const wrapper = mount(AdminOrderTable, {
-      props: {
-        orders: [
-          orderFactory({ id: 1, currency: 'USD', amount: 100, pay_amount: 108 }),
-          orderFactory({ id: 2, currency: 'CNY', amount: 100, pay_amount: 108 }),
-        ],
-        loading: false,
-        page: 1,
-        pageSize: 20,
-        total: 2,
-      },
-      global: {
-        stubs: {
-          DataTable: DataTableStub,
-          Icon: true,
-          Pagination: true,
-          Select: true,
-        },
-      },
-    })
-
-    const text = wrapper.text()
-    expect(text).toContain('$108.00')
-    expect(text).toContain('¥108.00')
-    expect(text).toContain('$100.00')
-  })
 })

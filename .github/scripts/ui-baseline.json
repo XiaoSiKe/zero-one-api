@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-08-v023dashboard5",
-  "baseline_commit": "a3a20781201a1f022ea332b4368f8e451dcbf555",
+  "baseline_ref": "ui-approved-2026-09-09-v024-convergence",
+  "baseline_commit": "f2bb5df499fe0bf9b243055f78952316c39e528e",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -68,7 +68,8 @@
     "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-cards.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-cards.png",
     "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-trends.png",
-    "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-trends.png"
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-trends.png",
+    "visual-regression/tests/mobile-layout.behavior.spec.ts"
   ],
   "compatibility_paths": [
     "frontend/src/api/",
@@ -116,7 +117,8 @@
         "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v2/",
         "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v3/",
         "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v4/",
-        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v5/"
+        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v5/",
+        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6/"
       ]
     },
     {
@@ -139,6 +141,7 @@
         "frontend/src/router/meta.d.ts",
         "frontend/src/styles/console-skin.css",
         "frontend/src/views/admin/ops/",
+        "frontend/src/views/admin/settings/",
         "deploy/zero-one/recovered-frontend/console/",
         "visual-regression/tests/fixtures/api.ts",
         "visual-regression/tests/version-baseline.spec.ts"
@@ -217,7 +220,6 @@
         "frontend/src/views/admin/affiliates/AdminAffiliateCustomerDetail.vue",
         "frontend/src/views/admin/affiliates/AdminAffiliateCustomers.vue",
         "frontend/src/views/admin/affiliates/AdminAffiliateInvitesView.vue",
-        "frontend/src/views/admin/affiliates/AdminAffiliateRebatesView.vue",
         "frontend/src/views/admin/affiliates/AdminAffiliateSettingsPanel.vue",
         "frontend/src/views/admin/affiliates/AdminAffiliateRecordsTable.vue",
         "frontend/src/views/admin/affiliates/AdminAffiliateTransfersView.vue",
@@ -325,8 +327,11 @@
         "frontend/src/views/admin/ops/components/OpsDashboardHeader.vue",
         "frontend/src/views/admin/__tests__/platformFilterCatalogUsage.spec.ts",
         "frontend/src/views/admin/GroupsView.vue",
+        "frontend/src/components/admin/group/GroupEditorDialog.vue",
+        "frontend/src/components/account/AccountEditorDialog.vue",
         "frontend/src/components/account/CreateAccountModal.vue",
         "frontend/src/components/account/EditAccountModal.vue",
+        "frontend/src/components/account/editor/",
         "frontend/src/components/account/BulkEditAccountModal.vue",
         "frontend/src/components/account/CnBaseUrlPresets.vue",
         "frontend/src/components/account/credentialsBuilder.ts",
@@ -376,8 +381,10 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v9/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v10/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v7/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/",
         "frontend/vite.adapter-boundary.ts"
       ]
     },
@@ -430,6 +437,7 @@
         "deploy/zero-one/recovered-frontend/console/assets/online-image-v14/",
         "deploy/zero-one/recovered-frontend/console/assets/online-image-v15/",
         "deploy/zero-one/recovered-frontend/console/assets/online-image-v16/",
+        "deploy/zero-one/recovered-frontend/console/assets/online-image-v17/",
         "frontend/vite.adapter-boundary.ts"
       ]
     },
@@ -499,6 +507,7 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v7/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v9/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v10/",
         "visual-regression/tests/dashboard-spend.behavior.spec.ts",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-cards.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-cards.png",

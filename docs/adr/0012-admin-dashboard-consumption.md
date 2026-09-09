@@ -2,7 +2,7 @@
 
 状态：部分被 [ADR 0015](0015-v023-cost-dashboard-and-rollback-compatibility.md) 取代。消费卡片、不可变资源和日期浮层继续有效；用户主数字、成本口径及消费／Token 趋势由新记录负责。
 
-后续说明：[ADR 0013](0013-affected-verification-policy.md) 取代本记录的无条件完整视觉执行要求。`cn-provider-shell-v7`、v8 和 `password-recovery-v3`、v4 保持不可变；v0.2.3 使用新的 v9/v5 命名空间。
+后续说明：[ADR 0013](0013-affected-verification-policy.md) 取代本记录的无条件完整视觉执行要求。`cn-provider-shell-v7`、v8 和 `password-recovery-v3`、v4 保持不可变；v0.2.3 的成本恢复已固定为 v9/v5，[ADR 0016](0016-billing-rate-display-clarity.md) 在不改变数值口径的前提下使用 v10/v6 收敛倍率展示。
 
 ## 决策
 
@@ -22,7 +22,7 @@ ADR 0010 的日期浮层修复继续有效。日期节点保留在 Vue 父节点
 
 已发布的 `dashboard-finance-v1` 至 `dashboard-finance-v4`、`cn-provider-shell-v1` 至 `cn-provider-shell-v6` 及 `password-recovery-v1` 至 `password-recovery-v2` 保持原 URL 和字节内容，避免缓存引用、旧页面与回滚失效。
 
-当前恢复版使用 `cn-provider-shell-v9`。生成器从已审查的 v8 派生，将原生成本、用户总数和两张趋势图收口在新命名空间；已发布的 v7/v8 保持原字节。CN Provider 和 Online Image 叶子适配器分别使用新的 `cn-provider-admin-v7` 与 `online-image-v16`，v6/v15 继续作为不可变历史资源。密码找回同步生成到 `password-recovery-v5`，复用 v9 的 Vue、Router、API 和 Store，避免同页加载第二份运行时。
+当前恢复版使用 `cn-provider-shell-v10`。v9 仍固定原生成本、用户总数和两张趋势图，v10 只增加 ADR 0016/0017 的倍率、账号标识与上游声明成本口径；已发布的 v7–v9 保持原字节。CN Provider 使用 `cn-provider-admin-v8` 接管账号页，v7 保持不可变；v0.2.4 的 Online Image 使用 `online-image-v17`，已发布的 v16 保持不可变。密码找回同步生成到 `password-recovery-v6`，复用 v10 的 Vue、Router、API 和 Store；v5 继续复用 v9 并保持不可变。
 
 ## 保护与验收
 

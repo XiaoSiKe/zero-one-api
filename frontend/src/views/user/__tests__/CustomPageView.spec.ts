@@ -74,6 +74,7 @@ describe('CustomPageView iframe loading state', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
     vi.useRealTimers()
   })
 
@@ -206,5 +207,56 @@ describe('CustomPageView iframe loading state', () => {
     await wrapper.get('iframe').trigger('load')
     expect(wrapper.find('[data-testid="custom-page-loading"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="custom-page-slow"]').exists()).toBe(false)
+  })
+
+  it('keeps the open-link button inside the iframe shell and suppresses only the click after a drag', async () => {
+    let notifyResize: () => void = () => undefined
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(callback: () => void) { notifyResize = callback }
+      observe() {}
+      disconnect() {}
+    })
+    const { wrapper } = await mountPage()
+    const shell = wrapper.get('.custom-embed-shell').element
+    const button = wrapper.get<HTMLAnchorElement>('.custom-open-fab').element
+    const size = { width: 800, height: 600 }
+    let capturedPointer: number | null = null
+    Object.defineProperties(shell, {
+      clientWidth: { get: () => size.width },
+      clientHeight: { get: () => size.height },
+    })
+    Object.defineProperties(button, {
+      offsetWidth: { value: 100 },
+      offsetHeight: { value: 32 },
+      offsetLeft: { get: () => Number.parseFloat(button.style.left || '688') },
+      offsetTop: { get: () => Number.parseFloat(button.style.top || '12') },
+      setPointerCapture: { value: vi.fn((id: number) => { capturedPointer = id }) },
+      hasPointerCapture: { value: (id: number) => capturedPointer === id },
+      releasePointerCapture: { value: vi.fn(() => { capturedPointer = null }) },
+    })
+    const pointer = async (type: string, x: number, y: number) => {
+      const event = new MouseEvent(type, { clientX: x, clientY: y, bubbles: true, cancelable: true })
+      Object.defineProperties(event, { pointerId: { value: 1 }, isPrimary: { value: true } })
+      button.dispatchEvent(event)
+      await nextTick()
+    }
+
+    await pointer('pointerdown', 700, 24)
+    await pointer('pointermove', 200, 124)
+    await pointer('pointerup', 200, 124)
+    expect([button.style.left, button.style.top]).toEqual(['188px', '112px'])
+
+    const draggedClick = new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 })
+    button.dispatchEvent(draggedClick)
+    expect(draggedClick.defaultPrevented).toBe(true)
+    const nextClick = new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 })
+    button.dispatchEvent(nextClick)
+    expect(nextClick.defaultPrevented).toBe(false)
+
+    size.width = 260
+    size.height = 160
+    notifyResize()
+    await nextTick()
+    expect([button.style.left, button.style.top]).toEqual(['160px', '112px'])
   })
 })

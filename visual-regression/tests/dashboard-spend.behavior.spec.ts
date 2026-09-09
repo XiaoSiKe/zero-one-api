@@ -8,6 +8,68 @@ async function choose(page: Page, preset: string) {
   await expect(page.locator('.date-picker-dropdown')).toHaveCount(0)
 }
 
+async function seedBillingUsageRow(page: Page) {
+  await seedConsole(page)
+  await page.route('**/api/v1/admin/usage**', async route => {
+    if (new URL(route.request().url()).pathname !== '/api/v1/admin/usage') {
+      await route.fallback()
+      return
+    }
+    await route.fulfill({
+      contentType: 'application/json; charset=utf-8',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: {
+          items: [{
+            id: 1,
+            user_id: 56,
+            api_key_id: 111,
+            account_id: 198,
+            request_id: 'req-screenshot-reconciliation',
+            model: 'gpt-5.6-sol',
+            group_id: 9,
+            input_tokens: 229_417,
+            output_tokens: 433,
+            cache_creation_tokens: 0,
+            cache_read_tokens: 4_864,
+            cache_creation_5m_tokens: 0,
+            cache_creation_1h_tokens: 0,
+            input_cost: 0.32788709,
+            output_cost: 0.00299,
+            cache_creation_cost: 0,
+            cache_read_cost: 0.000432,
+            total_cost: 0.33130909,
+            account_stats_cost: 0.33130909,
+            actual_cost: 0.013849,
+            rate_multiplier: 0.39,
+            account_rate_multiplier: 1,
+            upstream_rate_multiplier: 0.22,
+            billing_type: 0,
+            billing_mode: 'token',
+            request_type: 'stream',
+            stream: true,
+            openai_ws_mode: false,
+            duration_ms: 143_000,
+            first_token_ms: 65_000,
+            image_count: 0,
+            service_tier: 'standard',
+            created_at: '2026-09-09T11:00:00+08:00',
+            user: { id: 56, email: 'billing@01yapi.test' },
+            api_key: { id: 111, name: 'billing-key' },
+            account: { id: 198, name: 'xin' },
+            group: { id: 9, name: 'pro分组' },
+          }],
+          total: 1,
+          page: 1,
+          page_size: 20,
+          pages: 1,
+        },
+      }),
+    })
+  })
+}
+
 test.describe('Dashboard consumption cards and repeatable date selection', () => {
   test.beforeEach(async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-09-04T12:00:00+08:00'))
@@ -84,6 +146,42 @@ test.describe('Dashboard consumption cards and repeatable date selection', () =>
     await expect(coreRow).toHaveScreenshot('console-dashboard-spend-cards.png')
     const trendGrid = page.getByRole('heading', { name: '消费趋势' }).locator('..').locator('..')
     await expect(trendGrid).toHaveScreenshot('console-dashboard-spend-trends.png')
+  })
+
+  test('usage billing identifies the Provider Account and uses the request-time upstream rate', async ({ page }) => {
+    await seedBillingUsageRow(page)
+    await page.goto('http://127.0.0.1:4173/admin/usage')
+
+    await expect(page.getByText('xin', { exact: true })).toBeVisible()
+    await expect(page.getByText('#198', { exact: true })).toBeVisible()
+    await expect(page.getByText('账号成本 $0.072888', { exact: true })).toBeVisible()
+    await expect(page.getByText('$0.013849', { exact: true })).toBeVisible()
+
+    const charged = page.getByText('$0.013849', { exact: true })
+    await charged.locator('..').locator('.group.relative').hover()
+    await expect(page.getByText('用户计费倍率', { exact: true })).toBeVisible()
+    await expect(page.getByText('0.39x', { exact: true })).toBeVisible()
+    await expect(page.getByText('请求时上游倍率', { exact: true })).toBeVisible()
+    await expect(page.getByText('0.22x', { exact: true })).toBeVisible()
+    await expect(page.getByText('xin #198', { exact: true })).toBeVisible()
+  })
+
+  test('usage billing remains contained and readable at 320px', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    await seedBillingUsageRow(page)
+    await page.goto('http://127.0.0.1:4173/admin/usage')
+
+    const tableScroller = page.locator('.overflow-auto').filter({ hasText: 'xin' }).first()
+    await expect(tableScroller).toBeVisible()
+    const dimensions = await tableScroller.evaluate(element => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    }))
+    expect(dimensions.clientWidth).toBeGreaterThan(0)
+    expect(dimensions.scrollWidth).toBeGreaterThanOrEqual(dimensions.clientWidth)
+    await expect(tableScroller).toContainText('xin')
+    await expect(tableScroller).toContainText('$0.013849')
+    await expect(tableScroller).toContainText('账号成本 $0.072888')
   })
 
   test('the real date picker fits a 320px screen after reopening', async ({ page }) => {
