@@ -889,7 +889,7 @@ func (s *UsageLogRepoSuite) TestDashboardStatsWithRange_Fallback() {
 	s.Require().Equal(int64(45), stats.TotalTokens)
 	s.Require().Equal(1.5, stats.TotalCost)
 	s.Require().Equal(1.4, stats.TotalActualCost)
-	// Missing retained declarations remain reportable from historical account rates.
+	// Both rows carry request-time upstream declarations, so account cost is confirmed.
 	s.Require().NotNil(stats.TotalAccountCost)
 	s.Require().Equal(1.5, *stats.TotalAccountCost)
 	s.Require().InEpsilon(150.0, stats.AverageDurationMs, 0.0001)
@@ -919,8 +919,9 @@ func (s *UsageLogRepoSuite) TestGetAccountTodayStats() {
 
 	createdAt := timezone.Today().Add(1 * time.Hour)
 
-	m1 := 1.5
-	m2 := 0.0
+	localRate := 1.0
+	upstreamRate := 0.22
+	baseAccountCost := 0.33130909
 	_, err := s.repo.Create(s.ctx, &service.UsageLog{
 		UserID:                 user.ID,
 		APIKeyID:               apiKey.ID,
@@ -929,40 +930,28 @@ func (s *UsageLogRepoSuite) TestGetAccountTodayStats() {
 		Model:                  "claude-3",
 		InputTokens:            10,
 		OutputTokens:           20,
-		TotalCost:              1.0,
-		ActualCost:             2.0,
-		AccountRateMultiplier:  &m1,
-		UpstreamRateMultiplier: &m1,
+		TotalCost:              baseAccountCost,
+		ActualCost:             0.013849,
+		AccountRateMultiplier:  &localRate,
+		UpstreamRateMultiplier: &upstreamRate,
+		AccountStatsCost:       &baseAccountCost,
 		CreatedAt:              createdAt,
 	})
 	s.Require().NoError(err)
-	_, err = s.repo.Create(s.ctx, &service.UsageLog{
-		UserID:                 user.ID,
-		APIKeyID:               apiKey.ID,
-		AccountID:              account.ID,
-		RequestID:              uuid.New().String(),
-		Model:                  "claude-3",
-		InputTokens:            5,
-		OutputTokens:           5,
-		TotalCost:              0.5,
-		ActualCost:             1.0,
-		AccountRateMultiplier:  &m2,
-		UpstreamRateMultiplier: &m2,
-		CreatedAt:              createdAt,
-	})
-	s.Require().NoError(err)
+	_, err = s.client.Account.UpdateOneID(account.ID).SetRateMultiplier(8).Save(s.ctx)
+	s.Require().NoError(err, "changing the current local account rate must not rewrite history")
 
 	stats, err := s.repo.GetAccountTodayStats(s.ctx, account.ID)
 	s.Require().NoError(err, "GetAccountTodayStats")
-	s.Require().Equal(int64(2), stats.Requests)
-	s.Require().Equal(int64(40), stats.Tokens)
-	// account cost uses the recorded upstream declaration.
+	s.Require().Equal(int64(1), stats.Requests)
+	s.Require().Equal(int64(30), stats.Tokens)
+	// The screenshot case: 0.33130909 × 0.22 = 0.0728879998, independent of local 8x.
 	s.Require().NotNil(stats.Cost)
-	s.Require().InEpsilon(1.5, *stats.Cost, 0.0001)
+	s.Require().InDelta(0.072888, *stats.Cost, 0.0000005)
 	// standard cost = SUM(total_cost)
-	s.Require().InEpsilon(1.5, stats.StandardCost, 0.0001)
+	s.Require().InDelta(baseAccountCost, stats.StandardCost, 0.000000001)
 	// user cost = SUM(actual_cost)
-	s.Require().InEpsilon(3.0, stats.UserCost, 0.0001)
+	s.Require().InDelta(0.013849, stats.UserCost, 0.000000001)
 }
 
 func (s *UsageLogRepoSuite) TestDashboardAggregationConsistency() {

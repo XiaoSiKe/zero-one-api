@@ -30,7 +30,9 @@ BEGIN
       INTO monitor_constraint_def
       FROM pg_constraint c
       JOIN pg_class t ON t.oid = c.conrelid
+      JOIN pg_namespace n ON n.oid = t.relnamespace
      WHERE t.relname = 'channel_monitors'
+       AND n.nspname = current_schema()
        AND c.conname = 'channel_monitors_provider_check';
 
     IF monitor_constraint_def IS NULL OR position('minimax' IN monitor_constraint_def) = 0 THEN
@@ -46,7 +48,9 @@ BEGIN
       INTO template_constraint_def
       FROM pg_constraint c
       JOIN pg_class t ON t.oid = c.conrelid
+      JOIN pg_namespace n ON n.oid = t.relnamespace
      WHERE t.relname = 'channel_monitor_request_templates'
+       AND n.nspname = current_schema()
        AND c.conname = 'channel_monitor_request_templates_provider_check';
 
     IF template_constraint_def IS NULL OR position('minimax' IN template_constraint_def) = 0 THEN
