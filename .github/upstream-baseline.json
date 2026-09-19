@@ -1818,6 +1818,14 @@
         "backend/internal/repository/integration_harness_test.go",
         "backend/internal/server/routes/auth_rate_limit_integration_test.go"
       ]
+    },
+    {
+      "name": "approved-v0.2.7-sse-keepalive-test-determinism",
+      "valid_for_release": "v0.2.7",
+      "exit_condition": "Remove this hotfix when the first stable upstream release makes the ordinary-client SSE keepalive test tolerate a comment payload and at least two ticker periods of runner scheduling delay.",
+      "paths": [
+        "backend/internal/service/gemini_sse_comment_compat_test.go"
+      ]
     }
   ],
   "overlays": [
@@ -2105,7 +2113,6 @@
         "backend/internal/service/auth_service.go",
         "backend/internal/service/auth_service_invitation_race_test.go",
         "backend/internal/service/auth_service_register_test.go",
-        "backend/internal/service/gemini_sse_comment_compat_test.go",
         "backend/internal/service/channel_status_summary.go",
         "backend/internal/service/channel_status_summary_test.go",
         "backend/internal/service/channel_monitor_runner.go",
