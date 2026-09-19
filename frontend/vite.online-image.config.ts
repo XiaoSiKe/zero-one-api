@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { adapterBoundary } from './vite.adapter-boundary'
 
 const frontendRoot = fileURLToPath(new URL('.', import.meta.url))
+const frozenBuildRoot = process.env.ZERO_ONE_FROZEN_BUILD_ROOT
 
 export default defineConfig({
   root: frontendRoot,
@@ -21,7 +22,9 @@ export default defineConfig({
     'process.env.NODE_ENV': JSON.stringify('production'),
   },
   build: {
-    outDir: resolve(frontendRoot, '../deploy/zero-one/recovered-frontend/console/assets/online-image-v17'),
+    outDir: frozenBuildRoot
+      ? resolve(frozenBuildRoot, 'online-image-v17')
+      : resolve(frontendRoot, '../deploy/zero-one/recovered-frontend/console/assets/online-image-v17'),
     emptyOutDir: true,
     cssCodeSplit: false,
     lib: {

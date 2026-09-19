@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 import { commandsForImpact } from './run-affected-tests.mjs'
+
+const repositoryRoot = new URL('../../', import.meta.url)
+
+function readRepositoryFile(path) {
+  return readFileSync(new URL(path, repositoryRoot), 'utf8')
+}
 
 const none = {
   landing: false, console: false, console_asset_scopes: 'none', backend_scope: 'none',
@@ -46,4 +53,27 @@ test('redeem selection does not invoke unrelated backend or visual suites', () =
   assert.ok(commands.some((command) => command.includes('Redeem|Benefit|Mystery|Balance')))
   assert.ok(commands.every((command) => !command.includes('make test-integration')))
   assert.ok(commands.every((command) => !command.includes('visual-regression')))
+})
+
+test('frozen Console compatibility builds cannot write approved asset directories', () => {
+  const packageJson = JSON.parse(readRepositoryFile('frontend/package.json'))
+  for (const target of ['cn-provider-admin', 'online-image', 'password-recovery']) {
+    assert.equal(
+      packageJson.scripts[`build:${target}`],
+      `node ../deploy/zero-one/verify-frozen-console-build.mjs ${target}`,
+    )
+  }
+
+  const verifier = readRepositoryFile('deploy/zero-one/verify-frozen-console-build.mjs')
+  assert.match(verifier, /mkdtempSync/)
+  assert.match(verifier, /ZERO_ONE_FROZEN_BUILD_ROOT/)
+  assert.match(verifier, /rmSync\(outputRoot, \{ recursive: true, force: true \}\)/)
+
+  for (const config of [
+    'frontend/vite.cn-provider-admin.config.ts',
+    'frontend/vite.online-image.config.ts',
+    'frontend/vite.password-recovery.config.mjs',
+  ]) {
+    assert.match(readRepositoryFile(config), /process\.env\.ZERO_ONE_FROZEN_BUILD_ROOT/)
+  }
 })
