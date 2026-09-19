@@ -5,8 +5,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/zeromicro/go-zero/core/collection"
 )
+
+func TestProvidePluginManagerInjectsAccountDirectory(t *testing.T) {
+	directory := &OpenAIGatewayService{}
+	manager := ProvidePluginManager(nil, nil, &config.Config{}, PluginHostInfo{}, nil, directory)
+	if manager.accountDirectory != directory {
+		t.Fatal("plugin manager lost the OpenAI account directory during Wire assembly")
+	}
+}
 
 func TestProvideTimingWheelService_ReturnsError(t *testing.T) {
 	original := newTimingWheel
