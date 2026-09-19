@@ -115,6 +115,7 @@
             </button>
           </div>
           <a
+            v-if="!menuItem?.hide_open_button"
             ref="openButton"
             :href="embeddedUrl"
             target="_blank"

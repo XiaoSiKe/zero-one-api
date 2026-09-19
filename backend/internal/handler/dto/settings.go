@@ -20,6 +20,9 @@ type CustomMenuItem struct {
 	QRDesc     string `json:"qr_description,omitempty"`
 	QRImage    string `json:"qr_image,omitempty"`
 	SortOrder  int    `json:"sort_order"`
+	// HideOpenButton applies only to the custom-page presentation. It does not
+	// weaken the existing visibility or authenticated QR-image boundaries.
+	HideOpenButton bool `json:"hide_open_button,omitempty"`
 }
 
 // CustomEndpoint represents an admin-configured API endpoint for quick copy.
@@ -335,6 +338,8 @@ type SystemSettings struct {
 
 	// Available Channels feature switch (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+	// Subscription feature switch (user-facing subscription surface)
+	SubscriptionEnabled bool `json:"subscription_enabled"`
 
 	// Model Plaza feature (public group/model pricing showcase)
 	ModelPlazaEnabled     bool   `json:"model_plaza_enabled"`

@@ -389,6 +389,8 @@ export const useAppStore = defineStore('app', () => {
         public_channel_status_enabled: false,
         channel_monitor_default_interval_seconds: 60,
         available_channels_enabled: false,
+        subscription_enabled: true,
+        payment_balance_disabled: false,
         model_plaza_enabled: false,
         model_plaza_require_auth: false,
         community_qr_enabled: false,

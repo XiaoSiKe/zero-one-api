@@ -429,8 +429,8 @@ const fetchHistory = async () => {
   const request = ++historyRequest
   loadingHistory.value = true
   try {
-    const items = await redeemAPI.getHistory()
-    if (request === historyRequest) history.value = items
+    const result = await redeemAPI.getHistory(1, 100)
+    if (request === historyRequest) history.value = result.items
     return true
   } catch (error) {
     console.error('Failed to fetch history:', error)
