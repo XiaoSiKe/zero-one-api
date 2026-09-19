@@ -1895,6 +1895,7 @@
         "frontend/src/utils/online-recharge.ts",
         "frontend/src/utils/peak-rate.ts",
         "frontend/src/utils/platformColors.ts",
+        "frontend/src/utils/siteBillingMode.ts",
         "frontend/src/utils/__tests__/embedded-url.spec.ts",
         "frontend/src/utils/__tests__/online-recharge.spec.ts",
         "frontend/src/utils/__tests__/image-tutorial.spec.ts",
