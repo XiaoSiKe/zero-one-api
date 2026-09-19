@@ -232,6 +232,7 @@ const approvedLegacyHotfixPaths = [
   'backend/internal/service/content_moderation_cyber_test.go',
   'backend/internal/service/content_moderation_runtime_cache_test.go',
   'backend/internal/service/gateway_scheduling.go',
+  'backend/internal/service/gemini_sse_comment_compat_test.go',
   'backend/internal/service/usage_cleanup_service_test.go',
   'backend/migrations/222_group_pricing_auth_cache_invalidation.sql',
   'backend/migrations/group_pricing_auth_cache_migration_test.go',
