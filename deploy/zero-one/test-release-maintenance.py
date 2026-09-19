@@ -67,6 +67,51 @@ class ReleaseTests(unittest.TestCase):
             self.assertEqual(projection["channel_monitor_v2_watermarks"], ["id", "last_aggregated_at"])
         self.assertEqual(columns, original)
 
+    def test_quota_purge_projects_only_the_authorized_rows(self):
+        pending = [release.QUOTA_PURGE_MIGRATION]
+        self.assertEqual(release.quota_purge_row_filter("users", pending), "")
+        self.assertEqual(release.quota_purge_row_filter("user_platform_quotas", []), "")
+        quota_filter = release.quota_purge_row_filter("user_platform_quotas", pending)
+        self.assertIn("daily_limit_usd IS NULL", quota_filter)
+        self.assertIn("weekly_limit_usd IS NULL", quota_filter)
+        self.assertIn("monthly_limit_usd IS NULL", quota_filter)
+        self.assertTrue(quota_filter.startswith(" WHERE NOT"))
+
+    def test_quota_purge_records_hash_and_enforces_exact_count(self):
+        pending = [release.QUOTA_PURGE_MIGRATION]
+        candidate = {
+            "candidate_count": 3,
+            "candidate_primary_key_sha256": "a" * 64,
+            "table_rows_before": 10,
+            "semantic_contract": "all-null quota row equals absent row",
+        }
+        calls = []
+
+        def capture(query):
+            calls.append(query)
+            return json.dumps(candidate)
+
+        self.assertEqual(release.quota_purge_candidates(capture, pending), candidate)
+        self.assertIn("string_agg(id::text,',' ORDER BY id)", calls[0])
+
+        release.verify_quota_purge_result(
+            lambda _: json.dumps({"table_rows_after": 7, "remaining_candidates": 0}),
+            pending,
+            candidate,
+        )
+        for invalid in (
+            {"table_rows_after": 6, "remaining_candidates": 0},
+            {"table_rows_after": 7, "remaining_candidates": 1},
+        ):
+            with self.assertRaises(AssertionError):
+                release.verify_quota_purge_result(lambda _, value=invalid: json.dumps(value), pending, candidate)
+
+    def test_quota_purge_evidence_is_forbidden_without_the_migration(self):
+        self.assertIsNone(release.quota_purge_candidates(lambda _: self.fail("query called"), []))
+        release.verify_quota_purge_result(lambda _: self.fail("query called"), [], None)
+        with self.assertRaises(AssertionError):
+            release.verify_quota_purge_result(lambda _: self.fail("query called"), [], {"candidate_count": 0})
+
     def test_rejects_rewritten_or_unexpected_migration_ledger(self):
         before = [{"filename": "001_a.sql", "checksum": "a", "applied_at": "original"}]
         added = {"filename": "002_b.sql", "checksum": "b", "applied_at": "later"}

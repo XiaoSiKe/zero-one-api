@@ -90,6 +90,14 @@ test('storage maintenance changes run deployment checks without Chromium', () =>
   assert.equal(impact.visual_scope, 'none')
 })
 
+test('release controller changes run deployment checks without Chromium', () => {
+  const impact = selectTestImpact(['deploy/zero-one/release-control.py'], policy)
+  assert.equal(impact.deployment, true)
+  assert.equal(impact.backend_scope, 'none')
+  assert.equal(impact.console, false)
+  assert.equal(impact.visual_scope, 'none')
+})
+
 test('renames and deletions inspect both sides of a rename', () => {
   assert.deepEqual(
     parseNameStatus('R100\tdocs/old.md\tbackend/internal/service/redeem_service.go\nD\tfrontend/src/App.vue\n'),
