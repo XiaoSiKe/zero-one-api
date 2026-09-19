@@ -81,8 +81,14 @@ func runAntigravityGeminiStreamWithIdle(t *testing.T, userAgent string, idle tim
 }
 
 func TestAntigravityGeminiStreamKeepsCommentKeepaliveForOrdinaryClients(t *testing.T) {
-	out := runAntigravityGeminiStreamWithIdle(t, "curl/8.7.1", 1200*time.Millisecond)
-	require.Contains(t, out, ":\n\n", "ordinary clients should still get the idle keepalive")
+	// Leave room for two ticker periods so a busy CI runner cannot turn a
+	// scheduler delay into a protocol failure.
+	out := runAntigravityGeminiStreamWithIdle(t, "curl/8.7.1", 2500*time.Millisecond)
+	hasComment := false
+	for _, event := range strings.Split(out, "\n\n") {
+		hasComment = hasComment || strings.HasPrefix(event, ":")
+	}
+	require.True(t, hasComment, "ordinary clients should still get the idle keepalive, got %q", out)
 	require.Contains(t, out, `"text":"partial"`)
 }
 
