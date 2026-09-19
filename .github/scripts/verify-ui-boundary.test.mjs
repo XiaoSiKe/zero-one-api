@@ -51,6 +51,7 @@ test('validates the approved UI baseline manifest', () => {
   // 二开消费卡片与日期修复必须同时具有 UI 快照覆盖和逐文件永久保留。
   const consumption = manifest.protected_surfaces.find(({ name }) => name === 'admin-consumption-and-date-panels')
   assert.deepEqual(consumption.routes, ['/admin/dashboard', '/dashboard', '/admin/usage', '/usage'])
+  assert.ok(manifest.protected_paths.includes('visual-regression/tests/usage-account-cost.behavior.spec.ts'))
   const registry = JSON.parse(readFileSync(new URL('../upstream-baseline.json', import.meta.url), 'utf8'))
   for (const path of [
     'frontend/src/views/admin/DashboardView.vue',
@@ -118,6 +119,7 @@ test('validates the approved UI baseline manifest', () => {
   assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v5/'))
   assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/'))
   assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v10/'))
+  assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v11/'))
   assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/'))
   assert.ok(
     cnProviderManagement.paths.includes(
@@ -136,6 +138,8 @@ test('validates the approved UI baseline manifest', () => {
   assert.ok(consoleShell.paths.includes('visual-regression/tests/version-baseline.spec.ts'))
 
   assert.ok(consumption.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v10/'))
+  assert.ok(consumption.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v11/'))
+  assert.ok(consumption.paths.includes('visual-regression/tests/usage-account-cost.behavior.spec.ts'))
   assert.ok(registry.preserve_on_upstream_sync.includes('docs/adr/0016-billing-rate-display-clarity.md'))
 
   const onlineRecharge = manifest.protected_surfaces.find(

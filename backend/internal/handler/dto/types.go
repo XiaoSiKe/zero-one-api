@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/domain"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/usagestats"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
@@ -703,6 +704,9 @@ type AdminUsageLog struct {
 	UpstreamRateMultiplier *float64 `json:"upstream_rate_multiplier"`
 	// AccountStatsCost 自定义定价规则计算的账号统计费用（nil 表示使用默认公式）
 	AccountStatsCost *float64 `json:"account_stats_cost,omitempty"`
+	// AccountCost is derived only from upstream evidence frozen on this request.
+	AccountCost       *float64                     `json:"account_cost"`
+	AccountCostStatus usagestats.AccountCostStatus `json:"account_cost_status"`
 
 	// IPAddress 用户请求 IP
 	IPAddress *string `json:"ip_address,omitempty"`

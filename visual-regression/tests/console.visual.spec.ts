@@ -131,7 +131,7 @@ test.describe('Console public auth contracts', () => {
     page.on('pageerror', (error) => pageErrors.push(error.message))
     page.on('request', (request) => {
       const pathname = new URL(request.url()).pathname
-      if (pathname === '/assets/cn-provider-shell-v10/LoginView-BbpS8aW1.js') {
+      if (pathname === '/assets/cn-provider-shell-v11/LoginView-BbpS8aW1.js') {
         loginChunkRequestedBeforeSettingsRelease ||= !settingsReleased
       }
       if (pathname === '/assets/cn-provider-admin-v8/cn-provider-admin.js') {
@@ -219,7 +219,7 @@ test.describe('Console public auth contracts', () => {
 
     page.on('request', (request) => {
       const pathname = new URL(request.url()).pathname
-      if (pathname === '/assets/cn-provider-shell-v10/RegisterView-CP_DoJ_R.js') {
+      if (pathname === '/assets/cn-provider-shell-v11/RegisterView-CP_DoJ_R.js') {
         registrationChunkRequestedBeforeSettingsRelease ||= !settingsReleased
       }
     })
@@ -3367,7 +3367,7 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/cn-provider-admin-v8/cn-provider-admin.js')
     expect(html).not.toContain('import("/assets/cn-provider-admin-v1/cn-provider-admin.js")')
     expect(html).not.toContain('import("/assets/cn-provider-admin-v7/cn-provider-admin.js")')
-    expect(html).toContain('/assets/cn-provider-shell-v10/index-9xJBhx8B.js')
+    expect(html).toContain('/assets/cn-provider-shell-v11/index-9xJBhx8B.js')
     expect(html).toContain('/assets/online-image-v17/online-image.js')
     expect(html).toContain('/assets/zero-one-settings-unified-save-v1.js')
     expect(html).toContain('/assets/zero-one-local-preview-guard-v2.js')

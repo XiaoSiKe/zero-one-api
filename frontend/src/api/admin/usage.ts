@@ -23,6 +23,8 @@ export interface AdminUsageStatsResponse {
   finance?: {
     confirmed_requests: number
     unconfirmed_requests: number
+    unsupported_scope_requests: number
+    missing_evidence_requests: number
     confirmed_actual_cost: number
     confirmed_account_cost: number
     confirmed_profit: number

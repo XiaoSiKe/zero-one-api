@@ -39,6 +39,12 @@ const messages: Record<string, string> = {
 	'usage.upstreamModelMismatch': 'Upstream model mismatch',
 	'usage.accountMultiplier': 'Request-time upstream rate',
 	'usage.accountBilled': 'Account cost',
+	'usage.accountCostStatus': 'Account cost status',
+	'usage.accountCostConfirmed': 'Confirmed',
+	'usage.accountCostMissingEvidence': 'Missing upstream evidence',
+	'usage.accountCostUnsupportedScope': 'Unsupported billing scope',
+	'usage.hideAccountCost': 'Hide account cost',
+	'usage.showAccountCost': 'Show account cost',
 	'common.yes': 'Yes',
 	'common.no': 'No',
 }
@@ -179,6 +185,8 @@ const mountRouteFilteredUsageView = () => mount(UsageView, {
 describe('admin UsageView route filters', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    vi.mocked(localStorage.getItem).mockReset().mockReturnValue(null)
+    vi.mocked(localStorage.setItem).mockClear()
     Object.keys(routeQuery).forEach((key) => delete routeQuery[key])
     list.mockReset().mockResolvedValue({ items: [], total: 0, pages: 0 })
     getStats.mockReset().mockResolvedValue({
@@ -211,6 +219,24 @@ describe('admin UsageView route filters', () => {
     expect(getById).toHaveBeenCalledWith(42, true)
     expect(list).toHaveBeenCalledWith(expect.objectContaining({ user_id: 42 }), expect.anything())
     expect(wrapper.find('[data-test="user-filter-label"]').text()).toBe('route-user@test.com')
+  })
+
+  it('persists the account cost visibility preference and restores it on refresh', async () => {
+    const wrapper = mountRouteFilteredUsageView()
+    await flushPromises()
+
+    expect((wrapper.vm as any).showAccountCost).toBe(true)
+    await wrapper.get('[data-testid="toggle-account-cost"]').trigger('click')
+    expect((wrapper.vm as any).showAccountCost).toBe(false)
+    expect(localStorage.setItem).toHaveBeenCalledWith('zero-one:admin-usage:show-account-cost:v1', 'false')
+
+    wrapper.unmount()
+    vi.mocked(localStorage.getItem).mockImplementation((key: string) =>
+      key === 'zero-one:admin-usage:show-account-cost:v1' ? 'false' : null
+    )
+    const restored = mountRouteFilteredUsageView()
+    await flushPromises()
+    expect((restored.vm as any).showAccountCost).toBe(false)
   })
 
   it('does not apply a stale routed user label after user_id changes', async () => {
@@ -634,6 +660,7 @@ describe('admin UsageView ranking tab', () => {
 describe('admin UsageView model audit export', () => {
 	beforeEach(() => {
 		vi.useFakeTimers()
+		vi.mocked(localStorage.getItem).mockReset().mockReturnValue(null)
 		list.mockReset().mockResolvedValue({ items: [], total: 0, pages: 0 })
 		exportList.mockReset().mockResolvedValue({
 				items: [{
@@ -653,6 +680,8 @@ describe('admin UsageView model audit export', () => {
 					account_stats_cost: 7,
 					account_rate_multiplier: 8,
 					upstream_rate_multiplier: 0.22,
+					account_cost: 1.54,
+					account_cost_status: 'confirmed',
 					duration_ms: 10,
 				}, {
 					id: 2,
@@ -667,6 +696,8 @@ describe('admin UsageView model audit export', () => {
 					actual_cost: 3,
 					account_rate_multiplier: 8,
 					upstream_rate_multiplier: null,
+					account_cost: null,
+					account_cost_status: 'missing_upstream_evidence',
 					duration_ms: 10,
 				}],
 				total: 2,
@@ -689,9 +720,11 @@ describe('admin UsageView model audit export', () => {
 	})
 
 	it('exports requested, sent, response, and mismatch as separate admin columns', async () => {
+		vi.mocked(localStorage.getItem).mockReturnValue('false')
 		const wrapper = mountRouteFilteredUsageView()
 		vi.advanceTimersByTime(120)
 		await flushPromises()
+		expect((wrapper.vm as any).showAccountCost).toBe(false)
 
 		await (wrapper.vm as any).exportToExcel()
 		await flushPromises()
@@ -707,11 +740,14 @@ describe('admin UsageView model audit export', () => {
 			expect(row.slice(4, 8)).toEqual(['gpt-5.6-sol', 'gpt-5.5', 'gpt-5.4', 'Yes'])
 			const upstreamRateIndex = headers.indexOf('Request-time upstream rate')
 			const accountCostIndex = headers.indexOf('Account cost')
+			const accountCostStatusIndex = headers.indexOf('Account cost status')
 			expect(row[upstreamRateIndex]).toBe('0.2200')
 			expect(row[accountCostIndex]).toBe('1.540000')
+			expect(row[accountCostStatusIndex]).toBe('Confirmed')
 			const unknownRow = sheetAddAoa.mock.calls[0][1][1]
 			expect(unknownRow[upstreamRateIndex]).toBe('')
 			expect(unknownRow[accountCostIndex]).toBe('')
+			expect(unknownRow[accountCostStatusIndex]).toBe('Missing upstream evidence')
 			expect(saveAs).toHaveBeenCalledTimes(1)
 	})
 })

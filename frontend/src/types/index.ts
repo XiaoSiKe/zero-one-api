@@ -1790,6 +1790,9 @@ export interface AdminUsageLog extends UsageLog {
   upstream_rate_multiplier?: number | null
   // 自定义定价规则计算的账号统计费用（nil 时使用 total_cost * multiplier）
   account_stats_cost?: number | null
+  // 仅由请求发生时冻结的上游证据计算；未知值不得在前端重算。
+  account_cost?: number | null
+  account_cost_status?: 'confirmed' | 'unsupported_billing_scope' | 'missing_upstream_evidence'
 
   // 渠道 ID 和计费等级（仅管理员可见）
   channel_id?: number | null

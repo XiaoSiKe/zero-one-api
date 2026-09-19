@@ -69,7 +69,8 @@
         </p>
         <p class="text-xs text-gray-400">
           <template v-if="showAccountCost">
-            <span class="text-zo-alert-500">{{ t('usage.accountCost') }} ${{ (totalAccountCost ?? 0).toFixed(4) }}</span>
+            <span class="text-zo-alert-500">{{ t('usage.accountCost') }} {{ formattedAccountCost }}</span>
+            <span v-if="accountCostUnknownSummary" class="text-gray-400" :title="accountCostUnknownSummary"> *</span>
             <span> · </span>
           </template>
           <span>
@@ -109,6 +110,15 @@ const { t } = useI18n()
 const totalAccountCost = computed(() => {
   const stats = props.stats as (AdminUsageStatsResponse & { total_account_cost?: number }) | null
   return stats?.total_account_cost ?? null
+})
+const formattedAccountCost = computed(() => totalAccountCost.value == null ? '—' : `$${totalAccountCost.value.toFixed(4)}`)
+const accountCostUnknownSummary = computed(() => {
+  const finance = (props.stats as AdminUsageStatsResponse | null)?.finance
+  if (!finance) return ''
+  const unsupported = finance.unsupported_scope_requests ?? 0
+  const missing = finance.missing_evidence_requests ?? finance.unconfirmed_requests ?? 0
+  if (unsupported === 0 && missing === 0) return ''
+  return t('usage.accountCostUnknownSummary', { unsupported, missing })
 })
 const showAccountCost = computed(() => props.showAccountCost)
 const strikeStandardCost = computed(() => props.strikeStandardCost)

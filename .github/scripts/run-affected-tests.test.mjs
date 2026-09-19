@@ -35,6 +35,10 @@ test('visual impact uses the pinned cross-platform runner', () => {
   assert.ok(dashboard.includes(
     'sh deploy/zero-one/test-visual.sh tests/dashboard-spend.behavior.spec.ts',
   ))
+  const usage = commandsForImpact({ ...none, visual_scope: 'usage' })
+  assert.ok(usage.includes(
+    'sh deploy/zero-one/test-visual.sh tests/usage-account-cost.behavior.spec.ts',
+  ))
 })
 
 test('redeem selection does not invoke unrelated backend or visual suites', () => {

@@ -1,6 +1,6 @@
 <template>
     <div class="space-y-6">
-      <UsageStatsCards :stats="usageStats" />
+      <UsageStatsCards :stats="usageStats" :show-account-cost="showAccountCost" />
       <!-- Charts Section -->
       <div class="space-y-4">
         <div class="card console-card-motion-glow-only p-4">
@@ -34,6 +34,7 @@
             :start-date="startDate"
             :end-date="endDate"
             :filters="breakdownFilters"
+            :show-account-cost="showAccountCost"
           />
           <GroupDistributionChart
             v-model:metric="groupDistributionMetric"
@@ -43,6 +44,7 @@
             :start-date="startDate"
             :end-date="endDate"
             :filters="breakdownFilters"
+            :show-account-cost="showAccountCost"
           />
         </div>
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -59,6 +61,7 @@
             :start-date="startDate"
             :end-date="endDate"
             :filters="breakdownFilters"
+            :show-account-cost="showAccountCost"
           />
           <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" />
         </div>
@@ -84,6 +87,17 @@
 
         <UsageFilters v-model="filters" ref="usageFiltersRef" flat :mode="activeTab" class="border-b border-gray-100 dark:border-dark-700/50" :start-date="startDate" :end-date="endDate" :exporting="exporting" :model-options="modelNameOptions" @change="applyFilters" @refresh="refreshData" @reset="resetFilters" @cleanup="openCleanupDialog" @export="exportToExcel">
           <template #after-reset>
+            <button
+              v-if="activeTab === 'usage'"
+              type="button"
+              data-testid="toggle-account-cost"
+              class="btn btn-secondary px-2 md:px-3"
+              :aria-pressed="!showAccountCost"
+              @click="toggleAccountCost"
+            >
+              <Icon :name="showAccountCost ? 'eyeOff' : 'eye'" size="sm" class="md:mr-1.5" />
+              <span class="hidden md:inline">{{ t(showAccountCost ? 'usage.hideAccountCost' : 'usage.showAccountCost') }}</span>
+            </button>
             <div v-if="activeTab !== 'ranking'" class="relative" ref="columnDropdownRef">
               <button
                 @click="showColumnDropdown = !showColumnDropdown"
@@ -128,6 +142,7 @@
             :server-side-sort="true"
             :default-sort-key="'created_at'"
             :default-sort-order="'desc'"
+            :show-account-billing="showAccountCost"
             @sort="handleSort"
             @userClick="handleUserClick"
             @ipGeoBatchFailed="handleIpGeoBatchFailed"
@@ -230,6 +245,25 @@ let statsReqSeq = 0
 let modelStatsReqSeq = 0
 const exportProgress = reactive({ show: false, progress: 0, current: 0, total: 0, estimatedTime: '' })
 const cleanupDialogVisible = ref(false)
+const SHOW_ACCOUNT_COST_KEY = 'zero-one:admin-usage:show-account-cost:v1'
+const showAccountCost = ref(true)
+
+const loadAccountCostPreference = () => {
+  try {
+    showAccountCost.value = localStorage.getItem(SHOW_ACCOUNT_COST_KEY) !== 'false'
+  } catch {
+    showAccountCost.value = true
+  }
+}
+
+const toggleAccountCost = () => {
+  showAccountCost.value = !showAccountCost.value
+  try {
+    localStorage.setItem(SHOW_ACCOUNT_COST_KEY, String(showAccountCost.value))
+  } catch (error) {
+    console.error('Failed to save account cost visibility:', error)
+  }
+}
 // Balance history modal state
 const showBalanceHistoryModal = ref(false)
 const balanceHistoryUser = ref<AdminUser | null>(null)
@@ -564,6 +598,12 @@ const getRequestTypeLabel = (log: AdminUsageLog): string => {
   return t('usage.unknown')
 }
 
+const getAccountCostStatusLabel = (log: AdminUsageLog): string => {
+  if (log.account_cost_status === 'confirmed') return t('usage.accountCostConfirmed')
+  if (log.account_cost_status === 'unsupported_billing_scope') return t('usage.accountCostUnsupportedScope')
+  return t('usage.accountCostMissingEvidence')
+}
+
 const exportToExcel = async () => {
   if (exporting.value) return; exporting.value = true; exportProgress.show = true
   const c = new AbortController(); exportAbortController = c
@@ -579,7 +619,7 @@ const exportToExcel = async () => {
       t('admin.usage.cacheReadTokens'), t('admin.usage.cacheCreationTokens'),
       t('admin.usage.inputCost'), t('admin.usage.outputCost'),
       t('admin.usage.cacheReadCost'), t('admin.usage.cacheCreationCost'),
-      t('usage.userRateMultiplier'), t('usage.accountMultiplier'), t('usage.original'), t('usage.userBilled'), t('usage.accountBilled'),
+      t('usage.userRateMultiplier'), t('usage.accountMultiplier'), t('usage.original'), t('usage.userBilled'), t('usage.accountBilled'), t('usage.accountCostStatus'),
       t('usage.firstToken'), t('usage.duration'),
       t('admin.usage.requestId'), t('usage.userAgent'), t('admin.usage.ipAddress')
     ]
@@ -599,9 +639,7 @@ const exportToExcel = async () => {
         log.cache_read_cost?.toFixed(6) || '0.000000', log.cache_creation_cost?.toFixed(6) || '0.000000',
         log.rate_multiplier?.toPrecision(4) || '1.00', log.upstream_rate_multiplier?.toPrecision(4) ?? '',
         log.total_cost?.toFixed(6) || '0.000000', log.actual_cost?.toFixed(6) || '0.000000',
-        log.upstream_rate_multiplier == null
-          ? ''
-          : ((log.account_stats_cost ?? log.total_cost ?? 0) * log.upstream_rate_multiplier).toFixed(6),
+        log.account_cost == null ? '' : log.account_cost.toFixed(6), getAccountCostStatusLabel(log),
         log.first_token_ms ?? '', log.duration_ms,
         log.request_id || '', log.user_agent || '', log.ip_address || ''
       ])
@@ -853,6 +891,7 @@ const handleColumnClickOutside = (event: MouseEvent) => {
 }
 
 onMounted(() => {
+  loadAccountCostPreference()
   applyRouteQueryFilters()
   void loadRouteUserFilterLabel()
   loadLogs()

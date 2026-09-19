@@ -179,11 +179,13 @@ func TestAdminUsageStatsReturnsConfirmedFinanceScope(t *testing.T) {
 		TotalRequests:   4,
 		TotalActualCost: 50.5,
 		Finance: &usagestats.UsageFinanceSummary{
-			ConfirmedRequests:    3,
-			UnconfirmedRequests:  1,
-			ConfirmedActualCost:  11.5,
-			ConfirmedAccountCost: 5.4,
-			ConfirmedProfit:      6.1,
+			ConfirmedRequests:        3,
+			UnconfirmedRequests:      1,
+			UnsupportedScopeRequests: 1,
+			MissingEvidenceRequests:  0,
+			ConfirmedActualCost:      11.5,
+			ConfirmedAccountCost:     5.4,
+			ConfirmedProfit:          6.1,
 		},
 	}}
 	router := newAdminUsageRequestTypeTestRouter(repo)
@@ -193,7 +195,7 @@ func TestAdminUsageStatsReturnsConfirmedFinanceScope(t *testing.T) {
 	router.ServeHTTP(rec, req)
 
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.JSONEq(t, `{"code":0,"message":"success","data":{"total_requests":4,"total_input_tokens":0,"total_output_tokens":0,"total_cache_tokens":0,"total_cache_creation_tokens":0,"total_cache_read_tokens":0,"total_tokens":0,"total_cost":0,"total_actual_cost":50.5,"finance":{"confirmed_requests":3,"unconfirmed_requests":1,"confirmed_actual_cost":11.5,"confirmed_account_cost":5.4,"confirmed_profit":6.1},"average_duration_ms":0}}`, rec.Body.String())
+	require.JSONEq(t, `{"code":0,"message":"success","data":{"total_requests":4,"total_input_tokens":0,"total_output_tokens":0,"total_cache_tokens":0,"total_cache_creation_tokens":0,"total_cache_read_tokens":0,"total_tokens":0,"total_cost":0,"total_actual_cost":50.5,"finance":{"confirmed_requests":3,"unconfirmed_requests":1,"unsupported_scope_requests":1,"missing_evidence_requests":0,"confirmed_actual_cost":11.5,"confirmed_account_cost":5.4,"confirmed_profit":6.1},"average_duration_ms":0}}`, rec.Body.String())
 }
 
 func TestAdminUsageStatsNativeCompactionFilter(t *testing.T) {

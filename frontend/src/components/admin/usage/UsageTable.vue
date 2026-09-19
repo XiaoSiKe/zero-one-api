@@ -383,19 +383,19 @@
             <div class="text-xs font-semibold text-gray-300 mb-1">{{ t('usage.costDetails') }}</div>
             <div v-if="tooltipData && tooltipData.input_cost > 0" class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('admin.usage.inputCost') }}</span>
-              <span class="font-medium text-white">${{ tooltipData.input_cost.toFixed(6) }}</span>
+              <span class="font-medium text-white">{{ formatDetailedCost(tooltipData.input_cost) }}</span>
             </div>
             <div v-if="tooltipData && hasImageInputCost(tooltipData)" class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('usage.imageInputCost') }}</span>
-              <span class="font-medium text-fuchsia-300">${{ tooltipData.image_input_cost.toFixed(6) }}</span>
+              <span class="font-medium text-fuchsia-300">{{ formatDetailedCost(tooltipData.image_input_cost) }}</span>
             </div>
             <div v-if="tooltipData && tooltipData.output_cost > 0" class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('admin.usage.outputCost') }}</span>
-              <span class="font-medium text-white">${{ tooltipData.output_cost.toFixed(6) }}</span>
+              <span class="font-medium text-white">{{ formatDetailedCost(tooltipData.output_cost) }}</span>
             </div>
             <div v-if="tooltipData && hasImageOutputCost(tooltipData)" class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('usage.imageOutputCost') }}</span>
-              <span class="font-medium text-pink-300">${{ tooltipData.image_output_cost.toFixed(6) }}</span>
+              <span class="font-medium text-pink-300">{{ formatDetailedCost(tooltipData.image_output_cost) }}</span>
             </div>
             <!-- Token billing: show unit prices per 1M tokens -->
             <template v-if="tooltipData && !isImageUsage(tooltipData) && (!tooltipData.billing_mode || tooltipData.billing_mode === BILLING_MODE_TOKEN)">
@@ -443,24 +443,24 @@
               </div>
               <div class="flex items-center justify-between gap-4">
                 <span class="text-gray-400">{{ t('usage.imageUnitPrice') }}</span>
-                <span class="font-medium text-sky-300">${{ imageUnitPrice(tooltipData).toFixed(6) }}</span>
+                <span class="font-medium text-sky-300">{{ formatDetailedCost(imageUnitPrice(tooltipData)) }}</span>
               </div>
               <div class="flex items-center justify-between gap-4">
                 <span class="text-gray-400">{{ t('usage.imageTotalPrice') }}</span>
-                <span class="font-medium text-white">${{ tooltipData.total_cost?.toFixed(6) || '0.000000' }}</span>
+                <span class="font-medium text-white">{{ formatDetailedCost(tooltipData.total_cost) }}</span>
               </div>
             </template>
             <div v-else class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('usage.unitPrice') }}</span>
-              <span class="font-medium text-sky-300">${{ tooltipData?.total_cost?.toFixed(6) || '0.000000' }}</span>
+              <span class="font-medium text-sky-300">{{ formatDetailedCost(tooltipData?.total_cost) }}</span>
             </div>
             <div v-if="tooltipData && tooltipData.cache_creation_cost > 0" class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('admin.usage.cacheCreationCost') }}</span>
-              <span class="font-medium text-white">${{ tooltipData.cache_creation_cost.toFixed(6) }}</span>
+              <span class="font-medium text-white">{{ formatDetailedCost(tooltipData.cache_creation_cost) }}</span>
             </div>
             <div v-if="tooltipData && tooltipData.cache_read_cost > 0" class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('admin.usage.cacheReadCost') }}</span>
-              <span class="font-medium text-white">${{ tooltipData.cache_read_cost.toFixed(6) }}</span>
+              <span class="font-medium text-white">{{ formatDetailedCost(tooltipData.cache_read_cost) }}</span>
             </div>
           </div>
           <!-- Rate and Summary -->
@@ -474,11 +474,11 @@
           </div>
           <div class="flex items-center justify-between gap-6">
             <span class="text-gray-400">{{ t('usage.original') }}</span>
-            <span class="font-medium text-white">${{ tooltipData?.total_cost?.toFixed(6) || '0.000000' }}</span>
+            <span class="font-medium text-white">{{ formatDetailedCost(tooltipData?.total_cost) }}</span>
           </div>
           <div class="flex items-center justify-between gap-6">
             <span class="text-gray-400">{{ t('usage.userBilled') }}</span>
-            <span class="font-semibold text-zo-signal-400">${{ tooltipData?.actual_cost?.toFixed(6) || '0.000000' }}</span>
+            <span class="font-semibold text-zo-signal-400">{{ formatDetailedCost(tooltipData?.actual_cost) }}</span>
           </div>
           <!-- Account billing (separated from user billing) -->
           <template v-if="showAccountBilling">
@@ -486,14 +486,8 @@
               <span class="text-gray-400" :title="t('usage.accountMultiplierHint')">{{ t('usage.accountMultiplier') }}</span>
               <span class="font-semibold text-blue-400">
                 {{ tooltipData?.upstream_rate_multiplier == null
-                  ? t('usage.accountCostPending')
+                  ? accountCostStatusLabel(tooltipData)
                   : `${formatMultiplier(tooltipData.upstream_rate_multiplier)}x` }}
-              </span>
-            </div>
-            <div data-testid="usage-account-identity-detail" class="flex items-center justify-between gap-6">
-              <span class="text-gray-400">{{ t('usage.providerAccount') }}</span>
-              <span class="font-medium text-white">
-                {{ tooltipData?.account?.name || '-' }} #{{ tooltipData?.account_id ?? '-' }}
               </span>
             </div>
             <div class="flex items-center justify-between gap-6">
@@ -503,6 +497,12 @@
               </span>
             </div>
           </template>
+          <div data-testid="usage-account-identity-detail" class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">{{ t('usage.providerAccount') }}</span>
+            <span class="font-medium text-white">
+              {{ tooltipData?.account?.name || '-' }} #{{ tooltipData?.account_id ?? '-' }}
+            </span>
+          </div>
         </div>
         <div class="absolute right-full top-1/2 h-0 w-0 -translate-y-1/2 border-b-[6px] border-r-[6px] border-t-[6px] border-b-transparent border-r-gray-900 border-t-transparent dark:border-r-gray-800"></div>
       </div>
@@ -549,17 +549,22 @@ import {
   hasImageInputCost,
 } from '@/utils/imageUsage'
 
-/** Historical account cost requires the upstream declaration frozen on the usage row. */
-function accountBilled(row: { total_cost?: number | null; account_stats_cost?: number | null; upstream_rate_multiplier?: number | null }): number | null {
-  const base = row.account_stats_cost ?? row.total_cost
-  const rate = row.upstream_rate_multiplier
-  if (base == null || rate == null || !Number.isFinite(base) || !Number.isFinite(rate)) return null
-  return base * rate
+function accountCostStatusLabel(row: Pick<AdminUsageLog, 'account_cost_status'> | null | undefined): string {
+  if (row?.account_cost_status === 'unsupported_billing_scope') {
+    return t('usage.accountCostUnsupportedScope')
+  }
+  if (row?.account_cost_status === 'missing_upstream_evidence') {
+    return t('usage.accountCostMissingEvidence')
+  }
+  return t('usage.accountCostPending')
 }
 
-function formatAccountBilled(row: { total_cost?: number | null; account_stats_cost?: number | null; upstream_rate_multiplier?: number | null }): string {
-  const value = accountBilled(row)
-  return value == null ? t('usage.accountCostPending') : `$${value.toFixed(6)}`
+function formatDetailedCost(value: number | null | undefined): string {
+  return `$${(value ?? 0).toFixed(8)}`
+}
+
+function formatAccountBilled(row: Pick<AdminUsageLog, 'account_cost' | 'account_cost_status'>): string {
+  return row.account_cost == null ? `— (${accountCostStatusLabel(row)})` : formatDetailedCost(row.account_cost)
 }
 
 
@@ -601,8 +606,8 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const appStore = useAppStore()
 const copiedRequestId = ref<string | null>(null)
-const showAccountBilling = props.showAccountBilling
-const showUpstreamEndpoint = props.showUpstreamEndpoint
+const showAccountBilling = computed(() => props.showAccountBilling)
+const showUpstreamEndpoint = computed(() => props.showUpstreamEndpoint)
 const ipGeoBatchLoading = ref(false)
 
 const showIpGeoToolbar = computed(() => props.columns.some((col) => col.key === 'ip_address'))

@@ -26,7 +26,7 @@
             ${{ formatCost(user.actual_cost) }}
           </td>
           <td v-if="showAccountCost" class="py-1 text-right text-zo-alert-500 dark:text-zo-alert-400">
-            ${{ formatCost(user.account_cost) }}
+            {{ formatOptionalCost(user.account_cost) }}
           </td>
           <td class="py-1 pr-1 text-right text-gray-400 dark:text-gray-500">
             ${{ formatCost(user.cost) }}
@@ -70,4 +70,6 @@ const formatCost = (value: number | undefined | null): string => {
   if (amount >= 0.01) return amount.toFixed(3)
   return amount.toFixed(4)
 }
+const formatOptionalCost = (value: number | undefined | null): string =>
+  value == null ? '—' : `$${formatCost(value)}`
 </script>

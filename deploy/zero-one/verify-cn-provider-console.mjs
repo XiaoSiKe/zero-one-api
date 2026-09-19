@@ -11,8 +11,11 @@ import {
   APPROVED_SHELL_SOURCE,
   CN_PROVIDER_SHELL_ASSET,
   CN_PROVIDER_SHELL_DIRECTORY,
+  BILLING_CLARITY_SHELL_DIRECTORY,
+  USAGE_ACCOUNT_COST_RUNTIME_ASSET,
   patchApprovedShell,
-  billingClarityShellOverrides,
+  usageAccountCostEntrySource,
+  usageAccountCostRuntimeSource,
 } from './build-cn-provider-shell.mjs'
 
 function read(path, label) {
@@ -86,8 +89,15 @@ export function verifyCNProviderConsole(consoleDir) {
     resolve(consoleDir, 'assets', CN_PROVIDER_SHELL_ASSET),
     'CN Provider approved Console shell',
   )
-  if (cnProviderShell !== patchApprovedShell(approvedShell)) {
-    throw new Error('CN Provider Console shell differs from the approved shell outside its router seam')
+  const billingClarityShell = read(
+    resolve(consoleDir, 'assets', BILLING_CLARITY_SHELL_DIRECTORY, APPROVED_SHELL_SOURCE),
+    'Billing clarity Console shell',
+  )
+  if (billingClarityShell !== patchApprovedShell(approvedShell)) {
+    throw new Error('Billing clarity Console shell differs from the approved shell outside its router seam')
+  }
+  if (cnProviderShell !== usageAccountCostEntrySource()) {
+    throw new Error('CN Provider v11 differs from immutable v10 outside the Usage visibility runtime')
   }
   const assetsDirectory = resolve(consoleDir, 'assets')
   const shellDirectory = resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY)
@@ -95,29 +105,25 @@ export function verifyCNProviderConsole(consoleDir) {
   if (!lstatSync(shellEntryPath).isFile() || lstatSync(shellEntryPath).isSymbolicLink()) {
     throw new Error('CN Provider approved shell entry must be a regular generated file')
   }
-  const expectedLinks = readdirSync(assetsDirectory, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name !== APPROVED_SHELL_SOURCE)
-    .map((entry) => entry.name)
-    .sort()
   const actualShellEntries = readdirSync(shellDirectory).sort()
-  const expectedShellEntries = [...expectedLinks, APPROVED_SHELL_SOURCE].sort()
+  const billingClarityDirectory = resolve(assetsDirectory, BILLING_CLARITY_SHELL_DIRECTORY)
+  const expectedLinks = readdirSync(billingClarityDirectory)
+    .filter((name) => name !== APPROVED_SHELL_SOURCE)
+    .sort()
+  const expectedShellEntries = [...expectedLinks, APPROVED_SHELL_SOURCE, USAGE_ACCOUNT_COST_RUNTIME_ASSET].sort()
   if (actualShellEntries.join('\n') !== expectedShellEntries.join('\n')) {
     throw new Error('CN Provider approved shell namespace is missing or contains extra assets')
   }
-  const overrides = billingClarityShellOverrides(assetsDirectory)
   for (const name of expectedLinks) {
     const linkPath = resolve(shellDirectory, name)
-    if (overrides.has(name)) {
-      if (lstatSync(linkPath).isSymbolicLink() || readFileSync(linkPath, 'utf8') !== overrides.get(name)) {
-        throw new Error(`Console override differs from its canonical source: ${name}`)
-      }
-      continue
-    }
-    if (!lstatSync(linkPath).isSymbolicLink() || readlinkSync(linkPath) !== `../${name}`) {
+    if (!lstatSync(linkPath).isSymbolicLink() || readlinkSync(linkPath) !== `../${BILLING_CLARITY_SHELL_DIRECTORY}/${name}`) {
       throw new Error(`CN Provider approved shell asset is not the expected relative symlink: ${name}`)
     }
   }
-  requireMarkers(cnProviderShell, [
+  if (read(resolve(shellDirectory, USAGE_ACCOUNT_COST_RUNTIME_ASSET), 'Usage account cost runtime') !== usageAccountCostRuntimeSource()) {
+    throw new Error('Usage account cost runtime differs from its generator')
+  }
+  requireMarkers(billingClarityShell, [
     'zero-one-cn-provider-route-placeholder-v1.js',
     '__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__',
   ], 'CN Provider approved Console shell')

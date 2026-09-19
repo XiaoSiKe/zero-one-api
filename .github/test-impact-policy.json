@@ -27,6 +27,17 @@
       "impact": { "console": true, "console_asset_scopes": ["shell"], "visual_scope": "dashboard" }
     },
     {
+      "patterns": [
+        "frontend/src/views/admin/UsageView.vue",
+        "frontend/src/components/admin/usage/**",
+        "frontend/src/components/charts/ModelDistributionChart.vue",
+        "frontend/src/components/charts/GroupDistributionChart.vue",
+        "frontend/src/components/charts/EndpointDistributionChart.vue",
+        "frontend/src/components/charts/UserBreakdownSubTable.vue"
+      ],
+      "impact": { "console": true, "console_asset_scopes": ["shell"], "visual_scope": "usage" }
+    },
+    {
       "patterns": ["frontend/src/App.vue", "frontend/src/components/layout/**", "frontend/src/router/**", "frontend/src/styles/**"],
       "impact": { "console": true, "console_asset_scopes": ["shell"], "visual_scope": "full" }
     },
@@ -52,7 +63,7 @@
     },
     {
       "patterns": ["frontend/**"],
-      "impact": { "console": true, "visual_scope": "full" }
+      "impact": { "console": true }
     },
     {
       "patterns": ["landing/package.json", "landing/package-lock.json"],
@@ -65,6 +76,10 @@
     {
       "patterns": ["visual-regression/tests/dashboard-spend.behavior.spec.ts", "visual-regression/tests/__screenshots__/**/console-dashboard-spend-*.png"],
       "impact": { "visual_scope": "dashboard" }
+    },
+    {
+      "patterns": ["visual-regression/tests/usage-account-cost.behavior.spec.ts", "visual-regression/tests/__screenshots__/**/console-usage-account-cost-*.png"],
+      "impact": { "visual_scope": "usage" }
     },
     {
       "patterns": ["visual-regression/**"],

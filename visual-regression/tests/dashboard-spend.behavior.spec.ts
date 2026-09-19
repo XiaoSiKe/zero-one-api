@@ -45,6 +45,8 @@ async function seedBillingUsageRow(page: Page) {
             rate_multiplier: 0.39,
             account_rate_multiplier: 1,
             upstream_rate_multiplier: 0.22,
+            account_cost: 0.072888,
+            account_cost_status: 'confirmed',
             billing_type: 0,
             billing_mode: 'token',
             request_type: 'stream',

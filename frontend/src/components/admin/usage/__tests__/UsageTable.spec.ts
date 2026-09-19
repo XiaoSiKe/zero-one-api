@@ -36,6 +36,8 @@ const messages: Record<string, string> = {
   'usage.accountMultiplier': 'Request-time upstream rate',
   'usage.accountMultiplierHint': 'Saved upstream request snapshot',
   'usage.accountCostPending': 'Pending calculation',
+  'usage.accountCostUnsupportedScope': 'Unsupported billing scope',
+  'usage.accountCostMissingEvidence': 'Missing upstream evidence',
   'usage.providerAccount': 'Provider Account',
   'usage.original': 'Original',
   'usage.userBilled': 'User billed',
@@ -105,6 +107,8 @@ const baseImageRow = {
   actual_cost: 0.4,
   total_cost: 0.4,
   account_rate_multiplier: 1,
+  account_cost: null,
+  account_cost_status: 'unsupported_billing_scope',
   rate_multiplier: 1,
   service_tier: null,
   input_cost: 0,
@@ -143,13 +147,13 @@ describe('admin UsageTable tooltip', () => {
   })
 
   it.each([
-    [undefined, 'Account cost Pending calculation'],
-    [null, 'Account cost Pending calculation'],
-    [0, 'Account cost $0.000000'],
-    [0.22, 'Account cost $22.000000'],
-  ])('uses the saved upstream multiplier %s for historical cost', (rate, expected) => {
+    [undefined, null, 'missing_upstream_evidence', 'Account cost — (Missing upstream evidence)'],
+    [null, null, 'missing_upstream_evidence', 'Account cost — (Missing upstream evidence)'],
+    [0, 0, 'confirmed', 'Account cost $0.000000'],
+    [0.22, 22, 'confirmed', 'Account cost $22.000000'],
+  ])('uses the server-resolved cost for saved upstream multiplier %s', (rate, accountCost, status, expected) => {
     const wrapper = mount(UsageTable, {
-      props: { data: [{ ...baseImageRow, billing_mode: 'token', total_cost: 100, account_rate_multiplier: 8, upstream_rate_multiplier: rate }], loading: false, columns: [] },
+      props: { data: [{ ...baseImageRow, billing_mode: 'token', total_cost: 100, account_rate_multiplier: 8, upstream_rate_multiplier: rate, account_cost: accountCost, account_cost_status: status }], loading: false, columns: [] },
       global: { stubs: { DataTable: DataTableStub, EmptyState: true, Icon: true, Teleport: true } },
     })
     expect(wrapper.text()).toContain(expected)
@@ -165,6 +169,8 @@ describe('admin UsageTable tooltip', () => {
           account_stats_cost: 7,
           account_rate_multiplier: 8,
           upstream_rate_multiplier: 0.22,
+          account_cost: 1.54,
+          account_cost_status: 'confirmed',
         }],
         loading: false,
         columns: [],
@@ -179,13 +185,13 @@ describe('admin UsageTable tooltip', () => {
   })
 
   it.each([
-    [null, 'Pending calculation', 'Account cost Pending calculation'],
-    [0, '0.00x', '$0.000000'],
-    [0.22, '0.22x', '$22.000000'],
-  ])('renders saved upstream rate %s without confusing null and zero', async (rate, expectedRate, expectedCost) => {
+    [null, null, 'missing_upstream_evidence', 'Missing upstream evidence', 'Account cost — (Missing upstream evidence)'],
+    [0, 0, 'confirmed', '0.00x', '$0.000000'],
+    [0.22, 22, 'confirmed', '0.22x', '$22.000000'],
+  ])('renders saved upstream rate %s without confusing null and zero', async (rate, accountCost, status, expectedRate, expectedCost) => {
     const wrapper = mount(UsageTable, {
       props: {
-        data: [{ ...baseImageRow, billing_mode: 'token', total_cost: 100, account_rate_multiplier: 8, upstream_rate_multiplier: rate }],
+        data: [{ ...baseImageRow, billing_mode: 'token', total_cost: 100, account_rate_multiplier: 8, upstream_rate_multiplier: rate, account_cost: accountCost, account_cost_status: status }],
         loading: false,
         columns: [],
       },
@@ -203,7 +209,7 @@ describe('admin UsageTable tooltip', () => {
     expect(wrapper.text()).toContain(expectedCost)
   })
 
-  it('keeps Provider Account cost fields out of the regular-user table', async () => {
+  it('hides cost fields reactively while keeping Provider Account identity visible', async () => {
     const wrapper = mount(UsageTable, {
       props: {
         data: [{ ...baseImageRow, billing_mode: 'token', total_cost: 100, account_rate_multiplier: 8, upstream_rate_multiplier: 0.22 }],
@@ -219,7 +225,10 @@ describe('admin UsageTable tooltip', () => {
     await nextTick()
     expect(wrapper.text()).not.toContain('Account cost')
     expect(wrapper.text()).not.toContain('Request-time upstream rate')
-    expect(wrapper.find('[data-testid="usage-account-identity-detail"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="usage-account-identity-detail"]').exists()).toBe(true)
+
+    await wrapper.setProps({ showAccountBilling: true })
+    expect(wrapper.find('[data-testid="usage-account-cost"]').exists()).toBe(true)
   })
 
   it('marks only usage rows that actually applied long-context billing', () => {
@@ -271,6 +280,8 @@ describe('admin UsageTable tooltip', () => {
       cache_read_cost: 0.069568,
       input_tokens: 4057,
       output_tokens: 101,
+      account_cost: 0.02043426,
+      account_cost_status: 'confirmed',
     }
 
     const wrapper = mount(UsageTable, {
@@ -330,6 +341,8 @@ describe('admin UsageTable tooltip', () => {
           actual_cost: 0.013849,
           account_rate_multiplier: 1,
           upstream_rate_multiplier: 0.22,
+          account_cost: 0.072888,
+          account_cost_status: 'confirmed',
         }],
         loading: false,
         columns: [],
@@ -364,6 +377,8 @@ describe('admin UsageTable tooltip', () => {
       actual_cost: 0.00000042,
       account_stats_cost: 0.00000012,
       account_rate_multiplier: 1.5,
+      account_cost: 0.00000018,
+      account_cost_status: 'confirmed',
     }
     const wrapper = mount(UsageTable, {
       props: { data: [row], loading: false, columns: [] },
@@ -392,7 +407,8 @@ describe('admin UsageTable tooltip', () => {
     const triggers = wrapper.findAll('.group.relative')
     await triggers[triggers.length - 1].trigger('mouseenter')
     const amounts = wrapper.get('.fixed').findAll('span').map(span => span.text()).filter(text => text.startsWith('$'))
-    expect(amounts).toEqual(['$0.00000000', '$0.00000000', '$0.00000000', '$0.00000000'])
+    expect(amounts).toEqual(['$0.00000000', '$0.00000000', '$0.00000000'])
+    expect(wrapper.text()).toContain('Account cost — (Unsupported billing scope)')
     wrapper.unmount()
   })
 
