@@ -108,8 +108,15 @@ def inspect_images(policy: dict[str, Any], run: Callable[[list[str]], str]) -> d
         image_id = str(image.get("ID", ""))
         if not image_id:
             continue
-        entry = grouped.setdefault(image_id, {"image": image, "aliases": set()})
+        entry = grouped.setdefault(image_id, {"image": image, "aliases": set(), "removal_refs": set()})
         entry["aliases"].update(image_aliases(image))
+        repository = str(image.get("Repository", ""))
+        tag = str(image.get("Tag", ""))
+        digest = str(image.get("Digest", ""))
+        if repository and repository != "<none>" and tag and tag != "<none>":
+            entry["removal_refs"].add(f"{repository}:{tag}")
+        if repository and repository != "<none>" and digest and digest != "<none>":
+            entry["removal_refs"].add(f"{repository}@{digest}")
 
     candidates = []
     retained = []
@@ -122,6 +129,7 @@ def inspect_images(policy: dict[str, Any], run: Callable[[list[str]], str]) -> d
             "tag": image.get("Tag"),
             "digest": image.get("Digest"),
             "size": image.get("Size"),
+            "removal_refs": sorted(entry["removal_refs"]) or [image_id],
         }
         if aliases & protected:
             retained.append({**record, "reason": "container_or_release_protected"})
@@ -226,8 +234,13 @@ def apply_plan(
     run(["docker", "builder", "prune", "--all", "--force"])
     actions.append({"action": "docker_builder_prune", "status": "completed"})
     for image in report["docker"]["unused_candidates"]:
-        run(["docker", "image", "rm", str(image["id"])])
-        actions.append({"action": "docker_image_rm", "id": image["id"], "status": "completed"})
+        refs = image.get("removal_refs")
+        if not isinstance(refs, list) or not refs or any(not isinstance(ref, str) or not ref for ref in refs):
+            raise MaintenanceError(f"image candidate has no safe removal references: {image.get('id')}")
+        run(["docker", "image", "rm", *refs])
+        actions.append(
+            {"action": "docker_image_rm", "id": image["id"], "refs": refs, "status": "completed"}
+        )
     for artifact in report["artifacts"]["deletion_candidates"]:
         delete_artifact(Path(artifact["path"]))
         actions.append({"action": "delete_verified_artifact", "path": artifact["path"], "status": "completed"})
