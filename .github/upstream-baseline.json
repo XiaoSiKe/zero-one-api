@@ -524,6 +524,7 @@
     "backend/internal/service/email_service.go",
     "deploy/zero-one/build-cn-provider-shell.mjs",
     "deploy/zero-one/build-cn-provider-shell.test.mjs",
+    "deploy/zero-one/verify-frozen-console-build.mjs",
     "deploy/zero-one/verify-cn-provider-console.mjs",
     "frontend/src/components/layout/__tests__/docUrlSanitization.spec.ts",
     "frontend/src/i18n/locales/en/admin/settings.ts",
