@@ -44,8 +44,8 @@ function legacyHotfixPaths(baseline) {
   return new Set(baseline.legacy_hotfixes.flatMap((hotfix) => hotfix.paths))
 }
 
-function preservedOverlayPaths(baseline) {
-  return new Set(baseline.preserve_on_upstream_sync)
+function bytePreservedPathRules(baseline) {
+  return baseline.preserve_bytes_on_upstream_sync || []
 }
 
 function retiredPreservedPaths(baseline) {
@@ -56,7 +56,7 @@ export function validateBaseline(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('upstream baseline must be a JSON object')
   }
-  if (value.schema_version !== 4) throw new Error('unsupported upstream baseline schema_version')
+  if (value.schema_version !== 5) throw new Error('unsupported upstream baseline schema_version')
   if (typeof value.repository !== 'string' || !value.repository) {
     throw new Error('upstream baseline repository is required')
   }
@@ -151,6 +151,24 @@ export function validateBaseline(value) {
       )
     }
     preservedPaths.add(path)
+  }
+
+  if (!Array.isArray(value.preserve_bytes_on_upstream_sync)) {
+    throw new Error('upstream baseline preserve_bytes_on_upstream_sync must be an array')
+  }
+  const bytePreservedPaths = new Set()
+  for (const path of value.preserve_bytes_on_upstream_sync) {
+    validatePathRule(path, 'preserve_bytes_on_upstream_sync')
+    if (bytePreservedPaths.has(path)) {
+      throw new Error(`duplicate preserve_bytes_on_upstream_sync path: ${path}`)
+    }
+    const matchingRules = rules.filter((rule) => matchesPath(path, rule.path))
+    if (matchingRules.length !== 1) {
+      throw new Error(
+        `preserve_bytes_on_upstream_sync path must belong to exactly one overlay: ${path}`,
+      )
+    }
+    bytePreservedPaths.add(path)
   }
 
   const retirements = value.retired_preserved_paths ?? []
@@ -373,10 +391,10 @@ export function evaluateChangedPaths(paths, baseline) {
 }
 
 export function evaluatePreservedPaths(paths, baseline) {
-  const preserved = preservedOverlayPaths(baseline)
+  const preserved = bytePreservedPathRules(baseline)
   const retired = retiredPreservedPaths(baseline)
   return [...new Set(paths)]
-    .filter((path) => preserved.has(path) && !retired.has(path))
+    .filter((path) => preserved.some((rule) => matchesPath(path, rule)) && !retired.has(path))
     .sort()
     .map(
       (path) =>
@@ -478,15 +496,10 @@ export function evaluateRecordedUpstreamSync({
       `product commit ${sync.product_commit} must record ${baseline.repository}@${sync.previous_release} (${sync.previous_commit})`,
     )
   }
-  const preserveRegistryAtSync = {
-    preserve_on_upstream_sync: Array.isArray(productBaseline?.preserve_on_upstream_sync)
-      ? productBaseline.preserve_on_upstream_sync
-      : [],
-  }
   return [
     ...violations,
     ...evaluatePreserveRegistryContinuity(baseline, productBaseline),
-    ...evaluatePreservedPaths(preservedChanges, preserveRegistryAtSync),
+    ...evaluatePreservedPaths(preservedChanges, baseline),
   ]
 }
 
@@ -680,7 +693,7 @@ export function main(argv = process.argv.slice(2)) {
   if (violations.length) throw new Error(`upstream boundary violations:\n- ${violations.join('\n- ')}`)
 
   console.log(
-    `upstream boundary OK: ${baseline.repository}@${baseline.release} (${baseline.commit}), recorded merge ${baseline.upstream_sync.merge_commit} preserves ${baseline.preserve_on_upstream_sync.length} protected product files, ${paths.length} changed paths checked across ${baseline.overlays.length} overlays, ${approvedBackportFiles(baseline).size} exact backports verified${productCommit ? `, current tree also unchanged from ${productCommit}` : ''}`,
+    `upstream boundary OK: ${baseline.repository}@${baseline.release} (${baseline.commit}), recorded merge ${baseline.upstream_sync.merge_commit} retains ${baseline.preserve_on_upstream_sync.length} contract-owned files and byte-locks ${baseline.preserve_bytes_on_upstream_sync.length} published asset paths, ${paths.length} changed paths checked across ${baseline.overlays.length} overlays, ${approvedBackportFiles(baseline).size} exact backports verified${productCommit ? `, current tree also checked from ${productCommit}` : ''}`,
   )
 }
 

@@ -337,10 +337,22 @@ export default {
         balance: '余额 --',
         window5h: '5 小时窗口',
         windowWeekly: '每周窗口',
+        windowMonthly: '每月窗口',
         probeTooltip: '请求供应商额度端点，查询 5 小时 / 每周滚动窗口用量',
         balanceLow: '余额不足',
         noBalanceEndpoint: '该平台暂无余额查询接口',
         resetSoon: '即将重置',
+      },
+      opencodeGo: {
+        protocolRules: {
+          title: '协议路由规则',
+          restoreDefaults: '恢复默认',
+          hint: '按顺序匹配模型名称并选择上游协议；未命中的模型使用兜底规则。',
+          patternPlaceholder: '模型匹配模式',
+          remove: '删除规则',
+          fallback: '兜底协议',
+          add: '添加规则',
+        },
       },
       types: {
         oauth: 'OAuth',

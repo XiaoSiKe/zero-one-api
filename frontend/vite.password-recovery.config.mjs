@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { CN_PROVIDER_SHELL_DIRECTORY, CURRENT_PASSWORD_RECOVERY_DIRECTORY } from '../deploy/zero-one/build-cn-provider-shell.mjs'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
+const frozenBuildRoot = process.env.ZERO_ONE_FROZEN_BUILD_ROOT
 const approved = `/assets/${CN_PROVIDER_SHELL_DIRECTORY}`
 // 只编译两条维护中的密码路由；复用恢复版 Vue、路由、API 与 Store 单例。
 const vueExports = {
@@ -59,7 +60,9 @@ export default defineConfig({
   ],
   resolve: { alias: { '@': resolve(root, 'src') } },
   build: {
-    outDir: resolve(root, '../deploy/zero-one/recovered-frontend/console/assets', CURRENT_PASSWORD_RECOVERY_DIRECTORY),
+    outDir: frozenBuildRoot
+      ? resolve(frozenBuildRoot, CURRENT_PASSWORD_RECOVERY_DIRECTORY)
+      : resolve(root, '../deploy/zero-one/recovered-frontend/console/assets', CURRENT_PASSWORD_RECOVERY_DIRECTORY),
     emptyOutDir: true,
     rollupOptions: {
       preserveEntrySignatures: 'strict',

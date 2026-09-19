@@ -707,6 +707,7 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 				total_cost,
 				actual_cost,
 				COALESCE(account_stats_cost, total_cost) * upstream_rate_multiplier AS account_cost,
+				LOWER(TRIM(COALESCE(billing_mode, ''))) AS billing_mode,
 				duration_ms
 			FROM usage_logs
 			%s
@@ -726,6 +727,12 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 			zero_one_cost_sum(account_cost) AS account_cost,
 			COUNT(account_cost) AS confirmed_requests,
 			COUNT(*) - COUNT(account_cost) AS unconfirmed_requests,
+			COUNT(*) FILTER (
+				WHERE account_cost IS NULL AND billing_mode <> '' AND billing_mode <> 'token'
+			) AS unsupported_scope_requests,
+			COUNT(*) FILTER (
+				WHERE account_cost IS NULL AND (billing_mode = '' OR billing_mode = 'token')
+			) AS missing_evidence_requests,
 			COALESCE(SUM(actual_cost) FILTER (WHERE account_cost IS NOT NULL), 0) AS confirmed_actual_cost,
 			COALESCE(SUM(account_cost), 0) AS confirmed_account_cost,
 			COALESCE(AVG(duration_ms), 0) AS avg_duration_ms
@@ -755,6 +762,7 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 			cost, actualCost, averageDurationMs                                  float64
 			accountCost                                                          *float64
 			confirmedRequests, unconfirmedRequests                               int64
+			unsupportedScopeRequests, missingEvidenceRequests                    int64
 			confirmedActualCost, confirmedAccountCost                            float64
 		)
 		if err := rows.Scan(
@@ -772,6 +780,8 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 			&accountCost,
 			&confirmedRequests,
 			&unconfirmedRequests,
+			&unsupportedScopeRequests,
+			&missingEvidenceRequests,
 			&confirmedActualCost,
 			&confirmedAccountCost,
 			&averageDurationMs,
@@ -797,11 +807,13 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 			stats.TotalActualCost = actualCost
 			totalAccountCost = accountCost
 			stats.Finance = &usagestats.UsageFinanceSummary{
-				ConfirmedRequests:    confirmedRequests,
-				UnconfirmedRequests:  unconfirmedRequests,
-				ConfirmedActualCost:  confirmedActualCost,
-				ConfirmedAccountCost: confirmedAccountCost,
-				ConfirmedProfit:      confirmedActualCost - confirmedAccountCost,
+				ConfirmedRequests:        confirmedRequests,
+				UnconfirmedRequests:      unconfirmedRequests,
+				UnsupportedScopeRequests: unsupportedScopeRequests,
+				MissingEvidenceRequests:  missingEvidenceRequests,
+				ConfirmedActualCost:      confirmedActualCost,
+				ConfirmedAccountCost:     confirmedAccountCost,
+				ConfirmedProfit:          confirmedActualCost - confirmedAccountCost,
 			}
 			stats.AverageDurationMs = averageDurationMs
 		case inboundGrouped == 0 && upstreamGrouped == 1:

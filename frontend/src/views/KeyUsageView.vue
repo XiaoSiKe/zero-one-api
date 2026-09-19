@@ -429,9 +429,13 @@ import { buildGatewayUrl } from '@/api/client'
 import { formatDateLocalInput } from '@/utils/format'
 import { sanitizeUrl } from '@/utils/url'
 import { DEFAULT_SITE_NAME, PRODUCT_GITHUB_URL } from '@/utils/branding'
+import { FeatureFlags, resolveFeatureFlag } from '@/utils/featureFlags'
 
 const { t, locale } = useI18n()
 const appStore = useAppStore()
+const subscriptionEnabled = computed(() =>
+  resolveFeatureFlag(appStore.cachedPublicSettings, FeatureFlags.subscription)
+)
 
 // ==================== Site Settings (same as HomeView) ====================
 
@@ -732,7 +736,7 @@ const detailRows = computed<DetailRow[]>(() => {
   } else {
     rows.push({
       iconBg: 'bg-zo-signal-500/10', iconColor: 'text-zo-signal-500', iconSvg: ICON_CHECK,
-      label: t('keyUsage.subscriptionType'), value: data.planName || t('keyUsage.walletBalance'), valueClass: '',
+      label: t(subscriptionEnabled.value ? 'keyUsage.subscriptionType' : 'keyUsage.billingType'), value: data.planName || t('keyUsage.walletBalance'), valueClass: '',
     })
 
     if (data.subscription) {

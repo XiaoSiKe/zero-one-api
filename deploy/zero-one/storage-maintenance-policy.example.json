@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "target_release_images": [
+    "ghcr.io/xiaosike/zero-one-sub2api@sha256:replace-me",
+    "ghcr.io/xiaosike/zero-one-edge@sha256:replace-me"
+  ],
+  "rollback_anchor_images": [
+    [
+      "ghcr.io/xiaosike/zero-one-sub2api@sha256:replace-with-completed-anchor",
+      "ghcr.io/xiaosike/zero-one-edge@sha256:replace-with-completed-anchor"
+    ]
+  ],
+  "protected_recovery_sets": [
+    "/srv/zero-one/.release-backups/current-release",
+    "/srv/zero-one/.release-backups/pending-release"
+  ],
+  "allowed_artifact_roots": [
+    "/srv/zero-one/.release-backups",
+    "/srv/zero-one/backups"
+  ],
+  "artifact_candidates": [
+    {
+      "path": "/srv/zero-one/backups/old-release.tar.zst",
+      "offhost_sha256_verified": true,
+      "referenced_by_release": false
+    }
+  ]
+}

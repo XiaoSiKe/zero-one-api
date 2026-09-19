@@ -130,6 +130,28 @@ func TestUsageLogFromService_IncludesServiceTierForUserAndAdmin(t *testing.T) {
 	require.Equal(t, 0.22, *adminDTO.UpstreamRateMultiplier)
 }
 
+func TestUsageLogFromServiceAdmin_ResolvesFrozenAccountCostAndStatus(t *testing.T) {
+	t.Parallel()
+
+	billingMode := "token"
+	zeroRate := 0.0
+	confirmed := UsageLogFromServiceAdmin(&service.UsageLog{
+		TotalCost: 4, BillingMode: &billingMode, UpstreamRateMultiplier: &zeroRate,
+	})
+	require.NotNil(t, confirmed.AccountCost)
+	require.Zero(t, *confirmed.AccountCost)
+	require.Equal(t, "confirmed", string(confirmed.AccountCostStatus))
+
+	missing := UsageLogFromServiceAdmin(&service.UsageLog{TotalCost: 4, BillingMode: &billingMode})
+	require.Nil(t, missing.AccountCost)
+	require.Equal(t, "missing_upstream_evidence", string(missing.AccountCostStatus))
+
+	imageMode := "image"
+	unsupported := UsageLogFromServiceAdmin(&service.UsageLog{TotalCost: 4, BillingMode: &imageMode})
+	require.Nil(t, unsupported.AccountCost)
+	require.Equal(t, "unsupported_billing_scope", string(unsupported.AccountCostStatus))
+}
+
 func TestUsageLogFromService_UsesRequestedModelAndKeepsUpstreamAdminOnly(t *testing.T) {
 	t.Parallel()
 

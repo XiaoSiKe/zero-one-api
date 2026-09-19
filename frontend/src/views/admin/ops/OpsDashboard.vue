@@ -83,7 +83,7 @@
         />
       </div>
 
-      <!-- Row: OpenAI Token Stats -->
+      <!-- Row: Token Stats -->
       <div v-if="opsEnabled && showOpenAITokenStats && !(loading && !hasLoadedOnce)" class="grid grid-cols-1 gap-6">
         <OpsOpenAITokenStatsCard
           :platform-filter="platform"

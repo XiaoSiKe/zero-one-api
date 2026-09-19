@@ -89,6 +89,7 @@ function createRecordedSyncRepository(
     currentPreserved = true,
     postMergeProtectedChange = false,
     productPreserved = false,
+    bytePreserved = false,
     preservedPath = 'backend/internal/service/affiliate_service.go',
   } = {},
 ) {
@@ -136,6 +137,7 @@ function createRecordedSyncRepository(
   const candidate = structuredClone(baseline)
   candidate.commit = upstreamCommit
   candidate.preserve_on_upstream_sync = currentPreserved ? [affiliatePath] : []
+  candidate.preserve_bytes_on_upstream_sync = bytePreserved ? [affiliatePath] : []
   candidate.upstream_sync = {
     previous_release: 'v0.1.178',
     previous_commit: oldCommit,
@@ -253,7 +255,7 @@ test('assigns additive surfaces to the five named overlays', () => {
   )
 })
 
-test('permanently retains redeem, HTTP timing, and asynchronous metadata lifecycles', () => {
+test('retains contract ownership without byte-freezing redeem, HTTP timing, and metadata implementations', () => {
   assert.deepEqual(evaluateChangedPaths(redeemAndHTTPLifecyclePaths, baseline), [])
   for (const path of redeemAndHTTPLifecyclePaths) {
     assert.ok(baseline.preserve_on_upstream_sync.includes(path), `${path} must be permanently retained`)
@@ -267,15 +269,10 @@ test('permanently retains redeem, HTTP timing, and asynchronous metadata lifecyc
       assert.ok(owners[0].paths.includes(path), `${path} needs an exact owner entry, not a directory exemption`)
     }
   }
-  assert.deepEqual(
-    evaluatePreservedPaths(redeemAndHTTPLifecyclePaths, baseline),
-    redeemAndHTTPLifecyclePaths.map((path) =>
-      `${path} differs from the pre-upgrade product ref; restore it and port upstream changes separately`),
-    'an upstream sync must reject overwriting every registered lifecycle file',
-  )
+  assert.deepEqual(evaluatePreservedPaths(redeemAndHTTPLifecyclePaths, baseline), [])
 })
 
-test('rejects recorded upstream merges that overwrite redeem, TTFT, or metadata implementations', (context) => {
+test('allows recorded upstream merges to adapt contract-owned source implementations', (context) => {
   for (const path of [
     'backend/internal/service/redeem_service.go',
     'backend/internal/service/gateway_http_timing.go',
@@ -283,9 +280,7 @@ test('rejects recorded upstream merges that overwrite redeem, TTFT, or metadata 
   ]) {
     const fixture = createRecordedSyncRepository(true, { productPreserved: true, preservedPath: path })
     context.after(() => rmSync(fixture.repository, { recursive: true, force: true }))
-    assert.deepEqual(inspectRecordedUpstreamSync(fixture.baseline, fixture.headCommit, fixture.repository), [
-      `${path} differs from the pre-upgrade product ref; restore it and port upstream changes separately`,
-    ], path)
+    assert.deepEqual(inspectRecordedUpstreamSync(fixture.baseline, fixture.headCommit, fixture.repository), [], path)
   }
 })
 
@@ -483,18 +478,10 @@ test('retains critical affiliate attribution and upgrade-guard files across upst
     settingsAndRechargePreservedPaths,
   )
   assert.ok(actualPaths.length >= legacyPreservedPaths.length + navigationPreservedPaths.length)
-  assert.deepEqual(
-    evaluatePreservedPaths(
-      [
-        'backend/internal/service/affiliate_service.go',
-        'backend/internal/service/payment_order.go',
-      ],
-      baseline,
-    ),
-    [
-      'backend/internal/service/affiliate_service.go differs from the pre-upgrade product ref; restore it and port upstream changes separately',
-    ],
-  )
+  assert.deepEqual(evaluatePreservedPaths([
+    'backend/internal/service/affiliate_service.go',
+    'backend/internal/service/payment_order.go',
+  ], baseline), [])
   assert.deepEqual(
     evaluateChangedPaths(
       [
@@ -517,7 +504,7 @@ test('parses optional product-ref preservation checks', () => {
   assert.throws(() => parseArguments(['--unknown']), /unknown argument/)
 })
 
-test('blocks a protected affiliate change relative to a real pre-upgrade commit', (context) => {
+test('blocks a byte-preserved published asset change relative to a real pre-upgrade commit', (context) => {
   const repository = mkdtempSync(resolve(tmpdir(), 'zero-one-product-ref-'))
   context.after(() => rmSync(repository, { recursive: true, force: true }))
   gitIn(repository, ['init', '--quiet'])
@@ -541,7 +528,7 @@ test('blocks a protected affiliate change relative to a real pre-upgrade commit'
   const productChanges = changedPaths(productCommit, false, repository)
   assert.deepEqual(productChanges, [affiliatePath])
   assert.deepEqual(
-    evaluatePreservedPaths(productChanges, { preserve_on_upstream_sync: [affiliatePath] }),
+    evaluatePreservedPaths(productChanges, { preserve_bytes_on_upstream_sync: [affiliatePath] }),
     [
       `${affiliatePath} differs from the pre-upgrade product ref; restore it and port upstream changes separately`,
     ],
@@ -613,8 +600,8 @@ test('accepts a recorded merge with a real ancestor product ref and no protected
   )
 })
 
-test('rejects a recorded merge that overwrites a protected affiliate file', (context) => {
-  const fixture = createRecordedSyncRepository(true, { productPreserved: true })
+test('rejects a recorded merge that overwrites an explicitly byte-preserved file', (context) => {
+  const fixture = createRecordedSyncRepository(true, { productPreserved: true, bytePreserved: true })
   context.after(() => rmSync(fixture.repository, { recursive: true, force: true }))
   assert.deepEqual(
     inspectRecordedUpstreamSync(fixture.baseline, fixture.headCommit, fixture.repository),
@@ -633,7 +620,7 @@ test('does not apply post-sync preserve additions retroactively to a schema v3 b
   )
 })
 
-test('rejects preserve-list deletion even when it hides the overwritten affiliate path', (context) => {
+test('rejects contract-registry deletion even when source adaptation is allowed', (context) => {
   const fixture = createRecordedSyncRepository(true, {
     currentPreserved: false,
     productPreserved: true,
@@ -643,7 +630,6 @@ test('rejects preserve-list deletion even when it hides the overwritten affiliat
     inspectRecordedUpstreamSync(fixture.baseline, fixture.headCommit, fixture.repository),
     [
       `${fixture.affiliatePath} was protected at the pre-upgrade product ref and cannot be removed during upstream sync`,
-      `${fixture.affiliatePath} differs from the pre-upgrade product ref; restore it and port upstream changes separately`,
     ],
   )
 })

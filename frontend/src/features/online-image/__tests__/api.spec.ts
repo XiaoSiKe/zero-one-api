@@ -14,6 +14,7 @@ describe('listAccessibleImageModels', () => {
         data: [
           { id: 'gpt-5.6-sol' },
           { id: 'gpt-image-2' },
+          { id: 'gpt-image-2.5' },
           { id: 'grok-imagine-image-quality' },
           { id: 'gpt-image-2' },
         ],
@@ -22,6 +23,7 @@ describe('listAccessibleImageModels', () => {
 
     await expect(listAccessibleImageModels('sk-image-key')).resolves.toEqual([
       'gpt-image-2',
+      'gpt-image-2.5',
       'grok-imagine-image-quality',
     ])
 

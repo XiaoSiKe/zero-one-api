@@ -77,7 +77,7 @@
                   ${{ formatCost(group.actual_cost) }}
                 </td>
                 <td v-if="showAccountCost" class="py-1.5 text-right text-zo-alert-500 dark:text-zo-alert-400">
-                  ${{ formatCost(group.account_cost) }}
+                  {{ group.account_cost == null ? '—' : `$${formatCost(group.account_cost)}` }}
                 </td>
                 <td class="py-1.5 text-right text-gray-400 dark:text-gray-500">
                   ${{ formatCost(group.cost) }}

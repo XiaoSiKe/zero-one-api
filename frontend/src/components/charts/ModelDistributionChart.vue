@@ -146,7 +146,7 @@
                   ${{ formatCost(model.actual_cost) }}
                 </td>
                 <td v-if="showAccountCost" class="py-1.5 text-right text-zo-alert-500 dark:text-zo-alert-400">
-                  ${{ formatCost(model.account_cost) }}
+                  {{ model.account_cost == null ? '—' : `$${formatCost(model.account_cost)}` }}
                 </td>
                 <td class="py-1.5 text-right text-gray-400 dark:text-gray-500">
                   ${{ formatCost(model.cost) }}

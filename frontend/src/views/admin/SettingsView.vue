@@ -6987,6 +6987,23 @@
                     />
                   </div>
 
+                  <label class="flex items-start gap-3 sm:col-span-2">
+                    <input
+                      v-model="entry.item.hide_open_button"
+                      type="checkbox"
+                      class="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      data-testid="custom-menu-hide-open-button"
+                    />
+                    <span>
+                      <span class="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                        {{ t("admin.settings.customMenu.hideOpenButton") }}
+                      </span>
+                      <span class="mt-0.5 block text-xs text-gray-500 dark:text-gray-500">
+                        {{ t("admin.settings.customMenu.hideOpenButtonHint") }}
+                      </span>
+                    </span>
+                  </label>
+
                   <!-- SVG Icon (full width) -->
                   <div class="sm:col-span-2">
                     <label
@@ -8787,7 +8804,7 @@ function auxiliarySettingsChanged(key: AuxiliarySettingsKey, value: unknown): bo
 const upstreamBillingProbeLoading = ref(true);
 const upstreamBillingProbeForm = reactive({
   enabled: true,
-  interval_minutes: 5,
+  interval_minutes: 30,
 });
 
 const ollamaCloudUsageLoading = ref(true);
@@ -9479,6 +9496,7 @@ const form = reactive<SettingsForm>({
     label: string;
     icon_svg: string;
     url: string;
+    hide_open_button?: boolean;
     visibility: "user" | "admin" | "all";
     placement: "sidebar" | "header" | "both";
     navigation_type?: "qr";
@@ -9682,6 +9700,8 @@ const form = reactive<SettingsForm>({
   channel_monitor_hide_user_ranking: false,
   // Available Channels feature switch
   available_channels_enabled: false,
+  // Subscription feature switch
+  subscription_enabled: true,
   // Model Plaza feature switches + description
   model_plaza_enabled: false,
   model_plaza_require_auth: false,
@@ -10585,6 +10605,7 @@ function addMenuItem() {
     label: "",
     icon_svg: DEFAULT_CUSTOM_MENU_ICON,
     url: "",
+    hide_open_button: false,
     visibility: "user",
     placement: "sidebar",
     sort_order: form.custom_menu_items.length,
@@ -10892,6 +10913,7 @@ async function loadSettings() {
         : "扫码加入交流群获取支持";
     form.custom_menu_items = form.custom_menu_items.map((item) => ({
       ...item,
+      hide_open_button: item.hide_open_button === true,
       placement:
         item.placement === "header" || item.placement === "both"
           ? item.placement
@@ -11616,6 +11638,8 @@ async function saveSettings() {
       channel_monitor_hide_user_ranking: Boolean(form.channel_monitor_hide_user_ranking),
       // Available Channels feature switch
       available_channels_enabled: form.available_channels_enabled,
+      // Subscription feature switch
+      subscription_enabled: form.subscription_enabled,
       // Model Plaza feature switches + description
       model_plaza_enabled: form.model_plaza_enabled,
       model_plaza_require_auth: form.model_plaza_require_auth,

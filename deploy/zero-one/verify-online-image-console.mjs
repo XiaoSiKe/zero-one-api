@@ -26,7 +26,7 @@ export function verifyOnlineImageConsole(consoleDir) {
   const registrationEntry = index.slice(registrationStart, standardStart)
   const standardEntry = index.slice(standardStart, entryEnd)
   const adapterImport = 'import("/assets/online-image-v17/online-image.js")'
-  const shellImport = 'import("/assets/cn-provider-shell-v10/index-9xJBhx8B.js")'
+  const shellImport = 'import("/assets/cn-provider-shell-v11/index-9xJBhx8B.js")'
   requireMarkers(registrationEntry, [adapterImport, shellImport], 'Registration Console entry')
   requireMarkers(standardEntry, [`await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
   if (
@@ -36,10 +36,18 @@ export function verifyOnlineImageConsole(consoleDir) {
     throw new Error('Online image route adapter must start before the approved Console shell')
   }
 
-  const shell = read(
-    resolve(consoleDir, 'assets/cn-provider-shell-v10/index-9xJBhx8B.js'),
+  const shellEntry = read(
+    resolve(consoleDir, 'assets/cn-provider-shell-v11/index-9xJBhx8B.js'),
     'Approved Console shell',
   )
+  requireMarkers(shellEntry, [
+    'import "./usage-account-cost-visibility-v1.js";',
+    'import "../cn-provider-shell-v10/index-9xJBhx8B.js";',
+  ], 'Approved Console shell entry')
+  const shell = `${shellEntry}\n${read(
+    resolve(consoleDir, 'assets/cn-provider-shell-v10/index-9xJBhx8B.js'),
+    'Approved Console shell runtime',
+  )}`
   requireMarkers(shell, [
     'path:"/images",name:"ImageGeneration"',
     'zero-one-online-image-route-placeholder-v1.js',

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/usagestats"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
@@ -781,6 +782,12 @@ func UsageLogFromServiceAdmin(l *service.UsageLog) *AdminUsageLog {
 	}
 	usageLog := usageLogFromServiceUser(l)
 	usageLog.UpstreamEndpoint = l.UpstreamEndpoint
+	accountCost, accountCostStatus := usagestats.ResolveAccountCost(
+		l.TotalCost,
+		l.AccountStatsCost,
+		l.UpstreamRateMultiplier,
+		l.BillingMode,
+	)
 	return &AdminUsageLog{
 		UsageLog:                usageLog,
 		UpstreamModel:           l.UpstreamModel,
@@ -794,6 +801,8 @@ func UsageLogFromServiceAdmin(l *service.UsageLog) *AdminUsageLog {
 		AccountRateMultiplier:   l.AccountRateMultiplier,
 		UpstreamRateMultiplier:  l.UpstreamRateMultiplier,
 		AccountStatsCost:        l.AccountStatsCost,
+		AccountCost:             accountCost,
+		AccountCostStatus:       accountCostStatus,
 		IPAddress:               l.IPAddress,
 		Account:                 AccountSummaryFromService(l.Account),
 	}

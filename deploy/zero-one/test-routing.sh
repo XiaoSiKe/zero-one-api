@@ -6,8 +6,9 @@ production_caddyfile="$repo_root/deploy/zero-one/Caddyfile"
 preview_caddyfile="$repo_root/deploy/zero-one/Caddyfile.preview"
 shared_caddyfile="$repo_root/deploy/zero-one/Caddyfile.shared"
 recovered_console_index="$repo_root/deploy/zero-one/recovered-frontend/console/index.html"
-recovered_console_entry='await import("/assets/cn-provider-shell-v10/index-9xJBhx8B.js")'
-recovered_console_entry_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v10/index-9xJBhx8B.js"
+recovered_console_entry='await import("/assets/cn-provider-shell-v11/index-9xJBhx8B.js")'
+recovered_console_entry_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v11/index-9xJBhx8B.js"
+recovered_console_runtime_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v10/index-9xJBhx8B.js"
 recovered_pricing_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/useKeyedDebouncedSearch-BrW9dWBu.js"
 recovered_console_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-B-81-jXj.js"
 recovered_console_admin_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-Bn5PLb3-.js"
@@ -122,9 +123,11 @@ require "$recovered_console_redeem_chunk" 'refreshRedeemState'
 require "$recovered_console_redeem_chunk" 'redeemError'
 require "$recovered_console_admin_redeem_chunk" 'validateRedeemGeneration'
 require "$recovered_console_admin_redeem_chunk" 'deleteAllUnusedRedeemCodes'
-require "$recovered_console_entry_asset" 'i.min_value=l,i.max_value=d'
-require "$recovered_console_entry_asset" 'ModelPlaza'
-require "$recovered_console_entry_asset" 'assets/PaymentResultView-v182-balance-refresh.js'
+require "$recovered_console_entry_asset" 'import "./usage-account-cost-visibility-v1.js";'
+require "$recovered_console_entry_asset" 'import "../cn-provider-shell-v10/index-9xJBhx8B.js";'
+require "$recovered_console_runtime_asset" 'i.min_value=l,i.max_value=d'
+require "$recovered_console_runtime_asset" 'ModelPlaza'
+require "$recovered_console_runtime_asset" 'assets/PaymentResultView-v182-balance-refresh.js'
 require "$recovered_payment_result" 'refreshUserBalanceForSuccessfulOrder'
 require "$recovered_payment_result" 'userBalanceRefreshStarted'
 require "$recovered_console_promo_chunk" 'promo.create'
@@ -196,9 +199,9 @@ require "$recovered_header_custom_menu" 'publicNavigationSettings'
 require "$recovered_header_custom_menu" 'normalizeMenuItemsForSave(items)'
 require "$recovered_header_custom_menu" 'acceptSavedNavigation(savedSettings)'
 require "$recovered_header_custom_menu" 'navigationClientReady'
-require "$recovered_console_entry_asset" 'n.get("/admin/settings",{params:{scope:"navigation"},signal})'
-require "$recovered_console_entry_asset" 'window.__ZERO_ONE_ADMIN_NAVIGATION__'
-forbid "$recovered_console_entry_asset" 'Promise.all([gt.settings.getSettings(),gt.payment.getConfig()])'
+require "$recovered_console_runtime_asset" 'n.get("/admin/settings",{params:{scope:"navigation"},signal})'
+require "$recovered_console_runtime_asset" 'window.__ZERO_ONE_ADMIN_NAVIGATION__'
+forbid "$recovered_console_runtime_asset" 'Promise.all([gt.settings.getSettings(),gt.payment.getConfig()])'
 forbid "$recovered_console_index" '"site_logo":"data:'
 require "$recovered_header_custom_menu" 'reconcileCustomPageFrame(user)'
 require "$recovered_header_custom_menu" 'reconcileSidebarOrder'
@@ -253,7 +256,7 @@ require "$recovered_login_recovery" "const LOGIN_BUTTON_CLASS = 'btn btn-primary
 require "$recovered_login_recovery" "window.location.pathname === '/forgot-password'"
 require "$recovered_login_recovery" 'sendResetLink.className = LOGIN_BUTTON_CLASS'
 require "$recovered_login_recovery" 'backWrapper.replaceChildren(backToLogin)'
-require "$recovered_console_entry_asset" 'zero-one-online-image-route-placeholder-v1.js'
+require "$recovered_console_runtime_asset" 'zero-one-online-image-route-placeholder-v1.js'
 require "$recovered_online_image" './onlineImageLeaf-'
 require "$recovered_online_image" '__ZERO_ONE_ONLINE_IMAGE_ACCESS__'
 require "$recovered_online_image_css" 'online-image-control'

@@ -15,6 +15,7 @@ const messages: Record<string, string> = {
   'usage.cacheReadTokensLabel': 'Cache Read',
   'usage.totalCost': 'Total Cost',
   'usage.accountCost': 'Cost',
+  'usage.accountCostUnknownSummary': '{unsupported} unsupported, {missing} missing evidence',
   'usage.standardCost': 'Standard',
   'usage.avgDuration': 'Avg Duration',
 }
@@ -63,5 +64,29 @@ describe('UsageStatsCards', () => {
     expect(text).toContain('12')
     expect(text).toContain('Cache Read')
     expect(text).toContain('22')
+  })
+
+  it('shows unknown account cost as a dash instead of a fake zero', () => {
+    const wrapper = mount(UsageStatsCards, {
+      props: {
+        stats: {
+          ...stats,
+          total_account_cost: null,
+          finance: {
+            confirmed_requests: 0,
+            unconfirmed_requests: 1,
+            unsupported_scope_requests: 0,
+            missing_evidence_requests: 1,
+            confirmed_actual_cost: 0,
+            confirmed_account_cost: 0,
+            confirmed_profit: 0,
+          },
+        },
+      },
+      global: { stubs: { Icon: true } },
+    })
+
+    expect(wrapper.text()).toContain('Cost —')
+    expect(wrapper.text()).not.toContain('Cost $0.0000')
   })
 })

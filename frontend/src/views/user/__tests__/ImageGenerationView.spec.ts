@@ -244,7 +244,7 @@ describe('ImageGenerationView', () => {
       imageKey(2, 'sk-second', '备用生图'),
     ])
     harness.refreshImageGenerationAccess.mockReset().mockResolvedValue(undefined)
-    harness.listAccessibleImageModels.mockReset().mockResolvedValue(['gpt-image-2', 'gpt-image-1.5'])
+    harness.listAccessibleImageModels.mockReset().mockResolvedValue(['gpt-image-2', 'gpt-image-2.5', 'gpt-image-1.5'])
     harness.generateImage.mockReset()
     harness.saveHistory.mockReset().mockImplementation(async (_userId, entry) => [entry])
     harness.readHistory.mockReset().mockResolvedValue([])
@@ -312,6 +312,7 @@ describe('ImageGenerationView', () => {
     )
     const modelSelect = wrapper.get('[data-testid="model-select"]')
     expect(modelSelect.attributes('data-options')).toContain('gpt-image-2')
+    expect(modelSelect.attributes('data-options')).toContain('gpt-image-2.5')
     expect(wrapper.find('[data-testid="model-input"]').exists()).toBe(false)
 
     await wrapper.get('[data-testid="api-key-select"]').trigger('click')

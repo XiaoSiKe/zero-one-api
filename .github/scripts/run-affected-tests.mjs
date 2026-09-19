@@ -83,6 +83,8 @@ export function commandsForImpact(impact) {
   )
   if (impact.visual_scope === 'dashboard') {
     commands.push('sh deploy/zero-one/test-visual.sh tests/dashboard-spend.behavior.spec.ts')
+  } else if (impact.visual_scope === 'usage') {
+    commands.push('sh deploy/zero-one/test-visual.sh tests/usage-account-cost.behavior.spec.ts')
   } else if (impact.visual_scope === 'full') {
     commands.push('sh deploy/zero-one/test-visual.sh')
   }

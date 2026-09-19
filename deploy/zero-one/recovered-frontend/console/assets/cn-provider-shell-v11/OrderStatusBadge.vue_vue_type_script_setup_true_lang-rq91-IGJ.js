@@ -1,0 +1,1 @@
+../cn-provider-shell-v10/OrderStatusBadge.vue_vue_type_script_setup_true_lang-rq91-IGJ.js

@@ -38,6 +38,10 @@ import {
   CURRENT_PASSWORD_RECOVERY_DIRECTORY,
   NATIVE_COST_PASSWORD_RECOVERY_DIRECTORY,
   BILLING_CLARITY_CN_PROVIDER_ADMIN_DIRECTORY,
+  BILLING_CLARITY_SHELL_DIRECTORY,
+  USAGE_ACCOUNT_COST_RUNTIME_ASSET,
+  usageAccountCostEntrySource,
+  usageAccountCostRuntimeSource,
   verifyCurrentCNProviderAdminVariant,
   patchApprovedShell,
   patchLegacyApprovedShell,
@@ -47,9 +51,13 @@ import {
 
 const assetsDirectory = resolve(import.meta.dirname, 'recovered-frontend/console/assets')
 
-test('CN Provider shell differs from the approved shell only at the router seam', () => {
+test('CN Provider v11 layers the Usage visibility runtime over immutable v10', () => {
   const approved = readFileSync(resolve(assetsDirectory, APPROVED_SHELL_SOURCE), 'utf8')
   const generated = readFileSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_ASSET), 'utf8')
+  const billingClarity = readFileSync(
+    resolve(assetsDirectory, BILLING_CLARITY_SHELL_DIRECTORY, APPROVED_SHELL_SOURCE),
+    'utf8',
+  )
   const legacy = readFileSync(
     resolve(assetsDirectory, LEGACY_CN_PROVIDER_SHELL_DIRECTORY, APPROVED_SHELL_SOURCE),
     'utf8',
@@ -63,17 +71,25 @@ test('CN Provider shell differs from the approved shell only at the router seam'
     'utf8',
   )
 
-  assert.equal(generated, patchApprovedShell(approved))
+  assert.equal(generated, usageAccountCostEntrySource())
+  assert.equal(billingClarity, patchApprovedShell(approved))
+  assert.equal(
+    readFileSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, USAGE_ACCOUNT_COST_RUNTIME_ASSET), 'utf8'),
+    usageAccountCostRuntimeSource(),
+  )
+  assert.match(usageAccountCostRuntimeSource(), /unsupported_billing_scope/)
+  assert.match(usageAccountCostRuntimeSource(), /请求发生时未保存上游证据/)
+  assert.match(usageAccountCostRuntimeSource(), /XMLHttpRequest\.prototype\.open/)
   assert.equal(legacy, patchLegacyApprovedShell(approved))
   assert.equal(previous, patchPreviousApprovedShell(approved))
   assert.equal(prior, patchPriorApprovedShell(approved))
-  assert.match(generated, /__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__/)
+  assert.match(billingClarity, /__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__/)
   assert.doesNotMatch(approved, /__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__/)
-  assert.equal((generated.match(/zero-one-cn-provider-route-placeholder-v1\.js/g) || []).length, 6)
-  assert.equal((generated.match(/zero-one-online-image-route-placeholder-v1\.js/g) || []).length, 1)
-  assert.match(generated, /path:"\/images",name:"ImageGeneration"/)
-  assert.match(generated, /__ZERO_ONE_ONLINE_IMAGE_ACCESS__/)
-  assert.match(generated, /payload\?\.data\?\.items\?payload\.data:payload/)
+  assert.equal((billingClarity.match(/zero-one-cn-provider-route-placeholder-v1\.js/g) || []).length, 6)
+  assert.equal((billingClarity.match(/zero-one-online-image-route-placeholder-v1\.js/g) || []).length, 1)
+  assert.match(billingClarity, /path:"\/images",name:"ImageGeneration"/)
+  assert.match(billingClarity, /__ZERO_ONE_ONLINE_IMAGE_ACCESS__/)
+  assert.match(billingClarity, /payload\?\.data\?\.items\?payload\.data:payload/)
   assert.doesNotMatch(legacy, /path:"\/images",name:"ImageGeneration"/)
   assert.doesNotMatch(legacy, /__ZERO_ONE_ONLINE_IMAGE_ACCESS__/)
   assert.match(previous, /path:"\/images",name:"ImageGeneration"/)
@@ -81,12 +97,12 @@ test('CN Provider shell differs from the approved shell only at the router seam'
   assert.equal((prior.match(/zero-one-cn-provider-route-placeholder-v1\.js/g) || []).length, 2)
   assert.match(prior, /__ZERO_ONE_ONLINE_IMAGE_ACCESS__/)
   assert.doesNotMatch(
-    generated,
+    billingClarity,
     /path:"\/admin\/(?:groups|accounts|channels\/pricing|channels\/monitor|ops|subscriptions)"[^}]+component:\(\)=>y\(\(\)=>import\("\.\/(?:GroupsView|AccountsView|ChannelsView|ChannelMonitorView|OpsDashboard|SubscriptionsView)-/,
   )
   assert.equal(
     readlinkSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, 'vendor-vue-iKpM1E08.js')),
-    '../vendor-vue-iKpM1E08.js',
+    `../${BILLING_CLARITY_SHELL_DIRECTORY}/vendor-vue-iKpM1E08.js`,
   )
 })
 
@@ -207,7 +223,7 @@ test('v10 clarifies account identity and uses request-time upstream account cost
 
   for (const name of [usageName, accountsName, formatterName, usageViewName, 'index-6pKNrg32.js', 'index-BBEtrNVx.js']) {
     assert.equal(
-      readFileSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, name), 'utf8'),
+      readFileSync(resolve(assetsDirectory, BILLING_CLARITY_SHELL_DIRECTORY, name), 'utf8'),
       current.get(name),
       `v10 output drifted from its generator: ${name}`,
     )
@@ -268,10 +284,10 @@ test('v8 Provider catalog adapter owns all six current admin surfaces', () => {
   assert.match(source, /上游声明倍率（观测）/)
 })
 
-test('current password recovery imports the same Vue and application runtime as the current shell', () => {
+test('password recovery v6 remains bound to its immutable v10 runtime', () => {
   for (const name of ['ForgotPasswordView.js', 'ResetPasswordView.js']) {
     const module = readFileSync(resolve(assetsDirectory, CURRENT_PASSWORD_RECOVERY_DIRECTORY, name), 'utf8')
-    assert.ok(module.includes(`/assets/${CN_PROVIDER_SHELL_DIRECTORY}/vendor-vue-`))
+    assert.ok(module.includes(`/assets/${BILLING_CLARITY_SHELL_DIRECTORY}/vendor-vue-`))
     assert.ok(!module.includes(`/assets/${NATIVE_COST_SHELL_DIRECTORY}/`))
   }
 })

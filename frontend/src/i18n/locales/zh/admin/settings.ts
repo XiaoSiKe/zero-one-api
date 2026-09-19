@@ -748,6 +748,8 @@ export default {
         placementSidebar: '侧边栏',
         placementHeader: '顶部导航',
         placementBoth: '侧边栏和顶部栏都显示',
+        hideOpenButton: '隐藏外部打开按钮',
+        hideOpenButtonHint: '保留嵌入页面，但不再显示新标签页打开的独立按钮。',
         add: '添加菜单项',
         remove: '删除',
         moveUp: '上移',

@@ -47,6 +47,27 @@ test('shared Console shell changes select full visual verification', () => {
   assert.equal(impact.visual_scope, 'full')
 })
 
+test('Usage delivery changes select only the Usage visual suite', () => {
+  const impact = selectTestImpact(['frontend/src/views/admin/UsageView.vue'], policy)
+  assert.equal(impact.console, true)
+  assert.equal(impact.console_asset_scopes, 'shell')
+  assert.equal(impact.visual_scope, 'usage')
+})
+
+test('unshipped frontend source changes run build checks without Chromium', () => {
+  const impact = selectTestImpact(['frontend/src/utils/new-upstream-helper.ts'], policy)
+  assert.equal(impact.console, true)
+  assert.equal(impact.visual_scope, 'none')
+})
+
+test('Usage and shared layout changes escalate to full visual verification', () => {
+  const impact = selectTestImpact([
+    'frontend/src/views/admin/UsageView.vue',
+    'frontend/src/components/layout/AppSidebar.vue',
+  ], policy)
+  assert.equal(impact.visual_scope, 'full')
+})
+
 test('dependency lock changes select the matching audit and UI checks', () => {
   const impact = selectTestImpact(['frontend/pnpm-lock.yaml'], policy)
   assert.equal(impact.console, true)

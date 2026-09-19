@@ -110,6 +110,7 @@ describe('RegisterView invitation layout', () => {
     await username.setValue('  zero-one  ')
     await email.setValue('first@custom.example')
     await wrapper.get('#password').setValue('secret-123')
+    await wrapper.get('#confirmPassword').setValue('secret-123')
     await wrapper.get('form').trigger('submit.prevent')
     await flushPromises()
 
@@ -129,6 +130,7 @@ describe('RegisterView invitation layout', () => {
     await wrapper.get('#username').setValue('   ')
     await wrapper.get('#email').setValue('blank-name@example.com')
     await wrapper.get('#password').setValue('secret-123')
+    await wrapper.get('#confirmPassword').setValue('secret-123')
     await wrapper.get('form').trigger('submit.prevent')
     await flushPromises()
 
@@ -177,6 +179,7 @@ describe('RegisterView invitation layout', () => {
     await wrapper.get('#username').setValue('zero-one')
     await wrapper.get('#email').setValue('first@custom.example')
     await wrapper.get('#password').setValue('secret-123')
+    await wrapper.get('#confirmPassword').setValue('secret-123')
     await wrapper.get('form').trigger('submit.prevent')
     await flushPromises()
 
@@ -203,6 +206,7 @@ describe('RegisterView invitation layout', () => {
     await wrapper.get('#username').setValue('zero-one')
     await wrapper.get('#email').setValue('second@custom.example')
     await wrapper.get('#password').setValue('secret-123')
+    await wrapper.get('#confirmPassword').setValue('secret-123')
     await wrapper.get('form').trigger('submit.prevent')
     await flushPromises()
 
@@ -224,6 +228,7 @@ describe('RegisterView invitation layout', () => {
     await wrapper.get('#username').setValue('zero-one')
     await wrapper.get('#email').setValue('first@custom.example')
     await wrapper.get('#password').setValue('secret-123')
+    await wrapper.get('#confirmPassword').setValue('secret-123')
     await wrapper.get('form').trigger('submit.prevent')
     await flushPromises()
 
@@ -245,6 +250,7 @@ describe('RegisterView invitation layout', () => {
     await wrapper.get('#username').setValue('zero-one')
     await wrapper.get('#email').setValue('user@allowed.com')
     await wrapper.get('#password').setValue('secret-123')
+    await wrapper.get('#confirmPassword').setValue('secret-123')
     await wrapper.get('form').trigger('submit.prevent')
     await flushPromises()
 

@@ -312,11 +312,13 @@ type UsageStats struct {
 // account cost can be proven from the declaration frozen on each invoice.
 // It deliberately keeps unconfirmed invoices out of both sides of Profit.
 type UsageFinanceSummary struct {
-	ConfirmedRequests    int64   `json:"confirmed_requests"`
-	UnconfirmedRequests  int64   `json:"unconfirmed_requests"`
-	ConfirmedActualCost  float64 `json:"confirmed_actual_cost"`
-	ConfirmedAccountCost float64 `json:"confirmed_account_cost"`
-	ConfirmedProfit      float64 `json:"confirmed_profit"`
+	ConfirmedRequests        int64   `json:"confirmed_requests"`
+	UnconfirmedRequests      int64   `json:"unconfirmed_requests"`
+	UnsupportedScopeRequests int64   `json:"unsupported_scope_requests"`
+	MissingEvidenceRequests  int64   `json:"missing_evidence_requests"`
+	ConfirmedActualCost      float64 `json:"confirmed_actual_cost"`
+	ConfirmedAccountCost     float64 `json:"confirmed_account_cost"`
+	ConfirmedProfit          float64 `json:"confirmed_profit"`
 }
 
 // PlatformUsage 表示某用户/某 API key 在单个"有效平台"维度的用量明细。

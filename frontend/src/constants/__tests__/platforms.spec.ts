@@ -10,7 +10,8 @@ const concretePlatforms = [
   'kimi',
   'zhipu',
   'deepseek',
-  'minimax'
+  'minimax',
+  'opencode_go'
 ]
 
 describe('provider platform catalog', () => {
@@ -29,6 +30,7 @@ describe('provider platform catalog', () => {
       'zhipu',
       'deepseek',
       'minimax',
+      'opencode_go',
       'composite'
     ])
   })
