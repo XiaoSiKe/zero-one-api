@@ -73,7 +73,21 @@ def protected_image_refs(policy: dict[str, Any]) -> set[str]:
         if not isinstance(anchor, list):
             raise MaintenanceError("each rollback anchor must be an array of image references")
         refs.update(map(str, anchor))
-    return refs
+    return expand_digest_refs(refs)
+
+
+def expand_digest_refs(refs: set[str]) -> set[str]:
+    """Match both a repository digest and Docker's digest-shaped image ID.
+
+    Images pulled by digest can be reported by ``docker image ls`` with an empty
+    Digest field even though their ID is the same ``sha256:...`` value.  Keeping
+    the digest suffix makes release protection independent of that presentation.
+    """
+    expanded = set(refs)
+    for ref in refs:
+        if "@sha256:" in ref:
+            expanded.add(ref.split("@", 1)[1])
+    return expanded
 
 
 def inspect_images(policy: dict[str, Any], run: Callable[[list[str]], str]) -> dict[str, Any]:
@@ -88,13 +102,22 @@ def inspect_images(policy: dict[str, Any], run: Callable[[list[str]], str]) -> d
             if configured:
                 container_refs.add(str(configured))
 
-    protected = protected_image_refs(policy) | container_refs
+    protected = protected_image_refs(policy) | expand_digest_refs(container_refs)
+    grouped: dict[str, dict[str, Any]] = {}
+    for image in images:
+        image_id = str(image.get("ID", ""))
+        if not image_id:
+            continue
+        entry = grouped.setdefault(image_id, {"image": image, "aliases": set()})
+        entry["aliases"].update(image_aliases(image))
+
     candidates = []
     retained = []
-    for image in images:
-        aliases = image_aliases(image)
+    for image_id, entry in grouped.items():
+        image = entry["image"]
+        aliases = entry["aliases"]
         record = {
-            "id": image.get("ID"),
+            "id": image_id,
             "repository": image.get("Repository"),
             "tag": image.get("Tag"),
             "digest": image.get("Digest"),

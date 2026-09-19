@@ -129,6 +129,10 @@
       "impact": { "shell": true }
     },
     {
+      "patterns": ["deploy/zero-one/storage-maintenance.py", "deploy/zero-one/test-storage-maintenance.py"],
+      "impact": { "deployment": true }
+    },
+    {
       "patterns": ["deploy/zero-one/build-cn-provider-shell.mjs", "deploy/zero-one/build-cn-provider-shell.test.mjs"],
       "impact": { "console": true, "console_asset_scopes": ["shell"], "deployment": true, "visual_scope": "full" }
     },
