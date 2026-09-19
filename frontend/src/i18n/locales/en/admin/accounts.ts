@@ -134,10 +134,22 @@ export default {
         balance: 'Balance --',
         window5h: '5-hour window',
         windowWeekly: 'Weekly window',
+        windowMonthly: 'Monthly window',
         probeTooltip: 'Query the provider quota endpoint for 5-hour / weekly rolling window usage',
         balanceLow: 'Insufficient balance',
         noBalanceEndpoint: 'This platform has no balance query endpoint',
         resetSoon: 'reset soon',
+      },
+      opencodeGo: {
+        protocolRules: {
+          title: 'Protocol routing rules',
+          restoreDefaults: 'Restore defaults',
+          hint: 'Match model names in order and select the upstream protocol. The fallback rule handles unmatched models.',
+          patternPlaceholder: 'Model pattern',
+          remove: 'Remove rule',
+          fallback: 'Fallback protocol',
+          add: 'Add rule',
+        },
       },
       types: {
         oauth: 'OAuth',

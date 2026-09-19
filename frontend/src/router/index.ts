@@ -15,6 +15,7 @@ import { useRoutePrefetch } from '@/composables/useRoutePrefetch'
 import { getSetupStatus } from '@/api/setup'
 import { resolveCompletedSetupRedirectPath } from './setupRedirect'
 import { resolveRouteDocumentTitle } from './title'
+import { resolveSiteBillingMode } from '@/utils/siteBillingMode'
 
 /**
  * Route definitions with lazy loading
@@ -820,7 +821,9 @@ function refreshDocumentTitle(route: RouteLocationNormalized) {
     ...(appStore.cachedPublicSettings?.custom_menu_items ?? []),
     ...(authStore.isAdmin ? adminSettingsStore.customMenuItems : []),
   ]
-  document.title = resolveRouteDocumentTitle(route, appStore.siteName, customMenuItems)
+  document.title = resolveRouteDocumentTitle(route, appStore.siteName, customMenuItems, {
+    billingMode: resolveSiteBillingMode(appStore.cachedPublicSettings),
+  })
 }
 
 watch(() => i18n.global.locale.value, () => refreshDocumentTitle(router.currentRoute.value), { flush: 'post' })

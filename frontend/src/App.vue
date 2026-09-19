@@ -10,6 +10,7 @@ import AnnouncementPopup from '@/components/common/AnnouncementPopup.vue'
 import { useAppStore, useAuthStore, useSubscriptionStore, useAnnouncementStore, useAdminComplianceStore, useAdminSettingsStore } from '@/stores'
 import { getSetupStatus } from '@/api/setup'
 import { updateFavicon } from '@/utils/branding'
+import { resolveSiteBillingMode } from '@/utils/siteBillingMode'
 
 const router = useRouter()
 const route = useRoute()
@@ -30,7 +31,9 @@ function updateDocumentTitle() {
     ...(appStore.cachedPublicSettings?.custom_menu_items ?? []),
     ...(authStore.isAdmin ? adminSettingsStore.customMenuItems : []),
   ]
-  document.title = resolveRouteDocumentTitle(route, appStore.siteName, customMenuItems)
+  document.title = resolveRouteDocumentTitle(route, appStore.siteName, customMenuItems, {
+    billingMode: resolveSiteBillingMode(appStore.cachedPublicSettings),
+  })
 }
 
 // Watch for site settings changes and update favicon/title
@@ -51,6 +54,8 @@ watch(
     () => route.meta.titleKey,
     () => appStore.siteName,
     () => appStore.cachedPublicSettings?.custom_menu_items,
+    () => appStore.cachedPublicSettings?.subscription_enabled,
+    () => appStore.cachedPublicSettings?.payment_balance_disabled,
     () => authStore.isAdmin,
     () => adminSettingsStore.customMenuItems,
   ],

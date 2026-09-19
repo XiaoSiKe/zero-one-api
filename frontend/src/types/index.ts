@@ -257,6 +257,8 @@ export interface PublicSettings {
   user_sidebar_order?: string[]
   admin_sidebar_order?: string[]
   payment_enabled: boolean
+  /** When true, balance recharge is hidden and the purchase route is subscription-only. */
+  payment_balance_disabled?: boolean
   risk_control_enabled: boolean
   table_default_page_size: number
   table_page_size_options: number[]

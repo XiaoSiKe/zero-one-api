@@ -43,8 +43,8 @@
                   <button
                     type="button"
                     class="text-xs text-gray-400 hover:text-zo-alert-500 disabled:opacity-50"
-                    :disabled="!!resetting[`${row.platform}.daily`]"
-                    :title="t('admin.users.platformQuota.reset.button')"
+                    :disabled="!isResetAvailable(row.platform) || !!resetting[`${row.platform}.daily`]"
+                    :title="t(isResetAvailable(row.platform) ? 'admin.users.platformQuota.reset.button' : 'admin.users.platformQuota.reset.unavailable')"
                     @click="onReset(row.platform, 'daily')"
                   >↻</button>
                 </div>
@@ -62,8 +62,8 @@
                   <button
                     type="button"
                     class="text-xs text-gray-400 hover:text-zo-alert-500 disabled:opacity-50"
-                    :disabled="!!resetting[`${row.platform}.weekly`]"
-                    :title="t('admin.users.platformQuota.reset.button')"
+                    :disabled="!isResetAvailable(row.platform) || !!resetting[`${row.platform}.weekly`]"
+                    :title="t(isResetAvailable(row.platform) ? 'admin.users.platformQuota.reset.button' : 'admin.users.platformQuota.reset.unavailable')"
                     @click="onReset(row.platform, 'weekly')"
                   >↻</button>
                 </div>
@@ -81,8 +81,8 @@
                   <button
                     type="button"
                     class="text-xs text-gray-400 hover:text-zo-alert-500 disabled:opacity-50"
-                    :disabled="!!resetting[`${row.platform}.monthly`]"
-                    :title="t('admin.users.platformQuota.reset.button')"
+                    :disabled="!isResetAvailable(row.platform) || !!resetting[`${row.platform}.monthly`]"
+                    :title="t(isResetAvailable(row.platform) ? 'admin.users.platformQuota.reset.button' : 'admin.users.platformQuota.reset.unavailable')"
                     @click="onReset(row.platform, 'monthly')"
                   >↻</button>
                 </div>
@@ -148,6 +148,11 @@ const loading = ref(false)
 const submitting = ref(false)
 const resetting = reactive<Record<string, boolean>>({})
 const quotas = ref<QuotaRow[]>([])
+const persistedPlatforms = ref<Set<PlatformQuotaPlatform>>(new Set())
+
+function isResetAvailable(platform: PlatformQuotaPlatform): boolean {
+  return persistedPlatforms.value.has(platform)
+}
 
 function emptyRow(p: PlatformQuotaPlatform): QuotaRow {
   return {
@@ -189,9 +194,12 @@ async function load() {
   loading.value = true
   try {
     const data = await adminAPI.users.getPlatformQuotas(props.user.id)
-    quotas.value = normalize(data.platform_quotas || [])
+    const items = data.platform_quotas || []
+    persistedPlatforms.value = new Set(items.map((item) => item.platform))
+    quotas.value = normalize(items)
   } catch {
     appStore.showError(t('admin.users.platformQuota.loadFailed'))
+    persistedPlatforms.value = new Set()
     quotas.value = PLATFORMS.map(emptyRow)
   } finally {
     loading.value = false
@@ -224,7 +232,7 @@ async function onSave() {
   for (const row of quotas.value) {
     for (const win of ['daily', 'weekly', 'monthly'] as const) {
       const v = row[`${win}_limit_usd` as const]
-      if (typeof v === 'number' && Number.isNaN(v)) {
+      if (typeof v === 'number' && (!Number.isFinite(v) || v < 0)) {
         invalid.push(`${row.platform}.${win}`)
       }
     }
@@ -253,8 +261,8 @@ async function onSave() {
   }
 }
 
-// 仅在合法输入下返回数字：null/undefined/NaN/±Inf/负数 → null（视为"无限额"）。
-// 调用方负责在 NaN 路径上做单独的用户提示（见 onSave）。
+// 仅在合法输入下返回数字；空值明确表示“无限额”。
+// 调用方已在保存前拒绝 NaN/±Inf/负数，此处的 null 回退仅是防御性边界。
 function normalizeLimit(v: number | null | undefined): number | null {
   if (v === null || v === undefined) return null
   if (typeof v === 'number' && Number.isFinite(v) && v >= 0) return v
@@ -262,7 +270,7 @@ function normalizeLimit(v: number | null | undefined): number | null {
 }
 
 async function onReset(platform: PlatformQuotaPlatform, quotaWindow: PlatformQuotaWindow) {
-  if (!props.user) return
+  if (!props.user || !isResetAvailable(platform)) return
   const windowLabel = t(`admin.users.platformQuota.window${quotaWindow.charAt(0).toUpperCase() + quotaWindow.slice(1)}`)
   const confirmed = window.confirm(
     t('admin.users.platformQuota.reset.confirm', { platform, window: windowLabel })
@@ -272,7 +280,9 @@ async function onReset(platform: PlatformQuotaPlatform, quotaWindow: PlatformQuo
   resetting[key] = true
   try {
     const data = await adminAPI.users.resetPlatformQuotaWindow(props.user.id, platform, quotaWindow)
-    quotas.value = normalize(data.platform_quotas || [])
+    const items = data.platform_quotas || []
+    persistedPlatforms.value = new Set(items.map((item) => item.platform))
+    quotas.value = normalize(items)
     appStore.showSuccess(t('admin.users.platformQuota.reset.success', { platform, window: windowLabel }))
   } catch (e: any) {
     appStore.showError(e?.response?.data?.message || t('admin.users.platformQuota.reset.failed'))

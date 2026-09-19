@@ -6987,6 +6987,23 @@
                     />
                   </div>
 
+                  <label class="flex items-start gap-3 sm:col-span-2">
+                    <input
+                      v-model="entry.item.hide_open_button"
+                      type="checkbox"
+                      class="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      data-testid="custom-menu-hide-open-button"
+                    />
+                    <span>
+                      <span class="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                        {{ t("admin.settings.customMenu.hideOpenButton") }}
+                      </span>
+                      <span class="mt-0.5 block text-xs text-gray-500 dark:text-gray-500">
+                        {{ t("admin.settings.customMenu.hideOpenButtonHint") }}
+                      </span>
+                    </span>
+                  </label>
+
                   <!-- SVG Icon (full width) -->
                   <div class="sm:col-span-2">
                     <label
@@ -9479,6 +9496,7 @@ const form = reactive<SettingsForm>({
     label: string;
     icon_svg: string;
     url: string;
+    hide_open_button?: boolean;
     visibility: "user" | "admin" | "all";
     placement: "sidebar" | "header" | "both";
     navigation_type?: "qr";
@@ -10587,6 +10605,7 @@ function addMenuItem() {
     label: "",
     icon_svg: DEFAULT_CUSTOM_MENU_ICON,
     url: "",
+    hide_open_button: false,
     visibility: "user",
     placement: "sidebar",
     sort_order: form.custom_menu_items.length,
@@ -10894,6 +10913,7 @@ async function loadSettings() {
         : "扫码加入交流群获取支持";
     form.custom_menu_items = form.custom_menu_items.map((item) => ({
       ...item,
+      hide_open_button: item.hide_open_button === true,
       placement:
         item.placement === "header" || item.placement === "both"
           ? item.placement

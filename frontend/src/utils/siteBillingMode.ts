@@ -1,6 +1,3 @@
-import type { PublicSettings } from '@/types'
-import { FeatureFlags, resolveFeatureFlag } from '@/utils/featureFlags'
-
 /**
  * 站点计费模式（后台「站点类型」单选），由两个后端开关派生：
  * - `subscription_enabled`（opt-out，缺省视为开启）：用户端订阅面（侧边栏、购买页订阅 tab、顶栏徽章、/subscriptions）
@@ -29,11 +26,7 @@ export interface BillingModeSettings {
 }
 
 export function resolveSiteBillingMode(settings: BillingModeSettings | null | undefined): SiteBillingMode {
-  const subscriptionEnabled = resolveFeatureFlag(
-    { subscription_enabled: settings?.subscription_enabled } as Partial<PublicSettings>,
-    FeatureFlags.subscription,
-  )
-  if (!subscriptionEnabled) return 'recharge_only'
+  if (settings?.subscription_enabled === false) return 'recharge_only'
   if (settings?.payment_balance_disabled === true) return 'subscription_only'
   return 'recharge_and_subscription'
 }

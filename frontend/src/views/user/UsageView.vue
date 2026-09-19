@@ -110,7 +110,7 @@
               <label class="input-label">{{ t('usage.type') }}</label>
               <Select v-model="filters.request_type" :options="requestTypeOptions" @change="applyFilters" />
             </div>
-            <div class="w-full sm:w-auto sm:min-w-[200px]">
+            <div v-if="subscriptionEnabled" class="w-full sm:w-auto sm:min-w-[200px]">
               <label class="input-label">{{ t('admin.usage.billingType') }}</label>
               <Select v-model="filters.billing_type" :options="billingTypeOptions" @change="applyFilters" />
             </div>
@@ -243,9 +243,13 @@ import type {
 } from '@/types'
 import type { Column } from '@/components/common/types'
 import { COMMON_ERROR_STATUS_CODES } from '@/utils/errorBadges'
+import { FeatureFlags, resolveFeatureFlag } from '@/utils/featureFlags'
 
 const { t } = useI18n()
 const appStore = useAppStore()
+const subscriptionEnabled = computed(() =>
+  resolveFeatureFlag(appStore.cachedPublicSettings, FeatureFlags.subscription)
+)
 
 type DistributionMetric = 'tokens' | 'actual_cost'
 type EndpointSource = 'inbound' | 'upstream' | 'path'
@@ -623,8 +627,11 @@ const exportToCSV = async () => {
     const allLogs: UsageLog[] = []
     const pageSize = 100
     const totalPages = Math.ceil(pagination.total / pageSize)
+    const exportParams = buildUsageListParams(1, pageSize)
+    const exportStartDate = startDate.value
+    const exportEndDate = endDate.value
     for (let page = 1; page <= totalPages; page++) {
-      const response = await usageAPI.query(buildUsageListParams(page, pageSize))
+      const response = await usageAPI.query({ ...exportParams, page })
       allLogs.push(...response.items)
     }
     if (allLogs.length === 0) {
@@ -677,7 +684,7 @@ const exportToCSV = async () => {
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `usage_${startDate.value}_to_${endDate.value}.csv`
+    link.download = `usage_${exportStartDate}_to_${exportEndDate}.csv`
     link.click()
     window.URL.revokeObjectURL(url)
     appStore.showSuccess(t('usage.exportSuccess'))

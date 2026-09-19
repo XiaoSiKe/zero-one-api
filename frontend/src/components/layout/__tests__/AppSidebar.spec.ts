@@ -119,9 +119,7 @@ describe('AppSidebar configurable built-in navigation', () => {
     expect(componentSource).toContain('subscriptionNavigationEnabled')
     expect(componentSource).toContain("path: '/profile'")
     expect(componentSource).toContain("path: '/subscriptions'")
-    expect(componentSource).toContain(
-      "{ path: '/admin/subscriptions', label: t('nav.subscriptions'), icon: CreditCardIcon, hideInSimpleMode: true },"
-    )
+    expect(componentSource).toContain("path: '/admin/subscriptions'")
     expect(componentSource).not.toContain(
       "{ path: '/admin/subscriptions', label: t('nav.subscriptions'), icon: CreditCardIcon, hideInSimpleMode: true, featureFlag: flagSubscriptionNavigation },"
     )

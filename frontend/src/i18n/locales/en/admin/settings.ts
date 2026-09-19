@@ -753,6 +753,8 @@ export default {
         placementSidebar: 'Sidebar',
         placementHeader: 'Header Navigation',
         placementBoth: 'Sidebar and Header',
+        hideOpenButton: 'Hide the external open button',
+        hideOpenButtonHint: 'Keep the embedded page available without showing a separate button that opens it in a new tab.',
         add: 'Add Menu Item',
         remove: 'Remove',
         moveUp: 'Move Up',

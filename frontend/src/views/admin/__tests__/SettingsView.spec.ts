@@ -827,8 +827,8 @@ describe("admin SettingsView payment visible method controls", () => {
 
     expect(updateSettings).toHaveBeenCalledWith(expect.objectContaining({
       custom_menu_items: [
-        { ...menuItems[0], hide_open_button: true },
-        { ...menuItems[1], hide_open_button: false },
+        { ...menuItems[0], hide_open_button: true, placement: "sidebar" },
+        { ...menuItems[1], hide_open_button: false, placement: "sidebar" },
       ],
     }));
     wrapper.unmount();

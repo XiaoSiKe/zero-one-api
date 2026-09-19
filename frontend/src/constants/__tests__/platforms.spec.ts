@@ -30,6 +30,7 @@ describe('provider platform catalog', () => {
       'zhipu',
       'deepseek',
       'minimax',
+      'opencode_go',
       'composite'
     ])
   })
