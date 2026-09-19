@@ -58,6 +58,10 @@ class StorageMaintenanceTests(unittest.TestCase):
                 report = maintenance.audit(self.policy(root), root / "lock", root, self.runner(calls))
             self.assertEqual(report["mode"], "dry-run")
             self.assertEqual([item["id"] for item in report["docker"]["unused_candidates"]], ["sha256:unused"])
+            self.assertEqual(
+                report["docker"]["unused_candidates"][0]["removal_refs"],
+                ["registry/backend:unused", "registry/backend:unused-alias", "registry/backend@sha256:unused"],
+            )
             self.assertIn("sha256:anchor", [item["id"] for item in report["docker"]["protected"]])
             self.assertFalse(any(call[:3] == ["docker", "image", "rm"] for call in calls))
             self.assertIn("docker_volumes", report["excluded_targets"])
@@ -108,6 +112,30 @@ class StorageMaintenanceTests(unittest.TestCase):
                 second = maintenance.apply_plan(report, root / "lock", root, self.runner(calls))
             self.assertTrue(first["disk_after"]["passes_release_gate"])
             self.assertTrue(second["disk_after"]["passes_release_gate"])
+
+    def test_apply_removes_all_explicit_aliases_without_force(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            report = {
+                "docker": {
+                    "unused_candidates": [
+                        {
+                            "id": "sha256:unused",
+                            "removal_refs": ["registry/backend:unused", "registry/backend:unused-alias"],
+                        }
+                    ]
+                },
+                "artifacts": {"deletion_candidates": []},
+            }
+            calls = []
+            with patch.object(maintenance, "disk_status", return_value={"passes_release_gate": True}):
+                maintenance.apply_plan(report, root / "lock", root, self.runner(calls))
+            self.assertIn(
+                ["docker", "image", "rm", "registry/backend:unused", "registry/backend:unused-alias"],
+                calls,
+            )
+            image_removals = [call for call in calls if call[:3] == ["docker", "image", "rm"]]
+            self.assertFalse(any("--force" in call for call in image_removals))
 
 
 if __name__ == "__main__":
