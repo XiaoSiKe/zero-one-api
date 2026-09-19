@@ -2,6 +2,8 @@
 
 import datetime, fcntl, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile, time
 
+QUOTA_PURGE_MIGRATION = "238_purge_unlimited_user_platform_quotas.sql"
+
 if not __debug__:
     raise RuntimeError("release checks require Python assertions; do not use optimization")
 
@@ -35,7 +37,8 @@ def validate_metadata(meta, root):
 
 def migration_projection(columns, pending):
     # Monitor cursors and their timestamp are derived, asynchronously advancing
-    # state. Every business column, including all invoices, remains exact.
+    # state. Every business column, including all invoices, remains exact. The
+    # separately verified quota purge changes rows, not columns.
     _ = pending
     result = {table: list(names) for table, names in columns.items()}
     table = "channel_monitor_v2_watermarks"
@@ -44,6 +47,58 @@ def migration_projection(columns, pending):
             name for name in result[table] if name not in ("error_coverage_start", "backfill_cursor", "updated_at")
         ]
     return result
+
+
+def quota_purge_row_filter(table, pending):
+    if table == "user_platform_quotas" and QUOTA_PURGE_MIGRATION in pending:
+        return (
+            " WHERE NOT (daily_limit_usd IS NULL"
+            " AND weekly_limit_usd IS NULL"
+            " AND monthly_limit_usd IS NULL)"
+        )
+    return ""
+
+
+def quota_purge_candidates(query, pending):
+    if QUOTA_PURGE_MIGRATION not in pending:
+        return None
+    evidence = json.loads(
+        query(
+            "SELECT jsonb_build_object("
+            "'candidate_count',count(*),"
+            "'candidate_primary_key_sha256',encode(sha256(convert_to("
+            "coalesce(string_agg(id::text,',' ORDER BY id),''),'UTF8')),'hex'),"
+            "'table_rows_before',(SELECT count(*) FROM user_platform_quotas),"
+            "'semantic_contract','all-null quota row equals absent row') "
+            "FROM user_platform_quotas WHERE daily_limit_usd IS NULL "
+            "AND weekly_limit_usd IS NULL AND monthly_limit_usd IS NULL"
+        )
+    )
+    assert isinstance(evidence.get("candidate_count"), int) and evidence["candidate_count"] >= 0
+    assert isinstance(evidence.get("table_rows_before"), int)
+    assert evidence["table_rows_before"] >= evidence["candidate_count"]
+    assert re.fullmatch(r"[0-9a-f]{64}", evidence.get("candidate_primary_key_sha256", ""))
+    return evidence
+
+
+def verify_quota_purge_result(query, pending, evidence):
+    if QUOTA_PURGE_MIGRATION not in pending:
+        assert evidence is None, "unexpected quota purge evidence"
+        return
+    assert evidence is not None, "quota purge candidate evidence missing"
+    result = json.loads(
+        query(
+            "SELECT jsonb_build_object("
+            "'table_rows_after',count(*),"
+            "'remaining_candidates',count(*) FILTER (WHERE daily_limit_usd IS NULL "
+            "AND weekly_limit_usd IS NULL AND monthly_limit_usd IS NULL)) "
+            "FROM user_platform_quotas"
+        )
+    )
+    assert result["remaining_candidates"] == 0, "authorized unlimited quota rows remain after purge"
+    assert result["table_rows_after"] == (
+        evidence["table_rows_before"] - evidence["candidate_count"]
+    ), "quota purge deleted a row outside the authorized candidate set"
 
 
 def configure(recovery_dir):
@@ -377,8 +432,9 @@ def fingerprints(label):
     stmts = ["BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY; SET LOCAL TIME ZONE 'UTC';"]
     for table, columns in sorted(cols.items()):
         literal = "'" + table.replace("'", "''") + "'"
+        row_filter = quota_purge_row_filter(table, META["expected_migrations"])
         stmts.append(
-            f"WITH h AS (SELECT encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex') v FROM (SELECT {','.join(map(ident, columns))} FROM public.{ident(table)}) t) SELECT jsonb_build_object('table',{literal},'rows',count(*),'digest',encode(sha256(convert_to(coalesce(string_agg(v,'' ORDER BY v),''),'UTF8')),'hex')) FROM h;"
+            f"WITH h AS (SELECT encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex') v FROM (SELECT {','.join(map(ident, columns))} FROM public.{ident(table)}{row_filter}) t) SELECT jsonb_build_object('table',{literal},'rows',count(*),'digest',encode(sha256(convert_to(coalesce(string_agg(v,'' ORDER BY v),''),'UTF8')),'hex')) FROM h;"
         )
     stmts.append("COMMIT;")
     data = [json.loads(x) for x in sql("\n".join(stmts)).splitlines() if x]
@@ -715,6 +771,9 @@ def execute(action):
             ]
         ), "unsettled billing or incomplete shutdown"
         dependencies()
+        purge_evidence = quota_purge_candidates(sql, META["expected_migrations"])
+        if purge_evidence is not None:
+            record("quota-purge-candidates.json", purge_evidence)
         fingerprints("cutover-before")
         record(
             "cutover-anchors.json",
@@ -781,6 +840,9 @@ def execute(action):
         before = json.loads((ROOT / "cutover-before-fingerprints.json").read_text())
         after = fingerprints("cutover-migrated")
         assert before == after, "original rows changed during migration"
+        purge_path = ROOT / "quota-purge-candidates.json"
+        purge_evidence = json.loads(purge_path.read_text()) if purge_path.exists() else None
+        verify_quota_purge_result(sql, META["expected_migrations"], purge_evidence)
         assert (
             sql("SELECT count(*) FROM schema_migrations WHERE filename='234_upstream_declared_usage_cost.sql'") == "1"
         )

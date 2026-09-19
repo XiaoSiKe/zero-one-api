@@ -23,7 +23,7 @@ class StorageMaintenanceTests(unittest.TestCase):
         return {
             "schema_version": 1,
             "target_release_images": ["registry/backend@sha256:target"],
-            "rollback_anchor_images": [["sha256:anchor"]],
+            "rollback_anchor_images": [["registry/backend@sha256:anchor"]],
             "protected_recovery_sets": [str(root / "current")],
             "allowed_artifact_roots": [str(root)],
             "artifact_candidates": [],
@@ -33,8 +33,9 @@ class StorageMaintenanceTests(unittest.TestCase):
         images = [
             {"ID": "sha256:running", "Repository": "registry/backend", "Tag": "old", "Digest": "sha256:old", "Size": "1GB"},
             {"ID": "sha256:target-id", "Repository": "registry/backend", "Tag": "new", "Digest": "sha256:target", "Size": "1GB"},
-            {"ID": "sha256:anchor", "Repository": "registry/backend", "Tag": "anchor", "Digest": "sha256:anchor", "Size": "1GB"},
+            {"ID": "sha256:anchor", "Repository": "registry/backend", "Tag": "<none>", "Digest": "", "Size": "1GB"},
             {"ID": "sha256:unused", "Repository": "registry/backend", "Tag": "unused", "Digest": "sha256:unused", "Size": "1GB"},
+            {"ID": "sha256:unused", "Repository": "registry/backend", "Tag": "unused-alias", "Digest": "<none>", "Size": "1GB"},
         ]
 
         def run(args):
@@ -57,6 +58,7 @@ class StorageMaintenanceTests(unittest.TestCase):
                 report = maintenance.audit(self.policy(root), root / "lock", root, self.runner(calls))
             self.assertEqual(report["mode"], "dry-run")
             self.assertEqual([item["id"] for item in report["docker"]["unused_candidates"]], ["sha256:unused"])
+            self.assertIn("sha256:anchor", [item["id"] for item in report["docker"]["protected"]])
             self.assertFalse(any(call[:3] == ["docker", "image", "rm"] for call in calls))
             self.assertIn("docker_volumes", report["excluded_targets"])
 

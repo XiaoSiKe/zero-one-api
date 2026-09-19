@@ -575,6 +575,10 @@ GoReleaser archives 均声明携带这三份根级材料。镜像文件位于
 控制器核对其镜像摘要、归档校验值和原始数据指纹。监控回填的
 `error_coverage_start`、`backfill_cursor` 和 `updated_at` 会由后台聚合异步推进，
 每次发布都作为派生水位排除；水位行本身、其他监控列及全部业务列仍精确比较。
+`238_purge_unlimited_user_platform_quotas.sql` 是唯一允许的行删除例外：停流后先保存
+日/周/月限额全为 `NULL` 的主键集合哈希、数量和迁移前总行数；指纹比对仅对该
+已授权集合做等价投影。迁移后必须同时满足候选行归零、总行数精确减少该数量，
+且所有其他行和表指纹不变；任一条件不符都停止发布。
 
 在 `drain-backup` 前，创建名为 `zero-one-release-watchdog-<id>` 的主机
 systemd 临时 timer，20 分钟后调用同一脚本的 `watchdog RECOVERY_DIR`。
