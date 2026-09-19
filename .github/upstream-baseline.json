@@ -2105,6 +2105,7 @@
         "backend/internal/service/auth_service.go",
         "backend/internal/service/auth_service_invitation_race_test.go",
         "backend/internal/service/auth_service_register_test.go",
+        "backend/internal/service/gemini_sse_comment_compat_test.go",
         "backend/internal/service/channel_status_summary.go",
         "backend/internal/service/channel_status_summary_test.go",
         "backend/internal/service/channel_monitor_runner.go",
