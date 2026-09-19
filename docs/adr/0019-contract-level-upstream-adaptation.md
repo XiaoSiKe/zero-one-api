@@ -16,6 +16,8 @@
 
 v0.2.7 同步时锁定既有 `cn-provider-shell-v10`、`cn-provider-admin-v8`、`online-image-v17`、`password-recovery-v6` 与 recovered landing。新的账号成本可见性能力发布到独立 `cn-provider-shell-v11`；v11 依赖 v10 并只增加一个生成器拥有的运行时模块，不能原地覆盖历史目录。
 
+生产环境原有的通用 `gpt-image-2.5` 别名、模型目录与定价行为作为 Public Capabilities 契约登记；实现与测试允许继续吸收上游 Flare、Sunburst 等型号更新，但同步不能静默删除通用别名或把它降级成未登记的临时 hotfix。
+
 ## 验证边界
 
 产品行为由 ADR、权限测试、服务端成本解析器测试、汇总守恒、导出合同、生成器幂等和定向 Chromium 用例保护。后端、API、未交付前端源码或类型变化不自动触发视觉回归；Usage 交付变化运行 Usage 套件；共享布局、路由、入口、未知交付路径以及本策略自身变化 fail closed 到完整 Chromium。
