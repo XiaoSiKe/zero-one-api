@@ -5,11 +5,32 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/stretchr/testify/require"
 )
+
+func TestSettingService_ChannelMonitorRuntimeFailsClosedWhenSettingsUnavailable(t *testing.T) {
+	for name, svc := range map[string]*SettingService{
+		"nil service":      nil,
+		"nil repository":   NewSettingService(nil, &config.Config{}),
+		"repository error": NewSettingService(&settingPublicRepoStub{err: errors.New("settings unavailable")}, &config.Config{}),
+	} {
+		t.Run(name, func(t *testing.T) {
+			runtime := svc.GetChannelMonitorRuntime(context.Background())
+			require.False(t, runtime.Enabled)
+			require.False(t, runtime.ActiveProbesAllowed())
+			require.False(t, runtime.PassiveAggregationAllowed())
+			require.True(t, runtime.HideThroughput)
+		})
+	}
+
+	missingRows := NewSettingService(&settingPublicRepoStub{values: map[string]string{}}, &config.Config{}).
+		GetChannelMonitorRuntime(context.Background())
+	require.True(t, missingRows.ActiveProbesAllowed(), "a successful read with legacy missing rows keeps the V1 default")
+}
 
 type settingPublicRepoStub struct {
 	values        map[string]string

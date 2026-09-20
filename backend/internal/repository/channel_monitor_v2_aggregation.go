@@ -338,17 +338,26 @@ VALUES (
   $2, NOW(), $1, NOW()
 )
 ON CONFLICT (id) DO UPDATE SET
-  usage_coverage_start = GREATEST(
-    date_trunc('minute', NOW()) - INTERVAL '90 days',
-    LEAST(COALESCE(channel_monitor_v2_watermarks.usage_coverage_start, EXCLUDED.usage_coverage_start), EXCLUDED.usage_coverage_start)
-  ),
-  error_coverage_start = GREATEST(
-    date_trunc('minute', NOW()) - INTERVAL '90 days',
-    LEAST(COALESCE(channel_monitor_v2_watermarks.error_coverage_start, EXCLUDED.error_coverage_start), EXCLUDED.error_coverage_start)
-  ),
+  usage_coverage_start = CASE WHEN channel_monitor_v2_watermarks.data_through IS NULL
+    THEN GREATEST(date_trunc('minute', NOW()) - INTERVAL '90 days', EXCLUDED.usage_coverage_start)
+    ELSE GREATEST(
+      date_trunc('minute', NOW()) - INTERVAL '90 days',
+      LEAST(COALESCE(channel_monitor_v2_watermarks.usage_coverage_start, EXCLUDED.usage_coverage_start), EXCLUDED.usage_coverage_start)
+    )
+  END,
+  error_coverage_start = CASE WHEN channel_monitor_v2_watermarks.data_through IS NULL
+    THEN GREATEST(date_trunc('minute', NOW()) - INTERVAL '90 days', EXCLUDED.error_coverage_start)
+    ELSE GREATEST(
+      date_trunc('minute', NOW()) - INTERVAL '90 days',
+      LEAST(COALESCE(channel_monitor_v2_watermarks.error_coverage_start, EXCLUDED.error_coverage_start), EXCLUDED.error_coverage_start)
+    )
+  END,
   data_through = GREATEST(COALESCE(channel_monitor_v2_watermarks.data_through, EXCLUDED.data_through), EXCLUDED.data_through),
   last_successful_at = NOW(),
-  backfill_cursor = LEAST(COALESCE(channel_monitor_v2_watermarks.backfill_cursor, EXCLUDED.backfill_cursor), EXCLUDED.backfill_cursor),
+  backfill_cursor = CASE WHEN channel_monitor_v2_watermarks.data_through IS NULL
+    THEN EXCLUDED.backfill_cursor
+    ELSE LEAST(COALESCE(channel_monitor_v2_watermarks.backfill_cursor, EXCLUDED.backfill_cursor), EXCLUDED.backfill_cursor)
+  END,
   updated_at = NOW()`
 
 var channelMonitorV2FixedRollupSeconds = []int{300, 3600, 43200, 86400}

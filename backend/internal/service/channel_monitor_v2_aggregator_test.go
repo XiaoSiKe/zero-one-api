@@ -3,11 +3,44 @@
 package service
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestChannelMonitorV2AggregatorRepairsStaleCursorAndContinuesAfterRestart(t *testing.T) {
+	stale := time.Now().UTC().Truncate(time.Minute).Add(-14 * 24 * time.Hour)
+	repo := &channelMonitorV2RepoStub{watermark: &ChannelMonitorV2AggregationWatermark{
+		BackfillCursor:     stale,
+		ErrorCoverageStart: stale,
+		// Migration residue without data_through must not be treated as real coverage.
+		HasData: false,
+	}}
+	runtime := channelMonitorV2RuntimeStub{rt: ChannelMonitorRuntime{Enabled: true, Mode: ChannelMonitorModeV2}}
+
+	first := NewChannelMonitorV2Aggregator(repo, nil, runtime)
+	first.ctx = context.Background()
+	first.runOnce()
+	require.Len(t, repo.recomputed, 1)
+	seed := repo.recomputed[0]
+	require.WithinDuration(t, seed.end.Add(-channelMonitorV2BootstrapFirst), seed.start, time.Minute)
+	require.True(t, seed.start.After(stale), "stale migration cursor must be replaced by the real bootstrap start")
+	require.Equal(t, seed.start, repo.watermark.BackfillCursor)
+	require.False(t, repo.watermark.DataThrough.IsZero())
+
+	// A fresh process restores the real seed cursor, refreshes the overlap, then
+	// continues immediately before that seed. The historical ranges meet exactly.
+	restarted := NewChannelMonitorV2Aggregator(repo, nil, runtime)
+	restarted.ctx = context.Background()
+	restarted.runOnce()
+	require.Len(t, repo.recomputed, 3)
+	historical := repo.recomputed[2]
+	require.Equal(t, seed.start, historical.end)
+	require.True(t, historical.start.Before(historical.end))
+	require.Equal(t, historical.start, repo.watermark.BackfillCursor)
+}
 
 func TestChannelMonitorV2MaxChunkForDepth(t *testing.T) {
 	now := time.Date(2026, 8, 8, 12, 0, 0, 0, time.UTC)
