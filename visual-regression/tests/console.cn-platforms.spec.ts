@@ -563,7 +563,7 @@ test.describe('Recovered CN Provider management contracts', () => {
     const pageErrors: string[] = []
     let leafRequests = 0
     page.on('pageerror', (error) => pageErrors.push(error.message))
-    await page.route('**/assets/cn-provider-admin-v9/cnProviderAdminLeaf-*.js', (route) => {
+    await page.route('**/assets/cn-provider-admin-v8/cnProviderAdminLeaf-*.js', (route) => {
       leafRequests += 1
       if (leafRequests === 1) {
         return route.fulfill({ status: 503, contentType: 'text/javascript', body: '' })
