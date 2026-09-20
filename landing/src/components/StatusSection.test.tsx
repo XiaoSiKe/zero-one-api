@@ -162,10 +162,10 @@ describe("StatusSection", () => {
     render(<StatusSection />);
 
     await screen.findByText("渠道");
+    await screen.findByText("当前监控模式未提供逐渠道检测记录。");
     expect(screen.queryByText("渠道汇总")).toBeNull();
     expect(screen.queryByText("中位首字响应 240 ms")).toBeNull();
     expect(screen.getByLabelText("渠道状态数据").querySelectorAll(".status-monitor-row")).toHaveLength(0);
-    expect(screen.getByText("当前监控模式未提供逐渠道检测记录。")).toBeTruthy();
   });
 
   it("keeps active-probe channel rows when they are available", async () => {
