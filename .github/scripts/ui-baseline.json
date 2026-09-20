@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-20-v027-cost-trust-r4",
-  "baseline_commit": "dadd2cf62e288d1d5ebb4eaa2aa17ea5e28c266d",
+  "baseline_ref": "ui-approved-2026-09-20-channel-health-amber-v1",
+  "baseline_commit": "18c9ea303f92b537ca107e32f4646b044be484a3",
   "protected_paths": [
     "landing/",
     "frontend/",
