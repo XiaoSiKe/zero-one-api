@@ -23,8 +23,12 @@ errors cannot accidentally emit paid probes.
 
 The following formerly protected files are retired and must stay absent:
 
+- `backend/internal/handler/channel_monitor_v2_handler.go`
+- `backend/internal/handler/channel_monitor_v2_handler_test.go`
+- `backend/internal/repository/channel_monitor_v2_repo.go`
 - `backend/internal/repository/channel_monitor_v2_aggregation.go`
 - `backend/internal/repository/channel_monitor_v2_repo_test.go`
+- `backend/internal/service/channel_monitor_probe_retirement_test.go`
 - `backend/internal/service/channel_monitor_v2.go`
 - `backend/internal/service/channel_monitor_v2_aggregator.go`
 - `backend/internal/service/channel_monitor_v2_aggregator_test.go`
@@ -32,6 +36,8 @@ The following formerly protected files are retired and must stay absent:
 - `backend/internal/service/channel_monitor_v2_test.go`
 - `backend/migrations/channel_monitor_v2_taxonomy_migration_test.go`
 - `docs/channel-monitor-v2-safe-defaults.md`
+- `frontend/src/api/channelMonitorV2.ts`
+- `frontend/src/api/__tests__/channelMonitorV2.spec.ts`
 - `frontend/src/i18n/locales/en/channelMonitorV2.ts`
 - `frontend/src/i18n/locales/zh/channelMonitorV2.ts`
 - `frontend/src/views/user/ChannelStatusV2View.vue`

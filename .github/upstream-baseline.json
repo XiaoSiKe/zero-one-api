@@ -425,6 +425,16 @@
     "frontend/src/components/layout/__tests__/AppHeader.communityQr.spec.ts",
     "backend/cmd/server/wire.go",
     "backend/cmd/server/wire_gen.go",
+    "backend/cmd/server/wire_gen_test.go",
+    "backend/internal/handler/channel_monitor_user_handler.go",
+    "backend/internal/handler/handler.go",
+    "backend/internal/handler/wire.go",
+    "backend/internal/repository/wire.go",
+    "backend/internal/server/routes/channel_monitor_feature_gate_test.go",
+    "backend/internal/server/routes/user.go",
+    "backend/internal/service/channel_monitor_const.go",
+    "backend/internal/service/channel_monitor_runtime_test.go",
+    "backend/internal/service/channel_monitor_service.go",
     "backend/internal/handler/admin/redeem_export_handler_test.go",
     "backend/internal/handler/auth_oauth_pending_flow_test.go",
     "backend/internal/handler/gateway_handler.go",
@@ -1290,6 +1300,42 @@
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/logo.svg"
   ],
   "retired_preserved_paths": [
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/handler/channel_monitor_v2_handler.go",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "The V2 HTTP handler exposed only the retired passive-monitoring API."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/handler/channel_monitor_v2_handler_test.go",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "This suite covered only the retired V2 HTTP handler."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/repository/channel_monitor_v2_repo.go",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "The V2 repository has no supported runtime consumer after the product returned to V1-only monitoring."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/service/channel_monitor_probe_retirement_test.go",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "This test asserted V1 retirement while V2 was active, the inverse of the current V1-only product decision."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "frontend/src/api/channelMonitorV2.ts",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "The client called only the retired V2 passive-monitoring endpoints."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "frontend/src/api/__tests__/channelMonitorV2.spec.ts",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "This suite covered only the retired V2 API client."
+    },
     {
       "owner": "Public Capabilities",
       "path": "backend/internal/repository/channel_monitor_v2_aggregation.go",
