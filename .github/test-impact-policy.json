@@ -42,7 +42,7 @@
       "impact": { "console": true, "console_asset_scopes": ["shell"], "visual_scope": "full" }
     },
     {
-      "patterns": ["frontend/src/features/channel-monitor-v2/**", "frontend/src/views/user/ChannelStatusV2View.vue", "frontend/src/i18n/locales/*/channelMonitorV2.ts", "frontend/src/entries/cnProviderAdmin.ts", "frontend/vite.cn-provider-admin.config.ts"],
+      "patterns": ["frontend/src/features/channel-monitor/**", "frontend/src/features/channel-monitor-v2/**", "frontend/src/components/admin/monitor/**", "frontend/src/components/user/monitor/**", "frontend/src/views/admin/ChannelMonitorView.vue", "frontend/src/views/user/ChannelStatusV1View.vue", "frontend/src/views/user/ChannelStatusV2View.vue", "frontend/src/i18n/locales/*/channelMonitorV2.ts", "frontend/src/entries/cnProviderAdmin.ts", "frontend/vite.cn-provider-admin.config.ts"],
       "impact": { "console": true, "console_asset_scopes": ["cn_provider"], "visual_scope": "full" }
     },
     {

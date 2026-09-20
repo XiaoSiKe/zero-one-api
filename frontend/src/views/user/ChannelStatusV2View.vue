@@ -456,6 +456,7 @@
 </template>
 
 <script setup lang="ts">
+import '@/features/channel-monitor/healthPalette.css'
 import { useI18n } from 'vue-i18n'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -936,22 +937,6 @@ onBeforeUnmount(() => {
   flex: none;
   border-radius: 9999px;
 }
-/* Cool blue-violet health scale, with rose reserved for degraded states. */
-.health-score10 { background: #2563eb; }
-.health-score9  { background: #3b82f6; }
-.health-score8  { background: #60a5fa; }
-.health-score7  { background: #818cf8; }
-.health-score6  { background: #a78bfa; }
-.health-score5  { background: #c084fc; }
-.health-score4  { background: #fb7185; }
-.health-score3  { background: #f43f5e; }
-.health-score2  { background: #e11d48; }
-.health-score1  { background: #be123c; }
-.health-score0  { background: #881337; }
-.health-healthy  { background: #3b82f6; }
-.health-warning  { background: #fb7185; }
-.health-critical { background: #e11d48; }
-.health-unknown  { background: #9ca3af; }
 .matrix-select {
   min-width: 10rem;
 }

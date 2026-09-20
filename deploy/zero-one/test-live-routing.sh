@@ -111,7 +111,7 @@ assert_text "$asset_headers" 'Cache-Control: public, max-age=31536000, immutable
 console=$(curl -fsS -H "Host: $request_host" "$edge_url/login")
 assert_text "$console" '<title>零一 API - AI API Gateway</title>' 'primary login did not return the recovered console'
 assert_text "$console" 'fetch("/api/v1/settings/public"' 'recovered console did not bootstrap live public settings'
-assert_text "$console" 'await import("/assets/cn-provider-admin-v8/cn-provider-admin.js")' 'recovered console unified Provider catalog route adapter is missing'
+assert_text "$console" 'await import("/assets/cn-provider-admin-v9/cn-provider-admin.js")' 'recovered console unified Provider catalog route adapter is missing'
 assert_text "$console" 'await import("/assets/cn-provider-shell-v11/index-9xJBhx8B.js")' 'recovered console approved shell seam is missing'
 assert_text "$console" 'await import("/assets/zero-one-local-preview-guard-v2.js")' 'recovered console local preview guard is missing'
 assert_text "$console" 'await import("/assets/zero-one-custom-page-security-v1.js")' 'recovered console custom page security guard is missing'
@@ -156,7 +156,7 @@ cn_provider_shell_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/asset
 assert_text "$cn_provider_shell_headers" 'Cache-Control: public, max-age=31536000, immutable' 'CN Provider approved shell seam is not immutable'
 cn_provider_placeholder_headers=$(curl -fsSI -H "Host: $request_host" "$edge_url/assets/cn-provider-shell-v11/zero-one-cn-provider-route-placeholder-v1.js")
 assert_text "$cn_provider_placeholder_headers" 'Cache-Control: public, max-age=31536000, immutable' 'CN Provider route placeholder is not immutable'
-for cn_provider_version in cn-provider-admin-v1 cn-provider-admin-v4 cn-provider-admin-v6 cn-provider-admin-v7 cn-provider-admin-v8; do
+for cn_provider_version in cn-provider-admin-v1 cn-provider-admin-v4 cn-provider-admin-v6 cn-provider-admin-v7 cn-provider-admin-v8 cn-provider-admin-v9; do
 	for cn_provider_asset_path in "$test_dir"/console/assets/$cn_provider_version/*; do
 		[ -f "$cn_provider_asset_path" ] || continue
 		cn_provider_asset=$(basename "$cn_provider_asset_path")

@@ -103,8 +103,9 @@ describe('ChannelStatusV1View overall status', () => {
     { statuses: ['success'], expected: 'unavailable' },
     { statuses: ['operational', 'operational'], expected: 'operational' },
     { statuses: ['operational', 'degraded'], expected: 'degraded' },
-    { statuses: ['failed'], expected: 'degraded' },
-    { statuses: ['error'], expected: 'degraded' },
+    { statuses: ['degraded', 'error'], expected: 'failed' },
+    { statuses: ['failed'], expected: 'failed' },
+    { statuses: ['error'], expected: 'failed' },
   ])('maps $statuses to $expected', async ({ statuses, expected }) => {
     await expect(renderStatus(statuses)).resolves.toBe(expected)
   })

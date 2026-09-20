@@ -78,14 +78,13 @@ export function formatMonitorSuccessRateFromError(errorRate: number): string {
 }
 
 /**
- * Map continuous 0–100 score to 11 fine bands for multi-stop green→yellow→red.
- * score10 = best (green), score0 = worst (red).
+ * Map continuous 0–100 score to stable downward buckets.
+ * This deliberately floors the score so 79 stays warning and 49 stays critical.
  */
 export function scoreToBand(score: number | null | undefined): HealthScoreBand {
   if (score == null || Number.isNaN(score)) return 'unknown'
   const clamped = Math.max(0, Math.min(100, score))
-  // 0–100 → score0..score10 (11 stops for green→yellow→red gradient)
-  const band = Math.round(clamped / 10)
+  const band = clamped === 100 ? 10 : Math.floor(clamped / 10)
   return `score${Math.max(0, Math.min(10, band))}` as HealthScoreBand
 }
 
@@ -115,9 +114,9 @@ export function healthScoreClass(
 ): string {
   const score = healthModeScore(health, mode)
   // Sync-only traffic has no first-token samples. Never paint TTFT as red/empty-fail.
-  if (mode === 'ttft' && score == null) return 'health-unknown'
+  if (mode === 'ttft' && score == null) return 'channel-health-unknown'
   if (score == null) {
-    if (requestCount <= 0) return 'health-unknown'
+    if (requestCount <= 0) return 'channel-health-unknown'
     // Fall back to coarse state when score is absent (older payloads).
     const coarse =
       mode === 'success'
@@ -127,7 +126,7 @@ export function healthScoreClass(
           : health.overall
     return healthStateClass(coarse)
   }
-  return `health-${scoreToBand(score)}`
+  return `channel-health-${scoreToBand(score)}`
 }
 
 /** Missing first-token samples are "not applicable", not a failed latency budget. */
@@ -145,7 +144,7 @@ export function ttftDisplayState(
 }
 
 export function healthStateClass(state: string | undefined): string {
-  return `health-${state || 'unknown'}`
+  return `channel-health-${state || 'unknown'}`
 }
 
 /** Privacy-safe latency summary: avg + p50 + p90 (no absolute sample counts). */

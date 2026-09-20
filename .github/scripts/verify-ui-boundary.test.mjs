@@ -121,6 +121,7 @@ test('validates the approved UI baseline manifest', () => {
   assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v10/'))
   assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v11/'))
   assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/'))
+  assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v9/'))
   assert.ok(
     cnProviderManagement.paths.includes(
       'visual-regression/tests/__screenshots__/chromium-desktop/console-accounts-cn-protocol-guidance.png',

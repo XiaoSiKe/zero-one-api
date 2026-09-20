@@ -38,6 +38,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MonitorTimelinePoint } from '@/api/channelMonitor'
 import { useChannelMonitorFormat } from '@/composables/useChannelMonitorFormat'
+import { channelHealthDotClass } from '@/features/channel-monitor/healthPalette'
 
 const props = withDefaults(defineProps<{
   buckets?: MonitorTimelinePoint[]
@@ -59,8 +60,7 @@ interface Bar {
   title: string
 }
 
-// 4 级高度 + 颜色双重编码：高=好+绿，短=坏+红，灰=未测试。
-// 长绿(正常) > 中黄(降级) > 短红(失败/系统错误) > 很短灰(未测试)。
+// 4 级高度 + 颜色双重编码：高=正常蓝，降级=琥珀，错误=红，灰=未测试。
 const STATUS_HEIGHT: Record<string, number> = {
   operational: 100,
   degraded: 65,
@@ -70,11 +70,11 @@ const STATUS_HEIGHT: Record<string, number> = {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  operational: 'bg-zo-signal-500',
-  degraded: 'bg-zo-alert-500',
-  failed: 'bg-red-500',
-  error: 'bg-red-500',
-  empty: 'bg-gray-300 dark:bg-dark-600',
+  operational: channelHealthDotClass('operational'),
+  degraded: channelHealthDotClass('degraded'),
+  failed: channelHealthDotClass('failed'),
+  error: channelHealthDotClass('error'),
+  empty: channelHealthDotClass(undefined),
 }
 
 const displayBars = computed<Bar[]>(() => {

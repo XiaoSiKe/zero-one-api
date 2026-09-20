@@ -17,7 +17,7 @@ describe('MetricCell', () => {
     expect(wrapper.text()).toContain('请求')
     expect(wrapper.text()).toContain('1,234')
     expect(wrapper.text()).toContain('12.5 RPM')
-    expect(wrapper.find('strong').classes()).toContain('text-zo-signal-600')
+    expect(wrapper.find('strong').classes()).toContain('text-blue-600')
   })
 
   it('does not paint missing first-token dash as critical red', () => {
@@ -37,7 +37,7 @@ describe('MetricCell', () => {
     const warning = mount(MetricCell, {
       props: { label: '错误', value: '10%', detail: '1 次', state: 'warning' },
     })
-    expect(warning.find('strong').classes()).toContain('text-zo-alert-600')
+    expect(warning.find('strong').classes()).toContain('text-amber-700')
 
     const critical = mount(MetricCell, {
       props: { label: '错误', value: '50%', detail: '5 次', state: 'critical' },

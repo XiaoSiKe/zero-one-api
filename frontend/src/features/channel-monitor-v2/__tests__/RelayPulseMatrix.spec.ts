@@ -131,10 +131,10 @@ describe('RelayPulseMatrix', () => {
     expect(header).toContain('每秒 Token')
     expect(header).toContain('缓存率')
     // Multi-band class from score 52 → score5
-    expect(cells[0].classes().some((c) => c.startsWith('health-score'))).toBe(true)
+    expect(cells[0].classes().some((c) => c.startsWith('channel-health-score'))).toBe(true)
     // Redacted user payloads may have request_count=0 but still include score.
-    expect(cells[1].classes().some((c) => c.startsWith('health-score'))).toBe(true)
-    expect(cells[2].classes()).toContain('health-unknown')
+    expect(cells[1].classes().some((c) => c.startsWith('channel-health-score'))).toBe(true)
+    expect(cells[2].classes()).toContain('channel-health-unknown')
 
     // No click-to-open modal
     await cells[0].trigger('click')

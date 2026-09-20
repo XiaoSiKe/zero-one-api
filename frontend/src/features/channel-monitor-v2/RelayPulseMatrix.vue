@@ -87,7 +87,7 @@
                 :key="slot.start"
                 class="pulse-cell relative rounded-sm border-0 p-0 outline-offset-1"
                 :class="[
-                  slot.bucket ? cellClass(slot.bucket.health, slot.bucket.metrics.request_count) : 'health-unknown',
+                  slot.bucket ? cellClass(slot.bucket.health, slot.bucket.metrics.request_count) : 'channel-health-unknown',
                   slot.bucket ? 'has-data' : 'is-empty',
                 ]"
                 tabindex="0"
@@ -132,14 +132,14 @@
       <div class="mt-4 flex flex-col gap-2" :aria-label="t('channelMonitorV2.matrix.legendAria')">
         <div class="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
           <span class="shrink-0">{{ t('channelMonitorV2.matrix.bad') }}</span>
-          <div class="score-legend h-2.5 flex-1 overflow-hidden rounded-full"></div>
+          <div class="channel-health-score-legend h-2.5 flex-1 overflow-hidden rounded-full"></div>
           <span class="shrink-0">{{ t('channelMonitorV2.matrix.good') }}</span>
         </div>
         <div class="flex flex-wrap gap-4 text-[11px] text-gray-500 dark:text-gray-400">
-          <span class="inline-flex items-center gap-1.5"><i class="status-dot health-score10"></i>{{ t('channelMonitorV2.matrix.healthyLegend') }}</span>
-          <span class="inline-flex items-center gap-1.5"><i class="status-dot health-score6"></i>{{ t('channelMonitorV2.matrix.warningLegend') }}</span>
-          <span class="inline-flex items-center gap-1.5"><i class="status-dot health-score2"></i>{{ t('channelMonitorV2.matrix.criticalLegend') }}</span>
-          <span class="inline-flex items-center gap-1.5"><i class="status-dot health-unknown"></i>{{ t('channelMonitorV2.matrix.unknownLegend') }}</span>
+          <span class="inline-flex items-center gap-1.5"><i class="status-dot channel-health-score10"></i>{{ t('channelMonitorV2.matrix.healthyLegend') }}</span>
+          <span class="inline-flex items-center gap-1.5"><i class="status-dot channel-health-score6"></i>{{ t('channelMonitorV2.matrix.warningLegend') }}</span>
+          <span class="inline-flex items-center gap-1.5"><i class="status-dot channel-health-score2"></i>{{ t('channelMonitorV2.matrix.criticalLegend') }}</span>
+          <span class="inline-flex items-center gap-1.5"><i class="status-dot channel-health-unknown"></i>{{ t('channelMonitorV2.matrix.unknownLegend') }}</span>
         </div>
       </div>
     </div>
@@ -167,6 +167,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { computed, reactive, ref, watch } from 'vue'
+import '@/features/channel-monitor/healthPalette.css'
 import type {
   LatencyMetric,
   MonitorCoverage,
@@ -505,38 +506,6 @@ function formatBucketRange(value: string) {
   width: 0.5rem;
   flex: none;
   border-radius: 9999px;
-}
-
-/* Cool blue-violet health scale, with rose reserved for degraded states. */
-.health-score10 { background: #2563eb; }
-.health-score9  { background: #3b82f6; }
-.health-score8  { background: #60a5fa; }
-.health-score7  { background: #818cf8; }
-.health-score6  { background: #a78bfa; }
-.health-score5  { background: #c084fc; }
-.health-score4  { background: #fb7185; }
-.health-score3  { background: #f43f5e; }
-.health-score2  { background: #e11d48; }
-.health-score1  { background: #be123c; }
-.health-score0  { background: #881337; }
-/* Coarse fallbacks (older payloads without score) */
-.health-healthy  { background: #3b82f6; }
-.health-warning  { background: #fb7185; }
-.health-critical { background: #e11d48; }
-.health-unknown  { background: #9ca3af; }
-
-.score-legend {
-  background: linear-gradient(
-    90deg,
-    #881337 0%,
-    #be123c 15%,
-    #e11d48 30%,
-    #f43f5e 45%,
-    #c084fc 55%,
-    #a78bfa 70%,
-    #60a5fa 85%,
-    #2563eb 100%
-  );
 }
 
 .pulse-cell {

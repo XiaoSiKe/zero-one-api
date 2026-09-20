@@ -6,6 +6,7 @@ import {
   type ChannelStatusItem,
   type ChannelStatusResult,
 } from "../lib/channelStatus";
+import { CHANNEL_HEALTH_STYLE } from "../lib/channelHealthPalette";
 import type { ModelPlazaData } from "../lib/modelPlaza";
 import { consoleUrl, documentUrl } from "../siteConfig";
 import Action from "./Action";
@@ -304,6 +305,7 @@ export function StatusSection({ enabled = true }: { enabled?: boolean }) {
       >
         <div
           className="status-monitor-panel"
+          style={CHANNEL_HEALTH_STYLE}
           aria-label="渠道状态数据"
           aria-busy={state.status === "loading"}
           aria-live="polite"
