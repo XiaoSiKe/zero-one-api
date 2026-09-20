@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-20-channel-health-amber-v1",
-  "baseline_commit": "18c9ea303f92b537ca107e32f4646b044be484a3",
+  "baseline_ref": "ui-approved-2026-09-20-channel-health-amber-v2",
+  "baseline_commit": "2ea271584ad136caaa6b4954687824b1c632ce1f",
   "protected_paths": [
     "landing/",
     "frontend/",
