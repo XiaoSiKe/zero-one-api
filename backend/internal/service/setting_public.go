@@ -555,11 +555,13 @@ func (r ChannelMonitorRuntime) PassiveAggregationAllowed() bool {
 }
 
 // GetChannelMonitorRuntime reads the channel monitor feature flags directly from
-// the settings store. Fail-open: on error returns Enabled=true, Mode=v1, default interval.
+// the settings store. Missing rows keep the backwards-compatible V1 defaults,
+// but an unavailable store fails closed so neither paid probes nor passive jobs
+// run under an ambiguous mode.
 func (s *SettingService) GetChannelMonitorRuntime(ctx context.Context) ChannelMonitorRuntime {
 	if s == nil || s.settingRepo == nil {
 		return ChannelMonitorRuntime{
-			Enabled:                true,
+			Enabled:                false,
 			Mode:                   defaultChannelMonitorMode,
 			DefaultIntervalSeconds: channelMonitorIntervalFallback,
 			HideThroughput:         true,
@@ -575,7 +577,7 @@ func (s *SettingService) GetChannelMonitorRuntime(ctx context.Context) ChannelMo
 	})
 	if err != nil {
 		return ChannelMonitorRuntime{
-			Enabled:                true,
+			Enabled:                false,
 			Mode:                   defaultChannelMonitorMode,
 			DefaultIntervalSeconds: channelMonitorIntervalFallback,
 			HideThroughput:         true,

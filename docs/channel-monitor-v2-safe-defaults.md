@@ -59,3 +59,25 @@
 ## Taxonomy v2 follow-up
 
 Authentication and quota failures are split by owner. User-side authentication and balance errors retain the non-operational ignored defaults; Provider Account authentication and upstream quota failures use `upstream_authentication` and `upstream_quota_or_balance` and affect health by default. Migration 235 restarts the existing gentle backfill cursor without scanning source tables during migration.
+
+## Production cutover runbook (2026-09-20)
+
+V1 `probe` and `quota_probe` are active checks: every enabled monitor sends a real LLM generation request for its primary model and every additional model on each interval. They may be billed by the upstream provider. The approximate daily request volume is `86400 / interval_seconds × model_count`. `quota` only reads the linked account's usage or balance and sends no generation request.
+
+V2 is passive and derives health from gateway `usage_logs` and `ops_error_logs`. Switch only after the matching Backend and Edge digests are healthy, using the audited partial settings update:
+
+```json
+{"channel_monitor_mode":"v2"}
+```
+
+Cutover acceptance:
+
+1. Allow at most one already-running V1 request to finish; then confirm V1 history and outbound probe logs stop growing.
+2. Within two refresh periods, require a non-empty aggregate, a non-null `data_through` close to current time, and visible 90-minute data.
+3. Treat `coverage_complete=false` as real partial coverage. Keep the service online while gentle backfill advances to the 30-day product window; never present incomplete history as complete.
+4. Sample the 90-minute, 24-hour, 7-day and 30-day windows against source logs. Request totals, error taxonomy and half-open time boundaries must be conserved.
+5. Confirm the release did not rewrite account multipliers, balances, API keys, users, Provider Account historical cost, `usage_logs`, or `ops_error_logs`.
+
+An empty aggregate with a legacy cursor is not valid progress. A watermark is restorable only when `HasData` and `data_through` prove a successful aggregation; the first successful seed replaces stale cursor/coverage fields, and restarts continue immediately before that real seed without a gap.
+
+If V2 cutover fails, first restore `channel_monitor_mode=v1` to recover the existing status page, then roll back Backend/Edge digests if needed. Do not roll back the database, delete V2 derived tables, purge source logs, or remove Docker volumes.

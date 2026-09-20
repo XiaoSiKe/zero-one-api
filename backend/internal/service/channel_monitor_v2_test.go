@@ -10,13 +10,20 @@ import (
 )
 
 type channelMonitorV2RepoStub struct {
-	config serviceChannelMonitorV2ConfigAlias
-	users  *ChannelMonitorV2List[ChannelMonitorV2UserRow]
-	matrix *ChannelMonitorV2Matrix
-	errors *ChannelMonitorV2List[ChannelMonitorV2ErrorRow]
-	snap   *ChannelMonitorV2Snapshot
-	group  ChannelMonitorV2GroupBy
-	admin  bool
+	config     serviceChannelMonitorV2ConfigAlias
+	users      *ChannelMonitorV2List[ChannelMonitorV2UserRow]
+	matrix     *ChannelMonitorV2Matrix
+	errors     *ChannelMonitorV2List[ChannelMonitorV2ErrorRow]
+	snap       *ChannelMonitorV2Snapshot
+	group      ChannelMonitorV2GroupBy
+	admin      bool
+	watermark  *ChannelMonitorV2AggregationWatermark
+	recomputed []channelMonitorV2Range
+}
+
+type channelMonitorV2Range struct {
+	start time.Time
+	end   time.Time
 }
 
 // Alias keeps composite literals readable without introducing another package.
@@ -76,11 +83,28 @@ func (s *channelMonitorV2RepoStub) GetErrors(_ context.Context, _ ChannelMonitor
 func (s *channelMonitorV2RepoStub) GetUsers(context.Context, ChannelMonitorV2Filter, ChannelMonitorV2Config, bool) (*ChannelMonitorV2List[ChannelMonitorV2UserRow], error) {
 	return s.users, nil
 }
-func (s *channelMonitorV2RepoStub) RecomputeRange(context.Context, time.Time, time.Time) error {
+func (s *channelMonitorV2RepoStub) RecomputeRange(_ context.Context, start, end time.Time) error {
+	s.recomputed = append(s.recomputed, channelMonitorV2Range{start: start, end: end})
+	if s.watermark == nil {
+		s.watermark = &ChannelMonitorV2AggregationWatermark{}
+	}
+	if !s.watermark.HasData || s.watermark.BackfillCursor.IsZero() || start.Before(s.watermark.BackfillCursor) {
+		s.watermark.BackfillCursor = start
+		s.watermark.UsageCoverageStart = start
+		s.watermark.ErrorCoverageStart = start
+	}
+	if s.watermark.DataThrough.IsZero() || end.After(s.watermark.DataThrough) {
+		s.watermark.DataThrough = end
+	}
+	s.watermark.HasData = true
 	return nil
 }
 func (s *channelMonitorV2RepoStub) GetAggregationWatermark(context.Context) (*ChannelMonitorV2AggregationWatermark, error) {
-	return &ChannelMonitorV2AggregationWatermark{}, nil
+	if s.watermark == nil {
+		return &ChannelMonitorV2AggregationWatermark{}, nil
+	}
+	copy := *s.watermark
+	return &copy, nil
 }
 
 func TestChannelMonitorV2BootstrapProgress(t *testing.T) {

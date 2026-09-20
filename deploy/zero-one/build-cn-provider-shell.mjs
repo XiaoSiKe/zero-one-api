@@ -31,6 +31,7 @@ export const NATIVE_COST_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v5'
 export const CURRENT_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v6'
 export const LEGACY_CN_PROVIDER_ADMIN_DIRECTORY = 'cn-provider-admin-v1'
 export const BILLING_CLARITY_CN_PROVIDER_ADMIN_DIRECTORY = 'cn-provider-admin-v8'
+export const CHANNEL_HEALTH_CN_PROVIDER_ADMIN_DIRECTORY = 'cn-provider-admin-v9'
 export const PASSWORD_RECOVERY_PAGES = {
   'ForgotPasswordView-DfgTg0iM.js': 'password-recovery-v1/ForgotPasswordView.js',
   'ResetPasswordView-CMRDA6OL.js': 'password-recovery-v1/ResetPasswordView.js',
@@ -537,22 +538,23 @@ export function patchBillingClarityLocale(source) {
 }
 
 export function verifyCurrentCNProviderAdminVariant(assetsDirectory) {
-  const targetDirectory = resolve(assetsDirectory, BILLING_CLARITY_CN_PROVIDER_ADMIN_DIRECTORY)
+	const targetDirectory = resolve(assetsDirectory, CHANNEL_HEALTH_CN_PROVIDER_ADMIN_DIRECTORY)
   const entry = readFileSync(resolve(targetDirectory, 'cn-provider-admin.js'), 'utf8')
   const required = [
-    '/assets/cn-provider-admin-v8/cn-provider-admin.css',
+    '/assets/cn-provider-admin-v9/cn-provider-admin.css',
     '/admin/accounts',
     '/admin/groups',
     '/admin/channels/pricing',
     '/admin/channels/monitor',
+    '/monitor',
     '/admin/ops',
     '/admin/subscriptions',
   ]
   for (const marker of required) {
     if (!entry.includes(marker)) throw new Error(`current CN Provider Admin is missing: ${marker}`)
   }
-  if (entry.includes('/assets/cn-provider-admin-v7/cn-provider-admin.css')) {
-    throw new Error('current CN Provider Admin still loads the immutable v7 stylesheet')
+  if (!entry.includes('/assets/cn-provider-admin-v8/cn-provider-admin.css')) {
+    throw new Error('current CN Provider Admin no longer preserves v8 styles for unaffected routes')
   }
   return targetDirectory
 }

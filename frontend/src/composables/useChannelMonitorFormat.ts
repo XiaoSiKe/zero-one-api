@@ -24,18 +24,10 @@ import {
   PROVIDER_MINIMAX,
   PROVIDER_OPENCODE_GO,
   PROVIDERS,
-  STATUS_OPERATIONAL,
-  STATUS_DEGRADED,
-  STATUS_FAILED,
-  STATUS_ERROR,
 } from '@/constants/channelMonitor'
+import { channelHealthBadgeClass, channelHealthColor } from '@/features/channel-monitor/healthPalette'
 
 const NEUTRAL_BADGE = 'bg-gray-100 text-gray-800 dark:bg-dark-700 dark:text-gray-300'
-
-/** Availability HSL hue multiplier: 0%=red(0) / 50%=yellow(60) / 100%=green(120). */
-const HSL_HUE_PER_PERCENT = 1.2
-const HSL_SATURATION = 72
-const HSL_LIGHTNESS = 42
 
 export interface AvailabilityRow {
   primary_status: MonitorStatus | ''
@@ -51,17 +43,7 @@ export function useChannelMonitorFormat() {
   }
 
   function statusBadgeClass(s: MonitorStatus | ''): string {
-    switch (s) {
-      case STATUS_OPERATIONAL:
-        return 'bg-zo-signal-100 text-zo-signal-700 dark:bg-zo-signal-500/15 dark:text-zo-signal-300'
-      case STATUS_DEGRADED:
-        return 'bg-zo-alert-100 text-zo-alert-700 dark:bg-zo-alert-500/15 dark:text-zo-alert-300'
-      case STATUS_FAILED:
-        return 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300'
-      case STATUS_ERROR:
-      default:
-        return NEUTRAL_BADGE
-    }
+    return channelHealthBadgeClass(s)
   }
 
   function providerLabel(p: Provider | string): string {
@@ -205,14 +187,13 @@ export function useChannelMonitorFormat() {
 }
 
 /**
- * Map availability percent to an HSL colour (red -> yellow -> green).
+ * Map availability percent to the shared channel-health palette.
  * Returns undefined for null/NaN so callers can fall back to a neutral colour.
  */
 export function hslForPct(pct: number | null | undefined): string | undefined {
   if (pct === null || pct === undefined || Number.isNaN(pct)) return undefined
   const clamped = Math.max(0, Math.min(100, pct))
-  const hue = clamped * HSL_HUE_PER_PERCENT
-  return `hsl(${hue} ${HSL_SATURATION}% ${HSL_LIGHTNESS}%)`
+  return channelHealthColor(clamped >= 80 ? 'healthy' : clamped >= 50 ? 'warning' : 'critical')
 }
 
 /**

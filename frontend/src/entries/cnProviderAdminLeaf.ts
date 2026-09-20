@@ -14,7 +14,14 @@ import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import './cnProviderAdmin.css'
 
-type AdminSurface = 'accounts' | 'groups' | 'channels' | 'channel-monitor' | 'ops' | 'subscriptions'
+type AdminSurface =
+  | 'accounts'
+  | 'groups'
+  | 'channels'
+  | 'channel-monitor'
+  | 'channel-status'
+  | 'ops'
+  | 'subscriptions'
 type LocaleCode = 'en' | 'zh'
 type RunMode = 'standard' | 'simple'
 
@@ -34,6 +41,7 @@ const surfaceLoaders = {
   groups: () => import('@/views/admin/GroupsView.vue'),
   channels: () => import('@/views/admin/ChannelsView.vue'),
   'channel-monitor': () => import('@/views/admin/ChannelMonitorView.vue'),
+  'channel-status': () => import('@/views/user/ChannelStatusView.vue'),
   ops: () => import('@/views/admin/ops/OpsDashboard.vue'),
   subscriptions: () => import('@/views/admin/SubscriptionsView.vue'),
 } satisfies Record<AdminSurface, () => Promise<{ default: Component }>>

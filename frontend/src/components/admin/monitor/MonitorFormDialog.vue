@@ -30,6 +30,25 @@
             <span class="mt-0.5 block text-xs opacity-80">{{ opt.hint }}</span>
           </button>
         </div>
+        <div
+          v-if="usesProbePart"
+          data-testid="monitor-probe-billing-warning"
+          :data-daily-requests="dailyProbeRequests"
+          :data-model-count="probeModelCount"
+          class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+        >
+          <p class="font-semibold">{{ t('admin.channelMonitor.form.probeBillingWarning') }}</p>
+          <p class="mt-1 text-xs leading-5">
+            {{ t('admin.channelMonitor.form.probeDailyEstimate', { requests: formattedDailyProbeRequests, models: probeModelCount }) }}
+          </p>
+        </div>
+        <div
+          v-else
+          data-testid="monitor-quota-no-generation"
+          class="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200"
+        >
+          {{ t('admin.channelMonitor.form.quotaNoGeneration') }}
+        </div>
       </div>
 
       <div>
@@ -283,6 +302,7 @@ import {
   DEFAULT_INTERVAL_SECONDS,
 } from '@/constants/channelMonitor'
 import { CONCRETE_PLATFORM_OPTIONS } from '@/constants/platforms'
+import { estimateDailyProbeRequests } from '@/features/channel-monitor/probeBudget'
 
 const props = defineProps<{
   show: boolean
@@ -360,6 +380,9 @@ const form = reactive<MonitorForm>({
 // quota / quota_probe 需要关联账号；probe / quota_probe 需要探活字段。
 const usesQuotaMode = computed(() => form.check_mode !== CHECK_MODE_PROBE)
 const usesProbePart = computed(() => form.check_mode !== CHECK_MODE_QUOTA)
+const probeModelCount = computed(() => 1 + form.extra_models.filter((model) => model.trim()).length)
+const dailyProbeRequests = computed(() => estimateDailyProbeRequests(form.interval_seconds, probeModelCount.value))
+const formattedDailyProbeRequests = computed(() => new Intl.NumberFormat().format(dailyProbeRequests.value))
 
 // jitter 上限与后端校验一致：interval - jitter 不得低于最小检测间隔 15 秒。
 const maxJitterSeconds = computed<number>(() => Math.max(0, (form.interval_seconds || 0) - 15))

@@ -585,6 +585,7 @@ export default {
     overall: {
       operational: 'OPERATIONAL',
       degraded: 'DEGRADED',
+      failed: 'FAILED',
       unavailable: 'UNAVAILABLE'
     },
     columns: {

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-20-v027-cost-trust-r4",
-  "baseline_commit": "dadd2cf62e288d1d5ebb4eaa2aa17ea5e28c266d",
+  "baseline_ref": "ui-approved-2026-09-20-channel-health-amber-v3",
+  "baseline_commit": "1ba276906fc0c261319f0bc21b5f89b53d9f5c6e",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -387,6 +387,7 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v6/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v7/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v9/",
         "frontend/vite.adapter-boundary.ts"
       ]
     },

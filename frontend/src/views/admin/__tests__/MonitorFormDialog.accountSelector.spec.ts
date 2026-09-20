@@ -188,6 +188,25 @@ describe('MonitorFormDialog linked account selector', () => {
     )
   })
 
+  it('warns about billable probe volume and marks quota-only as generation-free', async () => {
+    const wrapper = mountDialog(makeMonitor({
+      check_mode: 'probe',
+      interval_seconds: 120,
+      extra_models: ['gpt-5-mini', 'gpt-5-nano'],
+    }))
+    await flushPromises()
+
+    const warning = wrapper.get('[data-testid="monitor-probe-billing-warning"]')
+    expect(warning.attributes('data-model-count')).toBe('3')
+    expect(warning.attributes('data-daily-requests')).toBe('2160')
+    expect(wrapper.find('[data-testid="monitor-quota-no-generation"]').exists()).toBe(false)
+
+    await wrapper.get('[data-testid="monitor-check-mode-quota"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="monitor-probe-billing-warning"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="monitor-quota-no-generation"]').exists()).toBe(true)
+  })
+
   it('debounced typing hits server-side search and aborts the previous request', async () => {
     vi.useFakeTimers()
     const wrapper = mountDialog()

@@ -36,6 +36,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { HealthState } from '@/api/channelMonitorV2'
+import { channelHealthDotClass, channelHealthTextClass } from '@/features/channel-monitor/healthPalette'
 
 const props = defineProps<{
   label: string
@@ -65,16 +66,8 @@ const resolvedState = computed(() => (missingValue.value ? undefined : props.sta
 
 const stateClass = computed(() => {
   if (!resolvedState.value) return missingValue.value ? 'text-gray-500 dark:text-dark-400' : 'text-gray-900 dark:text-white'
-  if (resolvedState.value === 'healthy') return 'text-zo-signal-600 dark:text-zo-signal-400'
-  if (resolvedState.value === 'warning') return 'text-zo-alert-600 dark:text-zo-alert-400'
-  if (resolvedState.value === 'critical') return 'text-red-600 dark:text-red-400'
-  return 'text-gray-500 dark:text-dark-400'
+  return channelHealthTextClass(resolvedState.value)
 })
 
-const dotClass = computed(() => {
-  if (resolvedState.value === 'healthy') return 'bg-zo-signal-500'
-  if (resolvedState.value === 'warning') return 'bg-zo-alert-500'
-  if (resolvedState.value === 'critical') return 'bg-red-500'
-  return 'bg-gray-300 dark:bg-dark-600'
-})
+const dotClass = computed(() => channelHealthDotClass(resolvedState.value))
 </script>

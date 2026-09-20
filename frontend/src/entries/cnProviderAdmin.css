@@ -13,6 +13,10 @@ body.zero-one-provider-catalog-admin-active .bg-teal-100 { background-color: rgb
 body.zero-one-provider-catalog-admin-active .bg-pink-500 { background-color: rgb(236 72 153); }
 body.zero-one-provider-catalog-admin-active .bg-indigo-500 { background-color: rgb(99 102 241); }
 body.zero-one-provider-catalog-admin-active .bg-teal-500 { background-color: rgb(20 184 166); }
+body.zero-one-provider-catalog-admin-active .bg-blue-500 { background-color: #3b82f6; }
+body.zero-one-provider-catalog-admin-active .bg-amber-500 { background-color: #f59e0b; }
+body.zero-one-provider-catalog-admin-active .bg-red-500 { background-color: #ef4444; }
+body.zero-one-provider-catalog-admin-active .bg-slate-400 { background-color: #94a3b8; }
 body.zero-one-provider-catalog-admin-active .text-pink-600 { color: rgb(219 39 119); }
 body.zero-one-provider-catalog-admin-active .text-indigo-600 { color: rgb(79 70 229); }
 body.zero-one-provider-catalog-admin-active .text-teal-600 { color: rgb(13 148 136); }
@@ -28,3 +32,4 @@ body.zero-one-provider-catalog-admin-active .text-teal-700 { color: rgb(15 118 1
 .dark body.zero-one-provider-catalog-admin-active .dark\:text-pink-400 { color: rgb(244 114 182); }
 .dark body.zero-one-provider-catalog-admin-active .dark\:text-indigo-400 { color: rgb(129 140 248); }
 .dark body.zero-one-provider-catalog-admin-active .dark\:text-teal-400 { color: rgb(45 212 191); }
+.dark body.zero-one-provider-catalog-admin-active .dark\:bg-slate-500 { background-color: #64748b; }

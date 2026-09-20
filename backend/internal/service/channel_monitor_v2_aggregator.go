@@ -396,22 +396,19 @@ func (s *ChannelMonitorV2Aggregator) ensureCursor(ctx context.Context, now time.
 	if s.cursorLoaded {
 		return nil
 	}
-	if wm != nil {
+	if wm != nil && wm.HasData && !wm.DataThrough.IsZero() {
 		if !wm.BackfillCursor.IsZero() {
 			s.backfillAt = wm.BackfillCursor.UTC().Truncate(time.Minute)
 		}
-		if wm.HasData || !wm.DataThrough.IsZero() {
-			s.hasAggregated = true
-			// Legacy rows may have data_through but null backfill_cursor (older workers).
-			// Infer cursor from data_through − initial window so we do not re-bootstrap
-			// only 2h and claim zero progress forever.
-			if s.backfillAt.IsZero() && !wm.DataThrough.IsZero() {
-				inferred := wm.DataThrough.UTC().Truncate(time.Minute).Add(-channelMonitorV2BootstrapFirst)
-				if inferred.After(now) {
-					inferred = now.Add(-channelMonitorV2BootstrapFirst)
-				}
-				s.backfillAt = inferred
+		s.hasAggregated = true
+		// Legacy rows may have data_through but null backfill_cursor (older workers).
+		// Infer cursor from data_through − initial window so we do not re-bootstrap.
+		if s.backfillAt.IsZero() {
+			inferred := wm.DataThrough.UTC().Truncate(time.Minute).Add(-channelMonitorV2BootstrapFirst)
+			if inferred.After(now) {
+				inferred = now.Add(-channelMonitorV2BootstrapFirst)
 			}
+			s.backfillAt = inferred
 		}
 	}
 	s.cursorLoaded = true

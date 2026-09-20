@@ -77,12 +77,13 @@ describe('monitorFormat accuracy', () => {
     expect(formatMonitorSuccessRateFromError(0)).toBe('100.0%')
   })
 
-  it('maps continuous scores to multi-stop bands', () => {
-    expect(scoreToBand(100)).toBe('score10')
-    expect(scoreToBand(95)).toBe('score10')
-    expect(scoreToBand(80)).toBe('score8')
-    expect(scoreToBand(50)).toBe('score5')
+  it('floors scores into critical, warning, and healthy bands at exact boundaries', () => {
     expect(scoreToBand(0)).toBe('score0')
+    expect(scoreToBand(49)).toBe('score4')
+    expect(scoreToBand(50)).toBe('score5')
+    expect(scoreToBand(79)).toBe('score7')
+    expect(scoreToBand(80)).toBe('score8')
+    expect(scoreToBand(100)).toBe('score10')
     expect(scoreToBand(null)).toBe('unknown')
   })
 
@@ -98,18 +99,18 @@ describe('monitorFormat accuracy', () => {
       cache_score: 50,
       minimum_sample: 20,
     }
-    expect(healthScoreClass(health, 'overall', 10)).toBe('health-score5')
-    expect(healthScoreClass(health, 'success', 10)).toBe('health-score4')
-    expect(healthScoreClass(health, 'ttft', 10)).toBe('health-score10')
-    expect(healthScoreClass(health, 'cache', 10)).toBe('health-score5')
+    expect(healthScoreClass(health, 'overall', 10)).toBe('channel-health-score5')
+    expect(healthScoreClass(health, 'success', 10)).toBe('channel-health-score4')
+    expect(healthScoreClass(health, 'ttft', 10)).toBe('channel-health-score10')
+    expect(healthScoreClass(health, 'cache', 10)).toBe('channel-health-score5')
     // Redacted user payloads have request_count=0 but keep score fields.
-    expect(healthScoreClass(health, 'overall', 0)).toBe('health-score5')
-    expect(healthScoreClass({ ...health, score: null }, 'overall', 0)).toBe('health-unknown')
+    expect(healthScoreClass(health, 'overall', 0)).toBe('channel-health-score5')
+    expect(healthScoreClass({ ...health, score: null }, 'overall', 0)).toBe('channel-health-unknown')
   })
 
   it('maps health states for status dots', () => {
-    expect(healthStateClass('healthy')).toBe('health-healthy')
-    expect(healthStateClass(undefined)).toBe('health-unknown')
+    expect(healthStateClass('healthy')).toBe('channel-health-healthy')
+    expect(healthStateClass(undefined)).toBe('channel-health-unknown')
   })
 
   it('keeps missing first-token samples neutral instead of critical', () => {
@@ -124,7 +125,7 @@ describe('monitorFormat accuracy', () => {
       cache_score: 100,
       minimum_sample: 20,
     }
-    expect(healthScoreClass(health, 'ttft', 200)).toBe('health-unknown')
+    expect(healthScoreClass(health, 'ttft', 200)).toBe('channel-health-unknown')
     expect(ttftDisplayState('critical', { p50_ms: null, sample_count: 0 })).toBe('unknown')
     expect(ttftDisplayState('healthy', { p50_ms: 400, sample_count: 20 })).toBe('healthy')
   })
