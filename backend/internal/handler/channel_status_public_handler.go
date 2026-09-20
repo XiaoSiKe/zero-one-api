@@ -27,21 +27,3 @@ func (h *ChannelMonitorUserHandler) GetPublicSummary(ctx context.Context) (*serv
 	}
 	return h.monitorService.GetPublicChannelStatusSummary(ctx)
 }
-
-// PublicSummary returns an anonymous-safe V2 traffic-health aggregate. The
-// response contract intentionally remains identical to the V1 landing view.
-func (h *ChannelMonitorV2Handler) PublicSummary(c *gin.Context) {
-	summary, err := h.GetPublicSummary(c.Request.Context())
-	if err != nil {
-		response.ErrorFrom(c, err)
-		return
-	}
-	response.Success(c, summary)
-}
-
-func (h *ChannelMonitorV2Handler) GetPublicSummary(ctx context.Context) (*service.PublicChannelStatusSummary, error) {
-	if h == nil || h.service == nil {
-		return nil, fmt.Errorf("channel status is unavailable")
-	}
-	return h.service.GetPublicChannelStatusSummary(ctx)
-}

@@ -51,7 +51,6 @@ func newQuotaModeService(repo *quotaModeRepoStub) *ChannelMonitorService {
 	svc := NewChannelMonitorService(repo, &duplicateChannelMonitorEncryptor{})
 	svc.SetRuntimeReader(channelMonitorRuntimeStub{rt: ChannelMonitorRuntime{
 		Enabled: true,
-		Mode:    ChannelMonitorModeV1,
 	}})
 	return svc
 }

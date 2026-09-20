@@ -505,23 +505,12 @@ const (
 	// the authenticated channel monitor feature switch.
 	SettingKeyPublicChannelStatusEnabled = "public_channel_status_enabled"
 
-	// SettingKeyChannelMonitorMode selects exclusive implementation:
-	// "v1" active probes, "v2" passive aggregation. Default "v1" (opt-in to v2).
-	SettingKeyChannelMonitorMode = "channel_monitor_mode"
-
-	// ChannelMonitorModeV1/V2 are the only accepted mode values.
+	// ChannelMonitorModeV1 remains the stable cache namespace for public status.
 	ChannelMonitorModeV1 = "v1"
-	ChannelMonitorModeV2 = "v2"
 
 	// SettingKeyChannelMonitorDefaultIntervalSeconds controls the default interval (seconds)
 	// pre-filled when creating a new channel monitor from the admin UI. Range: [15, 3600].
 	SettingKeyChannelMonitorDefaultIntervalSeconds = "channel_monitor_default_interval_seconds"
-
-	// SettingKeyChannelMonitorHideThroughput hides RPM/TPM (and similar absolute
-	// throughput rates) from non-admin user-facing monitor APIs and UI, so users
-	// cannot reverse-estimate fleet volume from rates × window length.
-	// Default false (show rates). Admin endpoints always keep full metrics.
-	SettingKeyChannelMonitorHideThroughput = "channel_monitor_hide_throughput"
 
 	// SettingKeyChannelMonitorShowQuota controls whether quota/balance snapshots
 	// attached to channel monitors (check_mode=quota/quota_probe) are exposed on
@@ -529,10 +518,6 @@ const (
 	// fail-closed (only the literal "true" enables it). Admin endpoints always
 	// keep the full snapshots regardless of this flag.
 	SettingKeyChannelMonitorShowQuota = "channel_monitor_show_quota"
-	// SettingKeyChannelMonitorHideUserRanking hides the user ranking tab and
-	// /users payload from non-admin channel-monitor v2 viewers.
-	// Default false (keep the current ranking tab). Admin endpoints always keep it.
-	SettingKeyChannelMonitorHideUserRanking = "channel_monitor_hide_user_ranking"
 
 	// SettingKeyGrokDefaultTextModel is the fallback Grok text model for empty
 	// request models and built-in Grok aliases (e.g. "grok" → this id). Default grok-4.5.

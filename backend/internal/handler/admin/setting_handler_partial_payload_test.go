@@ -220,7 +220,6 @@ func TestUpdateSettingsRepresentativeValuesSurviveSubsequentGet(t *testing.T) {
 		service.SettingKeySiteName:               "Old Gateway",
 		service.SettingKeySiteLogo:               rawLogo,
 		service.SettingKeyCompactHomeEnabled:     "false",
-		service.SettingKeyChannelMonitorMode:     service.ChannelMonitorModeV1,
 		service.SettingKeyCustomMenuItems:        "[]",
 		service.SettingKeyLegacyImageTutorialURL: "https://example.com/image-generation",
 	})
@@ -232,7 +231,6 @@ func TestUpdateSettingsRepresentativeValuesSurviveSubsequentGet(t *testing.T) {
 	updateRecorder := doUpdateSettings(t, h, map[string]any{
 		"site_name":            "Latest Gateway",
 		"compact_home_enabled": true,
-		"channel_monitor_mode": service.ChannelMonitorModeV2,
 		"custom_menu_items":    menuItems,
 	}, nil)
 	require.Equal(t, http.StatusOK, updateRecorder.Code)
@@ -246,7 +244,6 @@ func TestUpdateSettingsRepresentativeValuesSurviveSubsequentGet(t *testing.T) {
 	require.Contains(t, getRecorder.Body.String(), `"site_name":"Latest Gateway"`)
 	require.Contains(t, getRecorder.Body.String(), `"site_logo":"`+rawLogo+`"`, "editing must retain the original logo, not the public image URL")
 	require.Contains(t, getRecorder.Body.String(), `"compact_home_enabled":true`)
-	require.Contains(t, getRecorder.Body.String(), `"channel_monitor_mode":"v2"`)
 	require.Contains(t, getRecorder.Body.String(), `"label":"最新帮助"`)
 	require.Contains(t, getRecorder.Body.String(), `"legacy_image_tutorial_url":"https://example.com/image-generation"`)
 	require.NotContains(t, getRecorder.Body.String(), "Old Gateway")

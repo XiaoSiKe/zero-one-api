@@ -32,7 +32,7 @@ func (r *channelStatusCountingSettingRepo) GetMultiple(context.Context, []string
 	return map[string]string{service.SettingKeyPublicChannelStatusEnabled: "false"}, nil
 }
 
-func newPublicChannelStatusSettings(publicEnabled bool, monitorEnabled bool, mode string) *service.SettingService {
+func newPublicChannelStatusSettings(publicEnabled bool, monitorEnabled bool) *service.SettingService {
 	publicValue := "false"
 	if publicEnabled {
 		publicValue = "true"
@@ -44,7 +44,6 @@ func newPublicChannelStatusSettings(publicEnabled bool, monitorEnabled bool, mod
 	return service.NewSettingService(&channelMonitorRouteSettingRepoStub{values: map[string]string{
 		service.SettingKeyPublicChannelStatusEnabled: publicValue,
 		service.SettingKeyChannelMonitorEnabled:      monitorValue,
-		service.SettingKeyChannelMonitorMode:         mode,
 	}}, &config.Config{})
 }
 
@@ -54,7 +53,7 @@ func TestChannelStatusSummaryDisabledDoesNotRequireAuthentication(t *testing.T) 
 	RegisterChannelStatusRoutes(
 		router.Group("/api/v1"),
 		nil,
-		newPublicChannelStatusSettings(false, true, service.ChannelMonitorModeV1),
+		newPublicChannelStatusSettings(false, true),
 		nil,
 	)
 

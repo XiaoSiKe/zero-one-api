@@ -1,8 +1,6 @@
 package routes
 
 import (
-	"context"
-
 	"github.com/Wei-Shaw/sub2api/internal/handler"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
@@ -35,13 +33,11 @@ func RegisterChannelStatusRoutes(
 			return
 		}
 
-		var load func(context.Context) (*service.PublicChannelStatusSummary, error)
-		if runtime.Mode == service.ChannelMonitorModeV2 {
-			load = h.ChannelMonitorV2.GetPublicSummary
-		} else {
-			load = h.ChannelMonitor.GetPublicSummary
-		}
-		summary, err := summaryCache.Get(c.Request.Context(), runtime.Mode, load)
+		summary, err := summaryCache.Get(
+			c.Request.Context(),
+			service.ChannelMonitorModeV1,
+			h.ChannelMonitor.GetPublicSummary,
+		)
 		if err != nil {
 			response.ErrorFrom(c, err)
 			return

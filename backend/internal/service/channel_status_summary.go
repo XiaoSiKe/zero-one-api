@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -17,8 +16,7 @@ import (
 // timestamps; provider, model, group, upstream error, request volume, and
 // credential information remain private.
 type PublicChannelStatusSummary struct {
-	// Mode defines the provenance of the aggregate so consumers never label
-	// traffic-derived metrics as active-probe metrics.
+	// Mode defines the provenance of the active-probe aggregate.
 	Mode           string                    `json:"mode,omitempty"`
 	State          string                    `json:"state"`
 	Reason         string                    `json:"reason,omitempty"`
@@ -48,7 +46,6 @@ const (
 	PublicChannelStatusDisabled    = "disabled"
 
 	PublicChannelStatusModeActiveProbe = "active_probe"
-	PublicChannelStatusModeTraffic     = "traffic"
 
 	publicChannelStatusNoMonitors       = "no_monitors"
 	publicChannelStatusInsufficientData = "insufficient_data"
@@ -371,117 +368,4 @@ func isPublicChannelStatusSampleStale(monitor *ChannelMonitor, checkedAt, now ti
 	maxScheduledDelay := time.Duration(intervalSeconds+jitterSeconds) * time.Second
 	staleAfter := 2*maxScheduledDelay + monitorRequestTimeout + monitorPingTimeout + monitorRunOneBuffer
 	return now.Sub(checkedAt) > staleAfter
-}
-
-// GetPublicChannelStatusSummary maps the V2 traffic-health aggregate to the
-// same compact public contract. V2 traffic success rate is intentionally not
-// labeled as probe availability, so Availability7d remains nil in this mode.
-func (s *ChannelMonitorV2Service) GetPublicChannelStatusSummary(ctx context.Context) (*PublicChannelStatusSummary, error) {
-	if s == nil {
-		return nil, fmt.Errorf("channel monitor v2 service is unavailable")
-	}
-
-	filter, err := s.ParseFilter("7d", nil, nil, nil)
-	if err != nil {
-		return nil, fmt.Errorf("build channel monitor v2 summary filter: %w", err)
-	}
-	// The response is reduced to PublicChannelStatusSummary before it leaves the
-	// server. Admin mode is used internally only to determine whether there is
-	// any data; no count, throughput, or configuration is serialized.
-	snapshot, err := s.Snapshot(ctx, filter, true)
-	if errors.Is(err, ErrChannelMonitorDisabled) {
-		summary := unknownPublicChannelStatusForMode(PublicChannelStatusModeTraffic, publicChannelStatusInsufficientData)
-		return &summary, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("load channel monitor v2 summary: %w", err)
-	}
-	matrix, err := s.Matrix(ctx, filter, ChannelMonitorV2GroupByPlatform, true)
-	if err != nil {
-		return nil, fmt.Errorf("load channel monitor v2 matrix: %w", err)
-	}
-	summary := buildPublicChannelStatusSummaryV2(snapshot)
-	summary.Items = buildPublicChannelStatusItemsV2(matrix)
-	return &summary, nil
-}
-
-func buildPublicChannelStatusSummaryV2(snapshot *ChannelMonitorV2Snapshot) PublicChannelStatusSummary {
-	if snapshot == nil || snapshot.Coverage.ComputedAt.IsZero() || snapshot.Metrics.RequestCount <= 0 {
-		return unknownPublicChannelStatusForMode(PublicChannelStatusModeTraffic, publicChannelStatusInsufficientData)
-	}
-
-	observedAt := snapshot.Coverage.ComputedAt.UTC()
-	summary := PublicChannelStatusSummary{Mode: PublicChannelStatusModeTraffic, ObservedAt: &observedAt}
-	switch snapshot.Health.Overall {
-	case "healthy":
-		summary.State = PublicChannelStatusOperational
-	case "warning", "critical":
-		summary.State = PublicChannelStatusDegraded
-	default:
-		summary.State = PublicChannelStatusUnknown
-		summary.Reason = publicChannelStatusInsufficientData
-	}
-	if snapshot.Metrics.TTFT.P50Ms != nil && *snapshot.Metrics.TTFT.P50Ms >= 0 {
-		latency := int(*snapshot.Metrics.TTFT.P50Ms)
-		summary.LatencyMs = &latency
-	}
-	return summary
-}
-
-func buildPublicChannelStatusItemsV2(matrix *ChannelMonitorV2Matrix) []PublicChannelStatusItem {
-	if matrix == nil {
-		return nil
-	}
-
-	observedAt := matrix.Coverage.DataThrough.UTC()
-	if observedAt.IsZero() {
-		observedAt = matrix.Coverage.ComputedAt.UTC()
-	}
-	items := make([]PublicChannelStatusItem, 0, len(matrix.Items))
-	for _, row := range matrix.Items {
-		name := strings.TrimSpace(row.Platform)
-		if name == "" {
-			continue
-		}
-
-		item := PublicChannelStatusItem{
-			Name:     name,
-			State:    publicChannelStatusV2State(row.Health.Overall, row.Metrics.RequestCount),
-			Timeline: make([]PublicChannelStatusTimelinePoint, 0, len(row.Buckets)),
-		}
-		if !observedAt.IsZero() {
-			value := observedAt
-			item.ObservedAt = &value
-		}
-		if row.Metrics.RequestCount > 0 && !math.IsNaN(row.Metrics.ErrorRate) && !math.IsInf(row.Metrics.ErrorRate, 0) {
-			errorRate := math.Max(0, math.Min(1, row.Metrics.ErrorRate))
-			availability := (1 - errorRate) * 100
-			item.Availability7d = &availability
-		}
-		for _, bucket := range row.Buckets {
-			if bucket.BucketStart.IsZero() {
-				continue
-			}
-			item.Timeline = append(item.Timeline, PublicChannelStatusTimelinePoint{
-				Status:    publicChannelStatusV2State(bucket.Health.Overall, bucket.Metrics.RequestCount),
-				CheckedAt: bucket.BucketStart.UTC(),
-			})
-		}
-		items = append(items, item)
-	}
-	return items
-}
-
-func publicChannelStatusV2State(health string, requestCount int64) string {
-	if requestCount <= 0 {
-		return PublicChannelStatusUnknown
-	}
-	switch health {
-	case "healthy":
-		return PublicChannelStatusOperational
-	case "warning", "critical":
-		return PublicChannelStatusDegraded
-	default:
-		return PublicChannelStatusUnknown
-	}
 }

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"database/sql"
-	"os"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
@@ -962,8 +961,6 @@ var ProviderSet = wire.NewSet(
 	ProvideChannelMonitorService,
 	ProvideChannelMonitorRunner,
 	NewChannelMonitorQuotaFetcher,
-	ProvideChannelMonitorV2Service,
-	ProvideChannelMonitorV2Aggregator,
 	NewChannelMonitorRequestTemplateService,
 	ProvideUserPlatformQuotaUsageFlusher,
 )
@@ -1005,7 +1002,7 @@ func ProvidePaymentOrderExpiryService(paymentSvc *PaymentService, lockCache Lead
 
 // ProvideChannelMonitorService 创建渠道监控服务（CRUD + RunCheck + 用户视图聚合）。
 // 加密器复用 wire 中已注入的 SecretEncryptor（AES-256-GCM）。
-// settingService gates RunCheck via channel_monitor_enabled + channel_monitor_mode.
+// settingService gates RunCheck via channel_monitor_enabled.
 func ProvideChannelMonitorService(
 	repo ChannelMonitorRepository,
 	encryptor SecretEncryptor,
@@ -1037,24 +1034,4 @@ func ProvideChannelMonitorRunner(
 	}
 	r.Start()
 	return r
-}
-
-// ProvideChannelMonitorV2Service wires settings for user-facing privacy flags
-// (e.g. hide RPM/TPM throughput).
-func ProvideChannelMonitorV2Service(repo ChannelMonitorV2Repository, settingService *SettingService) *ChannelMonitorV2Service {
-	svc := NewChannelMonitorV2Service(repo)
-	svc.SetRuntimeReader(settingService)
-	return svc
-}
-
-// ProvideChannelMonitorV2Aggregator starts the passive minute-rollup worker.
-// Aggregation only runs when channel_monitor_enabled=true and mode=v2 (and V2 config enabled).
-// Set CHANNEL_MONITOR_V2_DISABLE_AGGREGATOR=1 to skip Start (local demo with seeded facts).
-func ProvideChannelMonitorV2Aggregator(repo ChannelMonitorV2Repository, db *sql.DB, settingService *SettingService) *ChannelMonitorV2Aggregator {
-	aggregator := NewChannelMonitorV2Aggregator(repo, db, settingService)
-	if os.Getenv("CHANNEL_MONITOR_V2_DISABLE_AGGREGATOR") == "1" {
-		return aggregator
-	}
-	aggregator.Start()
-	return aggregator
 }
