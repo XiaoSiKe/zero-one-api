@@ -144,30 +144,6 @@ describe("StatusSection", () => {
     expect(mocks.fetchChannelStatus).toHaveBeenCalledTimes(2);
   });
 
-  it("does not invent a channel row when the response has only an aggregate", async () => {
-    mocks.fetchChannelStatus.mockResolvedValue(
-      success({
-        status: "success",
-        data: {
-          mode: "traffic",
-          state: "operational",
-          reason: null,
-          latencyMs: 240,
-          availability7d: null,
-          observedAt: "2026-08-16T08:25:00Z",
-          items: [],
-        },
-      }),
-    );
-    render(<StatusSection />);
-
-    await screen.findByText("渠道");
-    await screen.findByText("当前监控模式未提供逐渠道检测记录。");
-    expect(screen.queryByText("渠道汇总")).toBeNull();
-    expect(screen.queryByText("中位首字响应 240 ms")).toBeNull();
-    expect(screen.getByLabelText("渠道状态数据").querySelectorAll(".status-monitor-row")).toHaveLength(0);
-  });
-
   it("keeps active-probe channel rows when they are available", async () => {
     mocks.fetchChannelStatus.mockResolvedValue(
       success({

@@ -623,10 +623,9 @@ systemd 临时 timer，20 分钟后调用同一脚本的 `watchdog RECOVERY_DIR`
 回滚到旧镜像时允许其读写保留字段，切回新镜像后仍不重算历史账。完整口径见
 [ADR 0017](adr/0017-upstream-declared-account-cost.md)。
 
-渠道监控发布若包含 V1 → V2 切换，还必须执行
-[Channel Monitor V2 生产切换验收](channel-monitor-v2-safe-defaults.md#production-cutover-runbook-2026-09-20)。
-V1 `probe`/`quota_probe` 是可能计费的真实生成请求；V2 聚合水位和 30 天回填是派生状态，
-不得以删除原始日志、回滚数据库或重建数据卷来处理切换故障。
+渠道监控仅保留主动监控实现。`probe`/`quota_probe` 会向上游发送可能计费的真实
+生成请求；`quota` 不发送生成请求。发布和回滚不得删除原始日志、历史监控记录、
+账单或数据卷。历史被动聚合表仅为兼容已迁移数据库而保留，运行时不再读取或回填。
 
 ### Safe Edge switch
 

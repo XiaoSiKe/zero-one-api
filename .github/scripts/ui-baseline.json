@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-20-channel-health-amber-v3",
-  "baseline_commit": "1ba276906fc0c261319f0bc21b5f89b53d9f5c6e",
+  "baseline_ref": "ui-approved-2026-09-20-channel-monitor-v1-only-v1",
+  "baseline_commit": "925c0975880107f6d10582bf2498e368da1c3536",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -25,7 +25,6 @@
     "visual-regression/tests/__screenshots__/chromium-desktop/console-affiliate-customers.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-announcement-editor.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v1.png",
-    "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v2.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-date-picker.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-header-navigation-settings.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/landing-model-plaza-pricing.png",
@@ -243,7 +242,6 @@
         "visual-regression/tests/__screenshots__/chromium-desktop/console-affiliate-customers.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-announcement-editor.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v1.png",
-        "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v2.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-date-picker.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-model-plaza-pricing.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-redeem-benefit.png",
@@ -388,6 +386,7 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v7/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v9/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v10/",
         "frontend/vite.adapter-boundary.ts"
       ]
     },

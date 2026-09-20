@@ -5,7 +5,7 @@ type UnknownRecord = Record<string, unknown>;
 
 export type ChannelStatusState = "operational" | "degraded" | "unknown";
 export type ChannelStatusTimelineState = ChannelStatusState | "failed" | "error";
-export type ChannelStatusMode = "active_probe" | "traffic" | "disabled" | null;
+export type ChannelStatusMode = "active_probe" | "disabled" | null;
 export type ChannelStatusReason =
   "no_monitors" | "insufficient_data" | "disabled" | null;
 export type ChannelStatusErrorReason =
@@ -90,7 +90,7 @@ function parseReason(value: unknown): ChannelStatusReason | undefined {
 
 function parseMode(value: unknown): ChannelStatusMode | undefined {
   if (value === undefined || value === null || value === "") return null;
-  return value === "active_probe" || value === "traffic" || value === "disabled"
+  return value === "active_probe" || value === "disabled"
     ? value
     : undefined;
 }

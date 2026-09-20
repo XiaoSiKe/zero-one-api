@@ -39,6 +39,7 @@ import {
   NATIVE_COST_PASSWORD_RECOVERY_DIRECTORY,
   BILLING_CLARITY_CN_PROVIDER_ADMIN_DIRECTORY,
   CHANNEL_HEALTH_CN_PROVIDER_ADMIN_DIRECTORY,
+  V1_ONLY_CN_PROVIDER_ADMIN_DIRECTORY,
   BILLING_CLARITY_SHELL_DIRECTORY,
   USAGE_ACCOUNT_COST_RUNTIME_ASSET,
   usageAccountCostEntrySource,
@@ -266,15 +267,15 @@ test('v10 clarifies account identity and uses request-time upstream account cost
   assert.throws(() => patchBillingClarityLocale('unrelated'), /billing clarity locale seam changed/)
 })
 
-test('v9 Provider catalog adapter owns the six admin surfaces and public channel status', () => {
-  const targetDirectory = resolve(assetsDirectory, CHANNEL_HEALTH_CN_PROVIDER_ADMIN_DIRECTORY)
+test('v10 Provider catalog adapter keeps only V1 channel monitoring', () => {
+  const targetDirectory = resolve(assetsDirectory, V1_ONLY_CN_PROVIDER_ADMIN_DIRECTORY)
   assert.equal(verifyCurrentCNProviderAdminVariant(assetsDirectory), targetDirectory)
 
   const assets = readdirSync(targetDirectory).filter((name) => name.endsWith('.js'))
   assert.ok(assets.length > 0)
   for (const name of assets) {
     const asset = lstatSync(resolve(targetDirectory, name))
-    assert.ok(asset.isFile() || asset.isSymbolicLink(), `v9 asset must be a file or immutable-pool alias: ${name}`)
+    assert.ok(asset.isFile() || asset.isSymbolicLink(), `v10 asset must be a file or immutable-pool alias: ${name}`)
   }
   const source = assets
     .sort()
@@ -282,6 +283,7 @@ test('v9 Provider catalog adapter owns the six admin surfaces and public channel
     .join('\n')
   assert.match(source, /minimax/)
   assert.match(source, /channel-status/)
+  assert.doesNotMatch(source, /channel-monitor-v2|ChannelMonitorV2|channel_monitor_mode/)
   assert.match(source, /#F59E0B/i)
   assert.match(source, /Upstream Declared Rate \(Observed\)/)
   assert.match(source, /上游声明倍率（观测）/)

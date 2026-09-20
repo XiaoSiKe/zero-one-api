@@ -55,7 +55,6 @@ async function openCreateMonitor(page: Page) {
   await page.goto(`${consoleOrigin}/admin/channels/monitor`)
   const host = page.locator('#zero-one-provider-catalog-admin')
   await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'channel-monitor')
-  await host.getByRole('tab', { name: /V1/ }).click()
   await host.getByRole('button', { name: '新增监控', exact: true }).first().click()
 }
 
@@ -65,7 +64,7 @@ test.describe('Recovered CN Provider management contracts', () => {
     const user = testInfo.title.includes('simple mode')
       ? { ...adminUser, run_mode: 'simple' as const }
       : adminUser
-    await seedConsole(page, 'v2', { user })
+    await seedConsole(page, 'v1', { user })
   })
 
   test('Groups exposes and submits every CN Provider platform', async ({ page }) => {
@@ -471,13 +470,13 @@ test.describe('Recovered CN Provider management contracts', () => {
     const adapterAssets: string[] = []
     page.on('request', (request) => {
       const path = new URL(request.url()).pathname
-      if (path.startsWith('/assets/cn-provider-admin-v9/')) adapterAssets.push(path)
+      if (path.startsWith('/assets/cn-provider-admin-v10/')) adapterAssets.push(path)
     })
 
     await page.goto(`${consoleOrigin}/admin/dashboard`)
     await expect(page.locator('.app-shell')).toBeVisible()
     await expect.poll(() => adapterAssets).toEqual([
-      '/assets/cn-provider-admin-v9/cn-provider-admin.js',
+      '/assets/cn-provider-admin-v10/cn-provider-admin.js',
     ])
     await expect(page.locator('#zero-one-cn-provider-admin')).toHaveCount(0)
     await expect(page.locator('#zero-one-cn-provider-admin-style')).toHaveCount(0)
@@ -489,7 +488,7 @@ test.describe('Recovered CN Provider management contracts', () => {
     const pageErrors: string[] = []
     let leafRequests = 0
     page.on('pageerror', (error) => pageErrors.push(error.message))
-    await page.route('**/assets/cn-provider-admin-v9/cn-provider-admin.js', (route) => {
+    await page.route('**/assets/cn-provider-admin-v10/cn-provider-admin.js', (route) => {
       return route.fulfill({ status: 200, contentType: 'text/javascript', body: 'export {}' })
     })
     await page.route('**/assets/cn-provider-admin-v1/cnProviderAdminLeaf-*.js', (route) => {
@@ -530,7 +529,7 @@ test.describe('Recovered CN Provider management contracts', () => {
     ]
     const requestedHistoricalLeaves = new Set<string>()
     let historicalLeaf = historicalLeaves[0]
-    await page.route('**/assets/cn-provider-admin-v9/cn-provider-admin.js', (route) => {
+    await page.route('**/assets/cn-provider-admin-v10/cn-provider-admin.js', (route) => {
       return route.fulfill({ status: 200, contentType: 'text/javascript', body: 'export {}' })
     })
     page.on('request', (request) => {

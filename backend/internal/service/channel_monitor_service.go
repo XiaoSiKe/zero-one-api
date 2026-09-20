@@ -63,7 +63,7 @@ type ChannelMonitorRepository interface {
 }
 
 // channelMonitorRuntimeReader is the optional settings view used to gate V1
-// active probes by channel_monitor_enabled + channel_monitor_mode.
+// active probes by channel_monitor_enabled.
 type channelMonitorRuntimeReader interface {
 	GetChannelMonitorRuntime(ctx context.Context) ChannelMonitorRuntime
 }
@@ -98,7 +98,7 @@ func NewChannelMonitorService(repo ChannelMonitorRepository, encryptor SecretEnc
 }
 
 // SetRuntimeReader injects the settings reader used to gate active probes.
-// Optional: when unset, active probes are treated as mode=v2 (retired).
+// Fail closed when unset so an initialization fault cannot emit paid probes.
 func (s *ChannelMonitorService) SetRuntimeReader(r channelMonitorRuntimeReader) {
 	if s == nil {
 		return
@@ -108,7 +108,7 @@ func (s *ChannelMonitorService) SetRuntimeReader(r channelMonitorRuntimeReader) 
 
 func (s *ChannelMonitorService) probeRuntime(ctx context.Context) ChannelMonitorRuntime {
 	if s == nil || s.settings == nil {
-		return ChannelMonitorRuntime{Enabled: true, Mode: ChannelMonitorModeV2}
+		return ChannelMonitorRuntime{Enabled: false}
 	}
 	return s.settings.GetChannelMonitorRuntime(ctx)
 }
@@ -597,8 +597,7 @@ func (s *ChannelMonitorService) ListHistory(ctx context.Context, id int64, model
 
 // RunCheck 同步触发对一个监控的检测：并发跑 primary + extra 模型，
 // 写历史记录并更新 last_checked_at。返回每个模型的检测结果。
-// 仅当 channel_monitor_enabled=true 且 channel_monitor_mode=v1 时真正探测；
-// mode=v2 时返回 ErrChannelMonitorActiveProbesRetired，不产生上游流量。
+// 仅当 channel_monitor_enabled=true 时真正探测。
 //
 // 按 check_mode 分派：probe（默认，现状探活）/ quota（仅查关联账号配额，
 // 零 LLM 成本）/ quota_probe（探活 + 配额快照挂主模型行）。
@@ -606,9 +605,6 @@ func (s *ChannelMonitorService) RunCheck(ctx context.Context, id int64) ([]*Chec
 	rt := s.probeRuntime(ctx)
 	if !rt.Enabled {
 		return nil, ErrChannelMonitorDisabled
-	}
-	if !rt.ActiveProbesAllowed() {
-		return nil, ErrChannelMonitorActiveProbesRetired
 	}
 	m, err := s.Get(ctx, id) // 已解密 APIKey
 	if err != nil {

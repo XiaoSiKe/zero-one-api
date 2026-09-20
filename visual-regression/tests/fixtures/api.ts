@@ -49,7 +49,7 @@ export const regularUser = {
   balance: 96.25,
 }
 
-export function publicSettings(mode: 'v1' | 'v2' = 'v2') {
+export function publicSettings() {
   return {
     registration_enabled: true,
     email_verify_enabled: false,
@@ -93,9 +93,7 @@ export function publicSettings(mode: 'v1' | 'v2' = 'v2') {
     balance_low_notify_threshold: 0,
     channel_monitor_enabled: true,
     public_channel_status_enabled: true,
-    channel_monitor_mode: mode,
     channel_monitor_default_interval_seconds: 300,
-    channel_monitor_hide_throughput: false,
     available_channels_enabled: false,
     model_plaza_enabled: true,
     model_plaza_require_auth: false,
@@ -122,57 +120,6 @@ const announcement = {
   targeting: { any_of: [] },
   created_at: '2026-08-16T09:00:00+08:00',
   updated_at: observedAt,
-}
-
-const coverage = {
-  requested_start: '2026-08-16T10:30:00+08:00',
-  requested_end: observedAt,
-  coverage_start: '2026-08-16T10:30:00+08:00',
-  data_through: observedAt,
-  computed_at: observedAt,
-  aggregation_lag_seconds: 12,
-  coverage_complete: true,
-  bucket_seconds: 300,
-}
-
-const metric = {
-  success_requests: 982,
-  error_requests: 18,
-  request_count: 1000,
-  token_count: 456789,
-  rpm: 12.4,
-  tpm: 6080,
-  error_rate: 0.018,
-  cache_rate: 0.41,
-  cache_rate_numerator: 320,
-  cache_rate_denominator: 780,
-  ttft: { sample_count: 982, p50_ms: 740, p90_ms: 1280, p95_ms: 1540, avg_ms: 810 },
-  duration: { sample_count: 982, p50_ms: 2180, p90_ms: 3860, p95_ms: 4420, avg_ms: 2460 },
-}
-
-const health = {
-  overall: 'healthy',
-  error_rate: 'healthy',
-  ttft: 'healthy',
-  cache: 'healthy',
-  score: 93,
-  error_rate_score: 96,
-  ttft_score: 91,
-  cache_score: 88,
-  minimum_sample: 20,
-  thresholds: {
-    minimum_sample: 20,
-    warning_error_rate: 0.05,
-    critical_error_rate: 0.15,
-    target_ttft_ms: 800,
-    warning_ttft_ms: 1500,
-    critical_ttft_ms: 3000,
-    warning_cache_rate: 0.2,
-    critical_cache_rate: 0.05,
-    error_weight: 0.5,
-    ttft_weight: 0.35,
-    cache_weight: 0.15,
-  },
 }
 
 const modelPlaza = {
@@ -382,7 +329,7 @@ async function fulfill(route: Route, data: unknown, status = 200) {
 
 export async function seedConsole(
   page: Page,
-  mode: 'v1' | 'v2' = 'v2',
+  _mode: 'v1' = 'v1',
   options: {
     authenticated?: boolean
     passwordResetEnabled?: boolean
@@ -425,7 +372,7 @@ export async function seedConsole(
   const locale = options.locale ?? 'zh'
   const theme = options.theme ?? 'light'
   const settings = {
-    ...publicSettings(mode),
+    ...publicSettings(),
     password_reset_enabled: options.passwordResetEnabled ?? true,
     registration_enabled: options.registrationEnabled ?? true,
     community_qr_enabled: options.communityQrEnabled ?? false,
@@ -444,7 +391,7 @@ export async function seedConsole(
     model_plaza_placement: options.modelPlazaPlacement ?? 'header',
     site_logo: options.siteLogo ?? '',
     risk_control_enabled: options.riskControlEnabled ?? false,
-    version: publicSettings(mode).version,
+    version: publicSettings().version,
     user_sidebar_order: options.userSidebarOrder ?? [],
     admin_sidebar_order: options.adminSidebarOrder ?? [],
   }
@@ -947,75 +894,6 @@ export async function seedConsole(
     if (path === '/admin/channel-monitor-templates') {
       return fulfill(route, { items: [], total: 0, page: 1, page_size: 100 })
     }
-    if (path === '/admin/channel-monitor-v2/config') {
-      return fulfill(route, {
-        version: 1,
-        enabled: true,
-        refresh_interval_seconds: 300,
-        platforms: [
-          { platform: 'anthropic', enabled: true, models: [] },
-          { platform: 'openai', enabled: true, models: [] },
-          { platform: 'gemini', enabled: true, models: [] },
-          { platform: 'antigravity', enabled: true, models: [] },
-          { platform: 'grok', enabled: true, models: [] },
-          { platform: 'kimi', enabled: true, models: [] },
-          { platform: 'zhipu', enabled: true, models: [] },
-          { platform: 'deepseek', enabled: true, models: [] },
-        ],
-        group_ids: [],
-        health_thresholds: health.thresholds,
-        ignored_error_categories: [],
-      })
-    }
-    if (path.endsWith('/channel-monitor-v2/dimensions')) {
-      return fulfill(route, {
-        platforms: [{ value: 'openai', label: 'OpenAI', request_count: 1000 }],
-        groups: [{ id: 1, name: '默认分组', platform: 'openai', request_count: 1000 }],
-        models: [{ value: 'gpt-5', label: 'gpt-5', platform: 'openai', request_count: 1000 }],
-      })
-    }
-    if (path.endsWith('/channel-monitor-v2/snapshot')) {
-      return fulfill(route, {
-        config: {
-          version: 1,
-          enabled: true,
-          refresh_interval_seconds: 300,
-          platforms: [{ platform: 'openai', enabled: true, models: ['gpt-5'] }],
-          group_ids: [1],
-          health_thresholds: health.thresholds,
-        },
-        coverage,
-        metrics: metric,
-        health,
-        trend: [0, 1, 2, 3, 4, 5].map((index) => ({
-          bucket_start: `2026-08-16T${String(11 + Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}:00+08:00`,
-          metrics: { ...metric, request_count: 840 + index * 32 },
-          health,
-        })),
-      })
-    }
-    if (path.endsWith('/channel-monitor-v2/matrix')) {
-      return fulfill(route, {
-        coverage,
-        group_by: 'platform_group_model',
-        items: [{
-          platform: 'openai',
-          group_id: 1,
-          group_name: '默认分组',
-          model: 'gpt-5',
-          metrics: metric,
-          health,
-          buckets: [],
-        }],
-      })
-    }
-    if (path.endsWith('/channel-monitor-v2/models')) {
-      return fulfill(route, { coverage, items: [{ platform: 'openai', model: 'gpt-5', metrics: metric, health }] })
-    }
-    if (path.endsWith('/channel-monitor-v2/errors')) {
-      return fulfill(route, { coverage, items: [{ category: 'timeout', count: 12, rate: 0.012 }] })
-    }
-    if (path.endsWith('/channel-monitor-v2/users')) return fulfill(route, { coverage, items: [] })
     if (path === '/redeem' || path.startsWith('/redeem/') || path.startsWith('/admin/redeem-codes/')) {
       return route.fulfill({
         status: 501,
@@ -1028,12 +906,12 @@ export async function seedConsole(
 }
 
 export interface LandingFixtureOptions {
-  status?: 'active_probe' | 'traffic' | 'error' | 'empty'
+  status?: 'active_probe' | 'error' | 'empty'
 }
 
 export async function seedLanding(page: Page, options: LandingFixtureOptions = {}) {
   const status = options.status ?? 'active_probe'
-  await page.route('**/api/v1/settings/public*', (route) => fulfill(route, publicSettings('v1')))
+  await page.route('**/api/v1/settings/public*', (route) => fulfill(route, publicSettings()))
   await page.route('**/api/v1/announcements/public', (route) =>
     fulfill(route, [
       { id: 42, title: announcement.title, content: announcement.content },
@@ -1048,7 +926,7 @@ export async function seedLanding(page: Page, options: LandingFixtureOptions = {
     }
     if (status === 'empty') {
       await fulfill(route, {
-        mode: 'traffic',
+        mode: 'active_probe',
         state: 'unknown',
         reason: 'insufficient_data',
         latency_ms: null,
@@ -1059,20 +937,18 @@ export async function seedLanding(page: Page, options: LandingFixtureOptions = {
     }
     await fulfill(route, {
       mode: status,
-      state: status === 'traffic' ? 'degraded' : 'operational',
+      state: 'operational',
       reason: null,
-      latency_ms: status === 'traffic' ? 1120 : 826,
-      availability_7d: status === 'traffic' ? null : 99.92,
+      latency_ms: 826,
+      availability_7d: 99.92,
       observed_at: observedAt,
-      items: status === 'active_probe'
-        ? [{
-            name: 'OpenAI 主线路',
-            state: 'operational',
-            availability_7d: 99.92,
-            observed_at: observedAt,
-            timeline: [],
-          }]
-        : [],
+      items: [{
+        name: 'OpenAI 主线路',
+        state: 'operational',
+        availability_7d: 99.92,
+        observed_at: observedAt,
+        timeline: [],
+      }],
     })
   })
 }

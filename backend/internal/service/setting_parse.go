@@ -203,11 +203,8 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		// Channel monitor defaults (enabled, 60s)
 		SettingKeyChannelMonitorEnabled:                "true",
 		SettingKeyPublicChannelStatusEnabled:           "false",
-		SettingKeyChannelMonitorMode:                   ChannelMonitorModeV1,
 		SettingKeyChannelMonitorDefaultIntervalSeconds: "60",
-		SettingKeyChannelMonitorHideThroughput:         "true",
 		SettingKeyChannelMonitorShowQuota:              "false",
-		SettingKeyChannelMonitorHideUserRanking:        "false",
 
 		// Grok compatibility defaults: cross-client mapping stays enabled unless
 		// operators explicitly disable it.
@@ -851,17 +848,12 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	// Channel monitor feature (default: enabled, 60s)
 	result.ChannelMonitorEnabled = !isFalseSettingValue(settings[SettingKeyChannelMonitorEnabled])
 	result.PublicChannelStatusEnabled = settings[SettingKeyPublicChannelStatusEnabled] == "true"
-	result.ChannelMonitorMode = normalizeChannelMonitorMode(settings[SettingKeyChannelMonitorMode])
 	result.ChannelMonitorDefaultIntervalSeconds = parseChannelMonitorInterval(
 		settings[SettingKeyChannelMonitorDefaultIntervalSeconds],
 	)
-	// 默认隐藏吞吐（迁移 206 的隐私默认）：未配置时必须与 setting_public.go 的
-	// 公开读取路径给出同一个值，否则管理端看到“未隐藏”而用户端实际已隐藏。
-	result.ChannelMonitorHideThroughput = !isFalseSettingValue(settings[SettingKeyChannelMonitorHideThroughput])
 	// 配额展示默认关闭且 fail-closed：仅字面 "true" 视为开启
 	// （与 setting_public.go 公开读取路径保持一致）。
 	result.ChannelMonitorShowQuota = settings[SettingKeyChannelMonitorShowQuota] == "true"
-	result.ChannelMonitorHideUserRanking = isTrueSettingValue(settings[SettingKeyChannelMonitorHideUserRanking])
 
 	// Grok default mapping policy
 	result.GrokDefaultTextModel = strings.TrimSpace(settings[SettingKeyGrokDefaultTextModel])
@@ -1119,15 +1111,6 @@ func EncodeSidebarOrder(paths []string) string {
 		return "[]"
 	}
 	return normalizeSidebarOrderJSON(string(encoded))
-}
-
-func isTrueSettingValue(value string) bool {
-	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "true", "1", "on", "enabled":
-		return true
-	default:
-		return false
-	}
 }
 
 func normalizeVisibleMethodSettingSource(method, source string, enabled bool) (string, error) {

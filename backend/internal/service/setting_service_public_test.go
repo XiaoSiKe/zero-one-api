@@ -22,8 +22,6 @@ func TestSettingService_ChannelMonitorRuntimeFailsClosedWhenSettingsUnavailable(
 			runtime := svc.GetChannelMonitorRuntime(context.Background())
 			require.False(t, runtime.Enabled)
 			require.False(t, runtime.ActiveProbesAllowed())
-			require.False(t, runtime.PassiveAggregationAllowed())
-			require.True(t, runtime.HideThroughput)
 		})
 	}
 
@@ -125,21 +123,6 @@ func TestSettingService_GetPublicSettings_ExposesCompactHomeEnabled(t *testing.T
 	require.False(t, missingSettings.CompactHomeEnabled)
 }
 
-func TestSettingService_ChannelMonitorHideThroughputDefaultsToPrivate(t *testing.T) {
-	missing := NewSettingService(&settingPublicRepoStub{values: map[string]string{}}, &config.Config{}).GetChannelMonitorRuntime(context.Background())
-	require.True(t, missing.HideThroughput)
-	public, err := NewSettingService(&settingPublicRepoStub{values: map[string]string{}}, &config.Config{}).GetPublicSettings(context.Background())
-	require.NoError(t, err)
-	require.True(t, public.ChannelMonitorHideThroughput)
-
-	for _, value := range []string{"false", "0", "off", "disabled"} {
-		runtime := NewSettingService(&settingPublicRepoStub{values: map[string]string{
-			SettingKeyChannelMonitorHideThroughput: value,
-		}}, &config.Config{}).GetChannelMonitorRuntime(context.Background())
-		require.False(t, runtime.HideThroughput, "value=%q", value)
-	}
-}
-
 func TestSettingService_ChannelMonitorShowQuotaFailsClosed(t *testing.T) {
 	// 缺省（迁移插入 'false' / 老库无行）一律不展示。
 	missingRuntime := NewSettingService(&settingPublicRepoStub{values: map[string]string{}}, &config.Config{}).GetChannelMonitorRuntime(context.Background())
@@ -160,21 +143,6 @@ func TestSettingService_ChannelMonitorShowQuotaFailsClosed(t *testing.T) {
 			SettingKeyChannelMonitorShowQuota: value,
 		}}, &config.Config{}).GetChannelMonitorRuntime(context.Background())
 		require.False(t, rt.ShowQuota, "value=%q", value)
-	}
-}
-
-func TestSettingService_ChannelMonitorHideUserRankingDefaultsToVisible(t *testing.T) {
-	missing := NewSettingService(&settingPublicRepoStub{values: map[string]string{}}, &config.Config{}).GetChannelMonitorRuntime(context.Background())
-	require.False(t, missing.HideUserRanking)
-	public, err := NewSettingService(&settingPublicRepoStub{values: map[string]string{}}, &config.Config{}).GetPublicSettings(context.Background())
-	require.NoError(t, err)
-	require.False(t, public.ChannelMonitorHideUserRanking)
-
-	for _, value := range []string{"true", "1", "on", "enabled"} {
-		runtime := NewSettingService(&settingPublicRepoStub{values: map[string]string{
-			SettingKeyChannelMonitorHideUserRanking: value,
-		}}, &config.Config{}).GetChannelMonitorRuntime(context.Background())
-		require.True(t, runtime.HideUserRanking, "value=%q", value)
 	}
 }
 

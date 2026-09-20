@@ -32,6 +32,7 @@ export const CURRENT_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v6'
 export const LEGACY_CN_PROVIDER_ADMIN_DIRECTORY = 'cn-provider-admin-v1'
 export const BILLING_CLARITY_CN_PROVIDER_ADMIN_DIRECTORY = 'cn-provider-admin-v8'
 export const CHANNEL_HEALTH_CN_PROVIDER_ADMIN_DIRECTORY = 'cn-provider-admin-v9'
+export const V1_ONLY_CN_PROVIDER_ADMIN_DIRECTORY = 'cn-provider-admin-v10'
 export const PASSWORD_RECOVERY_PAGES = {
   'ForgotPasswordView-DfgTg0iM.js': 'password-recovery-v1/ForgotPasswordView.js',
   'ResetPasswordView-CMRDA6OL.js': 'password-recovery-v1/ResetPasswordView.js',
@@ -538,10 +539,10 @@ export function patchBillingClarityLocale(source) {
 }
 
 export function verifyCurrentCNProviderAdminVariant(assetsDirectory) {
-	const targetDirectory = resolve(assetsDirectory, CHANNEL_HEALTH_CN_PROVIDER_ADMIN_DIRECTORY)
+	const targetDirectory = resolve(assetsDirectory, V1_ONLY_CN_PROVIDER_ADMIN_DIRECTORY)
   const entry = readFileSync(resolve(targetDirectory, 'cn-provider-admin.js'), 'utf8')
   const required = [
-    '/assets/cn-provider-admin-v9/cn-provider-admin.css',
+    '/assets/cn-provider-admin-v10/cn-provider-admin.css',
     '/admin/accounts',
     '/admin/groups',
     '/admin/channels/pricing',

@@ -343,13 +343,10 @@ type UpdateSettingsRequest struct {
 	PaymentAlipayMobilePrecreateDeepLink *bool `json:"payment_alipay_mobile_precreate_deep_link"`
 
 	// Channel Monitor feature switch
-	ChannelMonitorEnabled                *bool   `json:"channel_monitor_enabled"`
-	PublicChannelStatusEnabled           *bool   `json:"public_channel_status_enabled"`
-	ChannelMonitorMode                   *string `json:"channel_monitor_mode"`
-	ChannelMonitorDefaultIntervalSeconds *int    `json:"channel_monitor_default_interval_seconds"`
-	ChannelMonitorHideThroughput         *bool   `json:"channel_monitor_hide_throughput"`
-	ChannelMonitorShowQuota              *bool   `json:"channel_monitor_show_quota"`
-	ChannelMonitorHideUserRanking        *bool   `json:"channel_monitor_hide_user_ranking"`
+	ChannelMonitorEnabled                *bool `json:"channel_monitor_enabled"`
+	PublicChannelStatusEnabled           *bool `json:"public_channel_status_enabled"`
+	ChannelMonitorDefaultIntervalSeconds *int  `json:"channel_monitor_default_interval_seconds"`
+	ChannelMonitorShowQuota              *bool `json:"channel_monitor_show_quota"`
 
 	// Grok model mapping policy
 	GrokDefaultTextModel           *string `json:"grok_default_text_model"`
@@ -2040,35 +2037,17 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.PublicChannelStatusEnabled
 		}(),
-		ChannelMonitorMode: func() string {
-			if req.ChannelMonitorMode != nil {
-				return *req.ChannelMonitorMode
-			}
-			return previousSettings.ChannelMonitorMode
-		}(),
 		ChannelMonitorDefaultIntervalSeconds: func() int {
 			if req.ChannelMonitorDefaultIntervalSeconds != nil {
 				return *req.ChannelMonitorDefaultIntervalSeconds
 			}
 			return previousSettings.ChannelMonitorDefaultIntervalSeconds
 		}(),
-		ChannelMonitorHideThroughput: func() bool {
-			if req.ChannelMonitorHideThroughput != nil {
-				return *req.ChannelMonitorHideThroughput
-			}
-			return previousSettings.ChannelMonitorHideThroughput
-		}(),
 		ChannelMonitorShowQuota: func() bool {
 			if req.ChannelMonitorShowQuota != nil {
 				return *req.ChannelMonitorShowQuota
 			}
 			return previousSettings.ChannelMonitorShowQuota
-		}(),
-		ChannelMonitorHideUserRanking: func() bool {
-			if req.ChannelMonitorHideUserRanking != nil {
-				return *req.ChannelMonitorHideUserRanking
-			}
-			return previousSettings.ChannelMonitorHideUserRanking
 		}(),
 		GrokDefaultTextModel: func() string {
 			if req.GrokDefaultTextModel != nil {
@@ -2548,11 +2527,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 
 		ChannelMonitorEnabled:                updatedSettings.ChannelMonitorEnabled,
 		PublicChannelStatusEnabled:           updatedSettings.PublicChannelStatusEnabled,
-		ChannelMonitorMode:                   updatedSettings.ChannelMonitorMode,
 		ChannelMonitorDefaultIntervalSeconds: updatedSettings.ChannelMonitorDefaultIntervalSeconds,
-		ChannelMonitorHideThroughput:         updatedSettings.ChannelMonitorHideThroughput,
 		ChannelMonitorShowQuota:              updatedSettings.ChannelMonitorShowQuota,
-		ChannelMonitorHideUserRanking:        updatedSettings.ChannelMonitorHideUserRanking,
 
 		GrokDefaultTextModel:           updatedSettings.GrokDefaultTextModel,
 		GrokCrossClientModelMapEnabled: updatedSettings.GrokCrossClientModelMapEnabled,

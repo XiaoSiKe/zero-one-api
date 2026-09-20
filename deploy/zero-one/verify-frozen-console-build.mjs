@@ -57,8 +57,8 @@ try {
   if (result.status !== 0) process.exit(result.status ?? 1)
   if (target === 'cn-provider-admin') {
     requireIdenticalTree(
-      resolve(outputRoot, 'cn-provider-admin-v9'),
-      resolve(repositoryRoot, 'deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v9'),
+      resolve(outputRoot, 'cn-provider-admin-v10'),
+      resolve(repositoryRoot, 'deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v10'),
     )
   }
   const detail = target === 'cn-provider-admin'
