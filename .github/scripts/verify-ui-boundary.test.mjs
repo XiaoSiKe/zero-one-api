@@ -122,6 +122,7 @@ test('validates the approved UI baseline manifest', () => {
   assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v11/'))
   assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/'))
   assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v9/'))
+  assert.ok(cnProviderManagement.paths.includes('deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v10/'))
   assert.ok(
     cnProviderManagement.paths.includes(
       'visual-regression/tests/__screenshots__/chromium-desktop/console-accounts-cn-protocol-guidance.png',
@@ -206,7 +207,6 @@ test('validates the approved UI baseline manifest', () => {
     'visual-regression/tests/__screenshots__/chromium-desktop/console-affiliate-customers.png',
     'visual-regression/tests/__screenshots__/chromium-desktop/console-announcement-editor.png',
     'visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v1.png',
-    'visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v2.png',
     'visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-date-picker.png',
     'visual-regression/tests/__screenshots__/chromium-desktop/console-model-plaza-pricing.png',
     'visual-regression/tests/__screenshots__/chromium-desktop/console-redeem-benefit.png',

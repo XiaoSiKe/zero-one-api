@@ -1241,22 +1241,6 @@
               </div>
             </div>
           </div>
-          <div v-if="form.channel_monitor_mode === 'v2'" class="card">
-            <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                {{ t('admin.settings.features.channelMonitor.hideUserRanking') }}
-              </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {{ t('admin.settings.features.channelMonitor.hideUserRankingHint') }}
-              </p>
-            </div>
-            <div class="flex items-center justify-between gap-4 p-6">
-              <span class="text-sm text-gray-700 dark:text-gray-300">
-                {{ t('admin.settings.features.channelMonitor.hideUserRanking') }}
-              </span>
-              <Toggle v-model="form.channel_monitor_hide_user_ranking" />
-            </div>
-          </div>
         </GatewaySettingsTab>
         <!-- /Tab: Gateway -->
 
@@ -7296,48 +7280,6 @@
             <div v-if="form.channel_monitor_enabled" class="space-y-5">
               <div>
                 <label class="input-label">
-                  {{ t('admin.settings.features.channelMonitor.mode') }}
-                </label>
-                <div class="mt-1.5 inline-flex w-full max-w-md rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-dark-600 dark:bg-dark-900/40">
-                  <button
-                    type="button"
-                    class="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition"
-                    :class="
-                      form.channel_monitor_mode === 'v2'
-                        ? 'bg-white text-primary-700 shadow-sm dark:bg-dark-800 dark:text-primary-300'
-                        : 'text-gray-600 hover:text-gray-900 dark:text-dark-300 dark:hover:text-white'
-                    "
-                    @click="form.channel_monitor_mode = 'v2'"
-                  >
-                    {{ t('admin.settings.features.channelMonitor.modeV2') }}
-                  </button>
-                  <button
-                    type="button"
-                    class="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition"
-                    :class="
-                      form.channel_monitor_mode === 'v1'
-                        ? 'bg-white text-primary-700 shadow-sm dark:bg-dark-800 dark:text-primary-300'
-                        : 'text-gray-600 hover:text-gray-900 dark:text-dark-300 dark:hover:text-white'
-                    "
-                    @click="form.channel_monitor_mode = 'v1'"
-                  >
-                    {{ t('admin.settings.features.channelMonitor.modeV1') }}
-                  </button>
-                </div>
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                  {{
-                    form.channel_monitor_mode === 'v1'
-                      ? t('admin.settings.features.channelMonitor.modeV1Hint')
-                      : t('admin.settings.features.channelMonitor.modeV2Hint')
-                  }}
-                </p>
-                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                  {{ t('admin.settings.features.channelMonitor.modeHint') }}
-                </p>
-              </div>
-
-              <div v-if="form.channel_monitor_mode === 'v1'">
-                <label class="input-label">
                   {{ t('admin.settings.features.channelMonitor.defaultInterval') }}
                   <span class="text-red-500">*</span>
                 </label>
@@ -7353,21 +7295,7 @@
                 </p>
               </div>
 
-              <div v-if="form.channel_monitor_mode === 'v2'" class="space-y-4">
-                <div class="flex items-start justify-between gap-4">
-                  <div class="min-w-0">
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">
-                      {{ t('admin.settings.features.channelMonitor.hideThroughput') }}
-                    </p>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {{ t('admin.settings.features.channelMonitor.hideThroughputHint') }}
-                    </p>
-                  </div>
-                  <Toggle v-model="form.channel_monitor_hide_throughput" />
-                </div>
-              </div>
-
-              <div v-if="form.channel_monitor_mode === 'v1'" class="flex items-start justify-between gap-4">
+              <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0">
                   <p class="text-sm font-medium text-gray-900 dark:text-white">
                     {{ t('admin.settings.features.channelMonitor.showQuota') }}
@@ -9353,10 +9281,7 @@ type SettingsForm = Omit<
   | "affiliate_rebate_per_invitee_cap"
   | "affiliate_admin_recharge_enabled"
 > & {
-  /** Form always binds a concrete boolean (SystemSettings marks this optional). */
-  channel_monitor_hide_throughput: boolean;
   channel_monitor_show_quota: boolean;
-  channel_monitor_hide_user_ranking: boolean;
   community_qr_enabled: boolean;
   community_qr_image: string;
   community_qr_title: string;
@@ -9693,11 +9618,8 @@ const form = reactive<SettingsForm>({
   // Channel Monitor feature switch
   channel_monitor_enabled: true,
   public_channel_status_enabled: false,
-  channel_monitor_mode: 'v1' as 'v1' | 'v2',
   channel_monitor_default_interval_seconds: 60,
-  channel_monitor_hide_throughput: false,
   channel_monitor_show_quota: false,
-  channel_monitor_hide_user_ranking: false,
   // Available Channels feature switch
   available_channels_enabled: false,
   // Subscription feature switch
@@ -10960,18 +10882,10 @@ async function loadSettings() {
       : defaultFingerprintSignalRows();
     form.login_agreement_mode =
       settings.login_agreement_mode === "checkbox" ? "checkbox" : "modal";
-    form.channel_monitor_mode =
-      settings.channel_monitor_mode === "v2" ? "v2" : "v1";
     form.public_channel_status_enabled =
       settings.public_channel_status_enabled === true;
-    form.channel_monitor_hide_throughput = Boolean(
-      settings.channel_monitor_hide_throughput
-    );
     form.channel_monitor_show_quota = Boolean(
       settings.channel_monitor_show_quota
-    );
-    form.channel_monitor_hide_user_ranking = Boolean(
-      settings.channel_monitor_hide_user_ranking
     );
     form.login_agreement_updated_at =
       settings.login_agreement_updated_at || "2026-03-31";
@@ -11630,12 +11544,9 @@ async function saveSettings() {
       // Channel Monitor feature switch
       channel_monitor_enabled: form.channel_monitor_enabled,
       public_channel_status_enabled: form.public_channel_status_enabled,
-      channel_monitor_mode: form.channel_monitor_mode === 'v1' ? 'v1' : 'v2',
       channel_monitor_default_interval_seconds:
         Number(form.channel_monitor_default_interval_seconds) || 60,
-      channel_monitor_hide_throughput: Boolean(form.channel_monitor_hide_throughput),
       channel_monitor_show_quota: Boolean(form.channel_monitor_show_quota),
-      channel_monitor_hide_user_ranking: Boolean(form.channel_monitor_hide_user_ranking),
       // Available Channels feature switch
       available_channels_enabled: form.available_channels_enabled,
       // Subscription feature switch

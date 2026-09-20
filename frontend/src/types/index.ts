@@ -285,15 +285,9 @@ export interface PublicSettings {
   balance_low_notify_threshold: number
   channel_monitor_enabled: boolean
   public_channel_status_enabled: boolean
-  /** Exclusive mode: v1 active probes or v2 passive aggregation. Default v2. */
-  channel_monitor_mode?: 'v1' | 'v2'
   channel_monitor_default_interval_seconds: number
-  /** When true, user monitor hides RPM/TPM so scale cannot be reverse-estimated. */
-  channel_monitor_hide_throughput?: boolean
   /** When true, user monitor shows account quota/balance snapshots (default off). */
   channel_monitor_show_quota?: boolean
-  /** When true, user monitor hides the user ranking tab and /users payload. */
-  channel_monitor_hide_user_ranking?: boolean
   available_channels_enabled: boolean
   /** When false, the user-facing subscription surface is hidden. */
   subscription_enabled: boolean

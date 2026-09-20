@@ -100,7 +100,7 @@ function restoreApprovedRouteRoots() {
 function ensureRouteStyles(surface: AdminSurface) {
   document.body.classList.add(BODY_ACTIVE_CLASS)
   const href = surface === 'channel-monitor' || surface === 'channel-status'
-    ? '/assets/cn-provider-admin-v9/cn-provider-admin.css'
+    ? '/assets/cn-provider-admin-v10/cn-provider-admin.css'
     : '/assets/cn-provider-admin-v8/cn-provider-admin.css'
   const existing = document.getElementById(STYLE_ID) as HTMLLinkElement | null
   if (existing?.getAttribute('href') === href) return

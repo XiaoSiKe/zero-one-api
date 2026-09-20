@@ -134,7 +134,6 @@ function statusNote(state: ChannelStatusViewState): string {
   if (state.status === "loading") return "正在读取渠道状态。";
   if (state.status === "success") {
     if ((state.data.items ?? []).length > 0) return "";
-    if (state.data.mode === "traffic") return "当前监控模式未提供逐渠道检测记录。";
     if (state.data.reason === "no_monitors") return "管理员尚未配置可公开展示的监控渠道。";
     if (state.data.reason === "insufficient_data") return "暂无检测数据，请稍后查看。";
     if (state.data.reason === "disabled") return "当前站点未开启渠道监控。";

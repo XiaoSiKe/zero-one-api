@@ -45,7 +45,7 @@ function collectRuntimeErrors(page: Page) {
 
 test.describe('Recovered online image generation contracts', () => {
   test.beforeEach(async ({ page }) => {
-    await seedConsole(page, 'v2', {
+    await seedConsole(page, 'v1', {
       user: adminUser,
       imageGenerationKeys: imageKeys,
       customMenuItems: [imageTutorialMenu],
@@ -245,7 +245,7 @@ test.describe('Recovered online image generation contracts', () => {
   for (const keyState of ['empty', 'unavailable'] as const) {
     test(`new user can discover Online Images with ${keyState} keys`, async ({ page }, testInfo) => {
       await page.unroute('**/api/v1/**')
-      await seedConsole(page, 'v2', { user: regularUser, imageGenerationKeys: [] })
+      await seedConsole(page, 'v1', { user: regularUser, imageGenerationKeys: [] })
       await page.route('**/api/v1/keys**', async (route) => {
         await route.fulfill({
           status: keyState === 'empty' ? 200 : 503,

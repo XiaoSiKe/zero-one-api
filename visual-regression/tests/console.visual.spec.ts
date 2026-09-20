@@ -74,7 +74,7 @@ async function expectConsoleCardMotion(
 test.describe('Console public auth contracts', () => {
   test.beforeEach(async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-08-16T12:00:00+08:00'))
-    await seedConsole(page, 'v2', { authenticated: false })
+    await seedConsole(page, 'v1', { authenticated: false })
   })
 
   test('login footer provides a matching password recovery button', async ({ page }) => {
@@ -134,7 +134,7 @@ test.describe('Console public auth contracts', () => {
       if (pathname === '/assets/cn-provider-shell-v11/LoginView-BbpS8aW1.js') {
         loginChunkRequestedBeforeSettingsRelease ||= !settingsReleased
       }
-      if (pathname === '/assets/cn-provider-admin-v9/cn-provider-admin.js') {
+      if (pathname === '/assets/cn-provider-admin-v10/cn-provider-admin.js') {
         adapterRequested = true
       }
     })
@@ -148,7 +148,7 @@ test.describe('Console public auth contracts', () => {
       await stalledSettings
       await route.fallback().catch(() => {})
     })
-    await page.route('**/assets/cn-provider-admin-v9/cn-provider-admin.js', async (route) => {
+    await page.route('**/assets/cn-provider-admin-v10/cn-provider-admin.js', async (route) => {
       await stalledAdapter
       await route.fallback().catch(() => {})
     })
@@ -203,7 +203,7 @@ test.describe('Console public auth contracts', () => {
       await stalledOnlineAdapter
       await route.fallback().catch(() => {})
     })
-    await page.route('**/assets/cn-provider-admin-v9/cn-provider-admin.js', (route) =>
+    await page.route('**/assets/cn-provider-admin-v10/cn-provider-admin.js', (route) =>
       route.fulfill({ status: 503, contentType: 'text/plain', body: 'simulated outage' }),
     )
 
@@ -278,7 +278,7 @@ test.describe('Console public auth contracts', () => {
   test('registration keeps the approved form', async ({ page }) => {
     await page.unroute('**/setup/status')
     await page.unroute('**/api/v1/**')
-    await seedConsole(page, 'v2', {
+    await seedConsole(page, 'v1', {
       authenticated: false,
       siteLogo: `data:image/png;base64,${communityQrPngBase64}`,
     })
@@ -381,7 +381,7 @@ test.describe('Console public auth contracts', () => {
 
   test('regular user login selects the user dashboard with matching card motion', async ({ page }, testInfo) => {
     await page.unroute('**/api/v1/**')
-    await seedConsole(page, 'v2', { authenticated: false, user: regularUser })
+    await seedConsole(page, 'v1', { authenticated: false, user: regularUser })
     await page.goto('http://127.0.0.1:4173/login')
     await page.locator('#email').fill(regularUser.email)
     await page.locator('#password').fill('preview-password')
@@ -398,7 +398,7 @@ test.describe('Console public auth contracts', () => {
   test('same-document login refreshes public settings before rendering navigation', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
     await page.unroute('**/api/v1/**')
-    await seedConsole(page, 'v2', {
+    await seedConsole(page, 'v1', {
       authenticated: false,
       user: regularUser,
       modelPlazaPlacement: 'sidebar',
@@ -451,7 +451,7 @@ test.describe('Console public auth contracts', () => {
 
   test('same-document relogin applies the response run mode before rendering the dashboard sidebar', async ({ page }) => {
     await page.unroute('**/api/v1/**')
-    await seedConsole(page, 'v2', {
+    await seedConsole(page, 'v1', {
       user: { ...regularUser, run_mode: 'simple' },
       loginUser: { ...regularUser, run_mode: 'standard' },
     })
@@ -533,7 +533,7 @@ test.describe('Console card motion parity', () => {
   })
 
   test('User Usage and Affiliate leaf cards share the approved dashboard motion', async ({ page }, testInfo) => {
-    await seedConsole(page, 'v2', { user: regularUser })
+    await seedConsole(page, 'v1', { user: regularUser })
 
     for (const path of ['/usage', '/affiliate']) {
       await page.goto(`http://127.0.0.1:4173${path}`)
@@ -543,7 +543,7 @@ test.describe('Console card motion parity', () => {
   })
 
   test('Administrator Usage and Settings leaf cards share the approved dashboard motion', async ({ page }, testInfo) => {
-    await seedConsole(page, 'v2')
+    await seedConsole(page, 'v1')
 
     for (const path of ['/admin/usage', '/admin/settings']) {
       await page.goto(`http://127.0.0.1:4173${path}`)
@@ -553,7 +553,7 @@ test.describe('Console card motion parity', () => {
   })
 
   test('full-height Administrator affiliate tables remain coordinate-stable', async ({ page }) => {
-    await seedConsole(page, 'v2')
+    await seedConsole(page, 'v1')
     await page.goto('http://127.0.0.1:4173/admin/affiliates/invites')
 
     const tableCard = page.locator('[data-zero-one-card-motion="true"] .console-skin-table').first()
@@ -583,7 +583,7 @@ test.describe('Console card motion parity', () => {
 
   test('keeps Administrator route content stationary during sidebar navigation', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2')
+    await seedConsole(page, 'v1')
     await page.goto(`${affiliateConsoleOrigin}/admin/dashboard`)
     await expect(page.locator('aside a[href="/admin/users"]')).toBeVisible()
 
@@ -670,7 +670,7 @@ test.describe('Console card motion parity', () => {
   })
 
   test('serves valid key and group read models to Console pages without render errors', async ({ page }) => {
-    await seedConsole(page, 'v2')
+    await seedConsole(page, 'v1')
     const renderErrors: string[] = []
     page.on('pageerror', (error) => renderErrors.push(error.message))
     page.on('console', (message) => {
@@ -713,7 +713,7 @@ test.describe('Console card motion parity', () => {
         sessionStorage.setItem('zero-one-my-account-beforeunload', 'true')
       })
     })
-    await seedConsole(page, 'v2')
+    await seedConsole(page, 'v1')
     let documentNavigations = 0
     page.on('request', (request) => {
       if (request.resourceType() === 'document' && request.frame() === page.mainFrame()) {
@@ -789,7 +789,7 @@ test.describe('Console card motion parity', () => {
 
   test('resets a scrolled Administrator page without smooth-scroll jitter', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2')
+    await seedConsole(page, 'v1')
     await page.goto(`${affiliateConsoleOrigin}/admin/settings`)
     await expect(page.locator('aside a.sidebar-link[href="/admin/dashboard"]')).toBeVisible()
     await expect.poll(() => page.evaluate(
@@ -850,7 +850,7 @@ test.describe('Console affiliate navigation icons', () => {
   }
 
   test('keeps the regular-user affiliate navigation SVG visible', async ({ page }) => {
-    await seedConsole(page, 'v2', { user: regularUser, affiliateEnabled: true })
+    await seedConsole(page, 'v1', { user: regularUser, affiliateEnabled: true })
     await page.goto(`${affiliateConsoleOrigin}/dashboard`)
 
     const state = await iconState(page, 'aside a[href="/affiliate"]')
@@ -864,7 +864,7 @@ test.describe('Console affiliate navigation icons', () => {
   })
 
   test('keeps the administrator affiliate navigation SVG visible', async ({ page }) => {
-    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await seedConsole(page, 'v1', { affiliateEnabled: true })
     await page.goto(`${affiliateConsoleOrigin}/admin/dashboard`)
     await expect(page.getByTestId('admin-affiliate-nav')).toBeVisible()
 
@@ -886,7 +886,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   test('keeps the legacy affiliate submenu out of every painted sidebar frame', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await seedConsole(page, 'v1', { affiliateEnabled: true })
     await page.goto(`${affiliateConsoleOrigin}/admin/dashboard`)
     await expect(page.getByTestId('admin-affiliate-nav')).toBeVisible()
 
@@ -969,7 +969,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   for (const affiliateEnabled of [false, true]) {
     test(`keeps one administrator entry and five-tab workspace when affiliate_enabled=${affiliateEnabled}`, async ({ page }, testInfo) => {
-      await seedConsole(page, 'v2', { affiliateEnabled })
+      await seedConsole(page, 'v1', { affiliateEnabled })
       await page.goto(`${affiliateConsoleOrigin}/admin/affiliates/invites`)
 
       const nav = page.getByTestId('admin-affiliate-nav')
@@ -1008,7 +1008,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
   }
 
   test('keeps the customer workspace visually stable on desktop and mobile', async ({ page }) => {
-    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await seedConsole(page, 'v1', { affiliateEnabled: true })
     await page.goto(`${affiliateConsoleOrigin}/admin/affiliates/invites?section=customers`)
     await expect(page.getByTestId('affiliate-customers-list')).toBeVisible()
     await expect(page.getByTestId('affiliate-customers-list').getByText('missed@01yapi.test')).toBeVisible()
@@ -1031,7 +1031,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   test('keeps the injected administrator entry aligned with collapsed sidebar state', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await seedConsole(page, 'v1', { affiliateEnabled: true })
     await page.goto(`${affiliateConsoleOrigin}/admin/dashboard`)
 
     const nav = page.getByTestId('admin-affiliate-nav')
@@ -1053,7 +1053,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   test('hides the legacy affiliate group and settings card in English locale', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2', { affiliateEnabled: true, locale: 'en' })
+    await seedConsole(page, 'v1', { affiliateEnabled: true, locale: 'en' })
     await page.goto(`${affiliateConsoleOrigin}/admin/settings`)
 
     await expect(page.getByTestId('admin-affiliate-nav')).toHaveCount(1)
@@ -1072,7 +1072,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   test('lists every customer and shows invitees with per-customer rebate only in detail', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await seedConsole(page, 'v1', { affiliateEnabled: true })
     let customersRequest: URL | null = null
     page.on('request', (request) => {
       const url = new URL(request.url())
@@ -1109,7 +1109,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   test('filters exclusive agents by custom rebate rate and preserves detail context', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await seedConsole(page, 'v1', { affiliateEnabled: true })
     let exclusiveRequest: URL | null = null
     page.on('request', (request) => {
       const url = new URL(request.url())
@@ -1136,7 +1136,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   test('redirects the removed rebate-record route to customer relationships', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await seedConsole(page, 'v1', { affiliateEnabled: true })
     await page.goto(`${affiliateConsoleOrigin}/admin/affiliates/rebates`)
     await expect(page).toHaveURL(
       `${affiliateConsoleOrigin}/admin/affiliates/invites?section=customers`,
@@ -1148,7 +1148,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
   test('uses Vue Router for affiliate links without replacing the document', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
     test.setTimeout(60_000)
-    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await seedConsole(page, 'v1', { affiliateEnabled: true })
     const consoleErrors: string[] = []
     const pageErrors: string[] = []
     page.on('console', (message) => {
@@ -1224,7 +1224,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   test('yields its navigation and workspace when the native affiliate surface appears', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await seedConsole(page, 'v1', { affiliateEnabled: true })
     await page.goto(`${affiliateConsoleOrigin}/admin/affiliates/invites?section=customers`)
     await expect(page.getByTestId('admin-affiliate-nav')).toHaveCount(1)
     await expect(page.locator('[data-zero-one-affiliate-admin="workspace"]')).toHaveCount(1)
@@ -1257,7 +1257,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   test('moves settings out of the legacy card and saves only the six affiliate fields', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2', { affiliateEnabled: false })
+    await seedConsole(page, 'v1', { affiliateEnabled: false })
     const submittedBodies: Record<string, unknown>[] = []
     page.on('request', (request) => {
       if (
@@ -1301,7 +1301,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   test('shows a loading state instead of a false disabled affiliate switch', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await seedConsole(page, 'v1', { affiliateEnabled: true })
     let releaseSettings!: () => void
     const settingsGate = new Promise<void>((resolve) => { releaseSettings = resolve })
     await page.route('**/api/v1/admin/settings*', async (route) => {
@@ -1323,7 +1323,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   test('keeps unsaved global settings through custom-user rerenders and adopts saved server values', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2', { affiliateEnabled: false })
+    await seedConsole(page, 'v1', { affiliateEnabled: false })
     await page.route('**/api/v1/admin/affiliates/users*', async (route) => {
       const requestUrl = new URL(route.request().url())
       if (
@@ -1420,7 +1420,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   test('passes pure affiliate and native workspace XHR settings bodies through unchanged', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await seedConsole(page, 'v1', { affiliateEnabled: true })
     await page.goto(`${affiliateConsoleOrigin}/admin/affiliates/invites?section=settings`)
 
     const purePayload = {
@@ -1476,7 +1476,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   test('persists add, edit, reset, and batch custom-user operations with exact bodies', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await seedConsole(page, 'v1', { affiliateEnabled: true })
     const writes: Array<{
       method: string
       path: string
@@ -1558,7 +1558,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   test('binds exact selected IDs and keeps selections visible on a protected conflict', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await seedConsole(page, 'v1', { affiliateEnabled: true })
     let submitted: Record<string, unknown> | null = null
     let rejectBinding = true
     await page.route('**/api/v1/admin/affiliates/invites', async (route) => {
@@ -1604,7 +1604,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
 
   test('completes TOTP step-up without losing the pending binding', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2', { affiliateEnabled: true })
+    await seedConsole(page, 'v1', { affiliateEnabled: true })
     let verified = false
     let bindAttempts = 0
     const submittedInviteeIds: number[] = []
@@ -1671,7 +1671,7 @@ test.describe('Console header navigation settings contracts', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
     await page.clock.setFixedTime(new Date('2026-08-16T12:00:00+08:00'))
-    await seedConsole(page, 'v2', {
+    await seedConsole(page, 'v1', {
       communityQrEnabled: true,
       userSidebarOrder: ['/keys', '/dashboard', '/model-plaza'],
       adminSidebarOrder: ['/admin/settings', '/admin/dashboard', '/model-plaza'],
@@ -1946,7 +1946,7 @@ test.describe('Console payment result balance refresh contract', () => {
     const consoleErrors: string[] = []
     const pageErrors: string[] = []
 
-    await seedConsole(page, 'v2', {
+    await seedConsole(page, 'v1', {
       user: regularUser,
       authMeUsers: [regularUser, { ...regularUser, balance: 184.25 }],
     })
@@ -2001,7 +2001,7 @@ test.describe('Console payment result balance refresh contract', () => {
 test.describe('Console header floating layer contracts', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop')
-    await seedConsole(page, 'v2')
+    await seedConsole(page, 'v1')
   })
 
   test('keeps language and account menus above the API key toolbar', async ({ page }) => {
@@ -2032,7 +2032,7 @@ test.describe('Console built-in sidebar navigation contracts', () => {
   })
 
   test('sorts administrator groups as complete rows with the dashboard physically first', async ({ page }) => {
-    await seedConsole(page, 'v2', {
+    await seedConsole(page, 'v1', {
       adminSidebarOrder: ['/admin/dashboard', '/admin/channels', '/admin/settings'],
     })
     await page.goto('http://127.0.0.1:4173/admin/dashboard')
@@ -2060,7 +2060,7 @@ test.describe('Console built-in sidebar navigation contracts', () => {
   })
 
   test('preserves saved group ordering through refresh, collapse and route changes without idle reordering', async ({ page }) => {
-    await seedConsole(page, 'v2', {
+    await seedConsole(page, 'v1', {
       paymentEnabled: true,
       riskControlEnabled: true,
       modelPlazaPlacement: 'sidebar',
@@ -2140,7 +2140,7 @@ test.describe('Console built-in sidebar navigation contracts', () => {
   })
 
   test('keeps simple-mode administrator ordering separate from personal navigation', async ({ page }) => {
-    await seedConsole(page, 'v2', {
+    await seedConsole(page, 'v1', {
       user: { ...adminUser, run_mode: 'simple' },
       adminSidebarOrder: ['/admin/dashboard', '/keys', '/admin/settings', '/admin/channels'],
       userSidebarOrder: ['/usage', '/keys', '/dashboard'],
@@ -2168,7 +2168,7 @@ test.describe('Console built-in sidebar navigation contracts', () => {
   })
 
   test('regular users get one Model Plaza row inside nav and hidden personal entries', async ({ page }) => {
-    await seedConsole(page, 'v2', {
+    await seedConsole(page, 'v1', {
       user: regularUser,
       profileNavigationEnabled: false,
       subscriptionNavigationEnabled: false,
@@ -2237,7 +2237,7 @@ test.describe('Console built-in sidebar navigation contracts', () => {
   })
 
   test('administrator business Subscriptions stays visible while My Subscriptions hides', async ({ page }) => {
-    await seedConsole(page, 'v2', {
+    await seedConsole(page, 'v1', {
       paymentEnabled: true,
       profileNavigationEnabled: false,
       subscriptionNavigationEnabled: false,
@@ -2284,7 +2284,7 @@ test.describe('Console protected QR loading contracts', () => {
     page.on('request', (request) => {
       if (new URL(request.url()).pathname === qrPath) qrRequests += 1
     })
-    await seedConsole(page, 'v2', { authenticated: false, customMenuItems: [supportItem] })
+    await seedConsole(page, 'v1', { authenticated: false, customMenuItems: [supportItem] })
     await page.goto('http://127.0.0.1:4173/login')
     await expect(page.getByRole('button', { name: '登录', exact: true })).toBeVisible()
     await expect(page.getByTestId('header-qr-support-group')).toHaveCount(0)
@@ -2298,7 +2298,7 @@ test.describe('Console protected QR loading contracts', () => {
     page.on('request', (request) => {
       if (new URL(request.url()).pathname === qrPath) qrRequests += 1
     })
-    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [supportItem] })
+    await seedConsole(page, 'v1', { user: regularUser, customMenuItems: [supportItem] })
     await page.goto('http://127.0.0.1:4173/dashboard')
     await expect(page.getByTestId('header-qr-support-group')).toHaveCount(1)
     await expect(page.getByTestId('header-qr-support-group')).toBeHidden()
@@ -2307,7 +2307,7 @@ test.describe('Console protected QR loading contracts', () => {
 
   test('prewarms a protected QR, reuses it across opens and releases it on page teardown', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop', 'Header QR controls are intentionally hidden below 640px.')
-    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [supportItem] })
+    await seedConsole(page, 'v1', { user: regularUser, customMenuItems: [supportItem] })
     await page.addInitScript(() => {
       const state = { aborted: 0, created: [] as string[], revoked: [] as string[] }
       ;(window as Window & { __qrRequestLifecycle?: typeof state }).__qrRequestLifecycle = state
@@ -2383,7 +2383,7 @@ test.describe('Console protected QR loading contracts', () => {
 
   test('retries server and image decode failures without leaving a permanent loading state', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop', 'Header QR controls are intentionally hidden below 640px.')
-    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [supportItem] })
+    await seedConsole(page, 'v1', { user: regularUser, customMenuItems: [supportItem] })
     let attempt = 0
     await page.route(`**${qrPath}`, async (route) => {
       attempt += 1
@@ -2411,7 +2411,7 @@ test.describe('Console protected QR loading contracts', () => {
 
   test('times out stalled QR requests and image decodes without accepting their late results', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop', 'Header QR controls are intentionally hidden below 640px.')
-    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [supportItem] })
+    await seedConsole(page, 'v1', { user: regularUser, customMenuItems: [supportItem] })
     await page.addInitScript(() => {
       const nativeDecode = HTMLImageElement.prototype.decode
       let delayed = false
@@ -2483,7 +2483,7 @@ test.describe('Console header custom iframe menu contracts', () => {
       url: 'https://embed.01yapi.test/refresh-private',
       visibility: 'admin' as const, placement: 'both' as const, sort_order: 0,
     }
-    await seedConsole(page, 'v2', { customMenuItems: [item] })
+    await seedConsole(page, 'v1', { customMenuItems: [item] })
     await page.addInitScript(() => localStorage.setItem('refresh_token', 'navigation-test-refresh'))
     let navigationRequests = 0
     let refreshRequests = 0
@@ -2522,7 +2522,7 @@ test.describe('Console header custom iframe menu contracts', () => {
       url: 'https://embed.01yapi.test/early-loaded',
       visibility: 'all' as const, placement: 'both' as const, sort_order: 0,
     }
-    await seedConsole(page, 'v2', { customMenuItems: [item] })
+    await seedConsole(page, 'v1', { customMenuItems: [item] })
     let releaseMetadata!: () => void
     const metadataGate = new Promise<void>((resolve) => { releaseMetadata = resolve })
     let heldMetadataRequests = 0
@@ -2558,7 +2558,7 @@ test.describe('Console header custom iframe menu contracts', () => {
       url: 'https://embed.01yapi.test/image-tutorial',
       visibility: 'all' as const, placement: 'sidebar' as const, sort_order: 0,
     }
-    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [item] })
+    await seedConsole(page, 'v1', { user: regularUser, customMenuItems: [item] })
     let publicSettingsRequests = 0
     await page.route('**/api/v1/settings/public', async (route) => {
       publicSettingsRequests += 1
@@ -2587,7 +2587,7 @@ test.describe('Console header custom iframe menu contracts', () => {
       url: 'https://embed.01yapi.test/private-tool',
       visibility: 'admin' as const, placement: 'both' as const, sort_order: 0,
     }
-    await seedConsole(page, 'v2', {
+    await seedConsole(page, 'v1', {
       siteLogo: `data:image/png;base64,${communityQrPngBase64}`,
       communityQrImage: `data:image/png;base64,${communityQrPngBase64}`,
       customMenuItems: [privatePage],
@@ -2651,7 +2651,7 @@ test.describe('Console header custom iframe menu contracts', () => {
       id, label: `页面${id}`, icon_svg: '', url: `https://embed.01yapi.test/${id}`,
       visibility: 'all' as const, placement: 'both' as const, sort_order,
     }))
-    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: items, theme: 'dark' })
+    await seedConsole(page, 'v1', { user: regularUser, customMenuItems: items, theme: 'dark' })
     let releaseFirst!: () => void
     let releaseSecond!: () => void
     const gates = {
@@ -2710,7 +2710,7 @@ test.describe('Console header custom iframe menu contracts', () => {
       id: 'slow-page', label: '缓慢页面', icon_svg: '', url: 'https://embed.01yapi.test/slow-page',
       visibility: 'all' as const, placement: 'both' as const, sort_order: 0,
     }
-    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [item] })
+    await seedConsole(page, 'v1', { user: regularUser, customMenuItems: [item] })
     let releaseFirst!: () => void
     let releaseRetry!: () => void
     const firstGate = new Promise<void>((resolve) => { releaseFirst = resolve })
@@ -2754,7 +2754,7 @@ test.describe('Console header custom iframe menu contracts', () => {
   })
 
   test('regular users see only regular-user header pages', async ({ page }) => {
-    await seedConsole(page, 'v2', { user: regularUser, customMenuItems })
+    await seedConsole(page, 'v1', { user: regularUser, customMenuItems })
     await page.goto('http://127.0.0.1:4173/dashboard')
 
     await expect(page.getByTestId('header-qr-user-header')).toBeVisible()
@@ -2778,7 +2778,7 @@ test.describe('Console header custom iframe menu contracts', () => {
   })
 
   test('administrators see admin header pages and can persist placement', async ({ page }) => {
-    await seedConsole(page, 'v2', { customMenuItems })
+    await seedConsole(page, 'v1', { customMenuItems })
     await page.goto('http://127.0.0.1:4173/admin/dashboard')
 
     await expect(page.getByTestId('header-qr-admin-header')).toBeVisible()
@@ -2848,7 +2848,7 @@ test.describe('Console header custom iframe menu contracts', () => {
       placement: 'both' as const,
       sort_order: 0,
     }]
-    await seedConsole(page, 'v2', { customMenuItems: initialItems })
+    await seedConsole(page, 'v1', { customMenuItems: initialItems })
     const embeddedRequests: string[] = []
     await page.route('https://embed.01yapi.test/**', async (route) => {
       const path = new URL(route.request().url()).pathname
@@ -2928,7 +2928,7 @@ test.describe('Console header custom iframe menu contracts', () => {
   })
 
   test('keeps injected shared sidebar rows visible during administrator navigation', async ({ page }) => {
-    await seedConsole(page, 'v2', { customMenuItems })
+    await seedConsole(page, 'v1', { customMenuItems })
     await page.goto(`${affiliateConsoleOrigin}/admin/dashboard`)
     await expect(page.getByTestId('sidebar-custom-menu-all-sidebar')).toBeVisible()
     await expect(page.getByTestId('sidebar-custom-menu-all-both')).toBeVisible()
@@ -2967,7 +2967,7 @@ test.describe('Console header custom iframe menu contracts', () => {
   })
 
   test('uses the shared Vue Router bridge for injected header and sidebar links', async ({ page }) => {
-    await seedConsole(page, 'v2', { customMenuItems })
+    await seedConsole(page, 'v1', { customMenuItems })
     await page.addInitScript(() => {
       ;(window as Window & { __zeroOneHeaderSentinel?: number }).__zeroOneHeaderSentinel = Math.random()
       window.addEventListener('beforeunload', () => {
@@ -3012,7 +3012,7 @@ test.describe('Console header custom iframe menu contracts', () => {
       placement: 'both' as const,
       sort_order: 0,
     }
-    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: [rechargeItem] })
+    await seedConsole(page, 'v1', { user: regularUser, customMenuItems: [rechargeItem] })
     await page.route('https://embed.01yapi.test/**', (route) =>
       route.fulfill({
         status: 200,
@@ -3052,7 +3052,7 @@ test.describe('Console header custom iframe menu contracts', () => {
       placement: 'both' as const,
       sort_order: 0,
     }
-    await seedConsole(page, 'v2', { customMenuItems: [rechargeItem] })
+    await seedConsole(page, 'v1', { customMenuItems: [rechargeItem] })
     await page.goto('http://127.0.0.1:4173/dashboard')
 
     await expect(page.getByTestId('dashboard-purchase-credits')).toBeVisible()
@@ -3079,7 +3079,7 @@ test.describe('Console header custom iframe menu contracts', () => {
         sort_order: 1,
       },
     ]
-    await seedConsole(page, 'v2', { user: regularUser, customMenuItems: switchingItems })
+    await seedConsole(page, 'v1', { user: regularUser, customMenuItems: switchingItems })
     let releaseTutorial: (() => void) | undefined
     const tutorialRelease = new Promise<void>((resolve) => {
       releaseTutorial = resolve
@@ -3137,7 +3137,7 @@ test.describe('Console header custom iframe menu contracts', () => {
   })
 
   test('keeps a newly added custom page in the bottom save request', async ({ page }) => {
-    await seedConsole(page, 'v2', { customMenuItems })
+    await seedConsole(page, 'v1', { customMenuItems })
     await page.goto('http://127.0.0.1:4173/admin/settings')
 
     const section = page.getByRole('heading', { name: '自定义菜单页面' }).locator('..').locator('..')
@@ -3166,7 +3166,7 @@ test.describe('Console header custom iframe menu contracts', () => {
   })
 
   test('settles the custom-menu settings description without repeated child mutations', async ({ page }) => {
-    await seedConsole(page, 'v2', { customMenuItems })
+    await seedConsole(page, 'v1', { customMenuItems })
     await page.addInitScript(() => {
       const nativeRequestAnimationFrame = window.requestAnimationFrame.bind(window)
       const state = window as Window & {
@@ -3267,7 +3267,7 @@ test.describe('Console CC-Switch launch compatibility', () => {
         return null
       }
     })
-    await seedConsole(page, 'v2', { user: regularUser })
+    await seedConsole(page, 'v1', { user: regularUser })
     await page.goto('http://127.0.0.1:4173/keys')
   })
 
@@ -3364,7 +3364,7 @@ test.describe('Console visual contracts', () => {
     const response = await page.goto('http://127.0.0.1:4173/login')
     expect(response?.status()).toBe(200)
     const html = await response!.text()
-    expect(html).toContain('/assets/cn-provider-admin-v9/cn-provider-admin.js')
+    expect(html).toContain('/assets/cn-provider-admin-v10/cn-provider-admin.js')
     expect(html).not.toContain('import("/assets/cn-provider-admin-v1/cn-provider-admin.js")')
     expect(html).not.toContain('import("/assets/cn-provider-admin-v7/cn-provider-admin.js")')
     expect(html).toContain('/assets/cn-provider-shell-v11/index-9xJBhx8B.js')
@@ -3451,15 +3451,6 @@ test.describe('Console visual contracts', () => {
     await expect(host.getByText('OpenAI 主线路')).toBeVisible()
     await expect(host.getByText('OPERATIONAL')).toBeVisible()
     await expect(page).toHaveScreenshot('console-channel-status-v1.png')
-  })
-
-  test('channel status v2', async ({ page }) => {
-    await page.goto('http://127.0.0.1:4173/monitor')
-    await page.evaluate(() => document.fonts.ready)
-    const host = page.locator('#zero-one-provider-catalog-admin')
-    await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'channel-status')
-    await expect(host.getByText('gpt-5').first()).toBeVisible()
-    await expect(page).toHaveScreenshot('console-channel-status-v2.png')
   })
 
   test('model plaza pricing', async ({ page }) => {
@@ -3595,7 +3586,7 @@ test.describe('Console visual contracts', () => {
 
   test('user redeem follows the configured online recharge navigation without reloading', async ({ page }) => {
     await page.unroute('**/api/v1/**')
-    await seedConsole(page, 'v2', {
+    await seedConsole(page, 'v1', {
       customMenuItems: [
         {
           id: 'online-recharge',
@@ -3634,7 +3625,7 @@ test.describe('Console visual contracts', () => {
 
   test('user redeem form', async ({ page }) => {
     await page.unroute('**/api/v1/**')
-    await seedConsole(page, 'v2')
+    await seedConsole(page, 'v1')
     await page.goto('http://127.0.0.1:4173/redeem')
     await page.evaluate(() => document.fonts.ready)
     await expect(page.locator('#code')).toBeVisible()

@@ -80,7 +80,7 @@ test.describe('Dashboard consumption cards and repeatable date selection', () =>
 
   for (const path of ['/admin/dashboard', '/dashboard', '/admin/usage', '/usage']) {
     test(`date range can be selected and reopened repeatedly on ${path}`, async ({ page }) => {
-      await seedConsole(page, 'v2', path.startsWith('/admin') ? {} : { user: regularUser })
+      await seedConsole(page, 'v1', path.startsWith('/admin') ? {} : { user: regularUser })
       const errors: string[] = []
       page.on('pageerror', error => errors.push(error.message))
       await page.goto(`http://127.0.0.1:4173${path}`)

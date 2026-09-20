@@ -21,7 +21,7 @@ test.describe('Password recovery on the approved Console', () => {
       const pending = new Promise<void>((resolve) => { release = resolve })
       await page.route(/\/api\/v1\/settings\/public(?:\?timezone=[^&]+)?$/, async (route) => {
         await pending
-        await route.fulfill({ json: { code: 0, data: publicSettings('v1') } })
+        await route.fulfill({ json: { code: 0, data: publicSettings() } })
       })
       try {
         await page.goto(origin + path, { waitUntil: 'domcontentloaded' })

@@ -28,7 +28,7 @@ const migratedLeafViews = [
   'views/user/SubscriptionsView.vue', 'views/user/PaymentView.vue',
   'views/user/UserOrdersView.vue', 'views/user/PaymentQRCodeView.vue',
   'views/user/CustomPageView.vue',
-  'views/user/ChannelStatusV1View.vue', 'views/user/ChannelStatusV2View.vue',
+  'views/user/ChannelStatusV1View.vue',
   'views/admin/DashboardView.vue', 'views/admin/ops/OpsDashboard.vue',
   'views/admin/AuditLogView.vue',
   'views/admin/UsersView.vue', 'views/admin/GroupsView.vue',

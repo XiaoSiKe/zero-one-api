@@ -28,17 +28,6 @@ test.describe('Landing visual contracts', () => {
     await expect(status).toHaveScreenshot('landing-active-probe-status.png')
   })
 
-  test('mobile traffic status keeps the recovered empty-panel UI', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'chromium-mobile')
-    await seedLanding(page, { status: 'traffic' })
-    await page.goto('http://127.0.0.1:4174/#status')
-    await page.evaluate(() => document.fonts.ready)
-    const status = page.locator('#status')
-    await expect(status.getByText('渠道', { exact: true })).toBeVisible()
-    await expect(status.locator('.status-monitor-row')).toHaveCount(0)
-    await expect(status).toHaveScreenshot('landing-mobile-traffic-status.png')
-  })
-
   test('mobile status error and retry', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-mobile')
     await seedLanding(page, { status: 'error' })

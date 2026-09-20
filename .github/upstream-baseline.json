@@ -14,6 +14,7 @@
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v10/",
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/",
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v9/",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v10/",
     "deploy/zero-one/recovered-frontend/console/assets/online-image-v17/",
     "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6/",
     "deploy/zero-one/recovered-frontend/landing/"
@@ -218,7 +219,6 @@
     "frontend/src/views/user/AvailableChannelsView.vue",
     "frontend/src/views/user/BatchImageGuideView.vue",
     "frontend/src/views/user/ChannelStatusV1View.vue",
-    "frontend/src/views/user/ChannelStatusV2View.vue",
     "frontend/src/views/user/CustomPageView.vue",
     "frontend/src/views/user/DashboardView.vue",
     "frontend/src/views/user/ImageGenerationView.vue",
@@ -255,7 +255,6 @@
     "visual-regression/tests/__screenshots__/chromium-desktop/console-affiliate-customers.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-announcement-editor.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v1.png",
-    "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v2.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-date-picker.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-model-plaza-pricing.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-redeem-benefit.png",
@@ -729,25 +728,15 @@
     "backend/internal/handler/admin/channel_monitor_handler.go",
     "backend/internal/handler/admin/snapshot_cache.go",
     "backend/internal/handler/admin/snapshot_cache_test.go",
-    "backend/internal/repository/channel_monitor_v2_aggregation.go",
-    "backend/internal/repository/channel_monitor_v2_repo_test.go",
     "backend/internal/service/channel_monitor_aggregator.go",
     "backend/internal/service/channel_monitor_freshness_test.go",
-    "backend/internal/service/channel_monitor_v2.go",
-    "backend/internal/service/channel_monitor_v2_aggregator.go",
-    "backend/internal/service/channel_monitor_v2_aggregator_test.go",
-    "backend/internal/service/channel_monitor_v2_error_taxonomy.go",
-    "backend/internal/service/channel_monitor_v2_test.go",
     "backend/internal/service/dashboard_service.go",
     "backend/internal/service/dashboard_service_test.go",
     "backend/migrations/235_channel_monitor_v2_taxonomy_v2_backfill.sql",
-    "backend/migrations/channel_monitor_v2_taxonomy_migration_test.go",
-    "frontend/src/i18n/locales/en/channelMonitorV2.ts",
-    "frontend/src/i18n/locales/zh/channelMonitorV2.ts",
     "deploy/zero-one/audit-data-consistency.sql",
     "docs/adr/0013-affected-verification-policy.md",
     "docs/data-and-connectivity-audit-2026-09-06.md",
-    "docs/channel-monitor-v2-safe-defaults.md",
+    "docs/adr/0020-retire-channel-monitor-v2.md",
     "backend/internal/handler/admin/data_management_handler.go",
     "backend/internal/handler/admin/data_management_handler_test.go",
     "backend/internal/service/data_management_compat.go",
@@ -1301,6 +1290,84 @@
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/logo.svg"
   ],
   "retired_preserved_paths": [
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/repository/channel_monitor_v2_aggregation.go",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "The V2 passive aggregation repository has no supported runtime consumer after the product returned to V1-only monitoring."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/repository/channel_monitor_v2_repo_test.go",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "The repository test only covered the retired V2 passive aggregation store."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/service/channel_monitor_v2.go",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "The V2 passive monitoring service was explicitly retired in favor of the existing V1 monitor."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/service/channel_monitor_v2_aggregator.go",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "The V2 aggregation worker and backfill loop are no longer part of the product runtime."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/service/channel_monitor_v2_aggregator_test.go",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "This test only exercised the retired V2 aggregation worker."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/service/channel_monitor_v2_error_taxonomy.go",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "The taxonomy existed solely for the retired V2 derived metrics."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/internal/service/channel_monitor_v2_test.go",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "This suite only covered the retired V2 service and endpoints."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "backend/migrations/channel_monitor_v2_taxonomy_migration_test.go",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "The applied SQL migration remains immutable, while this V2-only backfill behavior test no longer represents an active product path."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "docs/channel-monitor-v2-safe-defaults.md",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "The operating guide described a runtime that is no longer shipped."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "frontend/src/i18n/locales/en/channelMonitorV2.ts",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "The locale module was exclusively owned by the retired V2 interface."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "frontend/src/i18n/locales/zh/channelMonitorV2.ts",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "The locale module was exclusively owned by the retired V2 interface."
+    },
+    {
+      "owner": "Public Capabilities",
+      "path": "frontend/src/views/user/ChannelStatusV2View.vue",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "The user-facing V2 status surface was retired; the route now renders V1 directly."
+    },
+    {
+      "owner": "Visual Regression",
+      "path": "visual-regression/tests/__screenshots__/chromium-desktop/console-channel-status-v2.png",
+      "decision": "docs/adr/0020-retire-channel-monitor-v2.md",
+      "reason": "The screenshot represented the retired V2 status surface and must not remain an approved product baseline."
+    },
     {
       "owner": "Supported Preview",
       "path": "deploy/zero-one/dashboard-finance.test.mjs",
@@ -1950,6 +2017,7 @@
         "frontend/src/views/admin/__tests__/AccountsView.priorityColumn.spec.ts",
         "frontend/src/views/admin/__tests__/AccountsView.schedulerScore.spec.ts",
         "frontend/src/views/admin/__tests__/ChannelMonitorView.checkModeBadge.spec.ts",
+        "frontend/src/views/admin/__tests__/ChannelMonitorView.duplicate.spec.ts",
         "frontend/src/views/admin/__tests__/GroupsView.compositePlatforms.spec.ts",
         "frontend/src/views/admin/__tests__/GroupsView.codexManifest.spec.ts",
         "frontend/src/views/admin/__tests__/GroupsView.duplicate.spec.ts",
@@ -2380,6 +2448,20 @@
         "backend/internal/handler/admin/dashboard_trend_buckets_test.go",
         "backend/internal/handler/admin/dashboard_snapshot_refresh_test.go",
         "backend/internal/handler/admin/channel_monitor_handler.go",
+        "backend/cmd/server/wire_gen_test.go",
+        "backend/internal/handler/channel_monitor_user_handler.go",
+        "backend/internal/handler/channel_monitor_v2_handler.go",
+        "backend/internal/handler/channel_monitor_v2_handler_test.go",
+        "backend/internal/handler/handler.go",
+        "backend/internal/handler/wire.go",
+        "backend/internal/repository/channel_monitor_v2_repo.go",
+        "backend/internal/repository/wire.go",
+        "backend/internal/server/routes/channel_monitor_feature_gate_test.go",
+        "backend/internal/server/routes/user.go",
+        "backend/internal/service/channel_monitor_const.go",
+        "backend/internal/service/channel_monitor_probe_retirement_test.go",
+        "backend/internal/service/channel_monitor_runtime_test.go",
+        "backend/internal/service/channel_monitor_service.go",
         "backend/internal/handler/admin/snapshot_cache.go",
         "backend/internal/handler/admin/snapshot_cache_test.go",
         "backend/internal/repository/channel_monitor_v2_aggregation.go",
@@ -2396,10 +2478,15 @@
         "backend/migrations/235_channel_monitor_v2_taxonomy_v2_backfill.sql",
         "backend/migrations/channel_monitor_v2_taxonomy_migration_test.go",
         "frontend/src/features/channel-monitor/",
+        "frontend/src/api/channelMonitorV2.ts",
+        "frontend/src/api/__tests__/channelMonitorV2.spec.ts",
         "frontend/src/i18n/locales/en/channelMonitorV2.ts",
         "frontend/src/i18n/locales/zh/channelMonitorV2.ts",
+        "frontend/src/views/user/ChannelStatusView.vue",
+        "frontend/src/views/user/__tests__/ChannelStatusView.mode.spec.ts",
         "landing/src/channelHealthStyles.test.ts",
         "docs/channel-monitor-v2-safe-defaults.md",
+        "docs/adr/0020-retire-channel-monitor-v2.md",
         "backend/internal/handler/admin/data_management_handler.go",
         "backend/internal/handler/admin/data_management_handler_test.go",
         "backend/internal/service/data_management_compat.go",
@@ -2654,6 +2741,18 @@
       "name": "public-capabilities-retired-codex-api-test",
       "owner": "Public Capabilities",
       "path": "frontend/src/api/__tests__/codex.spec.ts",
+      "immutable_path": "frontend/src/api/"
+    },
+    {
+      "name": "public-capabilities-retired-channel-monitor-v2-api",
+      "owner": "Public Capabilities",
+      "path": "frontend/src/api/channelMonitorV2.ts",
+      "immutable_path": "frontend/src/api/"
+    },
+    {
+      "name": "public-capabilities-retired-channel-monitor-v2-api-test",
+      "owner": "Public Capabilities",
+      "path": "frontend/src/api/__tests__/channelMonitorV2.spec.ts",
       "immutable_path": "frontend/src/api/"
     }
   ]

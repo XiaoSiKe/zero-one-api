@@ -22,8 +22,8 @@ export default defineConfig({
   },
   build: {
     outDir: frozenBuildRoot
-      ? resolve(frozenBuildRoot, 'cn-provider-admin-v9')
-      : resolve(frontendRoot, '../deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v9'),
+      ? resolve(frozenBuildRoot, 'cn-provider-admin-v10')
+      : resolve(frontendRoot, '../deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v10'),
     emptyOutDir: true,
     cssCodeSplit: false,
     lib: {

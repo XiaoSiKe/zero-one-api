@@ -39,7 +39,7 @@ test.describe('Phone UI layout', () => {
 
     test(`user quick actions follow performance stats at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 844 })
-      await seedConsole(page, 'v2', { user: regularUser })
+      await seedConsole(page, 'v1', { user: regularUser })
       await page.goto('http://127.0.0.1:4173/dashboard')
       const actions = page.locator('.card').filter({ has: page.getByRole('heading', { name: '快捷操作', exact: true }) })
       const response = page.locator('.card').filter({ has: page.getByText('平均响应', { exact: true }) })
