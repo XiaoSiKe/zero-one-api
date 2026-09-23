@@ -65,6 +65,20 @@ contracts, and only then switches the matching edge image. A new edge paired
 with an old backend is not a supported steady state. Rolling back an image does
 not roll back an already applied database migration.
 
+An additive gateway route for a separately deployed product is a narrow
+exception. Its source delta from the running release must contain only the
+production Caddyfile. It must not change this product's backend, frontend,
+database migrations, or shared routing implementation. Before an Edge-only
+switch, compare the old and new static assets byte for byte, validate the new
+Caddyfile, prove the existing host routes are preserved, retain an off-host
+recovery point, and record the exact old and new image digests. Use the guarded
+Edge switch and verify the original Backend, PostgreSQL, and Redis container
+identities remain healthy. The added host must serve only the separate product
+through its own service and data boundary. A failed new-host check rolls back
+the Edge image. This exception is a gateway allocation, not a coherent product
+release; any later change to this product's application code uses the normal
+paired-image release.
+
 ## Consequences
 
 Anonymous authorization remains narrow and auditable, historical data does not

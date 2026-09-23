@@ -542,6 +542,25 @@ GoReleaser archives 均声明携带这三份根级材料。镜像文件位于
 
 ## Release And Rollback
 
+### 独立产品域名的网关路由
+
+仅当已合并的目标 SHA 相对正在运行的源码**只修改**
+`deploy/zero-one/Caddyfile`，且新增站点只反代另一个独立部署的产品时，
+可按 [ADR 0003](adr/0003-public-capabilities-and-coherent-release.md) 的窄例外
+单独切换 Edge。这个流程不发布零一 API 的 Backend，也不迁移其数据库。
+
+切换前记录旧、新 Edge 摘要和 Backend/PostgreSQL/Redis 容器 ID；核对 main
+产品与安全 CI、目标镜像的 OCI revision、Caddy 配置有效性、既有路由与前端
+静态资源逐文件哈希。确认新服务通过独立 Compose、独立状态目录运行，Edge
+只能通过共享网关网络访问它。保留一次加密的异地备份并实际恢复数据库。
+使用下方 `safe-edge-switch.sh` 切换 Edge，不直接重建依赖服务。
+
+切换后验证新域名的权威 DNS、公开 HTTPS 证书、首页及健康接口；同时验证
+`api.01yapi.com` 健康、`app.01yapi.com` 的原路径重定向，以及原三个依赖
+容器的 ID、挂载和健康状态。新域名或既有域名失败时，立即用同一脚本切回
+已记录的旧 Edge 摘要，并复查原域名。记录这是独立产品的网关分配；后续
+零一 API 应用代码变更仍须走下面的同源双镜像发布流程。
+
 ### 发布前提与数据边界
 
 1. 目标必须是已合并的 main SHA，满足上文 [CI Resource Policy](#ci-resource-policy) 的完整产品/安全工作流证明；PR 成功不能替代 main push 成功。

@@ -48,6 +48,8 @@ _Avoid_: System Settings 原样输出、两份手工同步的公开 DTO、原始
 由同一源码提交构建的 Sub2API 与 Edge 两个不可变镜像及其迁移账本；必须按 Backend-first 顺序部署并共同记录。
 _Avoid_: latest 发布、混合版本、独立前端发布
 
+为独立产品增加域名的纯 Caddy 网关路由属于 [ADR 0003](docs/adr/0003-public-capabilities-and-coherent-release.md) 的受限例外：证明零一 API 的应用源码与静态资源未变，只切换 Edge，并保持现有 Backend 与数据服务容器身份；这不算一次零一 API 一致发布。
+
 **Canonical Product Domain（规范产品域名）**:
 零一 API 唯一公开推荐的产品入口；同一 origin 承载 Public Site、Console 和模型调用。
 _Avoid_: 独立 Console 域名、备用 API 域名、多个等价入口
