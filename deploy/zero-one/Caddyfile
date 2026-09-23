@@ -23,6 +23,18 @@ api.01yapi.com {
 	import landing_routes
 }
 
+mix.01yapi.cc {
+	import access_log
+	reverse_proxy zero-one-verifier-web:8080 {
+		header_up Host {host}
+		header_up CF-Connecting-IP {remote_host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+	}
+}
+
 app.01yapi.com {
 	import access_log
 	header Cache-Control "no-store"
