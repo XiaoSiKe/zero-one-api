@@ -1306,7 +1306,9 @@
     "frontend/src/views/admin/__tests__/RiskControlView.spec.ts",
     "frontend/src/views/admin/__tests__/UsersView.spec.ts",
     "frontend/src/views/user/__tests__/ChannelStatusV1View.refresh.spec.ts",
-    "frontend/src/api/admin/ops.ts"
+    "frontend/src/api/admin/ops.ts",
+    "docs/upgrades/v0.2.8.md",
+    "docs/upgrades/v0.2.8-change-map.json"
   ],
   "retired_preserved_paths": [
     {
@@ -2641,7 +2643,9 @@
         "docs/upgrades/v0.2.7.md",
         "docs/upgrades/v0.2.7-change-map.json",
         "skills/sub2api-admin/references/admin-cli.md",
-        "docs/adr/0014-retired-data-management-compatibility.md"
+        "docs/adr/0014-retired-data-management-compatibility.md",
+        "docs/upgrades/v0.2.8.md",
+        "docs/upgrades/v0.2.8-change-map.json"
       ]
     },
     {
