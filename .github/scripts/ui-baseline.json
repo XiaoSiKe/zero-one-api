@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-20-channel-monitor-v1-only-v1",
-  "baseline_commit": "925c0975880107f6d10582bf2498e368da1c3536",
+  "baseline_ref": "ui-approved-2026-09-24-v028-version-badge-v1",
+  "baseline_commit": "ec9607af1d4c07f67426861c555cec21100e1724",
   "protected_paths": [
     "landing/",
     "frontend/",
