@@ -196,6 +196,7 @@ function baselineWithApprovedBackport() {
 }
 
 const approvedLegacyHotfixPaths = [
+  'backend/cmd/server/VERSION',
   'backend/internal/service/channel_monitor_checker_body_test.go',
   'backend/internal/service/grok_free_quota_gate_test.go',
   'backend/internal/handler/admin/grok_import_probe_test.go',
