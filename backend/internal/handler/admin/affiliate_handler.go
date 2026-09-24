@@ -273,7 +273,8 @@ func (h *AffiliateHandler) ListInviteRecords(c *gin.Context) {
 	response.Paginated(c, items, total, filter.Page, filter.PageSize)
 }
 
-// ListRebateRecords returns all order-level affiliate rebate records.
+// ListRebateRecords returns every affiliate rebate accrual, with order details
+// when the rebate came from a payment order.
 // GET /api/v1/admin/affiliates/rebates
 func (h *AffiliateHandler) ListRebateRecords(c *gin.Context) {
 	page, pageSize := response.ParsePagination(c)
@@ -286,7 +287,8 @@ func (h *AffiliateHandler) ListRebateRecords(c *gin.Context) {
 	response.Paginated(c, items, total, filter.Page, filter.PageSize)
 }
 
-// ListTransferRecords returns all affiliate quota-to-balance transfer records.
+// ListTransferRecords returns affiliate quota outflows: user transfers into
+// balance and admin-recorded offline withdrawals.
 // GET /api/v1/admin/affiliates/transfers
 func (h *AffiliateHandler) ListTransferRecords(c *gin.Context) {
 	page, pageSize := response.ParsePagination(c)
