@@ -1,13 +1,13 @@
 {
   "schema_version": 5,
   "repository": "Wei-Shaw/sub2api",
-  "release": "v0.2.7",
-  "commit": "aea725f2ea644d5592d0bbb1d63b607efa7e200a",
+  "release": "v0.2.8",
+  "commit": "fd80b08c90b55edcad5b00171b53f08721d30da1",
   "upstream_sync": {
-    "previous_release": "v0.2.4",
-    "previous_commit": "5de5e2bed035d43591a2e10e51f420ef6a84eb98",
-    "product_commit": "2492ff74380199a864dda76b111b4821de950e96",
-    "merge_commit": "93bbc299eab25ade3d579799dcf0c38318771b23"
+    "previous_release": "v0.2.7",
+    "previous_commit": "aea725f2ea644d5592d0bbb1d63b607efa7e200a",
+    "product_commit": "a8da9f14efcf8ac8e82730088b249071beb52ed5",
+    "merge_commit": "f0ed107cfd1ce9111b01551998e5b3d4a80675f1"
   },
   "approved_backports": [],
   "preserve_bytes_on_upstream_sync": [
@@ -1297,7 +1297,18 @@
     "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6/logo.svg",
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/cn-provider-admin.css",
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/cn-provider-admin.js",
-    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/logo.svg"
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/logo.svg",
+    "frontend/src/composables/useAutoRefresh.ts",
+    "frontend/src/constants/channel.ts",
+    "frontend/src/stores/announcements.ts",
+    "frontend/src/utils/proxyExpiry.ts",
+    "frontend/src/views/admin/__tests__/BackupView.spec.ts",
+    "frontend/src/views/admin/__tests__/RiskControlView.spec.ts",
+    "frontend/src/views/admin/__tests__/UsersView.spec.ts",
+    "frontend/src/views/user/__tests__/ChannelStatusV1View.refresh.spec.ts",
+    "frontend/src/api/admin/ops.ts",
+    "docs/upgrades/v0.2.8.md",
+    "docs/upgrades/v0.2.8-change-map.json"
   ],
   "retired_preserved_paths": [
     {
@@ -1856,7 +1867,7 @@
   "legacy_hotfixes": [
     {
       "name": "approved-v0.1.179-production-correctness-and-billing-compatibility",
-      "valid_for_release": "v0.2.7",
+      "valid_for_release": "v0.2.8",
       "exit_condition": "Remove each path when the first stable upstream release containing its equivalent production-correctness fix becomes the baseline; remove the entire block when no listed path remains.",
       "paths": [
         "backend/internal/handler/admin/admin_basic_handlers_test.go",
@@ -1886,7 +1897,7 @@
     },
     {
       "name": "approved-v0.1.179-version-metadata-alignment",
-      "valid_for_release": "v0.2.7",
+      "valid_for_release": "v0.2.8",
       "exit_condition": "Remove this metadata alignment when the first stable upstream release makes backend/cmd/server/VERSION match the baseline release.",
       "paths": [
         "backend/cmd/server/VERSION"
@@ -1894,7 +1905,7 @@
     },
     {
       "name": "approved-v0.1.179-race-safety",
-      "valid_for_release": "v0.2.7",
+      "valid_for_release": "v0.2.8",
       "exit_condition": "Remove each path when the first stable upstream release contains the equivalent race-safe runtime cache and asynchronous test fixture handling.",
       "paths": [
         "backend/internal/service/content_moderation.go",
@@ -1909,7 +1920,7 @@
     },
     {
       "name": "approved-v0.1.179-remove-unconditional-sticky-debug-logs",
-      "valid_for_release": "v0.2.7",
+      "valid_for_release": "v0.2.8",
       "exit_condition": "Remove this hotfix when the first stable upstream release removes or explicitly gates the equivalent per-request sticky-session debug logs.",
       "paths": [
         "backend/internal/service/gateway_scheduling.go"
@@ -1917,7 +1928,7 @@
     },
     {
       "name": "approved-v0.1.181-grok-mapping-test-isolation",
-      "valid_for_release": "v0.2.7",
+      "valid_for_release": "v0.2.8",
       "exit_condition": "Remove this hotfix when the first stable upstream release contains equivalent runtime model-mapping isolation in the canonical scheduling test.",
       "paths": [
         "backend/internal/service/openai_model_mapping_test.go"
@@ -1925,7 +1936,7 @@
     },
     {
       "name": "approved-v0.1.182-go-dependency-security-updates",
-      "valid_for_release": "v0.2.7",
+      "valid_for_release": "v0.2.8",
       "exit_condition": "Remove this hotfix when the first stable upstream release uses golang.org/x/image v0.45.0 or later, Testcontainers v0.44.0 or later, github.com/moby/go-archive v0.3.0 or later, and no longer depends on github.com/docker/docker.",
       "paths": [
         "backend/go.mod",
@@ -1937,7 +1948,7 @@
     },
     {
       "name": "approved-v0.2.7-sse-keepalive-test-determinism",
-      "valid_for_release": "v0.2.7",
+      "valid_for_release": "v0.2.8",
       "exit_condition": "Remove this hotfix when the first stable upstream release makes the ordinary-client SSE keepalive test tolerate a comment payload and at least two ticker periods of runner scheduling delay.",
       "paths": [
         "backend/internal/service/gemini_sse_comment_compat_test.go"
@@ -2139,12 +2150,25 @@
         "frontend/src/i18n/index.ts",
         "frontend/src/i18n/__tests__/localeIsolation.spec.ts",
         "frontend/src/router/__tests__/localeTitle.spec.ts",
-        "frontend/vite.adapter-boundary.ts"
-        ,"frontend/src/composables/useForm.ts"
-        ,"frontend/src/composables/__tests__/useForm.spec.ts"
-        ,"frontend/src/views/auth/index.ts"
-        ,"frontend/src/views/user/__tests__/ProfileView.spec.ts"
-        ,"frontend/src/views/user/__tests__/stripeLazyLoading.spec.ts"
+        "frontend/vite.adapter-boundary.ts",
+        "frontend/src/composables/useForm.ts",
+        "frontend/src/composables/__tests__/useForm.spec.ts",
+        "frontend/src/views/auth/index.ts",
+        "frontend/src/views/user/__tests__/ProfileView.spec.ts",
+        "frontend/src/views/user/__tests__/stripeLazyLoading.spec.ts",
+        "frontend/src/composables/__tests__/antigravityMappings.retry.spec.ts",
+        "frontend/src/composables/useAutoRefresh.ts",
+        "frontend/src/constants/channel.ts",
+        "frontend/src/stores/__tests__/adminSettings.retry.spec.ts",
+        "frontend/src/stores/__tests__/announcements.fetch.spec.ts",
+        "frontend/src/stores/announcements.ts",
+        "frontend/src/utils/__tests__/ccswitchImport.antigravityUrl.spec.ts",
+        "frontend/src/utils/__tests__/proxyExpiry.boundary.spec.ts",
+        "frontend/src/utils/proxyExpiry.ts",
+        "frontend/src/views/admin/__tests__/BackupView.spec.ts",
+        "frontend/src/views/admin/__tests__/RiskControlView.spec.ts",
+        "frontend/src/views/admin/__tests__/UsersView.spec.ts",
+        "frontend/src/views/user/__tests__/ChannelStatusV1View.refresh.spec.ts"
       ]
     },
     {
@@ -2541,21 +2565,22 @@
         "backend/migrations/README.md",
         "backend/internal/service/data_management_grpc.go",
         "backend/internal/service/data_management_grpc_test.go",
-        "backend/internal/server/routes/data_management_test.go"
-        ,"frontend/src/api/codex.ts"
-        ,"frontend/src/api/__tests__/codex.spec.ts"
-        ,"docs/adr/0018-codebase-convergence.md"
-        ,"docs/adr/0019-contract-level-upstream-adaptation.md"
-        ,"backend/internal/pkg/usagestats/account_cost.go"
-        ,"backend/internal/pkg/usagestats/account_cost_test.go"
-        ,"backend/internal/repository/minimax_platform_migration_integration_test.go"
-        ,"backend/migrations/237_add_minimax_platform.sql"
-        ,"backend/migrations/minimax_platform_migration_test.go"
-        ,"backend/migrations/238_opencode_go_platform.sql"
-        ,"backend/migrations/238_purge_unlimited_user_platform_quotas.sql"
-        ,"backend/migrations/opencode_go_platform_migration_test.go"
-        ,"backend/migrations/purge_unlimited_user_platform_quotas_migration_test.go"
-        ,"backend/internal/repository/purge_unlimited_user_platform_quotas_migration_integration_test.go"
+        "backend/internal/server/routes/data_management_test.go",
+        "frontend/src/api/codex.ts",
+        "frontend/src/api/__tests__/codex.spec.ts",
+        "docs/adr/0018-codebase-convergence.md",
+        "docs/adr/0019-contract-level-upstream-adaptation.md",
+        "backend/internal/pkg/usagestats/account_cost.go",
+        "backend/internal/pkg/usagestats/account_cost_test.go",
+        "backend/internal/repository/minimax_platform_migration_integration_test.go",
+        "backend/migrations/237_add_minimax_platform.sql",
+        "backend/migrations/minimax_platform_migration_test.go",
+        "backend/migrations/238_opencode_go_platform.sql",
+        "backend/migrations/238_purge_unlimited_user_platform_quotas.sql",
+        "backend/migrations/opencode_go_platform_migration_test.go",
+        "backend/migrations/purge_unlimited_user_platform_quotas_migration_test.go",
+        "backend/internal/repository/purge_unlimited_user_platform_quotas_migration_integration_test.go",
+        "frontend/src/api/admin/ops.ts"
       ]
     },
     {
@@ -2626,7 +2651,9 @@
         "docs/upgrades/v0.2.7.md",
         "docs/upgrades/v0.2.7-change-map.json",
         "skills/sub2api-admin/references/admin-cli.md",
-        "docs/adr/0014-retired-data-management-compatibility.md"
+        "docs/adr/0014-retired-data-management-compatibility.md",
+        "docs/upgrades/v0.2.8.md",
+        "docs/upgrades/v0.2.8-change-map.json"
       ]
     },
     {
@@ -2799,6 +2826,12 @@
       "name": "public-capabilities-retired-channel-monitor-v2-api-test",
       "owner": "Public Capabilities",
       "path": "frontend/src/api/__tests__/channelMonitorV2.spec.ts",
+      "immutable_path": "frontend/src/api/"
+    },
+    {
+      "name": "public-capabilities-admin-ops-api",
+      "owner": "Public Capabilities",
+      "path": "frontend/src/api/admin/ops.ts",
       "immutable_path": "frontend/src/api/"
     }
   ]

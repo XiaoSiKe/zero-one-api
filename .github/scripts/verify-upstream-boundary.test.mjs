@@ -196,11 +196,11 @@ function baselineWithApprovedBackport() {
 }
 
 const approvedLegacyHotfixPaths = [
+  'backend/cmd/server/VERSION',
   'backend/internal/service/channel_monitor_checker_body_test.go',
   'backend/internal/service/grok_free_quota_gate_test.go',
   'backend/internal/handler/admin/grok_import_probe_test.go',
   'backend/internal/handler/admin/grok_oauth_handler_test.go',
-  'backend/cmd/server/VERSION',
   'backend/go.mod',
   'backend/go.sum',
   'backend/internal/handler/admin/admin_basic_handlers_test.go',
@@ -761,6 +761,7 @@ test('allows named immutable exceptions while adjacent seam files still fail', (
         'frontend/src/api/admin/usage.ts',
         'frontend/src/api/usage.ts',
         'frontend/src/api/admin/affiliates.ts',
+        'frontend/src/api/admin/ops.ts',
         'frontend/src/api/__tests__/admin.affiliates.spec.ts',
         'frontend/src/api/__tests__/admin.users.spec.ts',
         'frontend/src/api/admin/redeem.ts',
@@ -917,6 +918,12 @@ test('allows named immutable exceptions while adjacent seam files still fail', (
         name: 'public-capabilities-retired-channel-monitor-v2-api-test',
         owner: 'Public Capabilities',
         path: 'frontend/src/api/__tests__/channelMonitorV2.spec.ts',
+        immutable_path: 'frontend/src/api/',
+      },
+      {
+        name: 'public-capabilities-admin-ops-api',
+        owner: 'Public Capabilities',
+        path: 'frontend/src/api/admin/ops.ts',
         immutable_path: 'frontend/src/api/',
       },
     ],

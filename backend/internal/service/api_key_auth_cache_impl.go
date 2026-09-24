@@ -34,7 +34,6 @@ func cloneAPIKeyAuthModelPricing(pricing []ChannelModelPricing) []ChannelModelPr
 		cloned[i].PerRequestPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].PerRequestPrice)
 		cloned[i].FastMultiplier = cloneAPIKeyAuthFloat64Ptr(pricing[i].FastMultiplier)
 		cloned[i].FlexMultiplier = cloneAPIKeyAuthFloat64Ptr(pricing[i].FlexMultiplier)
-		cloned[i].MaxReasoningEffortMultiplier = cloneAPIKeyAuthFloat64Ptr(pricing[i].MaxReasoningEffortMultiplier)
 		for j := range pricing[i].Intervals {
 			cloned[i].Intervals[j].MaxTokens = cloneAPIKeyAuthIntPtr(pricing[i].Intervals[j].MaxTokens)
 			cloned[i].Intervals[j].InputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].Intervals[j].InputPrice)
