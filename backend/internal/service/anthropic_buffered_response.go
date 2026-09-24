@@ -45,6 +45,8 @@ func (b *anthropicBufferedResponse) add(event apicompat.AnthropicStreamEvent) {
 			block.Text += event.Delta.Text
 		case "thinking_delta":
 			block.Thinking += event.Delta.Thinking
+		case "signature_delta":
+			block.Signature += event.Delta.Signature
 		case "input_json_delta":
 			block.Input = appendRawJSON(block.Input, event.Delta.PartialJSON)
 		}
