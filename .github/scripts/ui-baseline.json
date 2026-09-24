@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-09-24-v028-version-badge-v1",
-  "baseline_commit": "ec9607af1d4c07f67426861c555cec21100e1724",
+  "baseline_ref": "ui-approved-2026-09-24-v028-version-badge-v2",
+  "baseline_commit": "d50f5d0d9d7b7eb5c69614ef3c91239aba72d75b",
   "protected_paths": [
     "landing/",
     "frontend/",
