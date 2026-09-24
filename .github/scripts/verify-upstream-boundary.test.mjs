@@ -200,7 +200,6 @@ const approvedLegacyHotfixPaths = [
   'backend/internal/service/grok_free_quota_gate_test.go',
   'backend/internal/handler/admin/grok_import_probe_test.go',
   'backend/internal/handler/admin/grok_oauth_handler_test.go',
-  'backend/cmd/server/VERSION',
   'backend/go.mod',
   'backend/go.sum',
   'backend/internal/handler/admin/admin_basic_handlers_test.go',

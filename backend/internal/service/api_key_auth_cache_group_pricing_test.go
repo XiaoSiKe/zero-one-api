@@ -115,17 +115,19 @@ func TestAPIKeyAuthSnapshotRejectsV19BeforeGroupPricing(t *testing.T) {
 func TestAPIKeyAuthPricingMultipliersDoNotAliasRequests(t *testing.T) {
 	svc := &APIKeyService{}
 	key := profitAuthTestAPIKey()
-	fast, flex, maxEffort := 2.0, 0.5, 3.0
-	key.Group.ModelPricing = []ChannelModelPricing{{FastMultiplier: &fast, FlexMultiplier: &flex, MaxReasoningEffortMultiplier: &maxEffort}}
+	fast, flex := 2.0, 0.5
+	reasoning := map[string]float64{"max": 3.0}
+	key.Group.ModelPricing = []ChannelModelPricing{{FastMultiplier: &fast, FlexMultiplier: &flex, ReasoningEffortMultipliers: reasoning}}
 	snapshot := svc.snapshotFromAPIKey(context.Background(), key)
-	fast, flex, maxEffort = 10, 11, 12
+	fast, flex = 10, 11
+	reasoning["max"] = 12
 	cached := snapshot.Group.ModelPricing[0]
 	require.Equal(t, 2.0, *cached.FastMultiplier)
 	require.Equal(t, 0.5, *cached.FlexMultiplier)
-	require.Equal(t, 3.0, *cached.MaxReasoningEffortMultiplier)
+	require.Equal(t, 3.0, cached.ReasoningEffortMultipliers["max"])
 	request, used, err := svc.applyAuthCacheEntry(key.Key, &APIKeyAuthCacheEntry{Snapshot: snapshot})
 	require.NoError(t, err)
 	require.True(t, used)
-	*request.Group.ModelPricing[0].MaxReasoningEffortMultiplier = 99
-	require.Equal(t, 3.0, *cached.MaxReasoningEffortMultiplier)
+	request.Group.ModelPricing[0].ReasoningEffortMultipliers["max"] = 99
+	require.Equal(t, 3.0, cached.ReasoningEffortMultipliers["max"])
 }

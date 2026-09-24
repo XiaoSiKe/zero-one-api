@@ -3,6 +3,7 @@
 import datetime, fcntl, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile, time
 
 QUOTA_PURGE_MIGRATION = "238_purge_unlimited_user_platform_quotas.sql"
+REASONING_PRICING_MIGRATION = "239_channel_reasoning_effort_multipliers.sql"
 
 if not __debug__:
     raise RuntimeError("release checks require Python assertions; do not use optimization")
@@ -417,6 +418,39 @@ def ident(x):
     return '"' + x.replace('"', '""') + '"'
 
 
+def fingerprint_columns(table, columns, pending, label):
+    selected = [ident(name) for name in columns]
+    if (
+        table != "groups"
+        or REASONING_PRICING_MIGRATION not in pending
+        or label != "cutover-before"
+        or "model_pricing" not in columns
+    ):
+        return selected
+
+    # Match the forward-only migration on the original value. The migrated
+    # fingerprint uses the stored value, so any other change to this column
+    # still fails the full-row comparison.
+    old_key = "max_reasoning_effort_multiplier"
+    new_key = "reasoning_effort_multipliers"
+    projected = f"""CASE WHEN jsonb_typeof(model_pricing) = 'array' AND EXISTS (
+        SELECT 1 FROM jsonb_array_elements(model_pricing) AS candidate(entry)
+        WHERE jsonb_typeof(entry) = 'object' AND entry ? '{old_key}'
+    ) THEN (
+        SELECT jsonb_agg(
+            CASE WHEN jsonb_typeof(entry) = 'object' AND entry ? '{old_key}' THEN
+                (entry - '{old_key}') || CASE
+                    WHEN NOT (entry ? '{new_key}')
+                         AND jsonb_typeof(entry->'{old_key}') = 'number'
+                    THEN jsonb_build_object('{new_key}', jsonb_build_object('max', entry->'{old_key}'))
+                    ELSE '{{}}'::jsonb END
+            ELSE entry END ORDER BY ordinal
+        ) FROM jsonb_array_elements(model_pricing) WITH ORDINALITY AS pricing(entry, ordinal)
+    ) ELSE model_pricing END AS model_pricing"""
+    selected[columns.index("model_pricing")] = projected
+    return selected
+
+
 def fingerprints(label):
     path = ROOT / "cutover-original-columns.json"
     if not path.exists():
@@ -433,8 +467,9 @@ def fingerprints(label):
     for table, columns in sorted(cols.items()):
         literal = "'" + table.replace("'", "''") + "'"
         row_filter = quota_purge_row_filter(table, META["expected_migrations"])
+        selected = fingerprint_columns(table, columns, META["expected_migrations"], label)
         stmts.append(
-            f"WITH h AS (SELECT encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex') v FROM (SELECT {','.join(map(ident, columns))} FROM public.{ident(table)}{row_filter}) t) SELECT jsonb_build_object('table',{literal},'rows',count(*),'digest',encode(sha256(convert_to(coalesce(string_agg(v,'' ORDER BY v),''),'UTF8')),'hex')) FROM h;"
+            f"WITH h AS (SELECT encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex') v FROM (SELECT {','.join(selected)} FROM public.{ident(table)}{row_filter}) t) SELECT jsonb_build_object('table',{literal},'rows',count(*),'digest',encode(sha256(convert_to(coalesce(string_agg(v,'' ORDER BY v),''),'UTF8')),'hex')) FROM h;"
         )
     stmts.append("COMMIT;")
     data = [json.loads(x) for x in sql("\n".join(stmts)).splitlines() if x]

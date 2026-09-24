@@ -598,6 +598,11 @@ GoReleaser archives 均声明携带这三份根级材料。镜像文件位于
 日/周/月限额全为 `NULL` 的主键集合哈希、数量和迁移前总行数；指纹比对仅对该
 已授权集合做等价投影。迁移后必须同时满足候选行归零、总行数精确减少该数量，
 且所有其他行和表指纹不变；任一条件不符都停止发布。
+`239_channel_reasoning_effort_multipliers.sql` 只允许将 `groups.model_pricing` 中的旧
+`max_reasoning_effort_multiplier` 键转换成等价的 `reasoning_effort_multipliers.max`：
+已有新映射（包括空映射）优先，非数字旧值只移除，不补造倍率。控制器先按迁移规则
+投影迁移前该列，再与迁移后原值逐行纳入完整指纹比较；其他原有业务列仍精确比较。
+新增的两张渠道定价表列和联盟流水幂等标识列不允许改写任何原有列。
 
 在 `drain-backup` 前，创建名为 `zero-one-release-watchdog-<id>` 的主机
 systemd 临时 timer，20 分钟后调用同一脚本的 `watchdog RECOVERY_DIR`。

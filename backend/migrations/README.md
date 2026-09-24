@@ -34,7 +34,7 @@ This is illustrative SQL, not a command to execute on production.
    go test -tags=integration ./internal/repository
    ```
 
-4. Rehearse against a restored database using the exact candidate image. Apply migrations twice, compare the original business columns and migration checksums, check constraints/index validity and sequence positions, then verify the previous application image can still read the database.
+4. Rehearse against a restored database using the exact candidate image. Apply migrations twice, compare the original business columns and migration checksums, check constraints/index validity and sequence positions, then verify the previous application image can still read the database. For migration 239, compare the original `groups.model_pricing` after its documented legacy-key projection; every other existing value remains exact.
 5. Run the repository's affected checks during development and the required release checks before deployment. See the [development guide](../../DEV_GUIDE.md).
 
 There are no `make migrate-up` or `make migrate-down` targets. Application rollback normally restores compatible images while retaining the database and subsequent writes. Database recovery is a separate operation; follow the [release and recovery procedure](../../docs/OPERATIONS.md#release-and-rollback).

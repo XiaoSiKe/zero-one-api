@@ -77,6 +77,29 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn("monthly_limit_usd IS NULL", quota_filter)
         self.assertTrue(quota_filter.startswith(" WHERE NOT"))
 
+    def test_reasoning_pricing_projects_only_pre_migration_group_values(self):
+        columns = ["id", "model_pricing", "updated_at"]
+        pending = [release.REASONING_PRICING_MIGRATION]
+        before = release.fingerprint_columns("groups", columns, pending, "cutover-before")
+        self.assertEqual(before[0], '"id"')
+        self.assertEqual(before[2], '"updated_at"')
+        self.assertIn("entry - 'max_reasoning_effort_multiplier'", before[1])
+        self.assertIn("NOT (entry ? 'reasoning_effort_multipliers')", before[1])
+        self.assertIn("jsonb_typeof(entry->'max_reasoning_effort_multiplier') = 'number'", before[1])
+        self.assertIn("ELSE model_pricing END AS model_pricing", before[1])
+        self.assertEqual(
+            release.fingerprint_columns("groups", columns, pending, "cutover-migrated"),
+            ['"id"', '"model_pricing"', '"updated_at"'],
+        )
+        self.assertEqual(
+            release.fingerprint_columns("groups", columns, [], "cutover-before"),
+            ['"id"', '"model_pricing"', '"updated_at"'],
+        )
+        self.assertEqual(
+            release.fingerprint_columns("users", columns, pending, "cutover-before"),
+            ['"id"', '"model_pricing"', '"updated_at"'],
+        )
+
     def test_quota_purge_records_hash_and_enforces_exact_count(self):
         pending = [release.QUOTA_PURGE_MIGRATION]
         candidate = {

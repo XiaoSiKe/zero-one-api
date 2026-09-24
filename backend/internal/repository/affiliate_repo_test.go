@@ -25,7 +25,7 @@ func TestAffiliateRecordQueriesUseLedgerAuditFields(t *testing.T) {
 	require.Contains(t, content, "LEFT JOIN payment_orders po ON po.id = ual.source_order_id")
 	require.Contains(t, content, "ual.amount::double precision")
 	require.Contains(t, content, "ual.balance_after::double precision")
-	require.Contains(t, content, "WHERE ual.action = 'transfer'", "提取记录只能来自实际额度提取流水")
+	require.Contains(t, content, "WHERE ual.action IN ('transfer', 'withdraw')", "提取记录只能来自实际额度流出流水")
 	require.NotContains(t, content, "parseAffiliateRebateAmount")
 	require.NotContains(t, content, `"current_balance": "u.balance"`)
 }
@@ -43,16 +43,6 @@ func TestAffiliateRebateRecordsQueryKeepsNonOrderAccruals(t *testing.T) {
 	require.NotContains(t, content, "\nJOIN payment_orders po ON po.id = ual.source_order_id")
 	require.NotContains(t, content, "\nJOIN users invitee ON invitee.id = ual.source_user_id")
 	require.NotContains(t, content, "AND ual.source_order_id IS NOT NULL")
-}
-
-// TestAffiliateTransferRecordsQueryIncludesOfflineWithdrawals 锁定提取记录同时
-// 列出转入余额与线下提现两类额度流出。
-func TestAffiliateTransferRecordsQueryIncludesOfflineWithdrawals(t *testing.T) {
-	source, err := os.ReadFile("affiliate_repo.go")
-	require.NoError(t, err)
-	content := string(source)
-
-	require.Contains(t, content, "WHERE ual.action IN ('transfer', 'withdraw')")
 }
 
 // TestAffiliateWithdrawClaimsOperationBeforeDeducting 锁定线下提现的幂等形态：

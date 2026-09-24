@@ -287,6 +287,37 @@ func (h *AffiliateHandler) ListRebateRecords(c *gin.Context) {
 	response.Paginated(c, items, total, filter.Page, filter.PageSize)
 }
 
+// WithdrawQuotaRequest records an offline withdrawal already paid to the user.
+type WithdrawQuotaRequest struct {
+	Amount float64 `json:"amount"`
+}
+
+// WithdrawQuota deducts the registered payment once for each Idempotency-Key.
+// POST /api/v1/admin/affiliates/users/:user_id/withdraw
+func (h *AffiliateHandler) WithdrawQuota(c *gin.Context) {
+	userID, err := strconv.ParseInt(c.Param("user_id"), 10, 64)
+	if err != nil || userID <= 0 {
+		response.BadRequest(c, "Invalid user_id")
+		return
+	}
+
+	var req WithdrawQuotaRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+
+	result, err := h.affiliateService.AdminWithdrawQuota(c.Request.Context(), userID, req.Amount, c.GetHeader("Idempotency-Key"))
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if result != nil && result.Replayed {
+		c.Header("X-Idempotency-Replayed", "true")
+	}
+	response.Success(c, result)
+}
+
 // ListTransferRecords returns affiliate quota outflows: user transfers into
 // balance and admin-recorded offline withdrawals.
 // GET /api/v1/admin/affiliates/transfers
