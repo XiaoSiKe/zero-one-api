@@ -272,9 +272,9 @@ func (h *DashboardHandler) buildSnapshotV2Response(
 		var usersTrend []usagestats.UserUsageTrendPoint
 		var err error
 		if refresh {
-			usersTrend, err = h.dashboardService.GetUserUsageTrend(ctx, startTime, endTime, granularity, usersTrendLimit)
+			usersTrend, err = h.dashboardService.GetUserUsageTrend(ctx, startTime, endTime, granularity, usersTrendLimit, "tokens")
 		} else {
-			usersTrend, _, err = h.getUserUsageTrendCached(ctx, startTime, endTime, granularity, usersTrendLimit)
+			usersTrend, _, err = h.getUserUsageTrendCached(ctx, startTime, endTime, granularity, usersTrendLimit, "tokens")
 		}
 		if err != nil {
 			return nil, errors.New("failed to get user usage trend")
