@@ -455,7 +455,7 @@ TTFT parser tests use fake streams, not a production upstream account pool.
 ## Upstream Provenance And GitHub Fork Metadata
 
 本产品来源于 `Wei-Shaw/sub2api`，固定基线为
-`v0.2.4@5de5e2bed035d43591a2e10e51f420ef6a84eb98`。托管迁移保留了完整 Git
+`v0.2.11@96f4c115c9749078f90cbf210a01d39baf3f53b6`。托管迁移保留了完整 Git
 历史，且基线是产品 `main` 的祖先。`origin` 指向 `XiaoSiKe/zero-one-api`，
 `upstream` 指向原仓库并设置 push URL 为 `DISABLED`；这不改变上游许可证或作者。
 
@@ -701,8 +701,11 @@ Every CI and publish run validates the repository-owned `upstream_sync`
 attestation in `.github/upstream-baseline.json`. It binds the previous stable
 Tag/commit, the full product commit captured before the merge, and the resulting
 two-parent merge commit. The merge must use that product commit as its first
-parent and the pinned upstream commit as its second parent, and every
-`preserve_on_upstream_sync` file must be unchanged across that merge. Missing,
+parent and the pinned upstream commit as its second parent, and the sync must retain every
+`preserve_on_upstream_sync` contract registration. Schema 5 allows implementation
+adaptation while its ADR, permission, pricing and data contracts continue to pass;
+only `preserve_bytes_on_upstream_sync` and the other explicit immutable boundaries
+require unchanged bytes. See [ADR 0019](adr/0019-contract-level-upstream-adaptation.md). Missing,
 stale, malformed, self-`HEAD`, or non-ancestor metadata fails closed. Ordinary
 feature releases replay the recorded historical boundary and need no optional
 workflow input, so omitting an input cannot bypass the publish gate.
