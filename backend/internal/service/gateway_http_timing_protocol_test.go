@@ -48,7 +48,7 @@ func TestHTTPVisibleTimingAcrossProtocolAdapters(t *testing.T) {
 			return svc.streamChatCompletionsAsAnthropic(c, r, "model", "model", "model", nil, nil, time.Now())
 		}},
 		{"native Anthropic to Chat", miniAnthropicSSEStream(), func(c *gin.Context, r *http.Response) (*OpenAIForwardResult, error) {
-			return svc.handleCCStreamingFromNativeAnthropic(r, c, "model", "model", "model", nil, time.Now(), true)
+			return svc.handleCCStreamingFromNativeAnthropic(r, c, "model", "model", "model", nil, time.Now())
 		}},
 		{"native Anthropic to Responses", miniAnthropicSSEStream(), func(c *gin.Context, r *http.Response) (*OpenAIForwardResult, error) {
 			return svc.handleResponsesStreamingFromNativeAnthropic(r, c, "model", "model", "model", nil, time.Now(), apicompat.ResponsesClientToolMapping{})

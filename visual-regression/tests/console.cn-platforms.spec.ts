@@ -351,10 +351,10 @@ test.describe('Recovered CN Provider management contracts', () => {
     await expect(page).toHaveURL(`${consoleOrigin}/admin/groups`)
     await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'groups')
     await expect(host).not.toBeEmpty()
-    expect(getCounts.get('/admin/groups')).toBe(1)
-    expect(getCounts.get('/admin/groups/live-capability')).toBe(1)
-    expect(getCounts.get('/admin/groups/usage-summary')).toBe(1)
-    expect(getCounts.get('/admin/groups/capacity-summary')).toBe(1)
+    await expect.poll(() => getCounts.get('/admin/groups')).toBe(1)
+    await expect.poll(() => getCounts.get('/admin/groups/live-capability')).toBe(1)
+    await expect.poll(() => getCounts.get('/admin/groups/usage-summary')).toBe(1)
+    await expect.poll(() => getCounts.get('/admin/groups/capacity-summary')).toBe(1)
 
     await accountsLink.evaluate((link: HTMLAnchorElement) => link.click())
     await expect(page).toHaveURL(`${consoleOrigin}/admin/accounts`)
@@ -370,10 +370,10 @@ test.describe('Recovered CN Provider management contracts', () => {
     await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'accounts')
     await expect(host).not.toBeEmpty()
     expect(getCounts.get('/admin/accounts')).toBe(3)
-    expect(getCounts.get('/admin/groups')).toBe(2)
-    expect(getCounts.get('/admin/groups/live-capability')).toBe(2)
-    expect(getCounts.get('/admin/groups/usage-summary')).toBe(2)
-    expect(getCounts.get('/admin/groups/capacity-summary')).toBe(2)
+    await expect.poll(() => getCounts.get('/admin/groups')).toBe(2)
+    await expect.poll(() => getCounts.get('/admin/groups/live-capability')).toBe(2)
+    await expect.poll(() => getCounts.get('/admin/groups/usage-summary')).toBe(2)
+    await expect.poll(() => getCounts.get('/admin/groups/capacity-summary')).toBe(2)
 
     await page.evaluate(() => {
       const state = window as typeof window & { __zeroOneVisibleRouteFrames?: number[] }

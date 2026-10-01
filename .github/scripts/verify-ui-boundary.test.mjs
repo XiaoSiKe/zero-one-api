@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import test from 'node:test'
 import {
   evaluateChangedPaths,
@@ -291,4 +293,36 @@ test('requires the console entry to keep the approved asset references', () => {
     ),
     ['console/index.html asset references differ from approved baseline'],
   )
+})
+
+test('compatibility builds accept evolved output and reject changes to published assets', () => {
+  const root = mkdtempSync(join(tmpdir(), 'frozen-build-contract-'))
+  try {
+    const scripts = join(root, 'deploy/zero-one')
+    const assets = join(scripts, 'recovered-frontend/console/assets')
+    const bin = join(root, 'bin')
+    mkdirSync(assets, { recursive: true })
+    mkdirSync(bin)
+    writeFileSync(join(assets, 'published.js'), 'historical output')
+    symlinkSync('.', join(assets, 'historical-alias'))
+    copyFileSync(new URL('../../deploy/zero-one/verify-frozen-console-build.mjs', import.meta.url), join(scripts, 'verify-frozen-console-build.mjs'))
+    writeFileSync(join(bin, 'pnpm'), `#!/usr/bin/env node
+const fs = require('node:fs')
+fs.writeFileSync(process.env.ZERO_ONE_FROZEN_BUILD_ROOT + '/different-output.js', 'evolved API caller source')
+if (process.env.FROZEN_TEST_MUTATION === 'true') fs.writeFileSync(process.env.FROZEN_TEST_ASSET, 'unexpected rewrite')
+`)
+    chmodSync(join(bin, 'pnpm'), 0o755)
+    const run = (mutation) => spawnSync(process.execPath, [join(scripts, 'verify-frozen-console-build.mjs'), 'cn-provider-admin'], {
+      encoding: 'utf8',
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, FROZEN_TEST_ASSET: join(assets, 'published.js'), FROZEN_TEST_MUTATION: String(mutation) },
+    })
+    const compatible = run(false)
+    assert.equal(compatible.status, 0, compatible.stderr)
+    assert.equal(readFileSync(join(assets, 'published.js'), 'utf8'), 'historical output')
+    const mutation = run(true)
+    assert.notEqual(mutation.status, 0)
+    assert.match(mutation.stderr, /modified frozen production assets/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
 })

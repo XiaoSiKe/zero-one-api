@@ -928,7 +928,8 @@ type BillingConfig struct {
 
 // InflightReservationConfig 余额模式在途预留配置。
 // 准入时按 输入估算 + 输出单价 × max_tokens 估算单请求费用，在 Redis 中原子地
-// 校验 缓存余额 - 在途预留合计 >= 估算 后登记预留，请求结束（任意路径）释放。
+// 校验 缓存余额 - 在途预留合计 >= 估算 后登记预留；handler 和异步计费任务
+// 均结束后释放，长请求期间续期，进程崩溃时由 TTL 回收。
 // 估算失败或 Redis 不可用时 fail-open，退回旧的仅余额 > 阈值检查。
 type InflightReservationConfig struct {
 	Enabled bool `mapstructure:"enabled"`
