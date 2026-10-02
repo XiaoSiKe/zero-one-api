@@ -301,7 +301,7 @@ import {
   DEFAULT_MINIMAX_ENDPOINT,
   DEFAULT_INTERVAL_SECONDS,
 } from '@/constants/channelMonitor'
-import { CONCRETE_PLATFORM_OPTIONS } from '@/constants/platforms'
+import { MONITOR_PLATFORM_OPTIONS } from '@/constants/platforms'
 import { estimateDailyProbeRequests } from '@/features/channel-monitor/probeBudget'
 
 const props = defineProps<{
@@ -489,7 +489,7 @@ interface ProviderOption {
   label: string
 }
 
-const providerOptions = computed<ProviderOption[]>(() => CONCRETE_PLATFORM_OPTIONS.map(({ value }) => ({
+const providerOptions = computed<ProviderOption[]>(() => MONITOR_PLATFORM_OPTIONS.map(({ value }) => ({
   value,
   label: t(`monitorCommon.providers.${value}`),
 })))

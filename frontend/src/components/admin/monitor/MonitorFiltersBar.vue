@@ -66,7 +66,7 @@ import { useI18n } from 'vue-i18n'
 import type { Provider } from '@/api/admin/channelMonitor'
 import Select from '@/components/common/Select.vue'
 import Icon from '@/components/icons/Icon.vue'
-import { CONCRETE_PLATFORM_OPTIONS } from '@/constants/platforms'
+import { MONITOR_PLATFORM_OPTIONS } from '@/constants/platforms'
 
 defineProps<{
   loading: boolean
@@ -87,7 +87,7 @@ const { t } = useI18n()
 
 const providerFilterOptions = computed(() => [
   { value: '', label: t('admin.channelMonitor.allProviders') },
-  ...CONCRETE_PLATFORM_OPTIONS.map(({ value }) => ({
+  ...MONITOR_PLATFORM_OPTIONS.map(({ value }) => ({
     value,
     label: t(`monitorCommon.providers.${value}`),
   })),

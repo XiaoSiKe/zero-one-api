@@ -23,8 +23,9 @@ describe('admin platform filters', () => {
       'src/views/admin/ops/components/OpsDashboardHeader.vue',
     ]) {
       const source = readSource(path)
-      expect(source).toContain("import { CONCRETE_PLATFORM_OPTIONS } from '@/constants/platforms'")
-      expect(source).toContain('CONCRETE_PLATFORM_OPTIONS')
+      const catalog = path.includes('/monitor/') ? 'MONITOR_PLATFORM_OPTIONS' : 'CONCRETE_PLATFORM_OPTIONS'
+      expect(source).toContain(`import { ${catalog} } from '@/constants/platforms'`)
+      expect(source).toContain(catalog)
     }
   })
 })

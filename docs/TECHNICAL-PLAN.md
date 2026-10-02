@@ -3,7 +3,7 @@
 ## Baseline And Change Boundary
 
 项目的稳定技术基线为
-[`Wei-Shaw/sub2api v0.2.4@5de5e2bed035d43591a2e10e51f420ef6a84eb98`](https://github.com/Wei-Shaw/sub2api/tree/5de5e2bed035d43591a2e10e51f420ef6a84eb98)。
+[`Wei-Shaw/sub2api v0.2.12@5106065716e494204fc0e8db16f68f6e9d576be0`](https://github.com/Wei-Shaw/sub2api/tree/5106065716e494204fc0e8db16f68f6e9d576be0)。
 产品仓库 [`XiaoSiKe/zero-one-api`](https://github.com/XiaoSiKe/zero-one-api)
 配置为 `origin`，官方仓库 `Wei-Shaw/sub2api` 配置为只读
 `upstream`。`main` 是零一 API 唯一产品、CI 和发布分支；不保留第二产品分支。
@@ -13,7 +13,7 @@
 新仓库权限、Secrets、分支保护和包访问权限必须分别核验，不能视为已从旧仓库继承；
 导入及远端验收记录见[运维清单](PRODUCTION_SERVER_CN.md#历史发布索引)。
 
-`.github/upstream-baseline.json` 是 schema v4 Overlay Registry，所有常规回放路径必须唯一归属 `Console Skin`、`Public Capabilities`、`Supported Preview`、`Visual Regression` 或 `Marketing Source Assets`。Registry 只接受精确文件或精确目录，不接受 glob 或未命名的顺带改动。Product Change Protection 会对固定 Upstream Baseline 后的全部产品差异做闭包检查：每个差异必须由 `preserve_on_upstream_sync`、Approved UI Snapshot、带退出条件的 legacy hotfix 或精确 backport 之一保留，仅有 Overlay 归属会使 readiness 失败。`preserve_on_upstream_sync` 禁止目录和 glob，每一项必须唯一归属一个 Overlay；上游同步不能删除保护。后续产品决策明确取代旧行为时，允许用 `retired_preserved_paths` 逐文件记录 owner、受保护 ADR 和非空原因，形成不可静默撤销的退役墓碑；同一路径不能同时处于保留与退役状态。`upstream_sync` 持久绑定旧 upstream Tag/commit、合并前 product tip 和真实双亲 merge commit，CI 与 publish 会重放 product-to-merge 差异并拒绝任一未退役的受保护文件被覆盖。临时生产正确性修补保留在带退出条件的独立 legacy hotfix 区块；安全 backport 继续锁定逐文件 SHA-256 与 Git mode。`frontend/src/api/` 与 `frontend/src/types/` 默认不可变，只有 Registry 中精确命名并绑定 owner 且逐文件进入 `preserve_on_upstream_sync` 的兼容文件例外可以通过，相邻文件仍被拒绝。v179 的渠道定价 API 例外只把数据库可空的 multiplier 字段表达为可选且可空，使已批准 Console 能继续构建，不改变请求或响应字段。
+`.github/upstream-baseline.json` 是 schema v5 Overlay Registry，所有常规回放路径必须唯一归属 `Console Skin`、`Public Capabilities`、`Supported Preview`、`Visual Regression` 或 `Marketing Source Assets`。Registry 只接受精确文件或精确目录，不接受 glob 或未命名的顺带改动。Product Change Protection 会对固定 Upstream Baseline 后的全部产品差异做闭包检查：每个差异必须由 `preserve_on_upstream_sync`、Approved UI Snapshot、带退出条件的 legacy hotfix 或精确 backport 之一保留，仅有 Overlay 归属会使 readiness 失败。`preserve_on_upstream_sync` 禁止目录和 glob，每一项必须唯一归属一个 Overlay；上游同步不能删除保护。后续产品决策明确取代旧行为时，允许用 `retired_preserved_paths` 逐文件记录 owner、受保护 ADR 和非空原因，形成不可静默撤销的退役墓碑；同一路径不能同时处于保留与退役状态。`upstream_sync` 持久绑定旧 upstream Tag/commit、合并前 product tip 和真实双亲 merge commit，CI 与 publish 会重放 product-to-merge 差异，核对契约登记连续性，并拒绝 `preserve_bytes_on_upstream_sync` 中已发布资产被覆盖；普通实现允许在契约和回归成立时演进，见 ADR 0019。临时生产正确性修补保留在带退出条件的独立 legacy hotfix 区块；安全 backport 继续锁定逐文件 SHA-256 与 Git mode。`frontend/src/api/` 与 `frontend/src/types/` 默认不可变，只有 Registry 中精确命名并绑定 owner 且逐文件进入 `preserve_on_upstream_sync` 的兼容文件例外可以通过，相邻文件仍被拒绝。v179 的渠道定价 API 例外只把数据库可空的 multiplier 字段表达为可选且可空，使已批准 Console 能继续构建，不改变请求或响应字段。
 
 | Overlay owner | Interface and seam |
 | --- | --- |
@@ -59,7 +59,7 @@ The React app lives in `landing/`, uses Vite with base `/_landing/`, and is buil
 | Authentication, billing, redeem and affiliate data | Existing route/service/repository contracts and integration tests own the invariants; migrations and original business records remain immutable. |
 | Console and Landing | Source, generated adapters and Approved UI Snapshot have separate roles. Versioned asset URLs and byte content remain available for old pages and rollback; identical byte storage already shares the immutable pool. |
 | Generated code and dependencies | Ent/Wire output follows its generator. Frontend API/type exports and optional provider/plugin integrations are not classified as dead merely because the current UI does not import them. |
-| Legacy hotfixes | All six registered groups retain their existing exit conditions. The v0.2.4 tag still carries `backend/cmd/server/VERSION=0.2.3`, so the product version-alignment correction remains necessary. Billing, race, formatting, sticky-log, Grok-test and dependency fixes are not retired without an equivalent baseline and passing regressions. |
+| Legacy hotfixes | All six registered groups retain their existing exit conditions. The v0.2.12 tag still carries `backend/cmd/server/VERSION=0.2.11`, so the product version-alignment correction remains necessary. Billing, race, formatting, sticky-log, Grok-test and dependency fixes are not retired without an equivalent baseline and passing regressions. |
 | Operations and historical evidence | Release/backup entry points live under `deploy/zero-one`; recovery material stays outside Git. Historical design evidence, completed plans and provenance records do not define current runtime behavior. |
 
 The active maintenance commands and release prerequisites are owned by
@@ -166,18 +166,16 @@ edge image. Image rollback does not reverse a database migration; see
 合回 `main`。每次同步同时更新本节的 tag 与完整提交 SHA。
 主题改动保持集中，使新增上游页面继承设计系统，避免逐页分叉。
 
-当前 Upstream Baseline 是 `v0.2.4`，解引用源码提交为
-`5de5e2bed035d43591a2e10e51f420ef6a84eb98`，annotated tag object 为
-`d681d0798064ee0ffff376d19687d12f09fe600f`。本次通过真实双父合并引入 MiniMax
-平台目录、长流 keepalive、跨实例缓存失效、持久化 cooldown、Grok 媒体资格、
-OpenAI Image 2.5 及网关、代理和管理界面修复；266 个上游变化路径的整合决定见
-[v0.2.4 升级记录](upgrades/v0.2.4.md)与对应 change map。
+当前 Upstream Baseline 是 `v0.2.12`，解引用源码提交为
+`5106065716e494204fc0e8db16f68f6e9d576be0`。本次通过真实双父合并引入
+TypeSafe / Jev System One、充值赠金与折扣阶梯、密钥分组排序、账号优先级快捷调整，
+以及验证码并发限制、哈希重置令牌、订单查询限流、上游错误脱敏和 Grok CLI 身份修复。
+151 个上游变化路径的决定见 [v0.2.12 升级记录](upgrades/v0.2.12.md)及对应 change map。
 
-继续保留 Zero One 的分组与账号长上下文计费双重开关、定价快照隔离、
-历史上游声明证据、兑换领取证明、请求首 Token 和生图错误语义。当前 Provider
-Account 成本只使用请求时冻结的上游声明有效倍率，缺失证据保持待核算；本地账号倍率
-继续用于调度和额度核算，不重算历史账。新增上游 Console 能力通过 v8/v10/v17
-恢复资源接入，并保持所有已发布历史 URL 不变。
+继续保留分组与账号长上下文计费双重开关、请求时的上游成本证据、兑换领取证明、
+邀请归属、站点首 Token、主动 V1 监控和已发布资源字节。普通源码组件吸收兼容变更，
+Production Console 仍使用独立批准的恢复资源；新增源码控件不意味着已进入生产 UI。
+本次新增两条增量迁移，旧订单 `bonus_amount` 为零，原有业务列不改写。
 
 Go 版本保持 `1.27.0`，`approved_backports` 为空。六组 legacy hotfix 继续按
 各自退出条件审查：与上游重叠的业务修复已整合，未达到等价条件的精确路径保留。

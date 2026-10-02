@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"sync"
 	"sync/atomic"
@@ -31,7 +33,7 @@ func TestPasswordResetTokenConsumptionFailureDoesNotSucceed(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 	cache := &failedResetConsumeCache{EmailCache: NewEmailCache(client)}
 	ctx := context.Background()
-	require.NoError(t, cache.SetPasswordResetToken(ctx, "test@example.com", &service.PasswordResetTokenData{Token: "valid"}, time.Minute))
+	require.NoError(t, cache.SetPasswordResetToken(ctx, "test@example.com", &service.PasswordResetTokenData{Token: resetTokenHash("valid")}, time.Minute))
 	svc := service.NewEmailService(nil, cache)
 	require.ErrorIs(t, svc.ConsumePasswordResetToken(ctx, "test@example.com", "valid"), service.ErrServiceUnavailable)
 }
@@ -80,7 +82,7 @@ func TestPasswordResetTokenCanOnlyBeConsumedOnceConcurrently(t *testing.T) {
 	cache := &simultaneousResetReadCache{EmailCache: NewEmailCache(client)}
 	ctx := context.Background()
 	require.NoError(t, cache.SetPasswordResetToken(ctx, "test@example.com", &service.PasswordResetTokenData{
-		Token: "one-time-token", CreatedAt: time.Now(),
+		Token: resetTokenHash("one-time-token"), CreatedAt: time.Now(),
 	}, time.Minute))
 	svc := service.NewEmailService(nil, cache)
 	const callers = 8
@@ -106,4 +108,9 @@ func TestPasswordResetTokenCanOnlyBeConsumedOnceConcurrently(t *testing.T) {
 	for err := range errors {
 		require.ErrorIs(t, err, service.ErrInvalidResetToken)
 	}
+}
+
+func resetTokenHash(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
 }
