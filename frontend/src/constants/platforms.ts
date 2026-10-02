@@ -25,3 +25,8 @@ export const GROUP_PLATFORM_OPTIONS = [
   ...CONCRETE_PLATFORM_OPTIONS,
   { value: 'composite', label: 'Composite' }
 ] as const satisfies readonly PlatformOption<GroupPlatform>[]
+
+/** Active channel probes use conversational providers; System One is not a chat endpoint. */
+export const MONITOR_PLATFORM_OPTIONS = CONCRETE_PLATFORM_OPTIONS.filter(
+  (option) => option.value !== 'typesafe'
+)

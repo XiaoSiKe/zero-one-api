@@ -4563,13 +4563,7 @@ watch(
         .catch(() => { tlsFingerprintProfiles.value = [] })
       // Modal opened - fill related models
       allowedModels.value = [...getModelsByPlatform(form.platform)]
-      if (newPlatform === 'typesafe') {
-      form.type = 'apikey'
-      accountCategory.value = 'apikey'
-      modelRestrictionMode.value = 'whitelist'
-      allowedModels.value = ['jev-latest']
-    }
-    // Antigravity: 默认使用映射模式并填充默认映射
+      // Antigravity: 默认使用映射模式并填充默认映射
       if (form.platform === 'antigravity') {
         antigravityModelRestrictionMode.value = 'mapping'
         fetchAntigravityDefaultMappings().then(mappings => {
@@ -4634,6 +4628,12 @@ watch(
     // Clear model-related settings
     allowedModels.value = []
     modelMappings.value = []
+    if (newPlatform === 'typesafe') {
+      form.type = 'apikey'
+      accountCategory.value = 'apikey'
+      modelRestrictionMode.value = 'whitelist'
+      allowedModels.value = ['jev-latest']
+    }
     // Antigravity: 默认使用映射模式并填充默认映射
     if (newPlatform === 'antigravity') {
       antigravityModelRestrictionMode.value = 'mapping'

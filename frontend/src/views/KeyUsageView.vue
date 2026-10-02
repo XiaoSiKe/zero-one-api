@@ -543,6 +543,7 @@ const RING_GRADIENTS = [
 
 const ringAnimated = ref(false)
 const displayPcts = ref<number[]>([])
+let ringAnimationGeneration = 0
 
 const ringTrackColor = computed(() => isDark.value ? '#222222' : '#F0F0EE')
 
@@ -562,12 +563,16 @@ function getRingOffset(ring: RingItem): number {
 }
 
 function triggerRingAnimation(items: RingItem[]) {
+  const generation = ++ringAnimationGeneration
   ringAnimated.value = false
   displayPcts.value = items.map(() => 0)
 
   nextTick(() => {
+    if (generation !== ringAnimationGeneration) return
     requestAnimationFrame(() => {
+      if (generation !== ringAnimationGeneration) return
       setTimeout(() => {
+        if (generation !== ringAnimationGeneration) return
         ringAnimated.value = true
 
         // Animate percentage numbers
@@ -576,6 +581,7 @@ function triggerRingAnimation(items: RingItem[]) {
         const targets = items.map(item => item.isBalance ? 0 : item.pct)
 
         function tick() {
+          if (generation !== ringAnimationGeneration) return
           const elapsed = performance.now() - startTime
           const p = Math.min(elapsed / duration, 1)
           const ease = 1 - Math.pow(1 - p, 3)
@@ -943,6 +949,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  ringAnimationGeneration++
   if (resetTimer) clearInterval(resetTimer)
 })
 </script>

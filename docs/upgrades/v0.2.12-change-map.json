@@ -1,0 +1,776 @@
+{
+  "schema_version": 1,
+  "previous_upstream": "96f4c115c9749078f90cbf210a01d39baf3f53b6",
+  "upstream": "5106065716e494204fc0e8db16f68f6e9d576be0",
+  "product": "6a540fca7db34220add8d4c6a2f71f1d8ea61617",
+  "merge": "a29346e2dd0406fa2c82bc3102ba804884f88f98",
+  "path_count": 151,
+  "summary": {
+    "adapt": 28,
+    "adopt": 75,
+    "defer-production-ui": 48
+  },
+  "rejected_policy_changes": [
+    "revive retired product features",
+    "derive historical account cost from mutable local rates or later probes",
+    "replace approved production UI snapshots without approval",
+    "prune Docker volumes, bind mounts, Redis, PostgreSQL, environment files, or release locks"
+  ],
+  "changes": [
+    {
+      "path": "README.md",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "README_CN.md",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/cmd/server/VERSION",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/ent/migrate/schema.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/ent/mutation.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/ent/paymentorder.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/ent/paymentorder/paymentorder.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/ent/paymentorder/where.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/ent/paymentorder_create.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/ent/paymentorder_update.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/ent/runtime/runtime.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/ent/schema/payment_order.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/ent/schema/user_platform_quota.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/domain/constants.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/admin/account_handler.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/admin/account_handler_available_models_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/admin/channel_handler.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/admin/channel_handler_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/admin/group_handler.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/admin/group_handler_platform_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/admin/payment_handler.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/admin/setting_handler.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/admin/setting_handler_recharge_bonus.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/admin/setting_handler_update.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/auth_oauth_pending_flow_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/dto/recharge_bonus_tiers.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/dto/settings.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/endpoint.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/endpoint_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/gateway_handler.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/gateway_handler_chat_completions.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/gateway_handler_responses.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/gateway_models_retrieve_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/gateway_models_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/gateway_systemone.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/gateway_systemone_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/payment_handler.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/user_handler_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/model/error_passthrough_rule.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/model/error_passthrough_rule_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/typesafe/client.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/typesafe/systemone.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/typesafe/systemone_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/xai/billing.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/xai/billing_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/xai/cli_identity.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/xai/cli_identity_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/api_key_repo.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/repository/api_key_repo_sort_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/email_cache.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/email_cache_atomic_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/http_upstream.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/http_upstream_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/securityaudit/prompt_snapshot.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/securityaudit/prompt_snapshot_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/server/api_contract_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/server/router.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/server/routes/gateway.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/server/routes/gateway_model_allowlist_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/server/routes/payment.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/server/routes/payment_public_rate_limit_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/server/routes/prompt_audit_route_coverage_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_test_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_test_service_typesafe.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_test_service_typesafe_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/admin_account.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/admin_group.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_gemini.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_upstream_error_sanitize.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_upstream_error_sanitize_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/auth_service_email_bind_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/auth_service_register_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/billing_service.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/billing_service_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/channel_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/channel_service_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/composite_platform.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/composite_platform_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/content_moderation.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/content_moderation_input.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/content_moderation_systemone_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/domain_constants.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/email_service.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/email_service_reset_token_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_systemone.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_systemone_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/grok_upstream_headers.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/grok_upstream_headers_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_grok.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/payment_config_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/payment_fulfillment.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/payment_order.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/payment_order_provider_snapshot_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/payment_recharge_bonus.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/payment_recharge_bonus_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/payment_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/user_service.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/migrations/241_add_payment_order_bonus_amount.sql",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/migrations/241_add_typesafe_platform.sql",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/migrations/typesafe_platform_migration_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "frontend/package.json",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/pnpm-lock.yaml",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/api/admin/settings.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/api/admin/users.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/AccountPriorityCell.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/CreateAccountModal.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/EditAccountModal.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/AccountPriorityCell.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/admin/payment/AdminOrderDetail.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/admin/payment/AdminOrderTable.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/admin/settings/RechargeBonusTierEditor.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/admin/user/__tests__/UserPlatformQuotaModal.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/keys/UseKeyModal.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/payment/AmountInput.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/payment/OrderTable.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/payment/PaymentStatusPanel.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/payment/__tests__/AmountInput.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/user/UserPlatformQuotaCell.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/user/__tests__/UserPlatformQuotaCell.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/user/dashboard/UserDashboardStats.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/user/dashboard/__tests__/UserDashboardStats.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/composables/useModelWhitelist.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/constants/__tests__/platforms.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/constants/platforms.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/accounts.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/overview.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/settings.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/dashboard.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/misc.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/accounts.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/overview.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/settings.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/dashboard.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/misc.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/types/index.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/types/payment.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/utils/__tests__/rechargeBonus.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/utils/keyGroupProviders.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/utils/platformColors.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/utils/rechargeBonus.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/admin/AccountsView.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/admin/ChannelsView.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/admin/SettingsView.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/SettingsView.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/user/KeysView.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/user/PaymentResultView.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/user/PaymentView.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/user/__tests__/KeysView.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    }
+  ]
+}

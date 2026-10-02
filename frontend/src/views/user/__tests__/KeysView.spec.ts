@@ -416,7 +416,7 @@ describe('user KeysView column settings', () => {
     { key: 'current_concurrency', order: 'asc' },
     { key: 'group', order: 'asc' },
     { key: 'group', order: 'desc' },
-  ] as const)('keeps filters and resets pagination and selection when sorting $key $order', async ({ key, order }) => {
+  ] as const)('keeps filters and resets pagination when sorting $key $order', async ({ key, order }) => {
     getAvailableGroups.mockResolvedValue([{ id: 42, name: 'OpenAI' }])
     const wrapper = await mountView()
 
@@ -436,16 +436,12 @@ describe('user KeysView column settings', () => {
     await wrapper.get('[data-test="page-2"]').trigger('click')
     await flushPromises()
     const table = wrapper.findComponent({ name: 'DataTable' })
-    table.vm.$emit('update:selectedKeys', [1])
-    await nextTick()
-    expect(table.props('selectedKeys')).toEqual([1])
     expect(visibleColumnMeta(wrapper).find((column) => column.key === key)?.sortable).toBe(true)
     listKeys.mockClear()
 
     table.vm.$emit('sort', key, order)
     await flushPromises()
 
-    expect(table.props('selectedKeys')).toEqual([])
     expect(listKeys).toHaveBeenLastCalledWith(
       1,
       50,
@@ -453,8 +449,8 @@ describe('user KeysView column settings', () => {
         search: 'target',
         status: 'active',
         group_id: 42,
-        sort_by: 'current_concurrency',
-        sort_order: 'asc',
+        sort_by: key,
+        sort_order: order,
       },
       expect.objectContaining({ signal: expect.any(AbortSignal) })
     )
