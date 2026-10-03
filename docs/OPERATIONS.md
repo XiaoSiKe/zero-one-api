@@ -455,7 +455,7 @@ TTFT parser tests use fake streams, not a production upstream account pool.
 ## Upstream Provenance And GitHub Fork Metadata
 
 本产品来源于 `Wei-Shaw/sub2api`，固定基线为
-`v0.2.11@96f4c115c9749078f90cbf210a01d39baf3f53b6`。托管迁移保留了完整 Git
+`v0.2.13@3040209f205472038c1ba745a1bedd2edd9053b1`。托管迁移保留了完整 Git
 历史，且基线是产品 `main` 的祖先。`origin` 指向 `XiaoSiKe/zero-one-api`，
 `upstream` 指向原仓库并设置 push URL 为 `DISABLED`；这不改变上游许可证或作者。
 

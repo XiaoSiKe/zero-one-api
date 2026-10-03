@@ -1,4 +1,6 @@
-# Security Policy
+# Upstream Sub2API Security Policy
+
+This policy and its reporting contacts belong to Wei-Shaw/sub2api. It is retained for upstream vulnerability reports; it does not make the upstream maintainers responsible for Zero One product changes or deployments.
 
 [English](#english) | [中文](#中文)
 
