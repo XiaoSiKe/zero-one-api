@@ -112,6 +112,10 @@ jobs:
         working-directory: frontend
         run: |
           pnpm audit --json > audit.json || true
+      - name: Verify patched brace depth mitigation
+        if: steps.impact.outputs.frontend_security == 'true'
+        working-directory: frontend
+        run: pnpm exec vitest run src/utils/__tests__/bracesDepth.spec.ts
       - name: Check audit exceptions
         if: steps.impact.outputs.frontend_security == 'true'
         run: |
