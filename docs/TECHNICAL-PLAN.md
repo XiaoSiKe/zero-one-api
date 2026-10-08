@@ -3,7 +3,7 @@
 ## Baseline And Change Boundary
 
 项目的稳定技术基线为
-[`Wei-Shaw/sub2api v0.2.13@3040209f205472038c1ba745a1bedd2edd9053b1`](https://github.com/Wei-Shaw/sub2api/tree/3040209f205472038c1ba745a1bedd2edd9053b1)。
+[`Wei-Shaw/sub2api v0.2.14@0363b8cdba8cec3e2ba4b2dbd49c4481143fa55d`](https://github.com/Wei-Shaw/sub2api/tree/0363b8cdba8cec3e2ba4b2dbd49c4481143fa55d)。
 产品仓库 [`XiaoSiKe/zero-one-api`](https://github.com/XiaoSiKe/zero-one-api)
 配置为 `origin`，官方仓库 `Wei-Shaw/sub2api` 配置为只读
 `upstream`。`main` 是零一 API 唯一产品、CI 和发布分支；不保留第二产品分支。
@@ -59,7 +59,7 @@ The React app lives in `landing/`, uses Vite with base `/_landing/`, and is buil
 | Authentication, billing, redeem and affiliate data | Existing route/service/repository contracts and integration tests own the invariants; migrations and original business records remain immutable. |
 | Console and Landing | Source, generated adapters and Approved UI Snapshot have separate roles. Versioned asset URLs and byte content remain available for old pages and rollback; identical byte storage already shares the immutable pool. |
 | Generated code and dependencies | Ent/Wire output follows its generator. Frontend API/type exports and optional provider/plugin integrations are not classified as dead merely because the current UI does not import them. |
-| Legacy hotfixes | All seven registered groups retain their existing exit conditions. The v0.2.13 tag still carries `backend/cmd/server/VERSION=0.2.12`, so the product version-alignment correction remains necessary. Billing, race, formatting, sticky-log, Grok-test and dependency fixes are not retired without an equivalent baseline and passing regressions. |
+| Legacy hotfixes | All seven registered groups retain their existing exit conditions. The v0.2.14 tag still carries `backend/cmd/server/VERSION=0.2.13`, so the product version-alignment correction remains necessary. Billing, race, formatting, sticky-log, Grok-test and dependency fixes are not retired without an equivalent baseline and passing regressions. |
 | Operations and historical evidence | Release/backup entry points live under `deploy/zero-one`; recovery material stays outside Git. Historical design evidence, completed plans and provenance records do not define current runtime behavior. |
 
 The active maintenance commands and release prerequisites are owned by
@@ -166,10 +166,12 @@ edge image. Image rollback does not reverse a database migration; see
 合回 `main`。每次同步同时更新本节的 tag 与完整提交 SHA。
 主题改动保持集中，使新增上游页面继承设计系统，避免逐页分叉。
 
-当前 Upstream Baseline 是 `v0.2.13`，解引用源码提交为
-`3040209f205472038c1ba745a1bedd2edd9053b1`。本次通过真实双父合并引入
-TypeSafe API Key 创建与上游计费探测兼容修复，以及密钥在请求结算前被删除时的事务结算修复。
-七个上游变化路径的决定见 [v0.2.13 升级记录](upgrades/v0.2.13.md)及对应 change map。
+当前 Upstream Baseline 是 `v0.2.14`，解引用源码提交为
+`0363b8cdba8cec3e2ba4b2dbd49c4481143fa55d`。本次通过真实双父合并引入
+首次安装管理员凭据校验、随机默认登录邮箱，以及 EasyPay 回调伪造防护。
+Vue 与 source-map-js 安全更新保留现有产品依赖补丁；远程 Codex 目录补丁没有当前
+产品调用路径，不恢复已替换的配置生成与管理员借用测试流程。
+25 个上游变化路径的决定见 [v0.2.14 升级记录](upgrades/v0.2.14.md)及对应 change map。
 
 继续保留分组与账号长上下文计费双重开关、请求时的上游成本证据、兑换领取证明、
 邀请归属、站点首 Token、主动 V1 监控和已发布资源字节。普通源码组件吸收兼容变更，
