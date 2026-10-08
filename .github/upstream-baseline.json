@@ -1325,7 +1325,9 @@
     "frontend/src/utils/__tests__/bracesDepth.spec.ts",
     ".github/SECURITY.md",
     "docs/upgrades/v0.2.14.md",
-    "docs/upgrades/v0.2.14-change-map.json"
+    "docs/upgrades/v0.2.14-change-map.json",
+    "backend/internal/service/openai_codex_models_service.go",
+    "backend/internal/service/openai_models_list_test.go"
   ],
   "retired_preserved_paths": [
     {
@@ -2607,7 +2609,9 @@
         "backend/internal/service/billing_inflight_reservation_test.go",
         "docs/upgrades/v0.2.12-change-map.json",
         "docs/upgrades/v0.2.12.md",
-        "frontend/src/api/__tests__/settings.authSourceDefaults.spec.ts"
+        "frontend/src/api/__tests__/settings.authSourceDefaults.spec.ts",
+        "backend/internal/service/openai_codex_models_service.go",
+        "backend/internal/service/openai_models_list_test.go"
       ]
     },
     {
