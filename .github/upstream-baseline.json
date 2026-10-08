@@ -1,13 +1,13 @@
 {
   "schema_version": 5,
   "repository": "Wei-Shaw/sub2api",
-  "release": "v0.2.13",
-  "commit": "3040209f205472038c1ba745a1bedd2edd9053b1",
+  "release": "v0.2.14",
+  "commit": "0363b8cdba8cec3e2ba4b2dbd49c4481143fa55d",
   "upstream_sync": {
-    "previous_release": "v0.2.12",
-    "previous_commit": "5106065716e494204fc0e8db16f68f6e9d576be0",
-    "product_commit": "6db1a2d0d1a5ca88f62623e03285d21ea745f5e8",
-    "merge_commit": "37b6ac59f1d7cafee1f89f6b49aaf049bc562f38"
+    "previous_release": "v0.2.13",
+    "previous_commit": "3040209f205472038c1ba745a1bedd2edd9053b1",
+    "product_commit": "973bd8a6de22d9e483da92d629b3da69f7971e30",
+    "merge_commit": "4aa011cbc8fc7f7f2ff4779ad030dd4ccfdafc0a"
   },
   "approved_backports": [],
   "preserve_bytes_on_upstream_sync": [
@@ -1323,7 +1323,9 @@
     "docs/upgrades/v0.2.13-change-map.json",
     "frontend/patches/braces@3.0.3.patch",
     "frontend/src/utils/__tests__/bracesDepth.spec.ts",
-    ".github/SECURITY.md"
+    ".github/SECURITY.md",
+    "docs/upgrades/v0.2.14.md",
+    "docs/upgrades/v0.2.14-change-map.json"
   ],
   "retired_preserved_paths": [
     {
@@ -1882,7 +1884,7 @@
   "legacy_hotfixes": [
     {
       "name": "approved-v0.1.179-production-correctness-and-billing-compatibility",
-      "valid_for_release": "v0.2.13",
+      "valid_for_release": "v0.2.14",
       "exit_condition": "Remove each path when the first stable upstream release containing its equivalent production-correctness fix becomes the baseline; remove the entire block when no listed path remains.",
       "paths": [
         "backend/internal/handler/admin/admin_basic_handlers_test.go",
@@ -1912,7 +1914,7 @@
     },
     {
       "name": "approved-v0.1.179-version-metadata-alignment",
-      "valid_for_release": "v0.2.13",
+      "valid_for_release": "v0.2.14",
       "exit_condition": "Remove this metadata alignment when the first stable upstream release makes backend/cmd/server/VERSION match the baseline release.",
       "paths": [
         "backend/cmd/server/VERSION"
@@ -1920,7 +1922,7 @@
     },
     {
       "name": "approved-v0.1.179-race-safety",
-      "valid_for_release": "v0.2.13",
+      "valid_for_release": "v0.2.14",
       "exit_condition": "Remove each path when the first stable upstream release contains the equivalent race-safe runtime cache and asynchronous test fixture handling.",
       "paths": [
         "backend/internal/service/content_moderation.go",
@@ -1935,7 +1937,7 @@
     },
     {
       "name": "approved-v0.1.179-remove-unconditional-sticky-debug-logs",
-      "valid_for_release": "v0.2.13",
+      "valid_for_release": "v0.2.14",
       "exit_condition": "Remove this hotfix when the first stable upstream release removes or explicitly gates the equivalent per-request sticky-session debug logs.",
       "paths": [
         "backend/internal/service/gateway_scheduling.go"
@@ -1943,7 +1945,7 @@
     },
     {
       "name": "approved-v0.1.181-grok-mapping-test-isolation",
-      "valid_for_release": "v0.2.13",
+      "valid_for_release": "v0.2.14",
       "exit_condition": "Remove this hotfix when the first stable upstream release contains equivalent runtime model-mapping isolation in the canonical scheduling test.",
       "paths": [
         "backend/internal/service/openai_model_mapping_test.go"
@@ -1951,7 +1953,7 @@
     },
     {
       "name": "approved-v0.1.182-go-dependency-security-updates",
-      "valid_for_release": "v0.2.13",
+      "valid_for_release": "v0.2.14",
       "exit_condition": "Remove this hotfix when the first stable upstream release uses golang.org/x/image v0.45.0 or later, Testcontainers v0.44.0 or later, github.com/moby/go-archive v0.3.0 or later, and no longer depends on github.com/docker/docker.",
       "paths": [
         "backend/go.mod",
@@ -1963,7 +1965,7 @@
     },
     {
       "name": "approved-v0.2.7-sse-keepalive-test-determinism",
-      "valid_for_release": "v0.2.13",
+      "valid_for_release": "v0.2.14",
       "exit_condition": "Remove this hotfix when the first stable upstream release makes the ordinary-client SSE keepalive test tolerate a comment payload and at least two ticker periods of runner scheduling delay.",
       "paths": [
         "backend/internal/service/gemini_sse_comment_compat_test.go"
@@ -2683,7 +2685,9 @@
         "docs/upgrades/v0.2.13-change-map.json",
         "frontend/patches/braces@3.0.3.patch",
         "frontend/src/utils/__tests__/bracesDepth.spec.ts",
-        ".github/SECURITY.md"
+        ".github/SECURITY.md",
+        "docs/upgrades/v0.2.14.md",
+        "docs/upgrades/v0.2.14-change-map.json"
       ]
     },
     {
