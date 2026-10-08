@@ -346,3 +346,38 @@ func TestOpenAIModelsCacheSeparatesRepresentationsForIdenticalRequests(t *testin
 	require.JSONEq(t, manifestBody, string(manifest.Body))
 	require.EqualValues(t, 2, calls.Load())
 }
+
+func TestOpenAIModelsRefreshRechecksCacheAfterDelayedMiss(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		standard bool
+		body     string
+	}{
+		{"codex manifest", false, `{"models":[{"slug":"fresh-model"}]}`},
+		{"ordinary model list", true, `{"data":[{"id":"fresh-model"}]}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := &OpenAIGatewayService{}
+			request := openAIModelsRequest{url: "https://models.example/v1/models", standardModelsList: tc.standard}
+			key := buildOpenAIModelsCacheKey(request)
+			_, state := s.openAIModelsCache.get(key, time.Now())
+			require.Equal(t, openAIModelsCacheMiss, state)
+			var calls atomic.Int32
+			fetch := func(context.Context, string) (*OpenAIModelsResponse, error) {
+				calls.Add(1)
+				return &OpenAIModelsResponse{Body: []byte(tc.body)}, nil
+			}
+			first, err := s.fetchCachedOpenAIModels(context.Background(), request, fetch, "")
+			require.NoError(t, err)
+			// A caller that already observed the miss can enter singleflight only
+			// after another caller has filled the cache and finished its flight.
+			result := <-s.refreshCachedOpenAIModels(key, request, fetch)
+			require.NoError(t, result.Err)
+			shared, ok := result.Val.(*OpenAIModelsResponse)
+			require.True(t, ok)
+			require.NotNil(t, shared)
+			require.Equal(t, first.Body, shared.Body)
+			require.EqualValues(t, 1, calls.Load())
+		})
+	}
+}
