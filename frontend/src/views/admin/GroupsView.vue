@@ -482,26 +482,26 @@
       @submit="submitGroupEditor"
     >
         <div>
-          <label class="input-label">{{ t("admin.groups.form.name") }}</label>
-          <input
+          <GroupI18nField
             v-model="activeGroupForm.name"
-            type="text"
+            v-model:i18n="activeGroupForm.i18n"
+            :label="t('admin.groups.form.name')"
+            field="name"
             required
-            class="input"
             :placeholder="groupEditorMode === 'create' ? t('admin.groups.enterGroupName') : undefined"
             :data-tour="groupEditorMode === 'edit' ? 'edit-group-form-name' : 'group-form-name'"
           />
         </div>
         <div>
-          <label class="input-label">{{
-            t("admin.groups.form.description")
-          }}</label>
-          <textarea
+          <GroupI18nField
             v-model="activeGroupForm.description"
+            v-model:i18n="activeGroupForm.i18n"
+            :label="t('admin.groups.form.description')"
+            field="description"
+            multiline
             rows="3"
-            class="input"
             :placeholder="groupEditorMode === 'create' ? t('admin.groups.optionalDescription') : undefined"
-          ></textarea>
+          />
         </div>
         <div>
           <label class="input-label">{{
@@ -2702,6 +2702,7 @@ import type {
   CompositeRouteDecision,
   CompositeRouteEndpoint,
   CompositeRouteMatchType,
+  GroupI18n,
   GroupPlatform,
   SubscriptionType,
 } from "@/types";
@@ -2722,6 +2723,7 @@ import { platformLabel } from "@/utils/platformColors";
 import Icon from "@/components/icons/Icon.vue";
 import GroupRateMultipliersModal from "@/components/admin/group/GroupRateMultipliersModal.vue";
 import GroupRPMOverridesModal from "@/components/admin/group/GroupRPMOverridesModal.vue";
+import GroupI18nField from "@/components/admin/group/GroupI18nField.vue";
 import GroupEditorDialog from "@/components/admin/group/GroupEditorDialog.vue";
 import GroupCapacityBadge from "@/components/common/GroupCapacityBadge.vue";
 import ReasoningEffortPolicyFields from "@/components/admin/group/ReasoningEffortPolicyFields.vue";
@@ -3336,6 +3338,7 @@ const submitEditAllowlistCustomEntry = () =>
 const createForm = reactive({
   name: "",
   description: "",
+  i18n: {} as GroupI18n,
   platform: "anthropic" as GroupPlatform,
   rate_multiplier: 1.0,
   is_exclusive: false,
@@ -3699,6 +3702,7 @@ const convertApiFormatToRoutingRules = async (
 const editForm = reactive({
   name: "",
   description: "",
+  i18n: {} as GroupI18n,
   platform: "anthropic" as GroupPlatform,
   rate_multiplier: 1.0,
   is_exclusive: false,
@@ -4285,6 +4289,7 @@ const closeCreateModal = () => {
   clearAllAccountSearchState();
   createForm.name = "";
   createForm.description = "";
+  createForm.i18n = {};
   createForm.platform = "anthropic";
   createForm.rate_multiplier = 1.0;
   createForm.is_exclusive = false;
@@ -4513,7 +4518,7 @@ const handleCreateGroup = async () => {
       createForm.peak_rate_multiplier,
     );
     const payload = authStore.isSimpleMode
-      ? { name: createForm.name, description: createForm.description, platform: createForm.platform }
+      ? { name: createForm.name, description: createForm.description, i18n: createForm.i18n, platform: createForm.platform }
       : requestData;
     await adminAPI.groups.create(payload);
     appStore.showSuccess(t("admin.groups.groupCreated"));
@@ -4538,6 +4543,7 @@ const handleEdit = async (group: AdminGroup) => {
   editingGroup.value = group;
   editForm.name = group.name;
   editForm.description = group.description || "";
+  editForm.i18n = Object.fromEntries(Object.entries(group.i18n ?? {}).map(([locale, text]) => [locale, { ...text }]));
   editForm.platform = group.platform;
   editForm.rate_multiplier = group.rate_multiplier;
   editForm.is_exclusive = group.is_exclusive;
@@ -4800,7 +4806,7 @@ const handleUpdateGroup = async () => {
       editForm.peak_rate_multiplier,
     );
     const requestData = authStore.isSimpleMode
-      ? { name: editForm.name, description: editForm.description }
+      ? { name: editForm.name, description: editForm.description, i18n: editForm.i18n }
       : payload;
     await adminAPI.groups.update(editingGroup.value.id, requestData);
     appStore.showSuccess(t("admin.groups.groupUpdated"));

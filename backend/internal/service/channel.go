@@ -11,6 +11,9 @@ import (
 // BillingMode 计费模式
 type BillingMode string
 
+// BillingModeCacheStorage is a recorded token-hour storage charge, not a channel pricing mode.
+const BillingModeCacheStorage BillingMode = "cache_storage"
+
 const (
 	BillingModeToken      BillingMode = "token"       // 按 token 区间计费
 	BillingModePerRequest BillingMode = "per_request" // 按次计费（支持上下文窗口分层）

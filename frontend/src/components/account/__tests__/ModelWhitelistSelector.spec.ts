@@ -29,7 +29,7 @@ vi.mock('vue-i18n', async () => {
   return {
     ...actual,
     useI18n: () => ({
-      t: (key: string, params?: Record<string, string>) => key === 'common.copy' ? '复制' : key === 'admin.accounts.modelMappingConflict' ? `Model mapping conflict: ${params?.from} → ${params?.to}` : key
+      t: (key: string, params?: Record<string, string>) => key === 'common.copy' ? '复制' : key === 'admin.accounts.modelMappingConflict' ? `Model mapping conflict: ${params?.from} → ${params?.to}` : key === 'admin.accounts.syncUpstreamModelsError' ? `${key}: ${params?.message}` : key
     })
   }
 })
@@ -207,5 +207,145 @@ describe('ModelWhitelistSelector', () => {
 
     expect(wrapper.emitted('update:modelValue')).toEqual([[['gpt-5.6-sol']]])
     expect(copyToClipboard).not.toHaveBeenCalled()
+  })
+
+  it('warns when model IDs sync but capability metadata is incomplete', async () => {
+    syncUpstreamModels.mockResolvedValue({
+      models: ['x-preview-f-free'],
+      warnings: [
+        {
+          code: 'upstream_model_metadata_incomplete',
+          message: 'Model IDs were synced, but capability metadata could not be updated.'
+        }
+      ]
+    })
+    const wrapper = mount(ModelWhitelistSelector, {
+      props: {
+        modelValue: [],
+        platform: 'openai',
+        accountId: 46
+      },
+      global: {
+        stubs: {
+          ModelIcon: true
+        }
+      }
+    })
+
+    const syncButton = wrapper
+      .findAll('button')
+      .find(button => button.text() === 'admin.accounts.syncUpstreamModels')
+    expect(syncButton).toBeDefined()
+    await syncButton!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([[['x-preview-f-free']]])
+    expect(showWarning).toHaveBeenCalledWith('admin.accounts.syncUpstreamModelsMetadataIncomplete')
+    expect(showSuccess).not.toHaveBeenCalled()
+  })
+
+  it('shows the backend message when upstream sync is rejected', async () => {
+    syncUpstreamModels.mockRejectedValue({
+      status: 400,
+      code: 'BAD_REQUEST',
+      message: 'Vertex API key accounts do not support upstream model listing'
+    })
+    const wrapper = mountSelector({ platform: 'gemini', accountId: 174 })
+
+    const syncButton = wrapper
+      .findAll('button')
+      .find(button => button.text() === 'admin.accounts.syncUpstreamModels')
+    expect(syncButton).toBeDefined()
+    await syncButton!.trigger('click')
+    await flushPromises()
+
+    expect(showError).toHaveBeenCalledWith(
+      'admin.accounts.syncUpstreamModelsError: Vertex API key accounts do not support upstream model listing'
+    )
+  })
+
+  it('shows success and a partial warning when some capabilities were saved', async () => {
+    syncUpstreamModels.mockResolvedValue({
+      models: ['gpt-6-astra', 'gpt-image-2'],
+      warnings: [
+        {
+          code: 'upstream_model_metadata_partial',
+          message: 'Some model capabilities were saved; remaining models are still incomplete.'
+        }
+      ]
+    })
+    const wrapper = mount(ModelWhitelistSelector, {
+      props: {
+        modelValue: [],
+        platform: 'openai',
+        accountId: 46
+      },
+      global: {
+        stubs: {
+          ModelIcon: true
+        }
+      }
+    })
+
+    const syncButton = wrapper
+      .findAll('button')
+      .find(button => button.text() === 'admin.accounts.syncUpstreamModels')
+    expect(syncButton).toBeDefined()
+    await syncButton!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([[['gpt-6-astra', 'gpt-image-2']]])
+    expect(showSuccess).toHaveBeenCalledWith('admin.accounts.syncUpstreamModelsSuccess')
+    expect(showWarning).toHaveBeenCalledWith('admin.accounts.syncUpstreamModelsMetadataPartial')
+  })
+
+  it('reports a successful preview so account creation can persist metadata', async () => {
+    syncUpstreamModelsPreview.mockResolvedValue({
+      models: ['x-preview-f-free'],
+      metadata: {
+        'x-preview-f-free': {
+          id: 'x-preview-f-free',
+          reasoning: true,
+          supported_reasoning_levels: ['low', 'high', 'max'],
+        },
+      },
+    })
+    const wrapper = mountSelector({
+      syncCredentials: {
+        platform: 'openai',
+        type: 'apikey',
+        base_url: 'https://opencode.ai/zen/v1',
+        api_key: 'test-key',
+      },
+    })
+    const syncButton = wrapper
+      .findAll('button')
+      .find(button => button.text() === 'admin.accounts.syncUpstreamModels')
+
+    expect(syncButton).toBeDefined()
+    await syncButton?.trigger('click')
+    await flushPromises()
+
+    expect(syncUpstreamModelsPreview).toHaveBeenCalledOnce()
+    expect(wrapper.emitted('upstream-synced')).toEqual([[]])
+    expect(wrapper.emitted('update:modelValue')).toEqual([[['x-preview-f-free']]])
+  })
+
+  it('shows the upstream sync button for OpenCode Go create-account credentials', () => {
+    const wrapper = mountSelector({
+      platform: 'opencode_go',
+      syncCredentials: {
+        platform: 'opencode_go',
+        type: 'apikey',
+        base_url: 'https://opencode.ai/zen/go/v1',
+        api_key: 'sk-test',
+      },
+    })
+    const syncButton = wrapper
+      .findAll('button')
+      .find(button => button.text() === 'admin.accounts.syncUpstreamModels')
+
+    expect(syncButton).toBeDefined()
+    expect(syncButton?.exists()).toBe(true)
   })
 })
