@@ -54,7 +54,7 @@ jobs:
       - name: Verify Go version
         if: steps.impact.outputs.backend_security == 'true'
         run: |
-          go version | grep -q 'go1.27.0'
+          go version | grep -q 'go1.27.2'
       - name: Run govulncheck
         if: steps.impact.outputs.backend_security == 'true'
         working-directory: backend

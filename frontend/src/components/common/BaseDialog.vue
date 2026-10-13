@@ -44,6 +44,7 @@
 
 <script lang="ts">
 let dialogIdCounter = 0
+const openDialogs = new Set<string>()
 </script>
 
 <script setup lang="ts">
@@ -112,7 +113,7 @@ const handleClose = () => {
 }
 
 const handleEscape = (event: KeyboardEvent) => {
-  if (props.show && props.closeOnEscape && event.key === 'Escape') {
+  if (props.show && props.closeOnEscape && event.key === 'Escape' && [...openDialogs].pop() === dialogId) {
     emit('close')
   }
 }
@@ -122,6 +123,7 @@ watch(
   () => props.show,
   async (isOpen) => {
     if (isOpen) {
+      openDialogs.add(dialogId)
       // 保存当前焦点元素
       previousActiveElement = document.activeElement as HTMLElement
       // 使用CSS类而不是直接操作style,更易于管理多个对话框
@@ -139,7 +141,8 @@ watch(
         firstFocusable?.focus()
       }
     } else {
-      document.body.classList.remove('modal-open')
+      openDialogs.delete(dialogId)
+      if (openDialogs.size === 0) document.body.classList.remove('modal-open')
       // 恢复之前的焦点
       if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
         previousActiveElement.focus()
@@ -157,6 +160,7 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('keydown', handleEscape)
   // 确保组件卸载时移除滚动锁定
-  document.body.classList.remove('modal-open')
+  openDialogs.delete(dialogId)
+  if (openDialogs.size === 0) document.body.classList.remove('modal-open')
 })
 </script>
