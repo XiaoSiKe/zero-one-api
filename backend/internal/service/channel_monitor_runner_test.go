@@ -12,12 +12,13 @@ import (
 
 // stubMonitorSvc 实现 monitorRunnerSvc，用于隔离 runner 与真实 service/repo。
 type stubMonitorSvc struct {
-	enabled    []*ChannelMonitor
-	runCount   atomic.Int64
-	runCalled  chan int64 // 每次 RunCheck 触发时 push 一次（缓冲足够大避免阻塞）
-	runErr     error
-	listErr    error
-	runHoldFor time.Duration // RunCheck 内额外阻塞的时长，用来测试 Stop 等待行为
+	enabled      []*ChannelMonitor
+	runCount     atomic.Int64
+	runCalled    chan int64 // 每次 RunCheck 触发时 push 一次（缓冲足够大避免阻塞）
+	runErr       error
+	listErr      error
+	ignoreCancel bool
+	runHoldFor   time.Duration // RunCheck 内额外阻塞的时长，用来测试 Stop 等待行为
 }
 
 func (s *stubMonitorSvc) ListEnabledMonitors(_ context.Context) ([]*ChannelMonitor, error) {
@@ -35,7 +36,9 @@ func (s *stubMonitorSvc) RunCheck(ctx context.Context, id int64) ([]*CheckResult
 		default:
 		}
 	}
-	if s.runHoldFor > 0 {
+	if s.runHoldFor > 0 && s.ignoreCancel {
+		time.Sleep(s.runHoldFor)
+	} else if s.runHoldFor > 0 {
 		select {
 		case <-time.After(s.runHoldFor):
 		case <-ctx.Done():
@@ -346,8 +349,9 @@ func TestStop_DrainsAllGoroutines(t *testing.T) {
 // TestStop_WaitsForInFlightCheck 验证 Stop 会等待正在执行的 RunCheck 退出（pool.StopAndWait）。
 func TestStop_WaitsForInFlightCheck(t *testing.T) {
 	svc := &stubMonitorSvc{
-		runCalled:  make(chan int64, 1),
-		runHoldFor: 200 * time.Millisecond,
+		ignoreCancel: true,
+		runCalled:    make(chan int64, 1),
+		runHoldFor:   200 * time.Millisecond,
 	}
 	r := newRunnerForTest(svc)
 	r.Start()
@@ -402,4 +406,50 @@ func stoppedWithin(t *testing.T, r *ChannelMonitorRunner, timeout time.Duration)
 	case <-time.After(timeout):
 		t.Fatalf("Stop did not return within %s — leaked goroutine?", timeout)
 	}
+}
+
+// A running provider call must receive the runner/task cancellation, not just
+// the request deadline. The release cleanup budget is shorter than that deadline.
+func TestStop_CancelsInFlightCheck(t *testing.T) {
+	svc := &stubMonitorSvc{runCalled: make(chan int64, 1), runHoldFor: 2 * time.Second}
+	r := newRunnerForTest(svc)
+	r.Start()
+	r.Schedule(&ChannelMonitor{ID: 1, Enabled: true, IntervalSeconds: 60})
+	select {
+	case <-svc.runCalled:
+	case <-time.After(time.Second):
+		t.Fatal("scheduled probe did not start")
+	}
+	done := make(chan struct{})
+	go func() { r.Stop(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		<-done // retain the failing test's worker cleanup
+		t.Fatal("Stop did not cancel the running provider check")
+	}
+	r.inFlightMu.Lock()
+	defer r.inFlightMu.Unlock()
+	if len(r.inFlight) != 0 {
+		t.Fatal("cancelled probe retained its in-flight slot")
+	}
+}
+
+func TestUnschedule_CancelsInFlightCheck(t *testing.T) {
+	svc := &stubMonitorSvc{runCalled: make(chan int64, 1), runHoldFor: 2 * time.Second}
+	r := newRunnerForTest(svc)
+	r.Start()
+	defer r.Stop()
+	r.Schedule(&ChannelMonitor{ID: 1, Enabled: true, IntervalSeconds: 60})
+	select {
+	case <-svc.runCalled:
+	case <-time.After(time.Second):
+		t.Fatal("scheduled probe did not start")
+	}
+	r.Unschedule(1)
+	waitFor(t, time.Second, "cancelled probe released its slot", func() bool {
+		r.inFlightMu.Lock()
+		defer r.inFlightMu.Unlock()
+		return len(r.inFlight) == 0
+	})
 }
