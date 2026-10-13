@@ -44,11 +44,14 @@ func TestDeclaredUsageRate(t *testing.T) {
 func TestCacheStorageBillingScope(t *testing.T) {
 	at := time.Date(2026, 9, 5, 4, 0, 0, 0, time.UTC)
 	received := at.Add(-time.Minute)
+	fresh := at.Add(time.Minute)
 	account := &Account{Type: AccountTypeAPIKey, Platform: PlatformOpenAI, Extra: map[string]any{
-		UpstreamBillingProbeExtraKey: &UpstreamBillingProbeSnapshot{ReceivedAt: &received, Data: map[string]any{"billing_scope": "token", "resolved_rate_multiplier": 0.22, "peak_rate_enabled": false}},
+		UpstreamBillingProbeExtraKey: &UpstreamBillingProbeSnapshot{Status: UpstreamBillingProbeStatusOK, ReceivedAt: &received, FreshUntil: &fresh, Data: map[string]any{"billing_scope": "token", "resolved_rate_multiplier": 0.22, "peak_rate_enabled": false}},
 	}}
 	tokenMode := string(BillingModeToken)
-	require.Equal(t, 0.22, *declaredUsageRate(account, &UsageLog{BillingMode: &tokenMode}, at))
+	tokenRate := declaredUsageRate(account, &UsageLog{BillingMode: &tokenMode}, at)
+	require.NotNil(t, tokenRate)
+	require.Equal(t, 0.22, *tokenRate)
 	for _, inputTokens := range []int{0, 1000} {
 		result := &ForwardResult{CacheStorageTokenHours: 1000, Usage: ClaudeUsage{InputTokens: inputTokens}}
 		cost := &CostBreakdown{BillingMode: "token", TotalCost: 0.1, ActualCost: 0.039}

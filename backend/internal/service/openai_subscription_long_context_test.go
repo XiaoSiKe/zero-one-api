@@ -79,7 +79,8 @@ func TestOpenAIGatewayServiceRecordUsage_GPT61SolSubscriptionLongContext(t *test
 								APIKey: apiKey, User: &User{ID: 2}, Account: account,
 							})
 							require.NoError(t, err)
-							wantLong := accountType == AccountTypeAPIKey && (accountEnabled || groupMode == "分组开启")
+							// Preserve explicit product account and Group gates alongside the new subscription exemption.
+							wantLong := accountType == AccountTypeAPIKey && accountEnabled && groupMode != "分组关闭"
 							inputFactor, outputFactor, tierFactor := 1.0, 1.0, 1.0
 							if wantLong {
 								inputFactor, outputFactor = 2, 1.5

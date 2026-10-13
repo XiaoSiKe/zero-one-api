@@ -568,6 +568,8 @@ export async function getAvailableModels(id: number): Promise<ClaudeModel[]> {
 
 export interface SyncUpstreamModelsResult {
   models: string[]
+  metadata?: Record<string, unknown>
+  warnings?: Array<{ code: string; message: string }>
 }
 
 /**

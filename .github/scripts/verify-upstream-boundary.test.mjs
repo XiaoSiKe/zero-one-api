@@ -735,7 +735,7 @@ test('rejects adjacent backend and unrelated upstream changes', () => {
   assert.deepEqual(
     evaluateChangedPaths(
       [
-        'backend/internal/service/channel.go',
+        'backend/internal/service/unreviewed_billing.go',
         'backend/internal/server/routes/payment.go',
         'backend/migrations/223_unreviewed.sql',
         'frontend/src/views/user/UnreviewedView.vue',
@@ -744,7 +744,7 @@ test('rejects adjacent backend and unrelated upstream changes', () => {
     ),
     [
       'backend/internal/server/routes/payment.go is outside the approved overlay registry',
-      'backend/internal/service/channel.go is outside the approved overlay registry',
+      'backend/internal/service/unreviewed_billing.go is outside the approved overlay registry',
       'backend/migrations/223_unreviewed.sql is outside the approved overlay registry',
       'frontend/src/views/user/UnreviewedView.vue is outside the approved overlay registry',
     ],

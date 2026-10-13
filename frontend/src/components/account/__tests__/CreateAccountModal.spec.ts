@@ -12,11 +12,13 @@ import zhAccounts from '@/i18n/locales/zh/admin/accounts'
 
 const {
   createAccountMock,
+  syncUpstreamModelsMock,
   probeUpstreamBillingMock,
   importCodexSessionMock,
   createOpenAICodexPATMock,
 } = vi.hoisted(() => ({
   createAccountMock: vi.fn(),
+  syncUpstreamModelsMock: vi.fn().mockResolvedValue({ models: [], metadata: {} }),
   probeUpstreamBillingMock: vi.fn(),
   importCodexSessionMock: vi.fn(),
   createOpenAICodexPATMock: vi.fn(),
@@ -38,6 +40,7 @@ vi.mock('@/api/admin', () => ({
   adminAPI: {
     accounts: {
       create: createAccountMock,
+      syncUpstreamModels: syncUpstreamModelsMock,
       probeUpstreamBilling: probeUpstreamBillingMock,
       checkMixedChannelRisk: vi.fn().mockResolvedValue({ has_risk: false }),
       importCodexSession: importCodexSessionMock,
@@ -122,7 +125,8 @@ async function selectButtonByText(wrapper: ReturnType<typeof mountModal>, text: 
 async function submitApiKeyAccount(
   platform: 'openai' | 'anthropic',
   enableLongContextBilling = false,
-  disableUpstreamBillingProbe = false
+  disableUpstreamBillingProbe = false,
+  options: { previewModels?: boolean; clearModels?: boolean } = {}
 ) {
   const wrapper = mountModal()
   await selectButtonByText(wrapper, platform === 'openai' ? 'OpenAI' : 'admin.accounts.claudeConsole')
@@ -136,6 +140,14 @@ async function submitApiKeyAccount(
   }
   if (disableUpstreamBillingProbe) {
     await wrapper.get('[data-testid="upstream-billing-auto-probe"]').trigger('click')
+  }
+  if (options.clearModels) {
+    wrapper.findComponent({ name: 'ModelWhitelistSelector' }).vm.$emit('update:modelValue', [])
+  }
+  if (options.previewModels) {
+    const selector = wrapper.findComponent({ name: 'ModelWhitelistSelector' })
+    expect(selector.exists()).toBe(true)
+    selector.vm.$emit('upstream-synced')
   }
   await wrapper.get('form#create-account-form').trigger('submit.prevent')
   await flushPromises()
@@ -152,6 +164,25 @@ async function openCodexImportStep(toggleClicks = 0) {
   await wrapper.get('form#create-account-form').trigger('submit.prevent')
   return wrapper
 }
+
+describe('CreateAccountModal upstream preview continuity', () => {
+  beforeEach(() => {
+    createAccountMock.mockReset().mockResolvedValue({ id: 45, platform: 'openai', type: 'apikey' })
+    probeUpstreamBillingMock.mockReset().mockResolvedValue({})
+    syncUpstreamModelsMock.mockReset().mockResolvedValue({ models: ['gpt-5.6-sol'], metadata: {} })
+  })
+
+  it('persists previewed capabilities by synchronizing the newly saved account', async () => {
+    const wrapper = await submitApiKeyAccount('openai', false, true, { previewModels: true })
+    expect(syncUpstreamModelsMock).toHaveBeenCalledExactlyOnceWith(45)
+    expect(wrapper.emitted('created')).toHaveLength(1)
+  })
+
+  it('does not request metadata without a preview or mapped target', async () => {
+    await submitApiKeyAccount('openai', false, true, { clearModels: true })
+    expect(syncUpstreamModelsMock).not.toHaveBeenCalled()
+  })
+})
 
 describe('CreateAccountModal OpenAI long-context billing', () => {
   beforeEach(() => {
@@ -760,7 +791,6 @@ describe('CreateAccountModal OpenAI long-context billing', () => {
 
 describe('CreateAccountModal gemini explicit cache upstream switch', () => {
   beforeEach(() => {
-    authIsSimpleMode.value = true
     createAccountMock.mockReset().mockResolvedValue({ id: 43, platform: 'gemini', type: 'apikey' })
     probeUpstreamBillingMock.mockReset().mockResolvedValue({})
     syncUpstreamModelsMock.mockReset().mockResolvedValue({ models: [], metadata: {} })
@@ -849,7 +879,6 @@ describe('CreateAccountModal gemini explicit cache upstream switch', () => {
 
 describe('CreateAccountModal Vertex API key auth', () => {
   beforeEach(() => {
-    authIsSimpleMode.value = true
     createAccountMock.mockReset().mockResolvedValue({ id: 44, platform: 'gemini', type: 'service_account' })
     probeUpstreamBillingMock.mockReset().mockResolvedValue({})
     syncUpstreamModelsMock.mockReset().mockResolvedValue({ models: [], metadata: {} })
