@@ -71,7 +71,7 @@ _Avoid_: 普通用户、站长账号
 _Avoid_: User、客户账号
 
 **Provider Platform Catalog（供应商平台目录）**:
-Provider Account、分组筛选、渠道定价、渠道监控、运维筛选、订阅筛选、错误透传规则与 Composite 路由目标共同使用的有序一等平台集合；新增平台必须在一个目录中同时进入这些管理入口。它不同于模型白名单，Qwen、Mistral 等模型名称不自动成为 Provider Account 平台。TypeSafe / Jev System One 是原生结构化判定平台，不是对话端点，因此不进入主动渠道监控的探测子集。
+Provider Account、分组筛选、渠道定价、渠道监控、运维筛选、订阅筛选、错误透传规则与 Composite 路由目标共同使用的有序一等平台集合；新增平台必须在一个目录中同时进入这些管理入口。它不同于模型白名单，Qwen、Mistral 等模型名称不自动成为 Provider Account 平台。TypeSafe / Jev System One 是原生结构化判定平台，不是对话端点，因此不进入主动渠道监控的探测子集。Cline 与 Command Code 通过目录进入账号、分组、额度与协议转发；当前主动监控没有实现这两个平台的探测，仍保留既有十平台能力集合。
 _Avoid_: 模型白名单、各页面复制的平台数组、任意 OpenAI 兼容模型列表
 
 **API Key（密钥）**:
