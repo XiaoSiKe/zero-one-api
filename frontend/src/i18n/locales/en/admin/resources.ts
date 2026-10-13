@@ -560,6 +560,7 @@ export default {
       billingTypeBalance: 'Balance',
       billingTypeSubscription: 'Subscription',
       billingMode: 'Billing Mode',
+      billingModeCacheStorage: 'Cache storage',
       billingModeToken: 'Token',
       billingModePerRequest: 'Per Request',
       billingModeImage: 'Image',

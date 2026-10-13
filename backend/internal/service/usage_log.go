@@ -126,7 +126,7 @@ type UsageLog struct {
 	ModelMappingChain *string
 	// BillingTier 计费层级标签（per_request/image 模式）
 	BillingTier *string
-	// BillingMode 计费模式：token/image
+	// BillingMode records token, image, video, request or cache-storage billing.
 	BillingMode *string
 	// ServiceTier records the billable request tier, e.g. OpenAI "priority" / "flex"
 	// or Anthropic "fast".

@@ -3,11 +3,19 @@ import {
   BILLING_MODE_IMAGE,
   BILLING_MODE_TOKEN,
   BILLING_MODE_VIDEO,
+  BILLING_MODE_CACHE_STORAGE,
+  getBillingModeLabel,
   getDisplayBillingMode,
   isImageUsage
 } from '../billingMode'
 
 describe('billingMode helpers', () => {
+  it('labels a recorded storage charge without presenting it as token usage', () => {
+    expect(getDisplayBillingMode({ image_count: 0, billing_mode: BILLING_MODE_CACHE_STORAGE }))
+      .toBe(BILLING_MODE_CACHE_STORAGE)
+    expect(getBillingModeLabel(BILLING_MODE_CACHE_STORAGE, (key) => key))
+      .toBe('admin.usage.billingModeCacheStorage')
+  })
   it('prefers explicit video mode over image_count', () => {
     expect(
       getDisplayBillingMode({ image_count: 1, billing_mode: BILLING_MODE_VIDEO })

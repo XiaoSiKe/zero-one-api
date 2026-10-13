@@ -557,6 +557,7 @@ export default {
       billingTypeBalance: '钱包余额',
       billingTypeSubscription: '订阅套餐',
       billingMode: '计费模式',
+      billingModeCacheStorage: '缓存存储',
       billingModeToken: '按量',
       billingModePerRequest: '按次',
       billingModeImage: '按次(图片)',

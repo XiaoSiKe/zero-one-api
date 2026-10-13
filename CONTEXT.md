@@ -74,6 +74,14 @@ _Avoid_: User、客户账号
 Provider Account、分组筛选、渠道定价、渠道监控、运维筛选、订阅筛选、错误透传规则与 Composite 路由目标共同使用的有序一等平台集合；新增平台必须在一个目录中同时进入这些管理入口。它不同于模型白名单，Qwen、Mistral 等模型名称不自动成为 Provider Account 平台。TypeSafe / Jev System One 是原生结构化判定平台，不是对话端点，因此不进入主动渠道监控的探测子集。Cline 与 Command Code 通过目录进入账号、分组、额度与协议转发；当前主动监控没有实现这两个平台的探测，仍保留既有十平台能力集合。
 _Avoid_: 模型白名单、各页面复制的平台数组、任意 OpenAI 兼容模型列表
 
+**Explicit Context Cache（显式上下文缓存）**:
+Gemini 通过 `cachedContents` API 创建、续期和删除的上游资源。网关绑定创建 User、API Key、分组与 Provider Account；引用请求只能使用持有该资源的账号。创建收取缓存输入费与有效期存储费，续期按 Token-hour 收取存储费，额度预留、租约与过期恢复由同一缓存服务处理。含存储费的账单使用 `cache_storage` 报告范围，Token 范围的上游声明不能作为其账号成本证据；见 [ADR 0021](docs/adr/0021-cache-storage-cost-evidence.md)。
+_Avoid_: 通用自动 prompt cache、切换账号复用缓存 ID、用 Token 倍率证明存储费、重新计算历史账单。
+
+**Group Localized Display（分组本地化展示）**:
+分组 `i18n` 保存按 locale 的显示名称与描述；缺少语言或字段时回退到原始 `name`、`description`。本地化显示不改变分组 ID、路由、定价、用户绑定或现有原始字段。
+_Avoid_: 改写原始分组名称、按翻译名称路由、用展示语言改变权限。
+
 **API Key（密钥）**:
 User 创建并用于鉴权模型 API 请求的凭证。
 _Avoid_: Provider Account 凭证、管理员密码

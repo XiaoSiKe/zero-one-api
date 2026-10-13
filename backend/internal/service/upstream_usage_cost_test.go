@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/Wei-Shaw/sub2api/internal/pkg/usagestats"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
@@ -38,4 +39,26 @@ func TestDeclaredUsageRate(t *testing.T) {
 	require.InDelta(t, 0.33, *declaredUsageRate(account, log, now), 1e-12, "unexpired last good observation survives transient failure")
 	imageMode := string(BillingModeImage)
 	require.Nil(t, declaredUsageRate(account, &UsageLog{BillingMode: &imageMode}, now), "token declaration cannot be invented for image billing")
+}
+
+func TestCacheStorageBillingScope(t *testing.T) {
+	at := time.Date(2026, 9, 5, 4, 0, 0, 0, time.UTC)
+	received := at.Add(-time.Minute)
+	account := &Account{Type: AccountTypeAPIKey, Platform: PlatformOpenAI, Extra: map[string]any{
+		UpstreamBillingProbeExtraKey: &UpstreamBillingProbeSnapshot{ReceivedAt: &received, Data: map[string]any{"billing_scope": "token", "resolved_rate_multiplier": 0.22, "peak_rate_enabled": false}},
+	}}
+	tokenMode := string(BillingModeToken)
+	require.Equal(t, 0.22, *declaredUsageRate(account, &UsageLog{BillingMode: &tokenMode}, at))
+	for _, inputTokens := range []int{0, 1000} {
+		result := &ForwardResult{CacheStorageTokenHours: 1000, Usage: ClaudeUsage{InputTokens: inputTokens}}
+		cost := &CostBreakdown{BillingMode: "token", TotalCost: 0.1, ActualCost: 0.039}
+		mode := resolveBillingMode(result, cost)
+		require.Equal(t, "cache_storage", *mode, "token-only declaration cannot price token-hour storage or a mixed charge")
+		frozen := declaredUsageRate(account, &UsageLog{BillingMode: mode}, at)
+		require.Nil(t, frozen)
+		amount, status := usagestats.ResolveAccountCost(cost.TotalCost, nil, frozen, mode)
+		require.Nil(t, amount)
+		require.Equal(t, usagestats.AccountCostUnsupportedBillingScope, status)
+		require.Equal(t, 0.039, cost.ActualCost, "reporting scope cannot change the customer debit")
+	}
 }
