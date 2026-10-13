@@ -239,6 +239,54 @@ def sql(query):
     )
 
 
+# V1 probes run outside gateway concurrency markers. Old images do not cancel
+# an admitted probe on Stop, so pause the shared switch and wait out its 63s
+# request budget before stopping the application. Restore the exact row before
+# fingerprinting; no maintenance setting becomes part of the migrated data.
+MONITOR_PROBE_DRAIN_SECONDS = 65
+PROBE_SWITCH_KEY = "channel_monitor_enabled"
+PROBE_SWITCH_RECORD = "channel-probe-switch.json"
+
+
+def read_probe_switch():
+    value = sql("SELECT to_jsonb(s) FROM settings s WHERE key='" + PROBE_SWITCH_KEY + "'")
+    return json.loads(value) if value else None
+
+
+def write_probe_switch(expected, replacement):
+    expected_json = json.dumps(expected).replace("'", "''")
+    value = replacement["value"].replace("'", "''")
+    result = sql(
+        "UPDATE settings s SET value='" + value + "' WHERE key='" + PROBE_SWITCH_KEY
+        + "' AND to_jsonb(s)='" + expected_json + "'::jsonb RETURNING to_jsonb(s)"
+    )
+    assert result and json.loads(result) == replacement, "monitor switch changed concurrently"
+
+
+def pause_channel_probes():
+    original = read_probe_switch()
+    assert original is not None, "explicit channel monitor switch required before release"
+    paused = {**original, "value": "false"}
+    record(PROBE_SWITCH_RECORD, {"original": original, "paused": paused, "restored": False})
+    if original != paused:
+        write_probe_switch(original, paused)
+
+
+def restore_channel_probes():
+    path = ROOT / PROBE_SWITCH_RECORD
+    if not path.exists():
+        return
+    saved = json.loads(path.read_text())
+    if saved["restored"]:
+        return
+    current = read_probe_switch()
+    if current != saved["original"]:
+        assert current == saved["paused"], "refusing to overwrite a changed monitor switch"
+        write_probe_switch(saved["paused"], saved["original"])
+    saved["restored"] = True
+    record(PROBE_SWITCH_RECORD, saved)
+
+
 def redis(*args):
     return run(["docker", "exec", REDIS, "redis-cli", "--raw", *args])
 
@@ -659,6 +707,7 @@ def execute(action):
         if live_backup["backup_mode"] == "scheduled":
             assert live_backup["scheduled_backup_healthy"]
         assert backup["snapshot_id"] == META["id"] and backup["source_sha"] == META["merge_sha"]
+        assert read_probe_switch() is not None, "explicit channel monitor switch required before release"
         before = healthy()
         assert all(before[n]["image"] == META["old_images"][n] for n in [APP, EDGE])
         for name in [APP, EDGE]:
@@ -714,6 +763,9 @@ def execute(action):
         assert state()["phase"] == "prepared"
         dependencies()
         run(["systemctl", "is-active", "--quiet", "zero-one-release-watchdog-" + META["id"] + ".timer"])
+        phase("waiting-for-probes")
+        pause_channel_probes()
+        time.sleep(MONITOR_PROBE_DRAIN_SECONDS)
         phase("waiting-for-websockets")
         wait_quiet_before_reload()
         gate(edge_config())
@@ -806,6 +858,7 @@ def execute(action):
             ]
         ), "unsettled billing or incomplete shutdown"
         dependencies()
+        restore_channel_probes()
         purge_evidence = quota_purge_candidates(sql, META["expected_migrations"])
         if purge_evidence is not None:
             record("quota-purge-candidates.json", purge_evidence)
@@ -954,6 +1007,7 @@ def execute(action):
         phase("observing")
     elif action == "rollback":
         assert STATE.exists()
+        restore_channel_probes()
         before = state()["before"]
         if state()["phase"] in (
             "rolled-back-apps-data-retained",
@@ -965,7 +1019,7 @@ def execute(action):
             print("Application rollback already complete")
             sys.exit(0)
         if (
-            state()["phase"] in ("prepared", "waiting-for-websockets")
+            state()["phase"] in ("prepared", "waiting-for-probes", "waiting-for-websockets")
             and containers()[APP]["status"] == "running"
             and containers()[APP]["image"] == before[APP]["image"]
         ):

@@ -4,6 +4,9 @@ import copy
 import hashlib
 import importlib.util
 import json
+import shutil
+import time
+import uuid
 from pathlib import Path
 import subprocess
 import tempfile
@@ -39,6 +42,65 @@ class ReleaseTests(unittest.TestCase):
             "expected_migrations": [],
             "probe_secret": "c" * 32,
         }
+
+    def test_probe_pause_restores_exact_original_setting(self):
+        original = {"id": 61, "key": "channel_monitor_enabled", "value": "true", "updated_at": "2026-09-20T00:00:00+00:00"}
+        current = original.copy()
+        writes = []
+        def compare_and_set(expected, replacement):
+            self.assertEqual(current, expected)
+            current.clear()
+            current.update(replacement)
+            writes.append(replacement.copy())
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(release, "ROOT", Path(directory), create=True), patch.object(release, "read_probe_switch", side_effect=lambda: current.copy(), create=True), patch.object(release, "write_probe_switch", side_effect=compare_and_set, create=True):
+                release.pause_channel_probes()
+                self.assertEqual(current, {**original, "value": "false"})
+                release.restore_channel_probes()
+                self.assertEqual(current, original)
+                release.restore_channel_probes()
+                self.assertEqual(len(writes), 2)
+
+    def test_probe_restore_refuses_concurrent_setting_change(self):
+        original = {"id": 61, "key": "channel_monitor_enabled", "value": "true", "updated_at": "before"}
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(release, "ROOT", Path(directory), create=True), patch.object(release, "read_probe_switch", return_value=original, create=True), patch.object(release, "write_probe_switch", create=True):
+                release.pause_channel_probes()
+            changed = {**original, "value": "false", "updated_at": "external-edit"}
+            with patch.object(release, "ROOT", Path(directory), create=True), patch.object(release, "read_probe_switch", return_value=changed, create=True), patch.object(release, "write_probe_switch", create=True) as writer:
+                with self.assertRaises(AssertionError):
+                    release.restore_channel_probes()
+                writer.assert_not_called()
+
+    @unittest.skipUnless(shutil.which("docker"), "Docker is required for the isolated setting transaction")
+    def test_probe_switch_preserves_real_database_rows(self):
+        container = "zero-one-probe-setting-" + uuid.uuid4().hex[:12]
+        subprocess.run(["docker", "run", "-d", "--network", "none", "--name", container,
+                        "-e", "POSTGRES_USER=sub2api", "-e", "POSTGRES_DB=sub2api",
+                        "-e", "POSTGRES_PASSWORD=temporary-test-only", "postgres:18-alpine"], check=True, stdout=subprocess.DEVNULL)
+        def query(source):
+            return subprocess.check_output(["docker", "exec", "-i", container, "psql", "-XqAt", "-v", "ON_ERROR_STOP=1", "-U", "sub2api", "-d", "sub2api"], input=source, text=True).strip()
+        try:
+            for _ in range(60):
+                if subprocess.run(["docker", "exec", container, "pg_isready", "-h", "127.0.0.1", "-U", "sub2api", "-d", "sub2api"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+                    break
+                time.sleep(0.2)
+            else:
+                self.fail("isolated PostgreSQL did not become ready")
+            query("CREATE TABLE settings (id bigint PRIMARY KEY, key text UNIQUE, value text, updated_at timestamptz); INSERT INTO settings VALUES (61,'channel_monitor_enabled','true','2026-09-20T00:00:00Z'), (62,'unrelated','retained','2026-09-20T00:00:00Z');")
+            before = query("SELECT jsonb_agg(to_jsonb(s) ORDER BY id) FROM settings s")
+            with tempfile.TemporaryDirectory() as directory, patch.object(release, "ROOT", Path(directory), create=True), patch.object(release, "sql", side_effect=query):
+                release.pause_channel_probes()
+                self.assertEqual(query("SELECT value FROM settings WHERE id=61"), "false")
+                release.restore_channel_probes()
+                self.assertEqual(query("SELECT jsonb_agg(to_jsonb(s) ORDER BY id) FROM settings s"), before)
+                release.pause_channel_probes()
+                query("UPDATE settings SET updated_at='2026-10-13T00:00:00Z' WHERE id=61")
+                with self.assertRaises(AssertionError):
+                    release.restore_channel_probes()
+                self.assertEqual(query("SELECT value FROM settings WHERE id=62"), "retained")
+        finally:
+            subprocess.run(["docker", "rm", "-fv", container], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def test_rejects_mutable_images_and_wrong_recovery_directory(self):
         meta = self.metadata()
