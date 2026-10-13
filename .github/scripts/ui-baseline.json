@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-10-09-v0214-source-map-js",
-  "baseline_commit": "7410468ba060b4e1474dc2939bf744b9840b2efc",
+  "baseline_ref": "ui-approved-2026-10-13-v0215",
+  "baseline_commit": "fcb227a650ba859fe1c51d725ad0bba77f65b353",
   "protected_paths": [
     "landing/",
     "frontend/",

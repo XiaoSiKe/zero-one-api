@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -378,6 +379,21 @@ func TestOpenAIModelsRefreshRechecksCacheAfterDelayedMiss(t *testing.T) {
 			require.NotNil(t, shared)
 			require.Equal(t, first.Body, shared.Body)
 			require.EqualValues(t, 1, calls.Load())
+		})
+	}
+}
+
+func TestApplyCodexModelsMappingPreservesUnchangedBodyAndETag(t *testing.T) {
+	for _, pinned := range []bool{false, true} {
+		t.Run(fmt.Sprint(pinned), func(t *testing.T) {
+			account := newCodexModelsAPIKeyTestAccount("https://models.example/v1")
+			account.Credentials["model_mapping"] = map[string]any{"gpt-5.4": "gpt-5.4"}
+			body := []byte(`{ "unknown": { "keep": true }, "models": [ { "slug": "gpt-5.4", "custom": 123 } ] }`)
+			response := &OpenAIModelsResponse{Body: body, ETag: `W/"upstream-validator"`}
+			group := &Group{Platform: PlatformOpenAI, CodexModelsManifestConfig: GroupCodexModelsManifestConfig{Enabled: pinned}}
+			require.NoError(t, ApplyPinnedCodexModelsMapping(response, account, group))
+			require.Equal(t, body, response.Body)
+			require.Equal(t, `W/"upstream-validator"`, response.ETag)
 		})
 	}
 }

@@ -85,7 +85,7 @@ export function createKeyCapabilityAccess(
       .catch(() => {
         if (requestRevision === revision && requestIdentity === identity) {
           allowedKeys.value = []
-          loaded.value = true
+          loaded.value = false
         }
         return []
       })
