@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import {
   BUILTIN_PLATFORM_CATALOG,
   resetPlatformCatalog,
   setPlatformCatalog
 } from '@/constants/platformCatalog'
 
-const { updateAccountMock, checkMixedChannelRiskMock, authIsSimpleMode } = vi.hoisted(() => ({
+const { updateAccountMock, checkMixedChannelRiskMock, authIsSimpleMode, webSearchConfigMock } = vi.hoisted(() => ({
+  webSearchConfigMock: vi.fn(),
   updateAccountMock: vi.fn(),
   checkMixedChannelRiskMock: vi.fn(),
   authIsSimpleMode: { value: true }
@@ -36,7 +37,7 @@ vi.mock('@/api/admin', () => ({
       checkMixedChannelRisk: checkMixedChannelRiskMock
     },
     settings: {
-      getWebSearchEmulationConfig: vi.fn().mockResolvedValue({ enabled: false, providers: [] }),
+      getWebSearchEmulationConfig: webSearchConfigMock,
       getSettings: vi.fn().mockResolvedValue({})
     },
     tlsFingerprintProfiles: {
@@ -319,9 +320,33 @@ function mountModal(account = buildAccount(), renderGroupSelector = false) {
 describe('EditAccountModal', () => {
   beforeEach(() => {
     authIsSimpleMode.value = true
+    webSearchConfigMock.mockResolvedValue({ enabled: false, providers: [] })
   })
 
   afterEach(() => vi.useRealTimers())
+
+  it.each(['enabled', 'disabled', true])('preserves the saved OpenAI API-key web search mode %s through the public editor', async (savedMode) => {
+    webSearchConfigMock.mockResolvedValue({ enabled: true, providers: [{ name: 'search' }] })
+    const account = buildAccount()
+    account.extra = { web_search_emulation: savedMode, custom_field: 'preserved' }
+    updateAccountMock.mockReset().mockResolvedValue(account)
+    checkMixedChannelRiskMock.mockReset().mockResolvedValue({ has_risk: false })
+    const wrapper = mountModal(account)
+    await flushPromises()
+    const selector = wrapper.findAll('select').find(select =>
+      select.find('option[value="default"]').exists() && select.find('option[value="default"]').text() === 'admin.accounts.anthropic.webSearchDefault'
+    )!
+    expect(selector.element.value).toBe(savedMode === true ? 'enabled' : savedMode)
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+    expect(updateAccountMock.mock.calls[0]?.[1]?.extra).toMatchObject({
+      web_search_emulation: savedMode === true ? 'enabled' : savedMode,
+      custom_field: 'preserved'
+    })
+    await selector.setValue('default')
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+    expect(updateAccountMock.mock.lastCall?.[1]?.extra).not.toHaveProperty('web_search_emulation')
+    wrapper.unmount()
+  })
 
   it('sets expiry presets from now instead of extending the saved expiry', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
