@@ -3442,6 +3442,7 @@ test.describe('Console visual contracts', () => {
   })
 
   test('channel status v1', async ({ page }) => {
+    await page.clock.install({ time: new Date('2026-08-16T12:00:00+08:00') })
     await page.unroute('**/api/v1/**')
     await seedConsole(page, 'v1')
     await page.goto('http://127.0.0.1:4173/monitor')
@@ -3450,6 +3451,8 @@ test.describe('Console visual contracts', () => {
     await expect(host).toHaveAttribute('data-zero-one-provider-catalog-admin', 'channel-status')
     await expect(host.getByText('OpenAI 主线路')).toBeVisible()
     await expect(host.getByText('OPERATIONAL')).toBeVisible()
+    // Freeze the live refresh countdown after the route has mounted.
+    await page.clock.pauseAt(new Date('2026-08-16T12:01:00+08:00'))
     await expect(page).toHaveScreenshot('console-channel-status-v1.png')
   })
 
