@@ -603,6 +603,11 @@ GoReleaser archives 均声明携带这三份根级材料。镜像文件位于
 已有新映射（包括空映射）优先，非数字旧值只移除，不补造倍率。控制器先按迁移规则
 投影迁移前该列，再与迁移后原值逐行纳入完整指纹比较；其他原有业务列仍精确比较。
 新增的两张渠道定价表列和联盟流水幂等标识列不允许改写任何原有列。
+`246_enable_gemini_image_generation_groups.sql` 只允许把 Gemini/Antigravity
+分组原有的 `allow_image_generation=false` 转为 `true`，延续新增图片门禁之前的
+实际可用行为。控制器仅在迁移前按该精确条件投影该列，仍比较其余平台权限和所有
+原有业务列；不能直接排除此列。迁移 247 新增受限管理员密钥表，迁移 248 新增的
+`image_count_billing` 默认关闭，不改变既有分组计费选择。
 
 在 `drain-backup` 前，创建名为 `zero-one-release-watchdog-<id>` 的主机
 systemd 临时 timer，20 分钟后调用同一脚本的 `watchdog RECOVERY_DIR`。
