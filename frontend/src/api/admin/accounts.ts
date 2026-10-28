@@ -28,6 +28,7 @@ import type {
   OllamaCloudUsageState,
   GrokMediaEligibilityMode,
   GrokMediaEligibilityState,
+  GrokModelDiagnostics,
   OpenCodeGoUsageSettings,
   OpenCodeGoUsageState
 } from '@/types'
@@ -568,8 +569,28 @@ export async function getAvailableModels(id: number): Promise<ClaudeModel[]> {
 
 export interface SyncUpstreamModelsResult {
   models: string[]
-  metadata?: Record<string, unknown>
-  warnings?: Array<{ code: string; message: string }>
+  metadata?: Record<string, UpstreamModelMetadata>
+  warnings?: UpstreamModelSyncWarning[]
+  discovery_source?: 'upstream' | 'configured_fallback'
+  grok_model_diagnostics?: GrokModelDiagnostics
+}
+
+export interface UpstreamModelSyncWarning {
+  code: string
+  message: string
+}
+
+export interface UpstreamModelMetadata {
+  id: string
+  display_name?: string
+  description?: string
+  reasoning?: boolean
+  default_reasoning_level?: string
+  supported_reasoning_levels?: string[]
+  input_modalities?: string[]
+  context_window?: number
+  max_context_window?: number
+  max_output_tokens?: number
 }
 
 /**

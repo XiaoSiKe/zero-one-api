@@ -4,6 +4,7 @@ import datetime, fcntl, hashlib, json, os, pathlib, re, shutil, subprocess, sys,
 
 QUOTA_PURGE_MIGRATION = "238_purge_unlimited_user_platform_quotas.sql"
 REASONING_PRICING_MIGRATION = "239_channel_reasoning_effort_multipliers.sql"
+GEMINI_IMAGE_PERMISSION_MIGRATION = "246_enable_gemini_image_generation_groups.sql"
 
 if not __debug__:
     raise RuntimeError("release checks require Python assertions; do not use optimization")
@@ -468,10 +469,18 @@ def ident(x):
 
 def fingerprint_columns(table, columns, pending, label):
     selected = [ident(name) for name in columns]
+    if table != "groups" or label != "cutover-before":
+        return selected
+
+    # Gemini previously had no image-generation gate. Migration 246 preserves
+    # that effective access as the new explicit gate becomes authoritative.
+    if GEMINI_IMAGE_PERMISSION_MIGRATION in pending and "allow_image_generation" in columns:
+        selected[columns.index("allow_image_generation")] = (
+            "CASE WHEN platform IN ('gemini', 'antigravity') AND allow_image_generation = false "
+            "THEN true ELSE allow_image_generation END AS allow_image_generation"
+        )
     if (
-        table != "groups"
-        or REASONING_PRICING_MIGRATION not in pending
-        or label != "cutover-before"
+        REASONING_PRICING_MIGRATION not in pending
         or "model_pricing" not in columns
     ):
         return selected

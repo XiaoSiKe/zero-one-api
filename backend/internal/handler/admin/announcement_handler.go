@@ -256,5 +256,5 @@ func (h *AnnouncementHandler) ListReadStatus(c *gin.Context) {
 		return
 	}
 
-	response.Paginated(c, items, paginationResult.Total, page, pageSize)
+	response.Paginated(c, adminAnnouncementReadResponse(c, items), paginationResult.Total, page, pageSize)
 }
