@@ -1,7 +1,2 @@
 version: 1
-exceptions:
-  - package: braces
-    advisory: GHSA-vfj7-8cjw-p6xm
-    severity: high
-    mitigation: pnpm applies frontend/patches/braces@3.0.3.patch; parser and every recursive AST walker enforce depth 128, verified by bracesDepth.spec.ts in both product and security CI. Rechecked 2026-10-19 against GitHub advisory and npm (latest 3.0.3, no patched release); remove patch and exception when a verified fixed release is available.
-    expires_on: 2026-11-18
+exceptions: []
