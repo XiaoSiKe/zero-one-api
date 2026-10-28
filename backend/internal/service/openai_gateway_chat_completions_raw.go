@@ -317,7 +317,7 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 	requestID := resp.Header.Get("x-request-id")
 	writeStreamHeaders := s.newStreamHeaderWriter(c, resp.Header)
 	scanner := s.newUpstreamSSEScanner(resp.Body)
-	pump := newAnthropicNativeLinePump(scanner, s.anthropicNativeStreamInterval())
+	pump := newAnthropicNativeLinePump(scanner, anthropicNativeStreamInterval(s.cfg))
 	defer pump.stop()
 
 	var usage OpenAIUsage
