@@ -288,7 +288,7 @@ func (s *OpenAIGatewayService) scanCCStream(
 	var st ccStreamScanState
 
 	scanner := s.newUpstreamSSEScanner(resp.Body)
-	pump := newAnthropicNativeLinePump(scanner, s.anthropicNativeStreamInterval())
+	pump := newAnthropicNativeLinePump(scanner, anthropicNativeStreamInterval(s.cfg))
 	defer pump.stop()
 	for {
 		line, err := pump.next()

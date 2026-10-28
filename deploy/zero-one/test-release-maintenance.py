@@ -162,6 +162,47 @@ class ReleaseTests(unittest.TestCase):
             ['"id"', '"model_pricing"', '"updated_at"'],
         )
 
+    @unittest.skipUnless(shutil.which("docker"), "Docker is required for the isolated migration")
+    def test_gemini_permission_projection_matches_exact_migration(self):
+        columns = ["id", "platform", "allow_image_generation", "model_pricing", "updated_at"]
+        pending = [release.GEMINI_IMAGE_PERMISSION_MIGRATION]
+        unchanged = [release.ident(name) for name in columns]
+        for table, migrations, label in (
+            ("groups", [], "cutover-before"),
+            ("groups", pending, "cutover-migrated"),
+            ("users", pending, "cutover-before"),
+        ):
+            self.assertEqual(release.fingerprint_columns(table, columns, migrations, label), unchanged)
+        container = "zero-one-image-permission-" + uuid.uuid4().hex[:12]
+        subprocess.run(["docker", "run", "-d", "--network", "none", "--name", container,
+                        "-e", "POSTGRES_USER=sub2api", "-e", "POSTGRES_DB=sub2api",
+                        "-e", "POSTGRES_PASSWORD=temporary-test-only", "postgres:18-alpine"], check=True, stdout=subprocess.DEVNULL)
+        def query(source):
+            return subprocess.check_output(["docker", "exec", "-i", container, "psql", "-XqAt", "-v", "ON_ERROR_STOP=1", "-U", "sub2api", "-d", "sub2api"], input=source, text=True).strip()
+        try:
+            for _ in range(60):
+                if subprocess.run(["docker", "exec", container, "pg_isready", "-h", "127.0.0.1", "-U", "sub2api", "-d", "sub2api"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+                    break
+                time.sleep(0.2)
+            else:
+                self.fail("isolated PostgreSQL did not become ready")
+            query("CREATE TABLE groups (id bigint PRIMARY KEY, platform text, allow_image_generation boolean, model_pricing jsonb, updated_at timestamptz); "
+                  "INSERT INTO groups SELECT row_number() OVER (), platform, enabled, '[{\"input_price\":1}]'::jsonb, '2026-10-28T00:00:00Z'::timestamptz "
+                  "FROM unnest(ARRAY['gemini','antigravity','openai','grok','composite']) platform CROSS JOIN unnest(ARRAY[true,false]) enabled;")
+            projected = ",".join(release.fingerprint_columns("groups", columns, pending, "cutover-before"))
+            expected = query("SELECT jsonb_agg(to_jsonb(g) ORDER BY id) FROM (SELECT " + projected + " FROM groups) g")
+            original = query("SELECT jsonb_agg(to_jsonb(g) ORDER BY id) FROM groups g")
+            self.assertNotEqual(expected, original)
+            migration = Path(__file__).resolve().parents[2] / "backend/migrations" / release.GEMINI_IMAGE_PERMISSION_MIGRATION
+            query(migration.read_text())
+            self.assertEqual(query("SELECT jsonb_agg(to_jsonb(g) ORDER BY id) FROM groups g"), expected)
+            query(migration.read_text())
+            self.assertEqual(query("SELECT jsonb_agg(to_jsonb(g) ORDER BY id) FROM groups g"), expected)
+            query("UPDATE groups SET allow_image_generation=true WHERE platform='openai'")
+            self.assertNotEqual(query("SELECT jsonb_agg(to_jsonb(g) ORDER BY id) FROM groups g"), expected)
+        finally:
+            subprocess.run(["docker", "rm", "-fv", container], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
     def test_quota_purge_records_hash_and_enforces_exact_count(self):
         pending = [release.QUOTA_PURGE_MIGRATION]
         candidate = {

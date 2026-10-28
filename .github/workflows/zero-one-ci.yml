@@ -222,7 +222,7 @@ jobs:
           cache-dependency-path: backend/go.sum
       - name: Verify Go version
         if: env.BACKEND_SCOPE != 'none'
-        run: go version | grep -q 'go1.27.2'
+        run: go version | grep -q 'go1.27.3'
       - name: Test complete backend ordinary suite
         if: env.BACKEND_SCOPE == 'full'
         working-directory: backend
@@ -455,7 +455,7 @@ jobs:
           cache-dependency-path: backend/go.sum
       - name: Verify Go version
         if: env.IMPACT_REQUIRED == 'true'
-        run: go version | grep -q 'go1.27.2'
+        run: go version | grep -q 'go1.27.3'
       - name: golangci-lint
         if: env.IMPACT_REQUIRED == 'true'
         uses: golangci/golangci-lint-action@v9

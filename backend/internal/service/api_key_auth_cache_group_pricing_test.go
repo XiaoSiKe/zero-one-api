@@ -32,6 +32,7 @@ func TestAPIKeyAuthSnapshotGroupPricingRoundTrip(t *testing.T) {
 			Platform:                  PlatformGrok,
 			Status:                    StatusActive,
 			LongContextPricingEnabled: true,
+			ImageCountBilling:         true,
 			ModelPricing: []ChannelModelPricing{
 				{
 					Platform:          PlatformGrok,
@@ -56,9 +57,10 @@ func TestAPIKeyAuthSnapshotGroupPricingRoundTrip(t *testing.T) {
 
 	snapshot := svc.snapshotFromAPIKey(context.Background(), apiKey)
 	require.NotNil(t, snapshot)
-	require.Equal(t, 24, snapshot.Version, "v24 preserves pricing isolation and adds the model allowlist")
+	require.Equal(t, 25, snapshot.Version, "v25 adds image billing while preserving pricing isolation and model policy")
 	require.NotNil(t, snapshot.Group)
 	require.True(t, snapshot.Group.LongContextPricingEnabled)
+	require.True(t, snapshot.Group.ImageCountBilling)
 	require.Len(t, snapshot.Group.ModelPricing, 1)
 
 	// The in-process L1 entry must not alias mutable request/repository slices.
@@ -85,6 +87,7 @@ func TestAPIKeyAuthSnapshotGroupPricingRoundTrip(t *testing.T) {
 	require.NotNil(t, materialized.Group)
 	require.True(t, materialized.Group.Hydrated)
 	require.True(t, materialized.Group.LongContextPricingEnabled)
+	require.True(t, materialized.Group.ImageCountBilling)
 	require.Equal(t, snapshot.Group.ModelPricing, materialized.Group.ModelPricing)
 
 	// Materializing the request object must not mutate the shared cache entry.
