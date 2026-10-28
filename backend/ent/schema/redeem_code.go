@@ -16,13 +16,10 @@ import (
 
 // RedeemCode holds the schema definition for the RedeemCode entity.
 //
-// 删除策略：硬删除
-// RedeemCode 使用硬删除而非软删除，原因如下：
-//   - 兑换码具有一次性使用特性，删除后无需保留历史记录
-//   - 已使用的兑换码通过 status 和 used_at 字段追踪，无需依赖软删除
-//   - 减少数据库存储压力和查询复杂度
-//
-// 如需审计已删除的兑换码，建议在删除前将关键信息写入审计日志表。
+// 未领取的兑换码允许物理删除。status=used、used_by 或 used_at 中任一领取标记
+// 都是必须保留的 Redeem Claim；管理操作不得删除、清空或重置这些记录。
+// schema 的物理删除能力不替代 service/repository 的事务校验。
+// 邀请注册内部的失败回滚遵循独立的回滚合同。
 type RedeemCode struct {
 	ent.Schema
 }
