@@ -1344,7 +1344,8 @@
     "frontend/src/api/__tests__/admin.accounts.grokModelDiagnostics.spec.ts",
     "docs/upgrades/v0.2.19.md",
     "docs/upgrades/v0.2.19-change-map.json",
-    "docs/admin-api-keys.md"
+    "docs/admin-api-keys.md",
+    "backend/internal/service/gateway_forward_as_chat_completions_ping_test.go"
   ],
   "retired_preserved_paths": [
     {
@@ -2642,7 +2643,8 @@
         "backend/internal/service/openai_subscription_long_context_test.go",
         "frontend/src/api/admin/adminAccessKeys.ts",
         "frontend/src/api/__tests__/admin.accounts.grokModelDiagnostics.spec.ts",
-        "docs/admin-api-keys.md"
+        "docs/admin-api-keys.md",
+        "backend/internal/service/gateway_forward_as_chat_completions_ping_test.go"
       ]
     },
     {
