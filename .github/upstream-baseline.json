@@ -1994,7 +1994,8 @@
     "deploy/zero-one/recovered-frontend/studio/assets/square-check-big-DzIjiBho.js",
     "deploy/zero-one/recovered-frontend/studio/assets/use-prompt-list-72LHVMth.js",
     "deploy/zero-one/recovered-frontend/studio/assets/use-workbench-agent-store-CqqxbHjT.js",
-    "deploy/zero-one/recovered-frontend/studio/assets/video-DnvgHZ20.js"
+    "deploy/zero-one/recovered-frontend/studio/assets/video-DnvgHZ20.js",
+    "studio/web/tests/integration.test.ts"
   ],
   "retired_preserved_paths": [
     {
