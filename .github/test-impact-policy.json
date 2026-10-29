@@ -11,6 +11,10 @@
   ],
   "rules": [
     {
+      "patterns": ["studio/**", "deploy/zero-one/build-studio.mjs", "deploy/zero-one/studio-console-entry.mjs", "deploy/zero-one/recovered-frontend/studio/**"],
+      "impact": { "deployment": true, "visual_scope": "full", "frontend_security": true }
+    },
+    {
       "patterns": ["docs/**", "*.md", "AGENTS.md", "CONTEXT.md"],
       "impact": {}
     },

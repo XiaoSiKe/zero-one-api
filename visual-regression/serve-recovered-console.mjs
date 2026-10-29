@@ -5,6 +5,7 @@ import { dirname, extname, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const moduleDirectory = dirname(fileURLToPath(import.meta.url))
+const studioRoot = resolve(moduleDirectory, '../deploy/zero-one/recovered-frontend/studio')
 const consoleRoot = resolve(moduleDirectory, '../deploy/zero-one/recovered-frontend/console')
 const portArgument = process.argv.indexOf('--port')
 const port = Number(portArgument >= 0 ? process.argv[portArgument + 1] : 4173)
@@ -31,18 +32,21 @@ async function existingFile(path) {
 
 const server = createServer(async (request, response) => {
   const pathname = decodeURIComponent(new URL(request.url || '/', 'http://127.0.0.1').pathname)
-  const requestedPath = resolve(consoleRoot, `.${pathname}`)
-  if (requestedPath !== consoleRoot && !requestedPath.startsWith(`${consoleRoot}${sep}`)) {
+  const studio = pathname.startsWith('/studio/')
+  const root = studio ? studioRoot : consoleRoot
+  const localPath = studio ? pathname.slice('/studio'.length) : pathname
+  const requestedPath = resolve(root, `.${localPath}`)
+  if (requestedPath !== root && !requestedPath.startsWith(`${root}${sep}`)) {
     response.writeHead(400).end('invalid path')
     return
   }
 
-  const isAsset = pathname.startsWith('/assets/')
+  const isAsset = localPath.startsWith('/assets/')
   const filePath = await existingFile(requestedPath)
     ? requestedPath
     : isAsset
       ? null
-      : resolve(consoleRoot, 'index.html')
+      : resolve(root, 'index.html')
 
   if (!filePath) {
     response.writeHead(404, { 'Cache-Control': 'no-store' }).end('not found')
@@ -54,7 +58,9 @@ const server = createServer(async (request, response) => {
     'Content-Type': contentTypes.get(extname(filePath).toLowerCase()) || 'application/octet-stream',
   }
   if (filePath.endsWith('index.html')) {
-    headers['Content-Security-Policy'] = localOnlyContentSecurityPolicy
+    headers['Content-Security-Policy'] = studio
+      ? localOnlyContentSecurityPolicy.replace("connect-src 'self'", "connect-src 'self' data: blob:").replace("font-src 'self' data:;", "font-src 'self' data:; media-src 'self' data: blob:;")
+      : localOnlyContentSecurityPolicy
   }
   response.writeHead(200, headers)
   if (request.method === 'HEAD') {

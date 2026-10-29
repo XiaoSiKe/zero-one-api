@@ -70,6 +70,9 @@ export function commandsForImpact(impact) {
   commands.push(...(backendCommands[impact.backend_scope] ?? []))
   if (impact.lint) commands.push('cd backend && golangci-lint run ./...')
   if (impact.deployment) commands.push(
+    'npm run typecheck --prefix studio/web',
+    'npm test --prefix studio/web',
+    'node deploy/zero-one/build-studio.mjs --check',
     'python3 deploy/zero-one/test-release-maintenance.py',
     'sh deploy/zero-one/test-routing.sh',
     'sh deploy/zero-one/test-direct-upstream.sh',
@@ -89,7 +92,7 @@ export function commandsForImpact(impact) {
     commands.push('sh deploy/zero-one/test-visual.sh')
   }
   if (impact.backend_security) commands.push('cd backend && govulncheck ./...')
-  if (impact.frontend_security) commands.push('pnpm --dir frontend audit --audit-level=high')
+  if (impact.frontend_security) commands.push('pnpm --dir frontend audit --audit-level=high', 'npm audit --prefix studio/web --audit-level=high')
   return commands
 }
 

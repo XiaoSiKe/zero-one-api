@@ -56,9 +56,17 @@ try {
   await page.reload()
   await page.getByRole('button', { name: '编辑', exact: true }).first().click()
   await expect(page.locator('form#edit-group-form').getByRole('checkbox', { name: '按张计费', exact: true })).not.toBeChecked()
+  await page.goto(`${input.origin}/studio/`)
+  await page.getByRole('button', { name: '新建画布', exact: true }).first().click()
+  await expect(page).toHaveURL(/\/studio\/canvas\/[^/]+$/)
+  await expect(page.getByRole('status')).toHaveText('当前浏览器保存 · 请定期导出')
+  await page.reload()
+  await expect(page.getByRole('button', { name: '打开画布菜单', exact: true })).toBeVisible()
+  await page.goto(`${input.origin}/studio/`)
+  await expect(page.locator('article')).toHaveCount(1)
   assert.equal(settingsWrites, 0)
   assert.deepEqual(errors, [])
-  writeFileSync('/scenario/result.json', JSON.stringify({ created: true, rotated: true, revoked: true, groupPersisted: true, noSystemSettingsWrites: true, originalKey: initial.key, rotatedKey: rotation.key }), { mode: 0o600 })
+  writeFileSync('/scenario/result.json', JSON.stringify({ created: true, rotated: true, revoked: true, groupPersisted: true, noSystemSettingsWrites: true, studioPersistence: true, originalKey: initial.key, rotatedKey: rotation.key }), { mode: 0o600 })
 } catch (error) {
   console.error('Management UI browser failed at', page?.url(), 'headings:', await page?.locator('h1,h2').allTextContents())
   throw error

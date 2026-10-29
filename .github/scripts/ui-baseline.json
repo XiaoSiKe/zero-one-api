@@ -82,7 +82,16 @@
     "visual-regression/tests/__screenshots__/chromium-desktop/console-scoped-key-editor-light-zh.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-scoped-key-editor-dark-en.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-scoped-key-editor-dark-zh.png",
-    "frontend/src/i18n/__tests__/translationHtmlSafety.spec.ts"
+    "frontend/src/i18n/__tests__/translationHtmlSafety.spec.ts",
+    "studio/",
+    "deploy/zero-one/build-studio.mjs",
+    "deploy/zero-one/studio-console-entry.mjs",
+    "visual-regression/tests/studio.behavior.spec.ts",
+    "visual-regression/tests/studio-gateway.behavior.spec.ts",
+    "visual-regression/tests/__screenshots__/chromium-mobile/studio-project-chromium-mobile.png",
+    "visual-regression/tests/__screenshots__/chromium-mobile/studio-library-chromium-mobile.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/studio-project-chromium-desktop.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/studio-library-chromium-desktop.png"
   ],
   "compatibility_paths": [
     "frontend/src/api/",
@@ -544,6 +553,28 @@
         "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-trends.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-trends.png",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v12/"
+      ]
+    },
+    {
+      "name": "canvas-studio",
+      "routes": [
+        "/studio/",
+        "/studio/canvas/:id",
+        "/studio/image",
+        "/studio/video"
+      ],
+      "paths": [
+        "studio/",
+        "deploy/zero-one/build-studio.mjs",
+        "deploy/zero-one/studio-console-entry.mjs",
+        "visual-regression/tests/studio.behavior.spec.ts",
+        "visual-regression/tests/studio-gateway.behavior.spec.ts",
+        "visual-regression/tests/__screenshots__/chromium-mobile/studio-project-chromium-mobile.png",
+        "visual-regression/tests/__screenshots__/chromium-mobile/studio-library-chromium-mobile.png",
+        "visual-regression/tests/__screenshots__/chromium-desktop/studio-project-chromium-desktop.png",
+        "visual-regression/tests/__screenshots__/chromium-desktop/studio-library-chromium-desktop.png",
+        "deploy/zero-one/recovered-frontend/studio/",
+        "frontend/src/components/layout/AppSidebar.vue"
       ]
     }
   ],

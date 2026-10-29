@@ -39,6 +39,8 @@ assets/posters/
 # Node modules (will be installed in container)
 frontend/node_modules/
 landing/node_modules/
+studio/web/node_modules/
+studio/web/dist/
 node_modules/
 
 # Go build cache (will be built in container)

@@ -72,7 +72,7 @@ try {
   docker('run', '--rm', '--network', prefix, '-v', `${root}:/workspace:ro`, '-v', `${directory}:/scenario`, '-w', '/workspace/visual-regression',
     'mcr.microsoft.com/playwright:v1.55.1-noble', 'node', '/workspace/deploy/zero-one/test-admin-ui.browser.mjs')
   const result = JSON.parse(readFileSync(resolve(directory, 'result.json'), 'utf8'))
-  assert.ok(result.created && result.rotated && result.revoked && result.groupPersisted && result.noSystemSettingsWrites)
+  assert.ok(result.created && result.rotated && result.revoked && result.groupPersisted && result.noSystemSettingsWrites && result.studioPersistence)
   await api('/admin/users', { key: result.originalKey, status: 401 })
   await api('/admin/users', { key: result.rotatedKey, status: 401 })
   const keys = await api('/admin/settings/admin-api-keys', { token: login.access_token })
@@ -83,7 +83,7 @@ try {
   assert.equal(persisted.image_count_billing, false)
   assert.equal(persisted.rate_multiplier, 0.5)
   assert.equal(persisted.image_rate_multiplier, 0.8)
-  console.log('Admin UI E2E OK: real JWT login, scoped-key create/rotate/revoke, revoked credentials rejected, Group billing persisted, unrelated settings untouched')
+  console.log('Admin UI E2E OK: real JWT login, scoped-key create/rotate/revoke, revoked credentials rejected, Group billing persisted, unrelated settings untouched, Studio authenticated persistence restored')
 } catch (error) {
   if (created.includes(names.backend)) {
     console.error('Backend container state:', docker('inspect', '--format', '{{.State.Status}} {{.State.ExitCode}} {{.State.Error}}', names.backend))

@@ -2222,8 +2222,8 @@ test.describe('Console built-in sidebar navigation contracts', () => {
       links.map((link) => new URL((link as HTMLAnchorElement).href).pathname),
     )
     expect(orderedHrefs.slice(0, 2)).toEqual(['/dashboard', '/keys'])
-    expect(orderedHrefs.slice(-4)).toEqual([
-      '/model-plaza', '/custom/user-tool', '/custom/all-tool', '/images',
+    expect(orderedHrefs.slice(-5)).toEqual([
+      '/model-plaza', '/custom/user-tool', '/custom/all-tool', '/images', '/studio/',
     ])
     await expect(page.locator('aside nav a[href="/images"]')).toHaveCount(1)
     await expect.poll(() => modelPlaza.locator('svg').evaluate((svg) => {

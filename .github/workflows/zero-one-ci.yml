@@ -300,6 +300,17 @@ jobs:
         run: echo 'Images, migrations, routing and deployment scripts are unchanged.'
       - uses: actions/checkout@v6
         if: env.IMPACT_REQUIRED == 'true'
+      - uses: actions/setup-node@v6
+        if: env.IMPACT_REQUIRED == 'true'
+        with:
+          node-version: '24'
+      - name: Verify Infinite Canvas build and account isolation
+        if: env.IMPACT_REQUIRED == 'true'
+        run: |
+          npm ci --prefix studio/web
+          npm run typecheck --prefix studio/web
+          npm test --prefix studio/web
+          node deploy/zero-one/build-studio.mjs --check
       - name: Check deployment script syntax
         if: env.IMPACT_REQUIRED == 'true'
         run: |

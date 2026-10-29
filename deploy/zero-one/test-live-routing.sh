@@ -262,12 +262,23 @@ for spoofed_ip in 8.8.8.8 8.8.4.4 1.1.1.1 9.9.9.9 208.67.222.222 208.67.220.220 
 	fi
 done
 
+# The Studio owns its subpath without swallowing gateway or Console routes.
+for studio_path in /studio/ /studio/canvas/deep-link /studio/video; do
+    studio_headers=$(curl -fsS -D - -o "$test_dir/studio.html" -H "Host: $request_host" "$edge_url$studio_path")
+    assert_text "$studio_headers" 'Cache-Control: no-store' 'Studio HTML is cacheable'
+    assert_text "$studio_headers" "script-src 'self'" 'Studio script policy changed'
+    assert_text "$(cat "$test_dir/studio.html")" '/studio/assets/' 'Studio deep link did not serve its own document'
+done
+studio_missing=$(curl -sS -o /dev/null -w '%{http_code}' -H "Host: $request_host" "$edge_url/studio/assets/missing.js")
+[ "$studio_missing" = 404 ] || fail 'missing Studio JavaScript became an HTML document'
+
 if [ "$routing_mode" = production ]; then
 	for legacy_uri in \
 		'/?source=contract' \
 		'/dashboard?source=contract' \
 		'/keys?source=contract' \
 		'/monitor?source=contract' \
+		'/studio/canvas/example?source=contract' \
 		'/v1/models?source=contract'; do
 		legacy_headers=$(curl -fsS -D - -o /dev/null -H 'Host: app.01yapi.test' "$edge_url$legacy_uri")
 		assert_text "$legacy_headers" 'HTTP/1.1 308 Permanent Redirect' "legacy domain did not permanently redirect $legacy_uri"

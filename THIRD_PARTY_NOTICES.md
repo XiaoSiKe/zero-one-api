@@ -181,3 +181,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <https://unlicense.org>
 ```
+
+## Infinite Canvas
+
+The `/studio/` workbench includes [basketikun/infinite-canvas](https://github.com/basketikun/infinite-canvas), pinned at `9cd3deacbcc598361807afc16c059a80dd18b6f9`, under its original MIT license. Sources and the unmodified license are retained in `studio/`; the shipped workbench provides `THIRD_PARTY_NOTICES.txt`. Zero One integration changes are described in ADR 0022. Other components retain their existing licenses.
