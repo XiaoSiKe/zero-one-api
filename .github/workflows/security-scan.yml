@@ -122,6 +122,9 @@ jobs:
           python tools/check_pnpm_audit_exceptions.py \
             --audit frontend/audit.json \
             --exceptions .github/audit-exceptions.yml
+      - name: Audit Infinite Canvas dependencies
+        if: steps.impact.outputs.frontend_security == 'true'
+        run: npm audit --prefix studio/web --audit-level=high
       - name: Impact decision - frontend security required
         if: steps.impact.outputs.frontend_security == 'true'
         run: echo 'Affected Frontend dependency audit completed.'

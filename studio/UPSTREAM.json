@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/basketikun/infinite-canvas",
+  "commit": "9cd3deacbcc598361807afc16c059a80dd18b6f9",
+  "license": "MIT",
+  "source": "web/; VERSION; CHANGELOG.md; LICENSE",
+  "integration": "Zero One authenticated /studio/ module; see docs/adr/0022-infinite-canvas-studio.md"
+}

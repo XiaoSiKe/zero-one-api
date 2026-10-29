@@ -8,6 +8,10 @@ _Avoid_: 首页后台、控制台首页
 用户和管理员登录后管理密钥、用量、兑换及系统资源的产品界面。
 _Avoid_: 官网、React 后台
 
+**Canvas Studio（无限画布）**:
+在 Canonical Product Domain 的 `/studio/` 独立文档中运行的创作工作台，复用站内登录与用户 API Key，提供画布、节点编排、素材与导入导出。作品和渠道配置默认按 User ID 保存在当前浏览器；视频 API 待配置，不表示已提供云保存或视频生成服务。模块来源和交付合同见 [ADR 0022](docs/adr/0022-infinite-canvas-studio.md)。
+_Avoid_: 外站 iframe、第二套 Console、已上线云同步、默认可用的视频 API
+
 **Upstream Baseline（上游基线）**:
 由正式稳定标签及其解引用后的完整提交共同固定的 Sub2API 源码边界；升级和差异归属均以该提交为准。
 _Avoid_: upstream/main、latest、浮动版本

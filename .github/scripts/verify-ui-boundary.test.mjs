@@ -47,8 +47,14 @@ test('validates the approved UI baseline manifest', () => {
       'model-plaza-pricing',
       'redeem-benefits-mystery-box',
       'admin-consumption-and-date-panels',
+      'canvas-studio',
     ],
   )
+
+  const studio = manifest.protected_surfaces.find(({ name }) => name === 'canvas-studio')
+  assert.ok(studio.routes.includes('/studio/'))
+  assert.ok(studio.paths.includes('studio/'))
+  assert.ok(studio.paths.includes('deploy/zero-one/recovered-frontend/studio/'))
 
   // 二开消费卡片与日期修复必须同时具有 UI 快照覆盖和逐文件永久保留。
   const consumption = manifest.protected_surfaces.find(({ name }) => name === 'admin-consumption-and-date-panels')

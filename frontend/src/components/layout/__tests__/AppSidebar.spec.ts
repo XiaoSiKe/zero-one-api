@@ -286,9 +286,12 @@ describe('AppSidebar rendered ordering', () => {
     sidebarAuth.isAdmin = false
     const { wrapper } = await renderSidebar()
     expect(wrapper.find('a[href="/images"]').exists()).toBe(true)
+    expect(wrapper.find('a[href="/studio/"]').attributes('to')).toBeUndefined()
+    expect(wrapper.find('a[href="/studio/"]').text()).toBe('无限画布')
     sidebarAuth.isSimpleMode = true
     await nextTick()
     expect(wrapper.find('a[href="/images"]').exists()).toBe(false)
+    expect(wrapper.find('a[href="/studio/"]').exists()).toBe(false)
   })
 
   it('keeps dashboard first with duplicate saved paths and moves complete expandable groups', async () => {

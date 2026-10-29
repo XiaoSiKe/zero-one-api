@@ -1,0 +1,7 @@
+web/node_modules/
+web/dist/
+web/*.tsbuildinfo
+web/.env*
+!web/tests/
+web/tests/*
+!web/tests/integration.test.ts
