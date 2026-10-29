@@ -43,6 +43,9 @@ export default defineConfig({
     server: { host: "127.0.0.1", port: 3010, proxy: { "/api": "http://127.0.0.1:18080", "/v1": "http://127.0.0.1:18080" } },
     plugins: [react(), localPluginsManifest()],
     resolve: {
+        // The shared Console token refresher must use this app's Axios, even
+        // when the Console dependencies are not installed in the build job.
+        dedupe: ["axios"],
         alias: {
             "@": resolve(webDir, "src"),
         },
