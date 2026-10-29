@@ -918,6 +918,7 @@ function writeShellVariant(consoleAssetsDirectory, directory, output, excludedAs
       entry.name === APPROVED_SHELL_SOURCE ||
       // A new root runtime must not add URLs inside published historical shells.
       entry.name === "zero-one-header-custom-menu-v2.js" ||
+      entry.name === "zero-one-studio-entry-v1.js" ||
       excludedAssets.has(entry.name)
     ) continue
     symlinkSync(`../${entry.name}`, resolve(targetDirectory, entry.name))

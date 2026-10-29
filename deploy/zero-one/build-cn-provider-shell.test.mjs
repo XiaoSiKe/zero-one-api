@@ -148,6 +148,12 @@ test('the new navigation runtime adds no aliases to historical shell namespaces'
   }
 })
 
+test('the Studio entry stays outside every published shell namespace', () => {
+  for (let version = 1; version <= 12; version++) {
+    assert.ok(!readdirSync(resolve(assetsDirectory, `cn-provider-shell-v${version}`)).includes('zero-one-studio-entry-v1.js'))
+  }
+})
+
 test('CN Provider shell generation fails closed when the approved bootstrap changes', () => {
   assert.throws(() => patchApprovedShell('unrelated shell'), /bootstrap seam count changed/)
 })
