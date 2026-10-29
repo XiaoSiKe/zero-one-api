@@ -43,14 +43,14 @@ export function AgentPanel() {
 
     return (
         <motion.div
-            className="relative z-[70] flex h-full shrink-0"
+            className="relative z-[70] flex h-full max-w-[100vw] shrink-0"
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: panelOpen ? width + 1 : 0, opacity: panelOpen ? 1 : 0 }}
             transition={{ duration: resizing ? 0 : PANEL_MOTION_SECONDS, ease: [0.22, 1, 0.36, 1] }}
             style={{ overflow: "clip", pointerEvents: panelOpen && !panelClosing ? undefined : "none" }}
         >
             <motion.aside
-                className="relative flex h-full shrink-0 flex-col border-l"
+                className="relative flex h-full max-w-[100vw] shrink-0 flex-col border-l"
                 data-canvas-shortcuts-ignore
                 initial={{ x: 48 }}
                 animate={{ x: panelClosing ? 28 : 0 }}

@@ -4,6 +4,18 @@ import { regularUser, seedConsole } from './fixtures/api'
 const origin = 'http://127.0.0.1:4173'
 const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6OZsAAAAASUVORK5CYII='
 
+test('loads the optional local Agent only when opened and returns to the workspace', async ({ page }) => {
+  await seedConsole(page, 'v1', { user: regularUser })
+  await page.goto(`${origin}/studio/`)
+  await expect(page.getByRole('button', { name: '新建画布', exact: true }).first()).toBeVisible()
+  await page.getByRole('button', { name: '打开 Agent', exact: true }).click()
+  await expect(page.getByText('连接本地 Agent', { exact: true })).toBeVisible()
+  const close = page.getByRole('button', { name: '收起 Agent 面板', exact: true })
+  await expect(close).toBeInViewport()
+  await close.click()
+  await expect(page.getByRole('button', { name: '新建画布', exact: true }).first()).toBeVisible()
+})
+
 test('renews an expired site session using the existing refresh contract', async ({ page }) => {
   await seedConsole(page, 'v1', { user: regularUser })
   await page.addInitScript(() => {
