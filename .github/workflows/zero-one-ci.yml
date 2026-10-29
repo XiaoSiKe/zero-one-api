@@ -396,6 +396,12 @@ jobs:
           node deploy/zero-one/test-password-recovery.mjs
           zero-one-sub2api:sha-${{ github.sha }}
           zero-one-edge:sha-${{ github.sha }}
+      - name: Verify management UI against the real isolated Backend
+        if: env.IMPACT_REQUIRED == 'true'
+        run: >-
+          node deploy/zero-one/test-admin-ui.mjs
+          zero-one-sub2api:sha-${{ github.sha }}
+          zero-one-edge:sha-${{ github.sha }}
       - name: Impact decision - deployment tests required
         if: env.IMPACT_REQUIRED == 'true'
         run: echo 'Affected deployment verification completed.'

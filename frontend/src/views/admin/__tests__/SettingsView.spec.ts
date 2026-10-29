@@ -8,6 +8,12 @@ import zhCommon from "@/i18n/locales/zh/common";
 import zhSettings from "@/i18n/locales/zh/admin/settings";
 import SettingsView from "../SettingsView.vue";
 
+// Scoped-key behaviour has its own lifecycle suite; parent settings tests must
+// not send real requests while switching to the Security tab.
+vi.mock("@/components/admin/settings/AdminAccessKeysSettings.vue", () => ({
+  default: { template: '<section data-testid="scoped-keys-settings-stub" />' },
+}));
+
 const {
   getSettings,
   updateSettings,
@@ -1360,6 +1366,8 @@ describe("admin SettingsView payment visible method controls", () => {
     await flushPromises();
 
     expect(showError).toHaveBeenCalled();
+    expect(wrapper.get("[data-zero-one-settings-save-status]").text()).toBe("error");
+    expect(showError).toHaveBeenLastCalledWith("error");
     expect(showSuccess).not.toHaveBeenCalled();
     expect(updateWebSearchEmulationConfig).toHaveBeenCalledTimes(1);
     expect(fetchPublicSettings).toHaveBeenCalledWith(true);

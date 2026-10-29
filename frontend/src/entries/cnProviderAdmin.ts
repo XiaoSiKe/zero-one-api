@@ -6,6 +6,7 @@ type AdminSurface =
   | 'channel-status'
   | 'ops'
   | 'subscriptions'
+  | 'settings'
 type RunMode = 'standard' | 'simple'
 type LocaleCode = 'en' | 'zh'
 
@@ -47,7 +48,6 @@ interface PendingMount {
 const HOST_ID = 'zero-one-provider-catalog-admin'
 const STYLE_ID = 'zero-one-provider-catalog-admin-style'
 const BODY_ACTIVE_CLASS = 'zero-one-provider-catalog-admin-active'
-const LEGACY_LEAF_URL = '/assets/cn-provider-admin-v8/cnProviderAdminLeaf-CHNemIo-.js'
 const TARGET_PATHS: Record<AdminSurface, string> = {
   accounts: '/admin/accounts',
   groups: '/admin/groups',
@@ -56,6 +56,7 @@ const TARGET_PATHS: Record<AdminSurface, string> = {
   'channel-status': '/monitor',
   ops: '/admin/ops',
   subscriptions: '/admin/subscriptions',
+  settings: '/admin/settings',
 }
 const hiddenRouteRoots = new Map<HTMLElement, HiddenRouteRootState>()
 let mountedSurface: AdminSurface | null = null
@@ -73,6 +74,7 @@ function requestedSurface(): AdminSurface | null {
   if (window.location.pathname === TARGET_PATHS['channel-status']) return 'channel-status'
   if (window.location.pathname === TARGET_PATHS.ops) return 'ops'
   if (window.location.pathname === TARGET_PATHS.subscriptions) return 'subscriptions'
+  if (window.location.pathname === TARGET_PATHS.settings) return 'settings'
   return null
 }
 
@@ -97,11 +99,9 @@ function restoreApprovedRouteRoots() {
   hiddenRouteRoots.clear()
 }
 
-function ensureRouteStyles(surface: AdminSurface) {
+function ensureRouteStyles() {
   document.body.classList.add(BODY_ACTIVE_CLASS)
-  const href = surface === 'channel-monitor' || surface === 'channel-status'
-    ? '/assets/cn-provider-admin-v10/cn-provider-admin.css'
-    : '/assets/cn-provider-admin-v8/cn-provider-admin.css'
+  const href = '/assets/cn-provider-admin-v12/cn-provider-admin.css'
   const existing = document.getElementById(STYLE_ID) as HTMLLinkElement | null
   if (existing?.getAttribute('href') === href) return
   existing?.remove()
@@ -178,7 +178,7 @@ function resolveSurfaceFactory(module: unknown): LeafModule['prepareCNProviderSu
 }
 
 async function mountSurface(surface: AdminSurface, main: HTMLElement) {
-  ensureRouteStyles(surface)
+  ensureRouteStyles()
   let host = document.getElementById(HOST_ID)
   if (!(host instanceof HTMLElement)) {
     host = document.createElement('div')
@@ -221,9 +221,7 @@ async function mountSurface(surface: AdminSurface, main: HTMLElement) {
 
   let prepared: PreparedSurface | null = null
   try {
-    const leaf = surface === 'channel-monitor' || surface === 'channel-status'
-      ? await import('./cnProviderAdminLeaf') as unknown
-      : await import(/* @vite-ignore */ LEGACY_LEAF_URL) as unknown
+    const leaf = await import('./cnProviderAdminLeaf') as unknown
     const prepareSurface = resolveSurfaceFactory(leaf)
     if (!prepareSurface) throw new Error('CN Provider Admin leaf is missing its surface factory')
     prepared = await prepareSurface(surface, approvedState())

@@ -20,7 +20,8 @@ export const DASHBOARD_SPEND_SHELL_DIRECTORY = 'cn-provider-shell-v7'
 export const DASHBOARD_USER_CLARITY_SHELL_DIRECTORY = 'cn-provider-shell-v8'
 export const NATIVE_COST_SHELL_DIRECTORY = 'cn-provider-shell-v9'
 export const BILLING_CLARITY_SHELL_DIRECTORY = 'cn-provider-shell-v10'
-export const CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v11'
+export const USAGE_ACCOUNT_COST_SHELL_DIRECTORY = 'cn-provider-shell-v11'
+export const CN_PROVIDER_SHELL_DIRECTORY = 'cn-provider-shell-v12'
 export const CN_PROVIDER_SHELL_ASSET = `${CN_PROVIDER_SHELL_DIRECTORY}/${APPROVED_SHELL_SOURCE}`
 export const USAGE_ACCOUNT_COST_RUNTIME_ASSET = 'usage-account-cost-visibility-v1.js'
 export const APPROVED_LAYOUT_SOURCE = 'AppLayout.vue_vue_type_script_setup_true_lang-gmb2csy1.js'
@@ -29,6 +30,7 @@ export const DASHBOARD_SPEND_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v3
 export const DASHBOARD_USER_CLARITY_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v4'
 export const NATIVE_COST_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v5'
 export const CURRENT_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v6'
+export const ADMIN_MANAGEMENT_PASSWORD_RECOVERY_DIRECTORY = 'password-recovery-v7'
 export const LEGACY_CN_PROVIDER_ADMIN_DIRECTORY = 'cn-provider-admin-v1'
 export const BILLING_CLARITY_CN_PROVIDER_ADMIN_DIRECTORY = 'cn-provider-admin-v8'
 export const CHANNEL_HEALTH_CN_PROVIDER_ADMIN_DIRECTORY = 'cn-provider-admin-v9'
@@ -752,8 +754,9 @@ export function usageAccountCostEntrySource() {
 }
 
 function writeUsageAccountCostVariant(assetsDirectory) {
+  writeFileSync(resolve(assetsDirectory, 'zero-one-header-custom-menu-v2.js'), nativeSettingsNavigationRuntimeSource(readFileSync(resolve(assetsDirectory, 'zero-one-header-custom-menu-v1.js'), 'utf8')))
   const sourceDirectory = resolve(assetsDirectory, BILLING_CLARITY_SHELL_DIRECTORY)
-  const targetDirectory = resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY)
+  const targetDirectory = resolve(assetsDirectory, USAGE_ACCOUNT_COST_SHELL_DIRECTORY)
   rmSync(targetDirectory, { recursive: true, force: true })
   mkdirSync(targetDirectory, { recursive: true })
   for (const name of readdirSync(sourceDirectory)) {
@@ -765,6 +768,61 @@ function writeUsageAccountCostVariant(assetsDirectory) {
     usageAccountCostEntrySource(),
   )
   writeFileSync(resolve(targetDirectory, USAGE_ACCOUNT_COST_RUNTIME_ASSET), usageAccountCostRuntimeSource())
+  return resolve(targetDirectory, APPROVED_SHELL_SOURCE)
+}
+
+export function patchAdminManagementShell(source) {
+  const pattern = /({path:"\/admin\/settings",name:"AdminSettings",component:)\(\)=>y\(\(\)=>import\("\.\/SettingsView-[^"]+\.js"\),__vite__mapDeps\(\[[^\]]+\]\)\)/g
+  const matches = [...source.matchAll(pattern)]
+  if (matches.length !== 1) throw new Error(`approved settings route seam count changed: ${matches.length}`)
+  return source.replace(pattern, `$1()=>${placeholderLoader}`)
+}
+
+export function adminManagementEntrySource(source) {
+  return `import "../${USAGE_ACCOUNT_COST_SHELL_DIRECTORY}/${USAGE_ACCOUNT_COST_RUNTIME_ASSET}";\n${patchAdminManagementShell(source)}`
+}
+
+export function nativeSettingsNavigationRuntimeSource(source) {
+  let result = replaceExactlyOnce(source, "function ensurePlacementControls(user) {", "function ensurePlacementControls(user) {\n  if (document.querySelector('[data-zero-one-native-settings=\"true\"]')) return", 'native navigation editor ownership')
+  result = replaceExactlyOnce(result, "function augmentCustomMenuItems(items) {", "function augmentCustomMenuItems(items) {\n  if (document.querySelector('[data-zero-one-native-settings=\"true\"]')) return items", 'native navigation save ownership')
+  return result
+}
+
+export function adminManagementRecoveryOverrides(assetsDirectory) {
+  const directory = resolve(assetsDirectory, CURRENT_PASSWORD_RECOVERY_DIRECTORY)
+  const overrides = new Map()
+  for (const name of readdirSync(directory).filter(name => name.endsWith('.js'))) {
+    const source = readFileSync(resolve(directory, name), 'utf8')
+    const previousBase = `/assets/${BILLING_CLARITY_SHELL_DIRECTORY}/`
+    if (!source.includes(previousBase)) throw new Error(`password recovery runtime seam changed: ${name}`)
+    overrides.set(name, source.replaceAll(previousBase, `/assets/${CN_PROVIDER_SHELL_DIRECTORY}/`))
+  }
+  if (overrides.size !== 3) throw new Error('password recovery module closure changed')
+  return overrides
+}
+
+function writeAdminManagementVariant(assetsDirectory) {
+  writeFileSync(resolve(assetsDirectory, 'zero-one-header-custom-menu-v2.js'), nativeSettingsNavigationRuntimeSource(readFileSync(resolve(assetsDirectory, 'zero-one-header-custom-menu-v1.js'), 'utf8')))
+  const sourceDirectory = resolve(assetsDirectory, BILLING_CLARITY_SHELL_DIRECTORY)
+  const targetDirectory = resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY)
+  rmSync(targetDirectory, { recursive: true, force: true })
+  mkdirSync(targetDirectory, { recursive: true })
+  const recoveryDirectory = resolve(assetsDirectory, ADMIN_MANAGEMENT_PASSWORD_RECOVERY_DIRECTORY)
+  rmSync(recoveryDirectory, { recursive: true, force: true })
+  mkdirSync(recoveryDirectory, { recursive: true })
+  const recoveryOverrides = adminManagementRecoveryOverrides(assetsDirectory)
+  for (const name of readdirSync(resolve(assetsDirectory, CURRENT_PASSWORD_RECOVERY_DIRECTORY))) {
+    if (recoveryOverrides.has(name)) writeFileSync(resolve(recoveryDirectory, name), recoveryOverrides.get(name))
+    else symlinkSync(`../${CURRENT_PASSWORD_RECOVERY_DIRECTORY}/${name}`, resolve(recoveryDirectory, name))
+  }
+  for (const name of readdirSync(sourceDirectory)) {
+    if (name === APPROVED_SHELL_SOURCE) continue
+    if (Object.hasOwn(PASSWORD_RECOVERY_PAGES, name)) {
+      writeFileSync(resolve(targetDirectory, name), `export { default } from '../${ADMIN_MANAGEMENT_PASSWORD_RECOVERY_DIRECTORY}/${basename(PASSWORD_RECOVERY_PAGES[name])}';\n`)
+    } else symlinkSync(`../${BILLING_CLARITY_SHELL_DIRECTORY}/${name}`, resolve(targetDirectory, name))
+  }
+  const source = readFileSync(resolve(sourceDirectory, APPROVED_SHELL_SOURCE), 'utf8')
+  writeFileSync(resolve(targetDirectory, APPROVED_SHELL_SOURCE), adminManagementEntrySource(source))
   return resolve(targetDirectory, APPROVED_SHELL_SOURCE)
 }
 
@@ -858,6 +916,8 @@ function writeShellVariant(consoleAssetsDirectory, directory, output, excludedAs
     if (
       !entry.isFile() ||
       entry.name === APPROVED_SHELL_SOURCE ||
+      // A new root runtime must not add URLs inside published historical shells.
+      entry.name === "zero-one-header-custom-menu-v2.js" ||
       excludedAssets.has(entry.name)
     ) continue
     symlinkSync(`../${entry.name}`, resolve(targetDirectory, entry.name))
@@ -930,7 +990,8 @@ export function buildCNProviderShell(consoleAssetsDirectory) {
   for (const [name, content] of currentOverrides) {
     writeFileSync(resolve(consoleAssetsDirectory, BILLING_CLARITY_SHELL_DIRECTORY, name), content)
   }
-  const currentTargetPath = writeUsageAccountCostVariant(consoleAssetsDirectory)
+  writeUsageAccountCostVariant(consoleAssetsDirectory)
+  const currentTargetPath = writeAdminManagementVariant(consoleAssetsDirectory)
   return { sourcePath, legacyTargetPath, previousTargetPath, priorTargetPath,
     preRecoveryTargetPath: targetPath, recoveryTargetPath, declaredCostTargetPath,
     dashboardSpendTargetPath, userClarityTargetPath, nativeCostTargetPath,

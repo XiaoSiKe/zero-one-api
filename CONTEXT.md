@@ -86,6 +86,14 @@ _Avoid_: 改写原始分组名称、按翻译名称路由、用展示语言改�
 User 创建并用于鉴权模型 API 请求的凭证。
 _Avoid_: Provider Account 凭证、管理员密码
 
+**Scoped Administrator API Key（受限管理员密钥）**:
+由 JWT Administrator 按权限目录中的操作和资源规则创建的管理凭据；支持到期时间、IP 限制、轮换和不可恢复的撤销。未登记操作默认拒绝，分组选择不隐式授予操作或全站权限；密钥生命周期遵守既有 step-up 策略，完整密钥仅在创建或轮换时返回一次。Console 在系统设置的安全页签管理它，旧全权密钥仅保留兼容轮换和删除；见 [ADR 0022](docs/adr/0022-v0219-management-ui.md)。
+_Avoid_: User API Key、管理员登录会话、默认全站权限、可再次读取的完整密钥。
+
+**Image-count Billing（按张计费）**:
+OpenAI／Composite 分组按实际返回图片张数结算的可选策略，仅作用于专用图片端点。默认关闭，关闭生图或切换到不支持的平台时归零；共用分组创建／编辑 owner，不改写历史账单，也不改变既有图片权限和账号成本证据边界。
+_Avoid_: 请求里填写的 n、所有混合请求按张收费、历史图片重计费、自动开启。
+
 **Redeem Code（兑换码）**:
 由 Administrator 创建、由 User 核销以获得余额、并发或订阅权益的凭证。
 _Avoid_: 在线支付、购买促销码、优惠券

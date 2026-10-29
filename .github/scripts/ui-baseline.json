@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-10-29-v0219-reviewed",
-  "baseline_commit": "6b00a6a8c4adc5f956ef6e9f1aad5065cf0a6441",
+  "baseline_ref": "ui-approved-2026-10-29-v0219-management-security-reviewed",
+  "baseline_commit": "581bfc6789b468cb5e9e98251d78d5f5993653a7",
   "protected_paths": [
     "landing/",
     "frontend/",
@@ -69,7 +69,20 @@
     "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-cards.png",
     "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-trends.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-trends.png",
-    "visual-regression/tests/mobile-layout.behavior.spec.ts"
+    "visual-regression/tests/mobile-layout.behavior.spec.ts",
+    "visual-regression/tests/admin-v0219.behavior.spec.ts",
+    "visual-regression/tests/admin-management.visual.spec.ts",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-scoped-key-editor-light-en.png",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-scoped-key-editor-320-dark.png",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-scoped-key-editor-320-light.png",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-scoped-key-editor-light-zh.png",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-scoped-key-editor-dark-en.png",
+    "visual-regression/tests/__screenshots__/chromium-mobile/console-scoped-key-editor-dark-zh.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-scoped-key-editor-light-en.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-scoped-key-editor-light-zh.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-scoped-key-editor-dark-en.png",
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-scoped-key-editor-dark-zh.png",
+    "frontend/src/i18n/__tests__/translationHtmlSafety.spec.ts"
   ],
   "compatibility_paths": [
     "frontend/src/api/",
@@ -118,7 +131,9 @@
         "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v3/",
         "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v4/",
         "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v5/",
-        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6/"
+        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v6/",
+        "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v7/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v12/"
       ]
     },
     {
@@ -190,7 +205,8 @@
         "deploy/zero-one/test-routing.sh",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-header-navigation-settings.png",
         "visual-regression/tests/console.visual.spec.ts",
-        "visual-regression/tests/fixtures/api.ts"
+        "visual-regression/tests/fixtures/api.ts",
+        "deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v2.js"
       ]
     },
     {
@@ -304,7 +320,9 @@
         "/admin/channels/pricing",
         "/admin/channels/monitor",
         "/admin/ops",
-        "/admin/subscriptions"
+        "/admin/subscriptions",
+        "/admin/settings",
+        "/monitor"
       ],
       "paths": [
         "frontend/src/constants/platforms.ts",
@@ -387,7 +405,15 @@
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v8/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v9/",
         "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v10/",
-        "frontend/vite.adapter-boundary.ts"
+        "frontend/vite.adapter-boundary.ts",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v11/",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v12/",
+        "visual-regression/tests/admin-v0219.behavior.spec.ts",
+        "visual-regression/tests/admin-management.visual.spec.ts",
+        "frontend/src/components/admin/settings/AdminAccessKeysSettings.vue",
+        "frontend/src/components/account/GrokModelDiagnosticsPanel.vue",
+        "frontend/src/views/admin/SettingsView.vue",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/"
       ]
     },
     {
@@ -516,7 +542,8 @@
         "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-cards.png",
         "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-cards.png",
         "visual-regression/tests/__screenshots__/chromium-mobile/console-dashboard-spend-trends.png",
-        "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-trends.png"
+        "visual-regression/tests/__screenshots__/chromium-desktop/console-dashboard-spend-trends.png",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v12/"
       ]
     }
   ],

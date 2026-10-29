@@ -11,11 +11,17 @@ import {
   APPROVED_SHELL_SOURCE,
   CN_PROVIDER_SHELL_ASSET,
   CN_PROVIDER_SHELL_DIRECTORY,
+  ADMIN_MANAGEMENT_PASSWORD_RECOVERY_DIRECTORY,
+  PASSWORD_RECOVERY_PAGES,
+  adminManagementRecoveryOverrides,
+  nativeSettingsNavigationRuntimeSource,
   BILLING_CLARITY_SHELL_DIRECTORY,
   USAGE_ACCOUNT_COST_RUNTIME_ASSET,
   patchApprovedShell,
   usageAccountCostEntrySource,
   usageAccountCostRuntimeSource,
+  USAGE_ACCOUNT_COST_SHELL_DIRECTORY,
+  adminManagementEntrySource,
 } from './build-cn-provider-shell.mjs'
 
 function read(path, label) {
@@ -70,7 +76,7 @@ export function verifyCNProviderConsole(consoleDir) {
   }
   const registrationEntry = index.slice(registrationStart, standardStart)
   const standardEntry = index.slice(standardStart, entryEnd)
-  const adapterImport = 'import("/assets/cn-provider-admin-v10/cn-provider-admin.js")'
+  const adapterImport = 'import("/assets/cn-provider-admin-v12/cn-provider-admin.js")'
   const shellImport = `import("/assets/${CN_PROVIDER_SHELL_ASSET}")`
   requireMarkers(registrationEntry, [adapterImport, shellImport], 'Registration Console entry')
   requireMarkers(standardEntry, [`await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
@@ -96,10 +102,14 @@ export function verifyCNProviderConsole(consoleDir) {
   if (billingClarityShell !== patchApprovedShell(approvedShell)) {
     throw new Error('Billing clarity Console shell differs from the approved shell outside its router seam')
   }
-  if (cnProviderShell !== usageAccountCostEntrySource()) {
-    throw new Error('CN Provider v11 differs from immutable v10 outside the Usage visibility runtime')
+  if (cnProviderShell !== adminManagementEntrySource(billingClarityShell)) {
+    throw new Error('CN Provider v12 differs outside the Usage visibility and settings route seams')
+  }
+  if (read(resolve(consoleDir, 'assets', USAGE_ACCOUNT_COST_SHELL_DIRECTORY, APPROVED_SHELL_SOURCE), 'Usage visibility shell') !== usageAccountCostEntrySource()) {
+    throw new Error('Historical v11 Usage visibility shell changed')
   }
   const assetsDirectory = resolve(consoleDir, 'assets')
+  if (read(resolve(assetsDirectory, 'zero-one-header-custom-menu-v2.js'), 'Native settings navigation') !== nativeSettingsNavigationRuntimeSource(read(resolve(assetsDirectory, 'zero-one-header-custom-menu-v1.js'), 'Historical navigation'))) throw new Error('Native navigation runtime differs outside its ownership guards')
   const shellDirectory = resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY)
   const shellEntryPath = resolve(shellDirectory, APPROVED_SHELL_SOURCE)
   if (!lstatSync(shellEntryPath).isFile() || lstatSync(shellEntryPath).isSymbolicLink()) {
@@ -108,9 +118,9 @@ export function verifyCNProviderConsole(consoleDir) {
   const actualShellEntries = readdirSync(shellDirectory).sort()
   const billingClarityDirectory = resolve(assetsDirectory, BILLING_CLARITY_SHELL_DIRECTORY)
   const expectedLinks = readdirSync(billingClarityDirectory)
-    .filter((name) => name !== APPROVED_SHELL_SOURCE)
+    .filter((name) => name !== APPROVED_SHELL_SOURCE && !Object.hasOwn(PASSWORD_RECOVERY_PAGES, name))
     .sort()
-  const expectedShellEntries = [...expectedLinks, APPROVED_SHELL_SOURCE, USAGE_ACCOUNT_COST_RUNTIME_ASSET].sort()
+  const expectedShellEntries = [...expectedLinks, APPROVED_SHELL_SOURCE, ...Object.keys(PASSWORD_RECOVERY_PAGES)].sort()
   if (actualShellEntries.join('\n') !== expectedShellEntries.join('\n')) {
     throw new Error('CN Provider approved shell namespace is missing or contains extra assets')
   }
@@ -120,7 +130,14 @@ export function verifyCNProviderConsole(consoleDir) {
       throw new Error(`CN Provider approved shell asset is not the expected relative symlink: ${name}`)
     }
   }
-  if (read(resolve(shellDirectory, USAGE_ACCOUNT_COST_RUNTIME_ASSET), 'Usage account cost runtime') !== usageAccountCostRuntimeSource()) {
+  for (const [name, target] of Object.entries(PASSWORD_RECOVERY_PAGES)) {
+    const expected = `export { default } from '../${ADMIN_MANAGEMENT_PASSWORD_RECOVERY_DIRECTORY}/${target.split('/').at(-1)}';\n`
+    if (read(resolve(shellDirectory, name), 'Recovery entry') !== expected) throw new Error('Recovery entry must share the current shell runtime')
+  }
+  for (const [name, content] of adminManagementRecoveryOverrides(assetsDirectory)) {
+    if (read(resolve(assetsDirectory, ADMIN_MANAGEMENT_PASSWORD_RECOVERY_DIRECTORY, name), 'Recovery module') !== content) throw new Error('Recovery runtime differs outside its namespace remap')
+  }
+  if (read(resolve(assetsDirectory, USAGE_ACCOUNT_COST_SHELL_DIRECTORY, USAGE_ACCOUNT_COST_RUNTIME_ASSET), 'Usage account cost runtime') !== usageAccountCostRuntimeSource()) {
     throw new Error('Usage account cost runtime differs from its generator')
   }
   requireMarkers(billingClarityShell, [
@@ -178,7 +195,7 @@ export function verifyCNProviderConsole(consoleDir) {
     'ops-platform-filter', 'subscription-platform-filter',
   ], 'CN Provider catalog route adapter')
 
-  const adapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v10')
+  const adapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v12')
   const adapterEntry = read(
     resolve(adapterDirectory, 'cn-provider-admin.js'),
     'CN Provider Admin route adapter',
@@ -201,9 +218,8 @@ export function verifyCNProviderConsole(consoleDir) {
     '/admin/channels/monitor', '/monitor', '/admin/ops', '/admin/subscriptions',
     '__ZERO_ONE_NAVIGATION_RECONCILIATION__', 'provider-catalog-admin',
     '__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__', 'Management page failed to load',
-    '/assets/cn-provider-admin-v10/cn-provider-admin.css',
-    '/assets/cn-provider-admin-v8/cn-provider-admin.css',
-    '/assets/cn-provider-admin-v8/cnProviderAdminLeaf-CHNemIo-.js',
+    '/assets/cn-provider-admin-v12/cn-provider-admin.css',
+    '/admin/settings', 'admin-api-keys', 'grok-model-diagnostics', 'image_count_billing',
     'Current Account Rate', 'Upstream Declared Rate (Observed)', 'MiniMax',
   ], 'CN Provider Admin route adapter')
   requireMarkers(stylesheet, [
@@ -219,8 +235,8 @@ export function verifyCNProviderConsole(consoleDir) {
     shell: `/assets/${CN_PROVIDER_SHELL_ASSET}`,
     legacyModule: '/assets/cn-provider-admin-v1/cn-provider-admin.js',
     catalogModule: '/assets/cn-provider-admin-v7/cn-provider-admin.js',
-    module: '/assets/cn-provider-admin-v10/cn-provider-admin.js',
-    stylesheet: '/assets/cn-provider-admin-v10/cn-provider-admin.css',
+    module: '/assets/cn-provider-admin-v12/cn-provider-admin.js',
+    stylesheet: '/assets/cn-provider-admin-v12/cn-provider-admin.css',
   }
 }
 

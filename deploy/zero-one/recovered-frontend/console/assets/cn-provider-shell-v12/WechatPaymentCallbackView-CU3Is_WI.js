@@ -1,0 +1,1 @@
+../cn-provider-shell-v10/WechatPaymentCallbackView-CU3Is_WI.js

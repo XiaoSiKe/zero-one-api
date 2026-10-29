@@ -6,8 +6,8 @@ production_caddyfile="$repo_root/deploy/zero-one/Caddyfile"
 preview_caddyfile="$repo_root/deploy/zero-one/Caddyfile.preview"
 shared_caddyfile="$repo_root/deploy/zero-one/Caddyfile.shared"
 recovered_console_index="$repo_root/deploy/zero-one/recovered-frontend/console/index.html"
-recovered_console_entry='await import("/assets/cn-provider-shell-v11/index-9xJBhx8B.js")'
-recovered_console_entry_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v11/index-9xJBhx8B.js"
+recovered_console_entry='await import("/assets/cn-provider-shell-v12/index-9xJBhx8B.js")'
+recovered_console_entry_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v12/index-9xJBhx8B.js"
 recovered_console_runtime_asset="$repo_root/deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v10/index-9xJBhx8B.js"
 recovered_pricing_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/useKeyedDebouncedSearch-BrW9dWBu.js"
 recovered_console_redeem_chunk="$repo_root/deploy/zero-one/recovered-frontend/console/assets/RedeemView-B-81-jXj.js"
@@ -23,7 +23,7 @@ recovered_console_parity="$repo_root/deploy/zero-one/recovered-frontend/console/
 recovered_console_parity_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-console-parity-v1.css"
 recovered_header_navigation="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.js"
 recovered_header_navigation_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-community-qr-v1.css"
-recovered_header_custom_menu="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.js"
+recovered_header_custom_menu="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v2.js"
 recovered_header_custom_menu_css="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v1.css"
 recovered_settings_unified_save="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-settings-unified-save-v1.js"
 recovered_redeem_actions="$repo_root/deploy/zero-one/recovered-frontend/console/assets/zero-one-redeem-actions-v1.js"
@@ -99,8 +99,8 @@ require "$recovered_console_index" 'await import("/assets/zero-one-console-parit
 require "$recovered_console_index" 'href="/assets/zero-one-console-parity-v1.css?v=5"'
 require "$recovered_console_index" 'await import("/assets/zero-one-community-qr-v1.js?v=14")'
 require "$recovered_console_index" 'href="/assets/zero-one-community-qr-v1.css?v=6"'
-require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v1.js?v=27")'
-forbid "$recovered_console_index" '/assets/zero-one-header-custom-menu-v1.js?v=26'
+require "$recovered_console_index" 'await import("/assets/zero-one-header-custom-menu-v2.js?v=1")'
+forbid "$recovered_console_index" '/assets/zero-one-header-custom-menu-v2.js?v=26'
 require "$recovered_header_custom_menu" "style.setProperty('display', 'none', 'important')"
 require "$recovered_console_index" 'window.__ZERO_ONE_PUBLIC_SETTINGS__ = settings'
 require "$recovered_console_index" 'applyPublicSettings(payload?.data)'
@@ -112,7 +112,7 @@ require "$recovered_console_index" 'href="/assets/zero-one-redeem-actions-v1.css
 require "$recovered_console_index" 'await import("/assets/zero-one-ccswitch-launch-v1.js?v=2")'
 require "$recovered_console_index" 'await import("/assets/zero-one-affiliate-admin-v1.js?v=6")'
 require "$recovered_console_index" 'await import("/assets/online-image-v17/online-image.js")'
-require "$recovered_console_index" 'await import("/assets/zero-one-settings-unified-save-v1.js")'
+forbid "$recovered_console_index" '/assets/zero-one-settings-unified-save-v1.js'
 require "$recovered_console_index" 'href="/assets/zero-one-affiliate-admin-v1.css?v=3"'
 require "$recovered_console_index" 'await import("/assets/zero-one-floating-panels-v1.js?v=3")'
 require "$recovered_console_index" 'await import("/assets/zero-one-login-recovery-v2.js?v=4")'
@@ -123,8 +123,9 @@ require "$recovered_console_redeem_chunk" 'refreshRedeemState'
 require "$recovered_console_redeem_chunk" 'redeemError'
 require "$recovered_console_admin_redeem_chunk" 'validateRedeemGeneration'
 require "$recovered_console_admin_redeem_chunk" 'deleteAllUnusedRedeemCodes'
-require "$recovered_console_entry_asset" 'import "./usage-account-cost-visibility-v1.js";'
-require "$recovered_console_entry_asset" 'import "../cn-provider-shell-v10/index-9xJBhx8B.js";'
+require "$recovered_console_entry_asset" 'import "../cn-provider-shell-v11/usage-account-cost-visibility-v1.js";'
+require "$recovered_console_entry_asset" 'name:"AdminSettings"'
+forbid "$recovered_console_entry_asset" 'import("./SettingsView-'
 require "$recovered_console_runtime_asset" 'i.min_value=l,i.max_value=d'
 require "$recovered_console_runtime_asset" 'ModelPlaza'
 require "$recovered_console_runtime_asset" 'assets/PaymentResultView-v182-balance-refresh.js'
