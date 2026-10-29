@@ -1596,7 +1596,9 @@
     "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v7/ResetPasswordView.js",
     "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v7/_plugin-vue_export-helper-B3GXwK9m.js",
     "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v7/assets",
-    "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v7/logo.svg"
+    "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v7/logo.svg",
+    "deploy/zero-one/test-admin-ui.mjs",
+    "deploy/zero-one/test-admin-ui.browser.mjs"
   ],
   "retired_preserved_paths": [
     {
