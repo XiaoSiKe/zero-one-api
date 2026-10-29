@@ -6,6 +6,7 @@ import { adapterBoundary } from './vite.adapter-boundary'
 
 const frontendRoot = fileURLToPath(new URL('.', import.meta.url))
 const frozenBuildRoot = process.env.ZERO_ONE_FROZEN_BUILD_ROOT
+const adapterDirectory = 'cn-provider-admin-v12'
 
 export default defineConfig({
   root: frontendRoot,
@@ -22,8 +23,8 @@ export default defineConfig({
   },
   build: {
     outDir: frozenBuildRoot
-      ? resolve(frozenBuildRoot, 'cn-provider-admin-v11')
-      : resolve(frontendRoot, '../deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v11'),
+      ? resolve(frozenBuildRoot, adapterDirectory)
+      : resolve(frontendRoot, '../deploy/zero-one/recovered-frontend/console/assets', adapterDirectory),
     emptyOutDir: true,
     cssCodeSplit: false,
     lib: {

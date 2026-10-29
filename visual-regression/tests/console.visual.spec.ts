@@ -134,7 +134,7 @@ test.describe('Console public auth contracts', () => {
       if (pathname === '/assets/cn-provider-shell-v12/LoginView-BbpS8aW1.js') {
         loginChunkRequestedBeforeSettingsRelease ||= !settingsReleased
       }
-      if (pathname === '/assets/cn-provider-admin-v11/cn-provider-admin.js') {
+      if (pathname === '/assets/cn-provider-admin-v12/cn-provider-admin.js') {
         adapterRequested = true
       }
     })
@@ -148,7 +148,7 @@ test.describe('Console public auth contracts', () => {
       await stalledSettings
       await route.fallback().catch(() => {})
     })
-    await page.route('**/assets/cn-provider-admin-v11/cn-provider-admin.js', async (route) => {
+    await page.route('**/assets/cn-provider-admin-v12/cn-provider-admin.js', async (route) => {
       await stalledAdapter
       await route.fallback().catch(() => {})
     })
@@ -203,7 +203,7 @@ test.describe('Console public auth contracts', () => {
       await stalledOnlineAdapter
       await route.fallback().catch(() => {})
     })
-    await page.route('**/assets/cn-provider-admin-v11/cn-provider-admin.js', (route) =>
+    await page.route('**/assets/cn-provider-admin-v12/cn-provider-admin.js', (route) =>
       route.fulfill({ status: 503, contentType: 'text/plain', body: 'simulated outage' }),
     )
 
@@ -3364,7 +3364,7 @@ test.describe('Console visual contracts', () => {
     const response = await page.goto('http://127.0.0.1:4173/login')
     expect(response?.status()).toBe(200)
     const html = await response!.text()
-    expect(html).toContain('/assets/cn-provider-admin-v11/cn-provider-admin.js')
+    expect(html).toContain('/assets/cn-provider-admin-v12/cn-provider-admin.js')
     expect(html).not.toContain('import("/assets/cn-provider-admin-v1/cn-provider-admin.js")')
     expect(html).not.toContain('import("/assets/cn-provider-admin-v7/cn-provider-admin.js")')
     expect(html).toContain('/assets/cn-provider-shell-v12/index-9xJBhx8B.js')

@@ -81,7 +81,8 @@
     "visual-regression/tests/__screenshots__/chromium-desktop/console-scoped-key-editor-light-en.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-scoped-key-editor-light-zh.png",
     "visual-regression/tests/__screenshots__/chromium-desktop/console-scoped-key-editor-dark-en.png",
-    "visual-regression/tests/__screenshots__/chromium-desktop/console-scoped-key-editor-dark-zh.png"
+    "visual-regression/tests/__screenshots__/chromium-desktop/console-scoped-key-editor-dark-zh.png",
+    "frontend/src/i18n/__tests__/translationHtmlSafety.spec.ts"
   ],
   "compatibility_paths": [
     "frontend/src/api/",
@@ -411,7 +412,8 @@
         "visual-regression/tests/admin-management.visual.spec.ts",
         "frontend/src/components/admin/settings/AdminAccessKeysSettings.vue",
         "frontend/src/components/account/GrokModelDiagnosticsPanel.vue",
-        "frontend/src/views/admin/SettingsView.vue"
+        "frontend/src/views/admin/SettingsView.vue",
+        "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/"
       ]
     },
     {

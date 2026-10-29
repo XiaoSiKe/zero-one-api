@@ -76,7 +76,7 @@ export function verifyCNProviderConsole(consoleDir) {
   }
   const registrationEntry = index.slice(registrationStart, standardStart)
   const standardEntry = index.slice(standardStart, entryEnd)
-  const adapterImport = 'import("/assets/cn-provider-admin-v11/cn-provider-admin.js")'
+  const adapterImport = 'import("/assets/cn-provider-admin-v12/cn-provider-admin.js")'
   const shellImport = `import("/assets/${CN_PROVIDER_SHELL_ASSET}")`
   requireMarkers(registrationEntry, [adapterImport, shellImport], 'Registration Console entry')
   requireMarkers(standardEntry, [`await ${adapterImport}`, `await ${shellImport}`], 'Standard Console entry')
@@ -195,7 +195,7 @@ export function verifyCNProviderConsole(consoleDir) {
     'ops-platform-filter', 'subscription-platform-filter',
   ], 'CN Provider catalog route adapter')
 
-  const adapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v11')
+  const adapterDirectory = resolve(consoleDir, 'assets/cn-provider-admin-v12')
   const adapterEntry = read(
     resolve(adapterDirectory, 'cn-provider-admin.js'),
     'CN Provider Admin route adapter',
@@ -218,7 +218,7 @@ export function verifyCNProviderConsole(consoleDir) {
     '/admin/channels/monitor', '/monitor', '/admin/ops', '/admin/subscriptions',
     '__ZERO_ONE_NAVIGATION_RECONCILIATION__', 'provider-catalog-admin',
     '__ZERO_ONE_CN_PROVIDER_SHELL_MOUNTED__', 'Management page failed to load',
-    '/assets/cn-provider-admin-v11/cn-provider-admin.css',
+    '/assets/cn-provider-admin-v12/cn-provider-admin.css',
     '/admin/settings', 'admin-api-keys', 'grok-model-diagnostics', 'image_count_billing',
     'Current Account Rate', 'Upstream Declared Rate (Observed)', 'MiniMax',
   ], 'CN Provider Admin route adapter')
@@ -235,8 +235,8 @@ export function verifyCNProviderConsole(consoleDir) {
     shell: `/assets/${CN_PROVIDER_SHELL_ASSET}`,
     legacyModule: '/assets/cn-provider-admin-v1/cn-provider-admin.js',
     catalogModule: '/assets/cn-provider-admin-v7/cn-provider-admin.js',
-    module: '/assets/cn-provider-admin-v11/cn-provider-admin.js',
-    stylesheet: '/assets/cn-provider-admin-v11/cn-provider-admin.css',
+    module: '/assets/cn-provider-admin-v12/cn-provider-admin.js',
+    stylesheet: '/assets/cn-provider-admin-v12/cn-provider-admin.css',
   }
 }
 

@@ -21,7 +21,8 @@
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v11/",
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v12/",
     "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v7/",
-    "deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v2.js"
+    "deploy/zero-one/recovered-frontend/console/assets/zero-one-header-custom-menu-v2.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/"
   ],
   "preserve_on_upstream_sync": [
     ".github/scripts/inherited-workflow-safety.test.mjs",
@@ -1598,7 +1599,48 @@
     "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v7/assets",
     "deploy/zero-one/recovered-frontend/console/assets/password-recovery-v7/logo.svg",
     "deploy/zero-one/test-admin-ui.mjs",
-    "deploy/zero-one/test-admin-ui.browser.mjs"
+    "deploy/zero-one/test-admin-ui.browser.mjs",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/AccountsView-Bd4DLk7e.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/BaseDialog.vue_vue_type_script_setup_true_lang-DwR6Fyok.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/ChannelMonitorView-B2P-vEa0.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/ChannelStatusView-DbwGG4UP.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/ChannelsView-CkYRd5wr.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/ConfirmDialog.vue_vue_type_script_setup_true_lang-d3KA2Dbp.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/EmptyState.vue_vue_type_script_setup_true_lang-tCnmsjLY.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/GroupBadge.vue_vue_type_script_setup_true_lang-C60Vt3W6.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/GroupOptionItem-C0aHkpkP.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/GroupsView-CLVubb1Y.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/HelpTooltip.vue_vue_type_script_setup_true_lang-oR5Ce-E_.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/ModelTagInput.vue_vue_type_script_setup_true_lang-DwCZ4y8s.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/MonitorQuotaView.vue_vue_type_script_setup_true_lang-CU1rlL7M.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/OpsDashboard-BBYvn9Qf.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/Pagination-B284xh7f.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/PlatformIcon.vue_vue_type_script_setup_true_lang-B4swmfjY.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/ProxySelector-C3TDwbeU.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/SettingsView-CcXfmiqO.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/SubscriptionsView-5N99SdWY.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/TablePageLayout-Ahda5ix2.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/Toggle.vue_vue_type_script_setup_true_lang-cjeor373.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/adminSettings-BuVJozq4.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/apiError-i2TfMBqu.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/cn-provider-admin.css",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/cn-provider-admin.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/cnProviderAdminLeaf-B6vuXkvp.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/format-ArXZdH6f.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/index-B6792iEr.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/index-BjQDVt7W.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/index-BsT8PIkr.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/index-WkE-UET7.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/logo.svg",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/onboarding-r9Rh08qA.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/passwordRecovery-B_mr17oP.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/platformColors-19zsuB1i.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/stableObjectKey-BMHEGo9U.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/useClipboard-B4DY1ZMB.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/useKeyedDebouncedSearch-hE-4593R.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/useTableSelection-DOvJDMdx.js",
+    "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/vue-draggable-plus-DLB1Jqdw.js",
+    "frontend/src/i18n/__tests__/translationHtmlSafety.spec.ts"
   ],
   "retired_preserved_paths": [
     {
@@ -2469,7 +2511,8 @@
         "frontend/src/utils/accountQuota.ts",
         "frontend/src/views/admin/__tests__/ChannelsView.webSearchEmulation.spec.ts",
         "frontend/src/views/admin/__tests__/groupsImagePricing.spec.ts",
-        "frontend/src/views/admin/groupsImagePricing.ts"
+        "frontend/src/views/admin/groupsImagePricing.ts",
+        "frontend/src/i18n/__tests__/translationHtmlSafety.spec.ts"
       ]
     },
     {
