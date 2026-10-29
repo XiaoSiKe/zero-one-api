@@ -1,0 +1,1 @@
+../cn-provider-shell-v10/zero-one-online-image-route-placeholder-v1.js

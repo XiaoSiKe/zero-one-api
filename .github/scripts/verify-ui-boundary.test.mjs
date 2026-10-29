@@ -100,6 +100,8 @@ test('validates the approved UI baseline manifest', () => {
     '/admin/channels/monitor',
     '/admin/ops',
     '/admin/subscriptions',
+    '/admin/settings',
+    '/monitor',
   ])
   assert.ok(cnProviderManagement.paths.includes('frontend/src/entries/cnProviderAdmin.ts'))
   assert.ok(

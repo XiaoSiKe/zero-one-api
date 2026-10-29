@@ -1,0 +1,1 @@
+../cn-provider-shell-v10/zero-one-community-qr-v1.js

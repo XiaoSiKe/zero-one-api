@@ -131,10 +131,10 @@ test.describe('Console public auth contracts', () => {
     page.on('pageerror', (error) => pageErrors.push(error.message))
     page.on('request', (request) => {
       const pathname = new URL(request.url()).pathname
-      if (pathname === '/assets/cn-provider-shell-v11/LoginView-BbpS8aW1.js') {
+      if (pathname === '/assets/cn-provider-shell-v12/LoginView-BbpS8aW1.js') {
         loginChunkRequestedBeforeSettingsRelease ||= !settingsReleased
       }
-      if (pathname === '/assets/cn-provider-admin-v10/cn-provider-admin.js') {
+      if (pathname === '/assets/cn-provider-admin-v11/cn-provider-admin.js') {
         adapterRequested = true
       }
     })
@@ -148,7 +148,7 @@ test.describe('Console public auth contracts', () => {
       await stalledSettings
       await route.fallback().catch(() => {})
     })
-    await page.route('**/assets/cn-provider-admin-v10/cn-provider-admin.js', async (route) => {
+    await page.route('**/assets/cn-provider-admin-v11/cn-provider-admin.js', async (route) => {
       await stalledAdapter
       await route.fallback().catch(() => {})
     })
@@ -203,7 +203,7 @@ test.describe('Console public auth contracts', () => {
       await stalledOnlineAdapter
       await route.fallback().catch(() => {})
     })
-    await page.route('**/assets/cn-provider-admin-v10/cn-provider-admin.js', (route) =>
+    await page.route('**/assets/cn-provider-admin-v11/cn-provider-admin.js', (route) =>
       route.fulfill({ status: 503, contentType: 'text/plain', body: 'simulated outage' }),
     )
 
@@ -219,7 +219,7 @@ test.describe('Console public auth contracts', () => {
 
     page.on('request', (request) => {
       const pathname = new URL(request.url()).pathname
-      if (pathname === '/assets/cn-provider-shell-v11/RegisterView-CP_DoJ_R.js') {
+      if (pathname === '/assets/cn-provider-shell-v12/RegisterView-CP_DoJ_R.js') {
         registrationChunkRequestedBeforeSettingsRelease ||= !settingsReleased
       }
     })
@@ -340,7 +340,7 @@ test.describe('Console public auth contracts', () => {
     page.on('pageerror', (error) => pageErrors.push(error.message))
     page.on('request', (request) => {
       const url = new URL(request.url())
-      if (url.pathname === '/assets/zero-one-header-custom-menu-v1.js') {
+      if (url.pathname === '/assets/zero-one-header-custom-menu-v2.js') {
         headerAdapterVersion = url.searchParams.get('v') || ''
       }
     })
@@ -359,7 +359,7 @@ test.describe('Console public auth contracts', () => {
       await expect(page).toHaveURL('http://127.0.0.1:4173/admin/dashboard')
       await expect(page.locator('main').getByText('总消费', { exact: true }).first()).toBeVisible()
       await expect.poll(() => adapterRequested).toBe(true)
-      await expect.poll(() => headerAdapterVersion).toBe('27')
+      await expect.poll(() => headerAdapterVersion).toBe('1')
       await page.waitForTimeout(250)
       expect(consoleErrors).toEqual([])
       expect(pageErrors).toEqual([])
@@ -1065,9 +1065,7 @@ test.describe('Console standalone affiliate administration contracts', () => {
     const legacySettingsCard = page.locator('.card', {
       has: page.locator('h2').filter({ hasText: /^Affiliate \(Invite Rebate\)$/ }),
     })
-    await expect(legacySettingsCard).toHaveCount(1)
-    await expect(legacySettingsCard).toBeHidden()
-    await expect(legacySettingsCard).toHaveClass(/zero-one-affiliate-legacy-hidden/)
+    await expect(legacySettingsCard).toHaveCount(0)
   })
 
   test('lists every customer and shows invitees with per-customer rebate only in detail', async ({ page }, testInfo) => {
@@ -1703,7 +1701,7 @@ test.describe('Console header navigation settings contracts', () => {
 
     await expect(panel).toBeVisible()
     await expect(page.locator('button[data-zero-one-settings-save="true"]')).toBeVisible()
-    await expect(page.locator('button[data-zero-one-standalone-save="true"]')).toHaveCount(8)
+    await expect(page.locator('button[data-zero-one-standalone-save="true"]')).toHaveCount(0)
     await expect(page.locator('button[data-zero-one-standalone-save="true"]:visible')).toHaveCount(0)
     await expect(page.getByTestId('community-qr-settings')).toHaveCount(0)
     await expect(page.getByTestId('community-qr-button')).toHaveCount(0)
@@ -1901,7 +1899,9 @@ test.describe('Console header navigation settings contracts', () => {
     expect(auxiliarySaves).toBe(1)
     await expect(page.getByText('设置保存成功', { exact: true })).toHaveCount(0)
     await expect(bottomSave).toBeEnabled()
-    await expect(card).toHaveAttribute('data-zero-one-settings-dirty', 'true')
+    await bottomSave.click()
+    await expect.poll(() => auxiliarySaves).toBe(2)
+    await expect(page.locator('[data-zero-one-settings-save-status]')).toBeVisible()
   })
 
   test('does not let an unfinished navigation editor overwrite an early main save', async ({ page }) => {
@@ -3144,8 +3144,8 @@ test.describe('Console header custom iframe menu contracts', () => {
     await section.getByRole('button', { name: '添加菜单项' }).click()
     await section.getByPlaceholder('如：帮助中心').last().fill('新菜单')
     await section.getByPlaceholder('https://example.com/page').last().fill('https://example.com/new')
-    await section.locator('select:not([data-zero-one-header-menu-placement])').last().selectOption('all')
-    const placementSelects = section.locator('[data-zero-one-header-menu-placement]')
+    await section.locator('select[data-testid^="custom-menu-visibility-"]').last().selectOption('all')
+    const placementSelects = section.locator('select[data-testid^="custom-menu-placement-"]')
     await placementSelects.last().selectOption('both')
 
     const settingsRequest = page.waitForRequest((request) =>
@@ -3185,7 +3185,7 @@ test.describe('Console header custom iframe menu contracts', () => {
     const description = page.getByRole('heading', { name: '自定义菜单页面' })
       .locator('xpath=following-sibling::p[1]')
     await expect(description).toHaveText(
-      '添加自定义 iframe 页面到侧边栏、顶部导航或同时显示在两处。每个页面可以选择普通用户、管理员或全部登录用户可见。',
+      '添加自定义 iframe 页面到侧边栏、顶部导航或同时显示。每个页面可以设置显示位置及普通用户、管理员或全部登录用户可见。',
     )
     await page.waitForTimeout(1_000)
     await description.evaluate((node) => {
@@ -3364,12 +3364,12 @@ test.describe('Console visual contracts', () => {
     const response = await page.goto('http://127.0.0.1:4173/login')
     expect(response?.status()).toBe(200)
     const html = await response!.text()
-    expect(html).toContain('/assets/cn-provider-admin-v10/cn-provider-admin.js')
+    expect(html).toContain('/assets/cn-provider-admin-v11/cn-provider-admin.js')
     expect(html).not.toContain('import("/assets/cn-provider-admin-v1/cn-provider-admin.js")')
     expect(html).not.toContain('import("/assets/cn-provider-admin-v7/cn-provider-admin.js")')
-    expect(html).toContain('/assets/cn-provider-shell-v11/index-9xJBhx8B.js')
+    expect(html).toContain('/assets/cn-provider-shell-v12/index-9xJBhx8B.js')
     expect(html).toContain('/assets/online-image-v17/online-image.js')
-    expect(html).toContain('/assets/zero-one-settings-unified-save-v1.js')
+    expect(html).not.toContain('/assets/zero-one-settings-unified-save-v1.js')
     expect(html).toContain('/assets/zero-one-local-preview-guard-v2.js')
     expect(html).toContain('/assets/zero-one-custom-page-security-v1.js')
     expect(html).toContain('/assets/zero-one-navigation-reconciliation-v1.js?v=3')
@@ -3377,7 +3377,7 @@ test.describe('Console visual contracts', () => {
     expect(html).toContain('/assets/zero-one-console-parity-v1.css?v=5')
     expect(html).toContain('/assets/zero-one-community-qr-v1.js?v=14')
     expect(html).toContain('/assets/zero-one-community-qr-v1.css?v=6')
-    expect(html).toContain('/assets/zero-one-header-custom-menu-v1.js?v=27')
+    expect(html).toContain('/assets/zero-one-header-custom-menu-v2.js?v=1')
     expect(html).not.toContain('/assets/zero-one-header-custom-menu-v1.js?v=26')
     expect(html).toContain('/assets/zero-one-header-custom-menu-v1.css?v=7')
     expect(html).toContain('/assets/zero-one-redeem-actions-v1.js?v=1')

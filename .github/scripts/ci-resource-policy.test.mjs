@@ -94,6 +94,7 @@ const jobPolicies = {
       'caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile',
       'run: sh deploy/zero-one/test-live-routing.sh zero-one-edge:sha-${{ github.sha }}',
       'run: sh deploy/zero-one/test-live-routing.sh zero-one-edge:sha-${{ github.sha }} preview',
+      'node deploy/zero-one/test-admin-ui.mjs',
     ]],
   },
   'zero-one-visual-calibration.yml': {

@@ -22,6 +22,7 @@ type AdminSurface =
   | 'channel-status'
   | 'ops'
   | 'subscriptions'
+  | 'settings'
 type LocaleCode = 'en' | 'zh'
 type RunMode = 'standard' | 'simple'
 
@@ -44,6 +45,7 @@ const surfaceLoaders = {
   'channel-status': () => import('@/views/user/ChannelStatusView.vue'),
   ops: () => import('@/views/admin/ops/OpsDashboard.vue'),
   subscriptions: () => import('@/views/admin/SubscriptionsView.vue'),
+  settings: () => import('@/views/admin/SettingsView.vue'),
 } satisfies Record<AdminSurface, () => Promise<{ default: Component }>>
 
 function approvedRouter(): Router | null {

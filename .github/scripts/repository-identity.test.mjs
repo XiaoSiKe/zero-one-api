@@ -19,7 +19,7 @@ test('manual releases publish both product images under the authorized current o
 
 test('the served recovered Console uses the current product repository link', () => {
   const html = read('deploy/zero-one/recovered-frontend/console/index.html')
-  const entry = '/assets/cn-provider-shell-v11/index-9xJBhx8B.js'
+  const entry = '/assets/cn-provider-shell-v12/index-9xJBhx8B.js'
   assert.ok(html.includes(`await import("${entry}")`), 'the recovered Console must load its approved shell seam')
   const entrySource = read(`deploy/zero-one/recovered-frontend/console${entry}`)
   const importedRuntime = entrySource.match(/import\s+["']\.\.\/([^"']+\/index-[^"']+\.js)["']/)?.[1]
@@ -33,7 +33,7 @@ test('the served recovered Console uses the current product repository link', ()
 
 test('the migrated Console gets a fresh immutable asset namespace and retains historical aliases', () => {
   const html = read('deploy/zero-one/recovered-frontend/console/index.html')
-  assert.ok(html.includes('await import("/assets/cn-provider-shell-v11/index-9xJBhx8B.js")'))
+  assert.ok(html.includes('await import("/assets/cn-provider-shell-v12/index-9xJBhx8B.js")'))
   assert.ok(read('deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v9/index-9xJBhx8B.js').length > 0)
   assert.ok(read('deploy/zero-one/recovered-frontend/console/assets/cn-provider-shell-v8/index-9xJBhx8B.js').length > 0)
   assert.ok(read('deploy/zero-one/recovered-frontend/console/assets/index-9xJBhx8B.js').includes('https://github.com/XiaoSiKe/zero-one-api'))

@@ -600,6 +600,14 @@ export async function seedConsole(
       }
       return fulfill(route, { ...settings, community_qr_image: communityQrImage })
     }
+    // Native Settings owns these read models; generic {} is not a valid
+    // array/catalog/storage response and would manufacture error toasts.
+    if (path === '/admin/payment/providers') return fulfill(route, [])
+    if (path === '/admin/settings/email-templates') return fulfill(route, { events: [], locales: ['zh', 'en'], placeholders: [] })
+    if (path === '/admin/backups/image-storage') return fulfill(route, { config: {}, secret_configured: false })
+    if (path === '/admin/backups') return fulfill(route, { items: [] })
+    if (path === '/admin/settings/beta-policy') return fulfill(route, { rules: [] })
+    if (path === '/admin/settings/admin-api-keys') return fulfill(route, { items: [], permissions: [] })
     if (path === '/admin/payment/config') {
       return fulfill(route, { enabled: options.paymentEnabled ?? false })
     }

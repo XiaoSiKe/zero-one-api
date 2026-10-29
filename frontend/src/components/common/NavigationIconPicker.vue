@@ -1,6 +1,6 @@
 <template>
   <div v-bind="$attrs" class="space-y-3">
-    <div class="grid grid-cols-5 gap-2" role="group" :aria-label="t('admin.settings.customMenu.iconChoices')">
+    <div class="navigation-icon-presets grid grid-cols-5 gap-2" role="group" :aria-label="t('admin.settings.customMenu.iconChoices')">
       <button
         v-for="preset in NAVIGATION_ICON_PRESETS"
         :key="preset.id"
@@ -52,3 +52,18 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 </script>
+
+<style scoped>
+.navigation-icon-presets {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.navigation-icon-presets > button {
+  min-width: 0;
+  min-height: 44px;
+}
+@media (max-width: 480px) {
+  .navigation-icon-presets { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+</style>

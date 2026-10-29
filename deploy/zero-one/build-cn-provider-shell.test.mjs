@@ -8,6 +8,9 @@ import {
   APPROVED_SHELL_SOURCE,
   CN_PROVIDER_SHELL_ASSET,
   CN_PROVIDER_SHELL_DIRECTORY,
+  ADMIN_MANAGEMENT_PASSWORD_RECOVERY_DIRECTORY,
+  adminManagementRecoveryOverrides,
+  nativeSettingsNavigationRuntimeSource,
   NATIVE_COST_SHELL_DIRECTORY,
   DASHBOARD_SPEND_SHELL_DIRECTORY,
   DASHBOARD_USER_CLARITY_SHELL_DIRECTORY,
@@ -44,6 +47,9 @@ import {
   USAGE_ACCOUNT_COST_RUNTIME_ASSET,
   usageAccountCostEntrySource,
   usageAccountCostRuntimeSource,
+  USAGE_ACCOUNT_COST_SHELL_DIRECTORY,
+  adminManagementEntrySource,
+  patchAdminManagementShell,
   verifyCurrentCNProviderAdminVariant,
   patchApprovedShell,
   patchLegacyApprovedShell,
@@ -55,7 +61,7 @@ const assetsDirectory = resolve(import.meta.dirname, 'recovered-frontend/console
 
 test('CN Provider v11 layers the Usage visibility runtime over immutable v10', () => {
   const approved = readFileSync(resolve(assetsDirectory, APPROVED_SHELL_SOURCE), 'utf8')
-  const generated = readFileSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_ASSET), 'utf8')
+  const generated = readFileSync(resolve(assetsDirectory, USAGE_ACCOUNT_COST_SHELL_DIRECTORY, APPROVED_SHELL_SOURCE), 'utf8')
   const billingClarity = readFileSync(
     resolve(assetsDirectory, BILLING_CLARITY_SHELL_DIRECTORY, APPROVED_SHELL_SOURCE),
     'utf8',
@@ -76,7 +82,7 @@ test('CN Provider v11 layers the Usage visibility runtime over immutable v10', (
   assert.equal(generated, usageAccountCostEntrySource())
   assert.equal(billingClarity, patchApprovedShell(approved))
   assert.equal(
-    readFileSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, USAGE_ACCOUNT_COST_RUNTIME_ASSET), 'utf8'),
+    readFileSync(resolve(assetsDirectory, USAGE_ACCOUNT_COST_SHELL_DIRECTORY, USAGE_ACCOUNT_COST_RUNTIME_ASSET), 'utf8'),
     usageAccountCostRuntimeSource(),
   )
   assert.match(usageAccountCostRuntimeSource(), /unsupported_billing_scope/)
@@ -106,6 +112,40 @@ test('CN Provider v11 layers the Usage visibility runtime over immutable v10', (
     readlinkSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_DIRECTORY, 'vendor-vue-iKpM1E08.js')),
     `../${BILLING_CLARITY_SHELL_DIRECTORY}/vendor-vue-iKpM1E08.js`,
   )
+})
+
+test('v12 adds one source-owned settings leaf without changing the approved shell or Usage runtime', () => {
+  const base = readFileSync(resolve(assetsDirectory, BILLING_CLARITY_SHELL_DIRECTORY, APPROVED_SHELL_SOURCE), 'utf8')
+  const generated = readFileSync(resolve(assetsDirectory, CN_PROVIDER_SHELL_ASSET), 'utf8')
+  assert.equal(generated, adminManagementEntrySource(base))
+  assert.equal((generated.match(/zero-one-cn-provider-route-placeholder-v1\.js/g) || []).length, 7)
+  assert.match(generated, /cn-provider-shell-v11\/usage-account-cost-visibility-v1\.js/)
+  assert.doesNotMatch(generated, /path:"\/admin\/settings"[^}]+import\("\.\/SettingsView-/)
+  assert.throws(() => patchAdminManagementShell('unrelated source'), /settings route seam/)
+})
+
+test('v12 recovery modules share its single Router, Pinia and Vue runtime', () => {
+  const overrides = adminManagementRecoveryOverrides(assetsDirectory)
+  assert.equal(overrides.size, 3)
+  for (const [name, content] of overrides) {
+    assert.equal(readFileSync(resolve(assetsDirectory, ADMIN_MANAGEMENT_PASSWORD_RECOVERY_DIRECTORY, name), 'utf8'), content)
+    assert.ok(content.includes('/assets/cn-provider-shell-v12/index-9xJBhx8B.js'))
+    assert.ok(!content.includes('/assets/cn-provider-shell-v10/'))
+  }
+})
+
+test('native Settings owns navigation editing while the historical runtime stays intact', () => {
+  const original = readFileSync(resolve(assetsDirectory, 'zero-one-header-custom-menu-v1.js'), 'utf8')
+  const current = readFileSync(resolve(assetsDirectory, 'zero-one-header-custom-menu-v2.js'), 'utf8')
+  assert.equal(current, nativeSettingsNavigationRuntimeSource(original))
+  assert.equal(current.split('data-zero-one-native-settings').length - 1, 2)
+  assert.throws(() => nativeSettingsNavigationRuntimeSource('unrelated runtime'), /ownership seam count changed/)
+})
+
+test('the new navigation runtime adds no aliases to historical shell namespaces', () => {
+  for (let version = 1; version <= 11; version++) {
+    assert.ok(!readdirSync(resolve(assetsDirectory, `cn-provider-shell-v${version}`)).includes('zero-one-header-custom-menu-v2.js'))
+  }
 })
 
 test('CN Provider shell generation fails closed when the approved bootstrap changes', () => {
