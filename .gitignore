@@ -140,7 +140,10 @@ docs/*
 !docs/agents/
 !docs/agents/**
 !docs/ANTIGRAVITY_ATTRIBUTION_429.md
+!docs/agent-resource-safety.md
+!docs/moego-json-batching.md
 !docs/admin-api-keys.md
+!docs/mcp.md
 !docs/PAYMENT.md
 !docs/PAYMENT_CN.md
 !docs/ADMIN_PAYMENT_INTEGRATION_API.md
@@ -151,6 +154,12 @@ docs/*
 !docs/data-and-connectivity-audit-2026-09-06.md
 !docs/adr/
 !docs/adr/*.md
+!docs/OPENAI_IMAGES_CODEX.md
+!docs/BATCH_IMAGE_MVP.md
+!docs/COMPOSITE_GROUPS.md
+!docs/PLUGIN_DEVELOPMENT.md
+!docs/channel-monitor-v2-safe-defaults.md
+!docs/codex-credits.md
 !docs/legal/
 !docs/legal/*.md
 .serena/

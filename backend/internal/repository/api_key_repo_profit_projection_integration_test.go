@@ -30,6 +30,7 @@ func TestGetByKeyForAuthCarriesProfitControlProjection(t *testing.T) {
 		ProfitControlEnabled: true,
 		ProfitMinMargin:      0.2,
 		ProfitSafetyBuffer:   0.05,
+		RequirePrivacySet:    true,
 	})
 	modelPricing := []service.ChannelModelPricing{{
 		Platform:    service.PlatformOpenAI,
@@ -78,4 +79,6 @@ WHERE id = $1
 	require.Len(t, got.Group.ModelPricing, 1, "group model pricing 必须进入认证投影")
 	require.Equal(t, []string{"gpt-5.4"}, got.Group.ModelPricing[0].Models)
 	require.InDelta(t, groupInputPrice, *got.Group.ModelPricing[0].InputPrice, 1e-12)
+	// OpenAI 选号从认证分组读取隐私门，漏列会放行未设置隐私的账号。
+	require.True(t, got.Group.RequirePrivacySet, "require_privacy_set 必须进入认证投影")
 }
