@@ -96,11 +96,13 @@ type scopedStatisticsLogRepo struct {
 
 func (r *scopedStatisticsLogRepo) GetAccountTodayStats(context.Context, int64) (*usagestats.AccountStats, error) {
 	r.reads++
-	return &usagestats.AccountStats{Cost: 23}, nil
+	cost := 23.0
+	return &usagestats.AccountStats{Cost: &cost}, nil
 }
 func (r *scopedStatisticsLogRepo) GetAccountWindowStats(context.Context, int64, time.Time) (*usagestats.AccountStats, error) {
 	r.reads++
-	return &usagestats.AccountStats{Cost: 23}, nil
+	cost := 23.0
+	return &usagestats.AccountStats{Cost: &cost}, nil
 }
 
 func TestScopedAdminBatchRejectsWholeRequestBeforeData(t *testing.T) {

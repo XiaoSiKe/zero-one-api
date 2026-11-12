@@ -25,6 +25,7 @@
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/"
   ],
   "preserve_on_upstream_sync": [
+    "backend/internal/service/custom_admin_key_statistics_test.go",
     "backend/internal/handler/admin/custom_admin_key_statistics.go",
     "backend/internal/handler/admin/custom_admin_key_statistics_test.go",
     "backend/internal/server/routes/custom_admin_key_statistics_test.go",
@@ -2901,6 +2902,7 @@
     {
       "owner": "Public Capabilities",
       "paths": [
+        "backend/internal/service/custom_admin_key_statistics_test.go",
         "backend/internal/handler/admin/custom_admin_key_statistics.go",
         "backend/internal/handler/admin/custom_admin_key_statistics_test.go",
         "backend/internal/server/routes/custom_admin_key_statistics_test.go",

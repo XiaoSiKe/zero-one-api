@@ -17,6 +17,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type fullAccessRouteKeys struct{ scopedRouteKeys }
+
+func (r *fullAccessRouteKeys) UpdateScopedAdminKey(_ context.Context, item *service.ScopedAdminKey) error {
+	r.item = item
+	return nil
+}
+
 type fullAccessRouteService struct{ scopedRouteAccounts }
 
 func (*fullAccessRouteService) GetProxy(context.Context, int64) (*service.Proxy, error) {
@@ -28,7 +35,7 @@ func (*fullAccessRouteService) GetGroup(context.Context, int64) (*service.Group,
 
 func TestAdminFullAccessRegisteredRoutesPreserveFullHandlers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	keys := &scopedRouteKeys{}
+	keys := &fullAccessRouteKeys{}
 	settings := service.NewSettingService(nil, nil)
 	settings.SetScopedAdminKeyRepository(keys)
 	key, _, err := settings.CreateScopedAdminKey(context.Background(), service.ScopedAdminKeyInput{Name: "完整管理", Enabled: true, ConfirmFullAccess: true, Policy: adminaccess.Policy{FullAccess: true}}, 9)
@@ -69,7 +76,7 @@ func TestAdminFullAccessCreationRequiresHTTPConfirmation(t *testing.T) {
 		{`{"name":"兼容","enabled":true,"policy":{"full_access":true},"confirm_full_access":"true"}`, 400},
 		{`{"name":"兼容","enabled":true,"policy":{"full_access":true},"confirm_full_access":true}`, 200},
 	} {
-		keys := &scopedRouteKeys{}
+		keys := &fullAccessRouteKeys{}
 		settings := service.NewSettingService(nil, nil)
 		settings.SetScopedAdminKeyRepository(keys)
 		r := gin.New()
