@@ -73,11 +73,13 @@ type scopedRouteStatisticsLogs struct {
 
 func (s *scopedRouteStatisticsLogs) GetAccountTodayStats(context.Context, int64) (*usagestats.AccountStats, error) {
 	s.reads.Add(1)
-	return &usagestats.AccountStats{Requests: 7, Cost: 12}, nil
+	cost := 12.0
+	return &usagestats.AccountStats{Requests: 7, Cost: &cost}, nil
 }
 func (s *scopedRouteStatisticsLogs) GetAccountWindowStats(context.Context, int64, time.Time) (*usagestats.AccountStats, error) {
 	s.reads.Add(1)
-	return &usagestats.AccountStats{Requests: 7, Cost: 12}, nil
+	cost := 12.0
+	return &usagestats.AccountStats{Requests: 7, Cost: &cost}, nil
 }
 func (s *scopedRouteStatisticsLogs) GetAccountUsageStats(context.Context, int64, time.Time, time.Time) (*usagestats.AccountUsageStatsResponse, error) {
 	s.reads.Add(1)

@@ -69,12 +69,15 @@ func TestScopedAdminOpenAIRejectsBeforeUpstream(t *testing.T) {
 
 func TestScopedAdminUsageProjectionKeepsPlatformQuotaAndHidesCosts(t *testing.T) {
 	a := &service.Account{ID: 1, Platform: "openai", Type: "oauth", GroupIDs: []int64{1}}
-	u := &service.UsageInfo{FiveHour: &service.UsageProgress{Utilization: 25, WindowStats: &service.WindowStats{Cost: 123}}, SevenDaySonnet: &service.UsageProgress{Utilization: 30}, GeminiProDaily: &service.UsageProgress{Utilization: 40}, AntigravityQuota: map[string]*service.AntigravityModelQuota{"model": {Utilization: 50}}, Error: "TOKEN_SECRET", ValidationURL: "URL_SECRET", ForbiddenReason: "IDENTITY_SECRET"}
+	cost := 123.0
+	u := &service.UsageInfo{FiveHour: &service.UsageProgress{Utilization: 25, WindowStats: &service.WindowStats{Cost: &cost}}, SevenDaySonnet: &service.UsageProgress{Utilization: 30}, GeminiProDaily: &service.UsageProgress{Utilization: 40}, AntigravityQuota: map[string]*service.AntigravityModelQuota{"model": {Utilization: 50}}, Error: "TOKEN_SECRET", ValidationURL: "URL_SECRET", ForbiddenReason: "IDENTITY_SECRET"}
+	u.AntigravityQuotaGroups = []*service.AntigravityQuotaGroup{{Key: "gemini", Windows: []*service.AntigravityQuotaWindow{{Window: "5h", Utilization: 50}}}}
 	out := scopedUsageDTO(u, statisticsPolicy("accounts.usage.read"), a)
 	require.Nil(t, out["five_hour"].(*service.UsageProgress).WindowStats)
 	require.NotNil(t, out["seven_day_sonnet"])
 	require.NotNil(t, out["gemini_pro_daily"])
 	require.NotNil(t, out["antigravity_quota"])
+	require.Equal(t, u.AntigravityQuotaGroups, out["antigravity_quota_groups"])
 	raw, err := json.Marshal(out)
 	require.NoError(t, err)
 	require.NotContains(t, string(raw), "SECRET")
@@ -209,6 +212,7 @@ func TestScopedAdminUsageBillingPreservesQuotaWithoutCost(t *testing.T) {
 	limit, used, percent := 100.0, 123.0, 25.0
 	u := &service.UsageInfo{GrokBilling: &xai.BillingSummary{MonthlyLimit: &limit, MonthlyUsed: &used, UsedCents: &used, UsedPercent: &percent, Plan: "IDENTITY_SECRET"}}
 	a := &service.Account{ID: 1, Platform: "openai", Type: "oauth", GroupIDs: []int64{1}}
+	u.AntigravityQuotaGroups = []*service.AntigravityQuotaGroup{{Key: "gemini", Windows: []*service.AntigravityQuotaWindow{{Window: "5h", Utilization: 50}}}}
 	out := scopedUsageDTO(u, statisticsPolicy("accounts.usage.read"), a)
 	billing, ok := out["grok_billing"].(*xai.BillingSummary)
 	require.True(t, ok, "须保留真实上游额度窗口")

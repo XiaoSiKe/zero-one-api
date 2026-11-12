@@ -184,6 +184,7 @@ func scopedUsageDTO(u *service.UsageInfo, p adminaccess.Policy, a *service.Accou
 		"gemini_flash_minute":       window(u.GeminiFlashMinute),
 		"thirty_day":                window(u.ThirtyDay),
 		"antigravity_quota":         u.AntigravityQuota,
+		"antigravity_quota_groups":  u.AntigravityQuotaGroups,
 		"antigravity_quota_details": u.AntigravityQuotaDetails,
 		"ai_credits":                u.AICredits,
 		"grok_request_quota":        u.GrokRequestQuota,
