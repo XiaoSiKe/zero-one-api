@@ -15,7 +15,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 25 // v25: image count billing; preserves model allowlist and pricing isolation
+const apiKeyAuthSnapshotVersion = 28 // v28 carries the privacy gate and 12h group pricing.
 
 func cloneAPIKeyAuthModelPricing(pricing []ChannelModelPricing) []ChannelModelPricing {
 	if pricing == nil {
@@ -28,6 +28,7 @@ func cloneAPIKeyAuthModelPricing(pricing []ChannelModelPricing) []ChannelModelPr
 		cloned[i].OutputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].OutputPrice)
 		cloned[i].CacheWritePrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].CacheWritePrice)
 		cloned[i].CacheWrite1hPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].CacheWrite1hPrice)
+		cloned[i].CacheWrite12hPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].CacheWrite12hPrice)
 		cloned[i].CacheReadPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].CacheReadPrice)
 		cloned[i].ImageInputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].ImageInputPrice)
 		cloned[i].ImageOutputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].ImageOutputPrice)
@@ -40,6 +41,7 @@ func cloneAPIKeyAuthModelPricing(pricing []ChannelModelPricing) []ChannelModelPr
 			cloned[i].Intervals[j].OutputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].Intervals[j].OutputPrice)
 			cloned[i].Intervals[j].CacheWritePrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].Intervals[j].CacheWritePrice)
 			cloned[i].Intervals[j].CacheWrite1hPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].Intervals[j].CacheWrite1hPrice)
+			cloned[i].Intervals[j].CacheWrite12hPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].Intervals[j].CacheWrite12hPrice)
 			cloned[i].Intervals[j].CacheReadPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].Intervals[j].CacheReadPrice)
 			cloned[i].Intervals[j].PerRequestPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].Intervals[j].PerRequestPrice)
 		}
@@ -429,10 +431,11 @@ func (s *APIKeyService) snapshotFromAPIKey(ctx context.Context, apiKey *APIKey) 
 	// 填充 (user, group) RPM override —— snapshot 构建时查一次 DB，后续请求零 DB 往返。
 	if apiKey.GroupID != nil && *apiKey.GroupID > 0 && s.userGroupRateRepo != nil {
 		override, err := s.userGroupRateRepo.GetRPMOverrideByUserAndGroup(ctx, apiKey.UserID, *apiKey.GroupID)
-		if err == nil && override != nil {
+		if err == nil {
 			snapshot.User.UserGroupRPMOverride = override
+			snapshot.User.UserGroupRPMOverrideGroupID = *apiKey.GroupID
 		}
-		// 查询失败或无 override 时留 nil，checkRPM 会回退到 DB 查询
+		// 查询失败时不记录分组，checkRPM 会回退到 DB 查询
 	}
 	if apiKey.Group != nil {
 		snapshot.Group = &APIKeyAuthGroupSnapshot{
@@ -493,6 +496,7 @@ func (s *APIKeyService) snapshotFromAPIKey(ctx context.Context, apiKey *APIKey) 
 			ProfitControlEnabled:            apiKey.Group.ProfitControlEnabled,
 			ProfitMinMargin:                 apiKey.Group.ProfitMinMargin,
 			ProfitSafetyBuffer:              apiKey.Group.ProfitSafetyBuffer,
+			RequirePrivacySet:               apiKey.Group.RequirePrivacySet,
 		}
 	}
 	return snapshot
@@ -518,22 +522,23 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 		RateLimit1d: snapshot.RateLimit1d,
 		RateLimit7d: snapshot.RateLimit7d,
 		User: &User{
-			ID:                         snapshot.User.ID,
-			Status:                     snapshot.User.Status,
-			Role:                       snapshot.User.Role,
-			Balance:                    snapshot.User.Balance,
-			Concurrency:                snapshot.User.Concurrency,
-			AllowedGroups:              snapshot.User.AllowedGroups,
-			Email:                      snapshot.User.Email,
-			Username:                   snapshot.User.Username,
-			BalanceNotifyEnabled:       snapshot.User.BalanceNotifyEnabled,
-			RestrictPublicGroups:       snapshot.User.RestrictPublicGroups,
-			BalanceNotifyThresholdType: snapshot.User.BalanceNotifyThresholdType,
-			BalanceNotifyThreshold:     snapshot.User.BalanceNotifyThreshold,
-			BalanceNotifyExtraEmails:   snapshot.User.BalanceNotifyExtraEmails,
-			TotalRecharged:             snapshot.User.TotalRecharged,
-			RPMLimit:                   snapshot.User.RPMLimit,
-			UserGroupRPMOverride:       snapshot.User.UserGroupRPMOverride,
+			ID:                          snapshot.User.ID,
+			Status:                      snapshot.User.Status,
+			Role:                        snapshot.User.Role,
+			Balance:                     snapshot.User.Balance,
+			Concurrency:                 snapshot.User.Concurrency,
+			AllowedGroups:               snapshot.User.AllowedGroups,
+			Email:                       snapshot.User.Email,
+			Username:                    snapshot.User.Username,
+			BalanceNotifyEnabled:        snapshot.User.BalanceNotifyEnabled,
+			RestrictPublicGroups:        snapshot.User.RestrictPublicGroups,
+			BalanceNotifyThresholdType:  snapshot.User.BalanceNotifyThresholdType,
+			BalanceNotifyThreshold:      snapshot.User.BalanceNotifyThreshold,
+			BalanceNotifyExtraEmails:    snapshot.User.BalanceNotifyExtraEmails,
+			TotalRecharged:              snapshot.User.TotalRecharged,
+			RPMLimit:                    snapshot.User.RPMLimit,
+			UserGroupRPMOverride:        snapshot.User.UserGroupRPMOverride,
+			UserGroupRPMOverrideGroupID: snapshot.User.UserGroupRPMOverrideGroupID,
 		},
 	}
 	if snapshot.Group != nil {
@@ -596,6 +601,7 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 			ProfitControlEnabled:            snapshot.Group.ProfitControlEnabled,
 			ProfitMinMargin:                 snapshot.Group.ProfitMinMargin,
 			ProfitSafetyBuffer:              snapshot.Group.ProfitSafetyBuffer,
+			RequirePrivacySet:               snapshot.Group.RequirePrivacySet,
 		}
 	}
 	s.compileAPIKeyIPRules(apiKey)

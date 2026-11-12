@@ -82,6 +82,8 @@ var usageLogColumnDefinitions = [...]struct{ name, sqlType string }{
 	{"session_id", "text"},
 	{"native_compaction_v2", "boolean"},
 	{"upstream_rate_multiplier", "numeric"},
+	{"cache_creation_30m_tokens", "integer"},
+	{"cache_creation_12h_tokens", "integer"},
 	{"created_at", "timestamptz"},
 }
 
@@ -859,6 +861,8 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 			sessionID,            // session_id
 			log.NativeCompactionV2,
 			log.UpstreamRateMultiplier,
+			log.CacheCreation30mTokens,
+			log.CacheCreation12hTokens,
 			createdAt,
 		},
 	}

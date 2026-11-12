@@ -50,22 +50,35 @@ func (h *SettingHandler) CreateScopedAdminKey(c *gin.Context) {
 		response.ErrorFrom(c, e)
 		return
 	}
+	middleware.SetAuditExtra(c, map[string]any{"admin_key_id": item.ID, "full_access": item.Policy.FullAccess})
 	response.Success(c, gin.H{"key": key, "item": item})
 }
 func (h *SettingHandler) UpdateScopedAdminKey(c *gin.Context) {
 	if !requireAdminKeyJWT(c) {
 		return
 	}
-	var in service.ScopedAdminKeyInput
+	var in struct {
+		service.ScopedAdminKeyInput
+		Policy struct {
+			adminaccess.Policy
+			FullAccess *bool `json:"full_access"`
+		} `json:"policy"`
+	}
 	if e := c.ShouldBindJSON(&in); e != nil {
 		response.Error(c, 400, "请求格式无效")
 		return
 	}
-	item, e := h.settingService.UpdateScopedAdminKey(c.Request.Context(), c.Param("id"), in)
+	in.ScopedAdminKeyInput.Policy = in.Policy.Policy
+	in.RequireExplicitFullAccess = in.Policy.FullAccess == nil
+	if in.Policy.FullAccess != nil {
+		in.ScopedAdminKeyInput.Policy.FullAccess = *in.Policy.FullAccess
+	}
+	item, e := h.settingService.UpdateScopedAdminKey(c.Request.Context(), c.Param("id"), in.ScopedAdminKeyInput)
 	if e != nil {
 		response.ErrorFrom(c, e)
 		return
 	}
+	middleware.SetAuditExtra(c, map[string]any{"admin_key_id": item.ID, "full_access_before": item.PreviousFullAccess, "full_access": item.Policy.FullAccess})
 	response.Success(c, item)
 }
 func (h *SettingHandler) RotateScopedAdminKey(c *gin.Context) {
@@ -77,6 +90,7 @@ func (h *SettingHandler) RotateScopedAdminKey(c *gin.Context) {
 		response.ErrorFrom(c, e)
 		return
 	}
+	middleware.SetAuditExtra(c, map[string]any{"admin_key_id": item.ID, "full_access": item.Policy.FullAccess})
 	response.Success(c, gin.H{"key": key, "item": item})
 }
 func (h *SettingHandler) RevokeScopedAdminKey(c *gin.Context) {

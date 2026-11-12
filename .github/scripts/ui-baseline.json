@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "baseline_ref": "ui-approved-2026-10-30-infinite-canvas-clean-build",
-  "baseline_commit": "b584eb8a1199e6ce93d68c194f46697843448448",
+  "baseline_ref": "ui-approved-2026-11-12-v0221-version",
+  "baseline_commit": "914df679c1df108f1701f19f89068a92804f059a",
   "protected_paths": [
     "landing/",
     "frontend/",

@@ -12,8 +12,8 @@ func TestAPIKeyAuthSnapshotGroupPricingRoundTrip(t *testing.T) {
 	groupID := int64(42)
 	inputPrice := 4.0
 	outputPrice := 12.0
-	cacheWrite1hPrice := 6.0
-	intervalCacheWrite1hPrice := 7.0
+	cacheWrite1hPrice, cacheWrite12hPrice := 6.0, 8.0
+	intervalCacheWrite1hPrice, intervalCacheWrite12hPrice := 7.0, 9.0
 	maxTokens := 400_000
 	apiKey := &APIKey{
 		ID:      7,
@@ -33,20 +33,23 @@ func TestAPIKeyAuthSnapshotGroupPricingRoundTrip(t *testing.T) {
 			Status:                    StatusActive,
 			LongContextPricingEnabled: true,
 			ImageCountBilling:         true,
+			RequirePrivacySet:         true,
 			ModelPricing: []ChannelModelPricing{
 				{
-					Platform:          PlatformGrok,
-					Models:            []string{"grok-4.6"},
-					BillingMode:       BillingModeToken,
-					CacheWrite1hPrice: &cacheWrite1hPrice,
+					Platform:           PlatformGrok,
+					Models:             []string{"grok-4.6"},
+					BillingMode:        BillingModeToken,
+					CacheWrite1hPrice:  &cacheWrite1hPrice,
+					CacheWrite12hPrice: &cacheWrite12hPrice,
 					Intervals: []PricingInterval{
 						{
-							MinTokens:         200_000,
-							MaxTokens:         &maxTokens,
-							TierLabel:         "long-context",
-							InputPrice:        &inputPrice,
-							OutputPrice:       &outputPrice,
-							CacheWrite1hPrice: &intervalCacheWrite1hPrice,
+							MinTokens:          200_000,
+							MaxTokens:          &maxTokens,
+							TierLabel:          "long-context",
+							InputPrice:         &inputPrice,
+							OutputPrice:        &outputPrice,
+							CacheWrite1hPrice:  &intervalCacheWrite1hPrice,
+							CacheWrite12hPrice: &intervalCacheWrite12hPrice,
 						},
 					},
 				},
@@ -57,20 +60,25 @@ func TestAPIKeyAuthSnapshotGroupPricingRoundTrip(t *testing.T) {
 
 	snapshot := svc.snapshotFromAPIKey(context.Background(), apiKey)
 	require.NotNil(t, snapshot)
-	require.Equal(t, 25, snapshot.Version, "v25 adds image billing while preserving pricing isolation and model policy")
+	require.Equal(t, 28, snapshot.Version)
 	require.NotNil(t, snapshot.Group)
 	require.True(t, snapshot.Group.LongContextPricingEnabled)
 	require.True(t, snapshot.Group.ImageCountBilling)
+	require.True(t, snapshot.Group.RequirePrivacySet)
 	require.Len(t, snapshot.Group.ModelPricing, 1)
 
 	// The in-process L1 entry must not alias mutable request/repository slices.
 	apiKey.Group.ModelPricing[0].Models[0] = "mutated-source"
 	*apiKey.Group.ModelPricing[0].CacheWrite1hPrice = 998
+	*apiKey.Group.ModelPricing[0].CacheWrite12hPrice = 996
+	*apiKey.Group.ModelPricing[0].Intervals[0].CacheWrite12hPrice = 995
 	apiKey.Group.ModelPricing[0].Intervals[0].TierLabel = "mutated-source"
 	*apiKey.Group.ModelPricing[0].Intervals[0].InputPrice = 999
 	*apiKey.Group.ModelPricing[0].Intervals[0].CacheWrite1hPrice = 997
 	require.Equal(t, "grok-4.6", snapshot.Group.ModelPricing[0].Models[0])
 	require.InDelta(t, 6.0, *snapshot.Group.ModelPricing[0].CacheWrite1hPrice, 1e-12)
+	require.InDelta(t, 8.0, *snapshot.Group.ModelPricing[0].CacheWrite12hPrice, 1e-12)
+	require.InDelta(t, 9.0, *snapshot.Group.ModelPricing[0].Intervals[0].CacheWrite12hPrice, 1e-12)
 	require.Equal(t, "long-context", snapshot.Group.ModelPricing[0].Intervals[0].TierLabel)
 	require.InDelta(t, 4.0, *snapshot.Group.ModelPricing[0].Intervals[0].InputPrice, 1e-12)
 	require.InDelta(t, 7.0, *snapshot.Group.ModelPricing[0].Intervals[0].CacheWrite1hPrice, 1e-12)
@@ -88,15 +96,20 @@ func TestAPIKeyAuthSnapshotGroupPricingRoundTrip(t *testing.T) {
 	require.True(t, materialized.Group.Hydrated)
 	require.True(t, materialized.Group.LongContextPricingEnabled)
 	require.True(t, materialized.Group.ImageCountBilling)
+	require.True(t, materialized.Group.RequirePrivacySet)
 	require.Equal(t, snapshot.Group.ModelPricing, materialized.Group.ModelPricing)
 
 	// Materializing the request object must not mutate the shared cache entry.
 	materialized.Group.ModelPricing[0].Models[0] = "mutated-request"
 	*materialized.Group.ModelPricing[0].CacheWrite1hPrice = 776
+	*materialized.Group.ModelPricing[0].CacheWrite12hPrice = 774
+	*materialized.Group.ModelPricing[0].Intervals[0].CacheWrite12hPrice = 773
 	*materialized.Group.ModelPricing[0].Intervals[0].OutputPrice = 777
 	*materialized.Group.ModelPricing[0].Intervals[0].CacheWrite1hPrice = 775
 	require.Equal(t, "grok-4.6", restored.Snapshot.Group.ModelPricing[0].Models[0])
 	require.InDelta(t, 6.0, *restored.Snapshot.Group.ModelPricing[0].CacheWrite1hPrice, 1e-12)
+	require.InDelta(t, 8.0, *restored.Snapshot.Group.ModelPricing[0].CacheWrite12hPrice, 1e-12)
+	require.InDelta(t, 9.0, *restored.Snapshot.Group.ModelPricing[0].Intervals[0].CacheWrite12hPrice, 1e-12)
 	require.InDelta(t, 12.0, *restored.Snapshot.Group.ModelPricing[0].Intervals[0].OutputPrice, 1e-12)
 	require.InDelta(t, 7.0, *restored.Snapshot.Group.ModelPricing[0].Intervals[0].CacheWrite1hPrice, 1e-12)
 }

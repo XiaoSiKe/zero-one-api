@@ -503,6 +503,8 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		sessionID                 sql.NullString
 		nativeCompactionV2        bool
 		upstreamRateMultiplier    sql.NullFloat64
+		cacheCreation30m          int
+		cacheCreation12h          int
 		createdAt                 time.Time
 	)
 
@@ -570,6 +572,8 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		&sessionID,
 		&nativeCompactionV2,
 		&upstreamRateMultiplier,
+		&cacheCreation30m,
+		&cacheCreation12h,
 		&createdAt,
 	); err != nil {
 		return nil, err
@@ -604,6 +608,8 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		BillingType:               int8(billingType),
 		RequestType:               service.RequestTypeFromInt16(requestTypeRaw),
 		NativeCompactionV2:        nativeCompactionV2,
+		CacheCreation30mTokens:    cacheCreation30m,
+		CacheCreation12hTokens:    cacheCreation12h,
 		ImageCount:                imageCount,
 		VideoCount:                videoCount,
 		CacheTTLOverridden:        cacheTTLOverridden,
