@@ -416,11 +416,11 @@ func geminiAggregateUsage(stats []usagestats.ModelStat) GeminiUsageTotals {
 		case geminiModelFlash:
 			totals.FlashRequests += stat.Requests
 			totals.FlashTokens += stat.TotalTokens
-			totals.FlashCost = usagestats.AddCosts(totals.FlashCost, stat.ActualCost)
+			totals.FlashCost = usagestats.AddCosts(totals.FlashCost, stat.AccountCost)
 		default:
 			totals.ProRequests += stat.Requests
 			totals.ProTokens += stat.TotalTokens
-			totals.ProCost = usagestats.AddCosts(totals.ProCost, stat.ActualCost)
+			totals.ProCost = usagestats.AddCosts(totals.ProCost, stat.AccountCost)
 		}
 	}
 	return totals

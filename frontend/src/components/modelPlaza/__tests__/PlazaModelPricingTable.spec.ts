@@ -3,6 +3,14 @@ import { mount } from '@vue/test-utils'
 import PlazaModelPricingTable from '../PlazaModelPricingTable.vue'
 import type { PlazaModel } from '@/api/modelPlaza'
 
+const { copyToClipboard } = vi.hoisted(() => ({
+  copyToClipboard: vi.fn().mockResolvedValue(true)
+}))
+
+vi.mock('@/composables/useClipboard', () => ({
+  useClipboard: () => ({ copyToClipboard })
+}))
+
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
   return {
@@ -55,6 +63,14 @@ function mountTable(
 }
 
 describe('PlazaModelPricingTable', () => {
+  it('copies the exact model ID from the clicked pricing row', async () => {
+    const model = tokenModel({ name: 'provider/Model-v2' })
+    const wrapper = mountTable([model], 1)
+    await wrapper.get('button[aria-label="modelPlaza.table.copyModelId"]').trigger('click')
+    expect(copyToClipboard).toHaveBeenCalledWith(model.name)
+    wrapper.unmount()
+  })
+
   it('倍率为 1 时展示渠道单价原值($/1M),价格保底 2 位小数', () => {
     const wrapper = mountTable([tokenModel()], 1)
     const text = wrapper.text()

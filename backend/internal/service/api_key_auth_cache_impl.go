@@ -15,7 +15,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 28 // v28 carries the privacy gate and 12h group pricing.
+const apiKeyAuthSnapshotVersion = 29 // Includes the privacy gate, 12h pricing and forced Ultra Fast.
 
 func cloneAPIKeyAuthModelPricing(pricing []ChannelModelPricing) []ChannelModelPricing {
 	if pricing == nil {
@@ -34,6 +34,7 @@ func cloneAPIKeyAuthModelPricing(pricing []ChannelModelPricing) []ChannelModelPr
 		cloned[i].ImageOutputPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].ImageOutputPrice)
 		cloned[i].PerRequestPrice = cloneAPIKeyAuthFloat64Ptr(pricing[i].PerRequestPrice)
 		cloned[i].FastMultiplier = cloneAPIKeyAuthFloat64Ptr(pricing[i].FastMultiplier)
+		cloned[i].UltrafastMultiplier = cloneAPIKeyAuthFloat64Ptr(pricing[i].UltrafastMultiplier)
 		cloned[i].FlexMultiplier = cloneAPIKeyAuthFloat64Ptr(pricing[i].FlexMultiplier)
 		for j := range pricing[i].Intervals {
 			cloned[i].Intervals[j].MaxTokens = cloneAPIKeyAuthIntPtr(pricing[i].Intervals[j].MaxTokens)
@@ -480,6 +481,7 @@ func (s *APIKeyService) snapshotFromAPIKey(ctx context.Context, apiKey *APIKey) 
 			AllowMessagesDispatch:           apiKey.Group.AllowMessagesDispatch,
 			AllowLive:                       apiKey.Group.AllowLive,
 			ForceOpenAIFast:                 apiKey.Group.ForceOpenAIFast,
+			ForceOpenAIUltrafast:            apiKey.Group.ForceOpenAIUltrafast,
 			FreeOpenAIFast:                  apiKey.Group.FreeOpenAIFast,
 			DefaultMappedModel:              apiKey.Group.DefaultMappedModel,
 			MessagesDispatchModelConfig:     apiKey.Group.MessagesDispatchModelConfig,
@@ -585,6 +587,7 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 			AllowMessagesDispatch:           snapshot.Group.AllowMessagesDispatch,
 			AllowLive:                       snapshot.Group.AllowLive,
 			ForceOpenAIFast:                 snapshot.Group.ForceOpenAIFast,
+			ForceOpenAIUltrafast:            snapshot.Group.ForceOpenAIUltrafast,
 			FreeOpenAIFast:                  snapshot.Group.FreeOpenAIFast,
 			DefaultMappedModel:              snapshot.Group.DefaultMappedModel,
 			MessagesDispatchModelConfig:     snapshot.Group.MessagesDispatchModelConfig,

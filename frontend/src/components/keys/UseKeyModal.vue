@@ -1074,6 +1074,11 @@ function generateOpenCodeConfig(platform: string, baseUrl: string, apiKey: strin
       }
     }
   }
+  const solAstraOptions = {
+    limit: { context: 1050000, output: 128000 },
+    options: { store: false },
+    variants: { low: {}, medium: {}, high: {}, xhigh: {}, max: {} }
+  }
   const openaiModels = {
     'gpt-5.2': {
       name: 'GPT-5.2',
@@ -1101,6 +1106,33 @@ function generateOpenCodeConfig(platform: string, baseUrl: string, apiKey: strin
         store: false
       },
       variants: {
+        low: {},
+        medium: {},
+        high: {},
+        xhigh: {},
+        max: {}
+      }
+    },
+    'gpt-6.1-terra': {
+      name: 'GPT-6.1 Terra',
+      limit: { context: 1050000, output: 128000 },
+      options: { store: false },
+      variants: { none: {}, low: {}, medium: {}, high: {}, xhigh: {}, max: {} }
+    },
+    'gpt-6.2-sol': { name: 'GPT-6.2 Sol', ...solAstraOptions },
+    'gpt-6.2-astra': { name: 'GPT-6.2 Astra', ...solAstraOptions },
+    'gpt-6.1-sol': { name: 'GPT-6.1 Sol', ...solAstraOptions },
+    'gpt-6-sol': {
+      name: 'GPT-6 Sol',
+      limit: {
+        context: 1050000,
+        output: 128000
+      },
+      options: {
+        store: false
+      },
+      variants: {
+        none: {},
         low: {},
         medium: {},
         high: {},

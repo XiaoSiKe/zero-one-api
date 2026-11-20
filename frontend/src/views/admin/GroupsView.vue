@@ -1636,6 +1636,54 @@
             </div>
           </div>
         </div>
+        <div
+          v-if="activeGroupForm.platform === 'openai' || activeGroupForm.platform === 'composite'"
+          class="border-t border-gray-200 dark:border-dark-400 pt-4 mt-4"
+        >
+          <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            {{ t("admin.groups.openaiFast.title") }}
+          </h4>
+          <div class="flex items-center justify-between gap-4">
+            <label class="text-sm text-gray-600 dark:text-gray-400">
+              {{ t("admin.groups.openaiFast.force") }}
+            </label>
+            <Toggle
+              :data-testid="`${groupEditorMode}-force-openai-fast`"
+              :aria-label="t('admin.groups.openaiFast.force')"
+              v-model="activeGroupForm.force_openai_fast"
+            />
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {{ t("admin.groups.openaiFast.hint") }}
+          </p>
+          <div class="flex items-center justify-between gap-4 mt-4">
+            <label class="text-sm text-gray-600 dark:text-gray-400">
+              {{ t("admin.groups.openaiFast.forceUltrafast") }}
+            </label>
+            <Toggle
+              :data-testid="`${groupEditorMode}-force-openai-ultrafast`"
+              :aria-label="t('admin.groups.openaiFast.forceUltrafast')"
+              v-model="activeGroupForm.force_openai_ultrafast"
+            />
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {{ t("admin.groups.openaiFast.ultrafastHint") }}
+          </p>
+          <div class="flex items-center justify-between gap-4 mt-4">
+            <label class="text-sm text-gray-600 dark:text-gray-400">
+              {{ t("admin.groups.openaiFast.free") }}
+            </label>
+            <Toggle
+              data-testid="create-free-openai-fast"
+              :aria-label="t('admin.groups.openaiFast.free')"
+              v-model="activeGroupForm.free_openai_fast"
+            />
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {{ t("admin.groups.openaiFast.freeHint") }}
+          </p>
+        </div>
+
         <!-- OpenAI Live 开关（仅 openai 平台） -->
         <div
           v-if="activeGroupForm.platform === 'openai'"
@@ -2728,6 +2776,7 @@ import {
 import TablePageLayout from "@/components/layout/TablePageLayout.vue";
 import DataTable from "@/components/common/DataTable.vue";
 import Pagination from "@/components/common/Pagination.vue";
+import Toggle from "@/components/common/Toggle.vue";
 import BaseDialog from "@/components/common/BaseDialog.vue";
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import EmptyState from "@/components/common/EmptyState.vue";
@@ -3363,6 +3412,9 @@ const createForm = reactive({
   weekly_limit_usd: null as number | null,
   monthly_limit_usd: null as number | null,
   long_context_pricing_enabled: true,
+  force_openai_fast: false,
+  force_openai_ultrafast: false,
+  free_openai_fast: false,
   model_pricing: [] as PricingFormEntry[],
   // 图片生成计费配置
   allow_image_generation: false,
@@ -3728,6 +3780,9 @@ const editForm = reactive({
   weekly_limit_usd: null as number | null,
   monthly_limit_usd: null as number | null,
   long_context_pricing_enabled: true,
+  force_openai_fast: false,
+  force_openai_ultrafast: false,
+  free_openai_fast: false,
   model_pricing: [] as PricingFormEntry[],
   // 图片生成计费配置
   allow_image_generation: false,
@@ -4342,6 +4397,9 @@ const closeCreateModal = () => {
   createForm.video_price_720p = null;
   createForm.video_price_1080p = null;
   createForm.video_model_prices = createVideoModelPricesForm();
+  createForm.force_openai_fast = false;
+  createForm.force_openai_ultrafast = false;
+  createForm.free_openai_fast = false;
   createForm.long_context_pricing_enabled = true;
   createForm.model_pricing = [];
   createForm.web_search_price_per_call = null;
@@ -4582,6 +4640,9 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.daily_limit_usd = group.daily_limit_usd;
   editForm.weekly_limit_usd = group.weekly_limit_usd;
   editForm.monthly_limit_usd = group.monthly_limit_usd;
+  editForm.force_openai_fast = group.force_openai_fast ?? false;
+  editForm.force_openai_ultrafast = group.force_openai_ultrafast ?? false;
+  editForm.free_openai_fast = group.free_openai_fast ?? false;
   editForm.long_context_pricing_enabled =
     group.long_context_pricing_enabled ?? true;
   editForm.model_pricing = groupPricingFromAPI(group.model_pricing);
@@ -4690,6 +4751,9 @@ const closeEditModal = () => {
   editForm.video_price_720p = null;
   editForm.video_price_1080p = null;
   editForm.video_model_prices = createVideoModelPricesForm();
+  editForm.force_openai_fast = false;
+  editForm.force_openai_ultrafast = false;
+  editForm.free_openai_fast = false;
   editForm.long_context_pricing_enabled = true;
   editForm.model_pricing = [];
   editForm.web_search_price_per_call = null;

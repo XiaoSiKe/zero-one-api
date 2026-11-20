@@ -44,7 +44,7 @@ func redeemLifecycleService(repo service.RedeemCodeRepository, userRepo service.
 
 func redeemLifecycleAdmin(repo service.RedeemCodeRepository) service.AdminService {
 	return service.NewAdminService(nil, nil, nil, nil, nil, nil, repo, nil, nil, nil, nil, nil, nil,
-		integrationEntClient, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		integrationEntClient, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 }
 
 // Wait for the competing statement to actually block on PostgreSQL. This makes
