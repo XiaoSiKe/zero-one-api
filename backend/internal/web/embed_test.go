@@ -769,16 +769,18 @@ func TestFrontendServer_Middleware(t *testing.T) {
 		assert.Contains(t, w.Header().Get("Content-Type"), "image/svg+xml")
 		assert.Empty(t, w.Header().Get("Cache-Control"))
 
-		entries, err := fs.ReadDir(server.distFS, "assets")
-		require.NoError(t, err)
-		fingerprintedPath := ""
-		for _, entry := range entries {
-			candidate := "assets/" + entry.Name()
-			if !entry.IsDir() && isFingerprintedEmbeddedAssetPath(candidate) {
-				fingerprintedPath = candidate
-				break
+		var fingerprintedPath string
+		err = fs.WalkDir(server.distFS, "assets", func(path string, entry fs.DirEntry, err error) error {
+			if err != nil {
+				return err
 			}
-		}
+			if !entry.IsDir() && isFingerprintedEmbeddedAssetPath(path) {
+				fingerprintedPath = path
+				return fs.SkipAll
+			}
+			return nil
+		})
+		require.NoError(t, err)
 		require.NotEmpty(t, fingerprintedPath)
 
 		assetWriter := httptest.NewRecorder()

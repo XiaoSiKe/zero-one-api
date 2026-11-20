@@ -25,6 +25,7 @@
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/"
   ],
   "preserve_on_upstream_sync": [
+    "backend/internal/web/embed_test.go",
     "backend/internal/service/account_usage_window_cost_test.go",
     "backend/internal/service/gemini_quota_test.go",
     "docs/upgrades/v0.2.24-change-map.json",
@@ -2906,6 +2907,7 @@
     {
       "owner": "Public Capabilities",
       "paths": [
+        "backend/internal/web/embed_test.go",
         "backend/internal/service/account_usage_window_cost_test.go",
         "backend/internal/service/gemini_quota_test.go",
         "backend/internal/service/custom_admin_key_statistics_test.go",
