@@ -1,0 +1,2692 @@
+{
+  "schema_version": 1,
+  "previous_upstream": "10ba8f9b4dc2e6023d4a9879ab77b21841babd10",
+  "upstream": "5c2982a81b46e2142d0143d2f83c1ce9c4da1d24",
+  "product": "d8483576aada3c51d57443a7dfa98e2f7c6e52cc",
+  "merge": "187acf55342e8e802c5c77e7736165a167e4b970",
+  "path_count": 534,
+  "summary": {
+    "adapt": 78,
+    "adopt": 396,
+    "defer-production-ui": 51,
+    "preserve": 9
+  },
+  "rejected_policy_changes": [
+    "revive retired product features",
+    "derive historical account cost from mutable local rates or later probes",
+    "replace approved production UI snapshots without approval",
+    "prune Docker volumes, bind mounts, Redis, PostgreSQL, environment files, or release locks"
+  ],
+  "changes": [
+    {
+      "path": ".github/workflows/backend-ci.yml",
+      "decision": "preserve",
+      "reason": "recorded merge retains the product contract blob"
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "decision": "preserve",
+      "reason": "recorded merge retains the product contract blob"
+    },
+    {
+      "path": ".github/workflows/security-scan.yml",
+      "decision": "preserve",
+      "reason": "recorded merge retains the product contract blob"
+    },
+    {
+      "path": "DEV_GUIDE.md",
+      "decision": "preserve",
+      "reason": "recorded merge retains the product contract blob"
+    },
+    {
+      "path": "Dockerfile",
+      "decision": "preserve",
+      "reason": "recorded merge retains the product contract blob"
+    },
+    {
+      "path": "Makefile",
+      "decision": "preserve",
+      "reason": "recorded merge retains the product contract blob"
+    },
+    {
+      "path": "README.md",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "README_CN.md",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "README_JA.md",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "assets/partners/logos/DataEyesAI.png",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "assets/partners/logos/lanox.jpg",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/Dockerfile",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/cmd/server/VERSION",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/cmd/server/wire.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/cmd/server/wire_gen.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/cmd/server/wire_gen_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/ent/group.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/ent/group/group.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/ent/group/where.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/ent/group_create.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/ent/group_update.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/ent/migrate/schema.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/ent/mutation.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/ent/runtime/runtime.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/ent/schema/group.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/go.mod",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/config/config.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/config/config_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/domain/constants.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/domain/constants_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/admin/channel_handler.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/admin/channel_handler_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/admin/group_handler.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/admin/group_handler_openai_fast_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/dto/group_mapper_openai_fast_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/dto/mappers.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/dto/types.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/gateway_compat_effort_policy_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/gateway_handler.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/gateway_handler_chat_completions.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/gateway_handler_responses.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/gateway_helper.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/gateway_helper_ping_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/gateway_models_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/gateway_sticky_writeback_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/gemini_cached_contents_handler.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/gemini_v1beta_handler.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/grok_media.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/grok_media_errors_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/openai_codex_call_output_gate_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/openai_gateway_handler.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/openai_gateway_handler_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/openai_gateway_messages_pre_content_failover_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/openai_gateway_ws_model_allowlist_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/openai_gateway_ws_model_conflict_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/openai_native_anthropic_endpoint_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/openai_page_context.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/openai_page_context_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/request_body_limit.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/request_body_limit_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/request_body_read_log.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/request_body_read_log_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/handler/usage_handler.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/handler/user_msg_queue_helper.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/payment/provider/alipay.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/payment/provider/alipay_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/antigravity/carbon_thinking_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/antigravity/claude_types.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/antigravity/claude_types_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/antigravity/gemini_types.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/antigravity/request_transformer.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/antigravity/schema_cleaner.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/anthropic_cache_creation_usage_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/anthropic_cache_read_usage_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/anthropic_to_responses.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/anthropic_to_responses_response.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/anthropic_tool_search.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/anthropic_tool_search_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/anthropic_translation_fidelity_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/chatcompletions_anthropic_bridge.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/chatcompletions_responses_bridge.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/chatcompletions_responses_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/response_format.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/responses_anthropic_cache_creation_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/responses_server_side_search.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/responses_server_side_search_calls_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/responses_server_side_search_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/responses_to_anthropic.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/responses_to_anthropic_tool_input_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/responses_to_chatcompletions.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/responses_web_search_sources.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/responses_web_search_sources_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/apicompat/types.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/claude/constants.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/claude/sampling.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/claude/sampling_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/gemini/function_response_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/gemini/models.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/gemini/models_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/geminicli/models.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/geminicli/models_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/httputil/body_read_error.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/openai/codex_gpt62_astra.json",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/openai/codex_gpt62_sol.json",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/openai/constants.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/pkg/requestmodel/conflict.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/requestmodel/conflict_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/requestmodel/requestmodel.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/requestmodel/requestmodel_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/usagestats/usage_log_types.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/pkg/websearch/exa.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/websearch/exa_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/websearch/manager.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/websearch/provider.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/pkg/websearch/types.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/account_repo.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/account_repo_temp_unsched_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/api_key_repo.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/repository/api_key_repo_openai_fast_projection_integration_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/channel_repo_pricing.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/channel_repo_pricing_reasoning_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/channel_repo_pricing_time_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/channel_ultrafast_pricing_integration_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/claude_usage_service_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/custom_admin_key_review_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/custom_group_usage_rollup_repo.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/dashboard_aggregation_group_usage_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/dashboard_aggregation_repo.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/repository/fixtures_integration_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/group_repo.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/group_usage_rollup_nonblocking_integration_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/group_usage_rollup_trigger_integration_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/http_upstream.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/http_upstream_dial_timeout_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/http_upstream_keepalive.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/http_upstream_keepalive_linux.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/http_upstream_keepalive_linux_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/http_upstream_keepalive_other.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/integration_harness_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/repository/migrations_schema_integration_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/repository/ops_repo_openai_token_stats.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/ops_repo_openai_token_stats_integration_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/scheduler_cache.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/scheduler_cache_integration_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/scheduler_cache_payload_unit_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/scheduler_cache_snapshot_memo_unit_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/scheduler_cache_unit_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/scheduler_metadata_capabilities_unit_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/scheduler_snapshot_membership_integration_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/usage_billing_batch_repo.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/usage_billing_batch_repo_integration_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/usage_billing_repo.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/usage_cleanup_repo.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/usage_cleanup_repo_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/usage_log_repo_group_summary_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/usage_log_repo_integration_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/repository/usage_log_repo_request_type_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/repository/usage_log_repo_stats.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/repository/usage_log_repo_trend.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/repository/user_group_rate_repo.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/repository/user_group_rate_repo_sync_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/securityaudit/coordinator.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/securityaudit/prompt_memory_optimization_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/securityaudit/prompt_scanner.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/securityaudit/prompt_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/securityaudit/prompt_snapshot.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/server/api_contract_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/server/middleware/group_model_allowlist_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/server/middleware/ingress_reject.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/server/middleware/request_body_read_failure.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/server/middleware/request_field_conflict.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/server/middleware/request_field_conflict_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/server/routes/composite_platform_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/server/routes/custom_admin_key_group_models_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/server/routes/gateway.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/server/routes/gateway_model_allowlist_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/server/routes/gateway_request_field_conflict_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_scheduling_threshold_eval.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_service_delete_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_stats_pricing.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/account_stats_pricing_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/account_test_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_test_service_payload_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_test_service_typesafe.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_test_service_typesafe_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_usage_service.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/account_usage_service_fable_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_usage_service_spark_shadow_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_usage_service_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_usage_session_window_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/account_usage_window_cost_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/admin_group.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/admin_group_duplicate.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/admin_group_duplicate_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/admin_service.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/admin_service_clear_error_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/admin_service_create_user_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/admin_service_group_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/admin_user.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/anthropic_chat_stream_usage_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/anthropic_models_list.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/anthropic_prompt_total_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_bare429_after_loop_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_bare429_request_scope_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_bare429_scope.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_compat_committed_no_content.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_compat_committed_no_content_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_claude.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_compat.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_compat_stream.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_compat_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_gemini.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_retry.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_service_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_streaming.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gateway_upstream.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/antigravity_gemini_thinking_variant.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_quota_fetcher.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_quota_fetcher_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/antigravity_tool_result_images_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/api_key_auth_cache.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/api_key_auth_cache_impl.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/api_key_auth_cache_openai_fast_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/auth_service.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/auth_service_identity_sync_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/batch_image_provider_vertex.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/bedrock_request.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/bedrock_stream.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/billing_cache_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/billing_inflight_reservation_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/billing_service.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/billing_service_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/channel.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/channel_monitor_quota_fetcher.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/channel_monitor_quota_fetcher_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/channel_pricing_multipliers_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/channel_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/channel_ultrafast_pricing_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/chat_completions_metadata.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/chat_completions_metadata_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/claude55_thinking.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/cn_provider_quota_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/cn_providers_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/composite_platform.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/composite_platform_thinking_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/composite_route_client_model_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/custom_group_usage_rollup.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/dashboard_aggregation_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/deepseek_pricing_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/error_passthrough_runtime.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_anthropic_apikey_passthrough_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_anthropic_compat_observation_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_anthropic_passthrough.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/gateway_bedrock.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_billing_header.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_cache_compatibility_boundary_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_cache_creation_usage_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_cache_ttl_override_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_claude_oauth_body.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_compaction_cache_ttl_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_count_tokens.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_count_tokens_raw_headers_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_forward.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_forward_as_chat_completions.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/gateway_forward_as_chat_completions_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_forward_as_responses.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/gateway_forward_as_responses_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_mid_conversation_output_config_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_multiplatform_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_record_usage_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_request.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_request_json_bench_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_request_json_equivalence_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_request_json_legacy_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_request_scan_benchmark_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_request_scan_equivalence_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_rotated_token_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_scheduling.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/gateway_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_streaming_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_systemone.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_systemone_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_tool_rewrite.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_tool_rewrite_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_upstream_request.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_upstream_response.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/gateway_upstream_response_sse_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_usage_billing.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/gateway_websearch_emulation.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gateway_websearch_emulation_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_cache_storage_pricing_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_cached_content.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_cached_content_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_carbon_pricing_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_chat_completions_compat_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_compat_response_format.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_compat_response_format_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_compat_thinking.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_compat_thinking_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_messages_compat_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_messages_compat_service_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_models_endpoints.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_models_endpoints_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_multiplatform_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_parallel_tools_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_quota.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/gemini_quota_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/gemini_session.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_session_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_tool_call_boundary.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/gemini_vertex_api_key_forward_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/grok_media.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/grok_media_errors_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/grok_media_input_validation_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/grok_search_count.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/grok_search_count_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/grok_search_usage_billing_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/grok_upstream_error_fields_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/grok_upstream_errors.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/group.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/group_model_allowlist.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/hot_path_zero_copy_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/image_generation_intent.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/image_generation_intent_prefilter_benchmark_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/image_generation_intent_prefilter_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/json_escape_probe.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/json_escape_probe_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/kimi_anthropic_usage_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/model_pricing_resolver.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/model_rate_limit.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/oauth_refresh_api.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/oauth_refresh_api_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_alpha_search.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_alpha_search_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_cache_write_ttl_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_call_output_probe.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_capacity_shed_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_account_identity.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_account_identity_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_additional_tools_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_model_metadata.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_model_metadata_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_models_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_tool_names.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_transform.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_codex_turn_metadata_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_compact_body_signal.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_compat_model.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_compat_model_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_compat_prompt_cache_key.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_cursor_warmup_pipeline_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_fast_policy_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_fast_policy_ws_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_first_output_timeout.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_first_output_timeout_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_buffered_hosted_items.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_buffered_hosted_items_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_buffered_server_side_search_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_buffered_stream_parity_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_cc_pipeline.go",
+      "decision": "preserve",
+      "reason": "recorded merge retains the product contract blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_chat_completions.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_chat_completions_anthropic_native.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_chat_completions_raw.go",
+      "decision": "preserve",
+      "reason": "recorded merge retains the product contract blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_chat_completions_raw_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_chat_fallback_observation_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_cn_fixes_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_compat_stream_account_side_effects_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_deepseek_anthropic_thinking.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_deepseek_anthropic_thinking_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_forward.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_grok_405_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_grok_server_side_search_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_grok_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_kimi_dynamic_tools_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_messages.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_messages_anthropic_native.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_messages_chat_fallback.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_messages_pre_content_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_messages_tool_search_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_messages_web_search_sources_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_native_anthropic_observation_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_native_cache_creation_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_ollama_cloud_cc_reasoning.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_passthrough.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_record_usage_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_request_body.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_request_timeout_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_response_handling.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_responses_anthropic_native.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_responses_chat_fallback.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_service_hotpath_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_stream_keepalive_forward_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_upstream_errors.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_gateway_usage.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/openai_gpt62_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_images_direct_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_images_responses.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_images_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/openai_json_object_field_edit.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_json_object_field_edit_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_model_alias.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_model_mapping.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_models_list.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_models_list_test.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/openai_oauth_input_metadata_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_oauth_model_support_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_oauth_passthrough_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_passthrough_model_filter_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_reasoning_effort_policy.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_reasoning_effort_policy_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_responses_namespace.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_responses_namespace_benchmark_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_responses_namespace_equivalence_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_responses_sealed_call_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_responses_tool_schema.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_responses_tool_schema_benchmark_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_responses_tool_schema_scan_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_responses_tool_schema_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_stream_idle_timeout_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_visible_ttft_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_forwarder_ingress.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_forwarder_ingress_session_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_http_bridge.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_http_bridge_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/openai_ws_v2_passthrough_adapter.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/opencode_go.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/pricing_service.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/service/pricing_service_startup_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/pricing_service_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/ratelimit_bedrock.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/ratelimit_bedrock_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/ratelimit_fable_recovery_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/ratelimit_rollover_weekly_usage_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/ratelimit_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/ratelimit_service_clear_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/ratelimit_session_window_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/request_log_retention_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/rpm_override_group_repro_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/scheduler_cache.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_batch_query_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_cancellation_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_fallback_coalesce_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_full_rebuild_lifecycle_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_group_lifecycle_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_outbox_cleanup_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_retirement_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/scheduler_snapshot_transient_expiry_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/testdata/fuzz/FuzzOpenAIResponsesToolSchemaGatesAreNecessary/19981bffc2abbaf1",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/testdata/fuzz/FuzzOpenAIResponsesToolSchemaGatesAreNecessary/430233b3de39cf96",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/testdata/fuzz/FuzzOpenAIResponsesToolSchemaGatesAreNecessary/6c31f0fa5746a2cd",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/testdata/fuzz/FuzzOpenAIResponsesToolSchemaGatesAreNecessary/e90985907f88433e",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/token_refresh_service.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/token_refresh_service_candidates_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/token_refresh_service_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/upstream_models.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/upstream_models_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/usage_billing.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/usage_billing_lane.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/usage_billing_lane_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/user_platform_quota_defaults.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/vertex_locations.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/vertex_locations_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/vertex_service_account.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/vertex_service_account_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/websearch_config.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/websearch_config_exa_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/service/wire.go",
+      "decision": "adapt",
+      "reason": "recorded merge combines upstream behavior with product contracts"
+    },
+    {
+      "path": "backend/internal/web/embed_on.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/web/embed_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/web/html_cache_headers.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/internal/web/html_cache_headers_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/migrations/251_group_force_openai_ultrafast.sql",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/migrations/251_group_usage_rollup_nonblocking_build.sql",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/migrations/252_channel_pricing_ultrafast_multiplier.sql",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/migrations/group_force_openai_ultrafast_migration_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/migrations/group_usage_rollup_migration_test.go",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "backend/resources/model-pricing/model_prices_and_context_window.json",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "deploy/Dockerfile",
+      "decision": "preserve",
+      "reason": "recorded merge retains the product contract blob"
+    },
+    {
+      "path": "deploy/config.example.yaml",
+      "decision": "adopt",
+      "reason": "recorded merge matches upstream blob"
+    },
+    {
+      "path": "frontend/src/api/admin/channels.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/api/admin/settings.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/AccountUsageCell.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/BulkEditAccountModal.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/CNProviderQuotaCell.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/CreateAccountModal.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/EditAccountModal.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/ModelWhitelistSelector.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/UsageProgressBar.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/AccountUsageCell.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/BulkEditAccountModal.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/CNProviderQuotaCell.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/CreateAccountModal.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/EditAccountModal.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/account/__tests__/ModelWhitelistSelector.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/admin/account/AccountActionMenu.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/admin/channel/PricingEntryCard.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/admin/channel/__tests__/PricingEntryCard.modelDefaultPrice.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/admin/channel/__tests__/PricingEntryCard.timePricing.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/admin/channel/types.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/charts/EndpointDistributionChart.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/keys/UseKeyModal.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/keys/__tests__/UseKeyModal.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/modelPlaza/PlazaModelPricingTable.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/components/modelPlaza/__tests__/PlazaModelPricingTable.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/composables/__tests__/useModelWhitelist.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/composables/useModelWhitelist.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/accounts.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/channels.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/overview.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/admin/settings.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/en/dashboard.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/accounts.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/channels.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/overview.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/admin/settings.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/i18n/locales/zh/dashboard.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/types/index.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/utils/__tests__/accountUsageRefresh.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/utils/accountUsageRefresh.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/admin/AccountsView.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/admin/ChannelsView.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/admin/GroupsView.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/admin/SettingsView.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/AccountsView.lite.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/ChannelsView.bedrockCompat.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/ChannelsView.ultrafastPricing.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/GroupsView.codexManifest.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/GroupsView.openaiForcedTier.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/admin/__tests__/groupsOpenAIFast.spec.ts",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    },
+    {
+      "path": "frontend/src/views/user/UsageView.vue",
+      "decision": "defer-production-ui",
+      "reason": "source-compatible; production snapshot remains separately approved"
+    }
+  ]
+}

@@ -1,13 +1,13 @@
 {
   "schema_version": 5,
   "repository": "Wei-Shaw/sub2api",
-  "release": "v0.2.21",
-  "commit": "10ba8f9b4dc2e6023d4a9879ab77b21841babd10",
+  "release": "v0.2.24",
+  "commit": "5c2982a81b46e2142d0143d2f83c1ce9c4da1d24",
   "upstream_sync": {
-    "previous_release": "v0.2.19",
-    "previous_commit": "dece26153621959ccd7635814f4b2d08304e681a",
-    "product_commit": "19e92908137f249355bc24951c1c1f89ce0c326b",
-    "merge_commit": "3c7278bbd39147cf7478d358228d92e1d752cb6c"
+    "previous_release": "v0.2.21",
+    "previous_commit": "10ba8f9b4dc2e6023d4a9879ab77b21841babd10",
+    "product_commit": "d8483576aada3c51d57443a7dfa98e2f7c6e52cc",
+    "merge_commit": "187acf55342e8e802c5c77e7736165a167e4b970"
   },
   "approved_backports": [],
   "preserve_bytes_on_upstream_sync": [
@@ -25,6 +25,10 @@
     "deploy/zero-one/recovered-frontend/console/assets/cn-provider-admin-v12/"
   ],
   "preserve_on_upstream_sync": [
+    "backend/internal/service/account_usage_window_cost_test.go",
+    "backend/internal/service/gemini_quota_test.go",
+    "docs/upgrades/v0.2.24-change-map.json",
+    "docs/upgrades/v0.2.24.md",
     "backend/internal/service/custom_admin_key_statistics_test.go",
     "backend/internal/handler/admin/custom_admin_key_statistics.go",
     "backend/internal/handler/admin/custom_admin_key_statistics_test.go",
@@ -2564,7 +2568,7 @@
   "legacy_hotfixes": [
     {
       "name": "approved-v0.1.179-production-correctness-and-billing-compatibility",
-      "valid_for_release": "v0.2.21",
+      "valid_for_release": "v0.2.24",
       "exit_condition": "Remove each path when the first stable upstream release containing its equivalent production-correctness fix becomes the baseline; remove the entire block when no listed path remains.",
       "paths": [
         "backend/internal/handler/admin/admin_basic_handlers_test.go",
@@ -2594,7 +2598,7 @@
     },
     {
       "name": "approved-v0.1.179-version-metadata-alignment",
-      "valid_for_release": "v0.2.21",
+      "valid_for_release": "v0.2.24",
       "exit_condition": "Remove this metadata alignment when the first stable upstream release makes backend/cmd/server/VERSION match the baseline release.",
       "paths": [
         "backend/cmd/server/VERSION"
@@ -2602,7 +2606,7 @@
     },
     {
       "name": "approved-v0.1.179-race-safety",
-      "valid_for_release": "v0.2.21",
+      "valid_for_release": "v0.2.24",
       "exit_condition": "Remove each path when the first stable upstream release contains the equivalent race-safe runtime cache and asynchronous test fixture handling.",
       "paths": [
         "backend/internal/service/content_moderation.go",
@@ -2617,7 +2621,7 @@
     },
     {
       "name": "approved-v0.1.179-remove-unconditional-sticky-debug-logs",
-      "valid_for_release": "v0.2.21",
+      "valid_for_release": "v0.2.24",
       "exit_condition": "Remove this hotfix when the first stable upstream release removes or explicitly gates the equivalent per-request sticky-session debug logs.",
       "paths": [
         "backend/internal/service/gateway_scheduling.go"
@@ -2625,7 +2629,7 @@
     },
     {
       "name": "approved-v0.1.181-grok-mapping-test-isolation",
-      "valid_for_release": "v0.2.21",
+      "valid_for_release": "v0.2.24",
       "exit_condition": "Remove this hotfix when the first stable upstream release contains equivalent runtime model-mapping isolation in the canonical scheduling test.",
       "paths": [
         "backend/internal/service/openai_model_mapping_test.go"
@@ -2633,7 +2637,7 @@
     },
     {
       "name": "approved-v0.1.182-go-dependency-security-updates",
-      "valid_for_release": "v0.2.21",
+      "valid_for_release": "v0.2.24",
       "exit_condition": "Remove this hotfix when the first stable upstream release uses golang.org/x/image v0.45.0 or later, Testcontainers v0.44.0 or later, github.com/moby/go-archive v0.3.0 or later, and no longer depends on github.com/docker/docker.",
       "paths": [
         "backend/go.mod",
@@ -2645,7 +2649,7 @@
     },
     {
       "name": "approved-v0.2.7-sse-keepalive-test-determinism",
-      "valid_for_release": "v0.2.21",
+      "valid_for_release": "v0.2.24",
       "exit_condition": "Remove this hotfix when the first stable upstream release makes the ordinary-client SSE keepalive test tolerate a comment payload and at least two ticker periods of runner scheduling delay.",
       "paths": [
         "backend/internal/service/gemini_sse_comment_compat_test.go"
@@ -2902,6 +2906,8 @@
     {
       "owner": "Public Capabilities",
       "paths": [
+        "backend/internal/service/account_usage_window_cost_test.go",
+        "backend/internal/service/gemini_quota_test.go",
         "backend/internal/service/custom_admin_key_statistics_test.go",
         "backend/internal/handler/admin/custom_admin_key_statistics.go",
         "backend/internal/handler/admin/custom_admin_key_statistics_test.go",
@@ -3338,6 +3344,8 @@
     {
       "owner": "Supported Preview",
       "paths": [
+        "docs/upgrades/v0.2.24-change-map.json",
+        "docs/upgrades/v0.2.24.md",
         "docs/mcp.md",
         "docs/upgrades/v0.2.21-change-map.json",
         "docs/upgrades/v0.2.21.md",
