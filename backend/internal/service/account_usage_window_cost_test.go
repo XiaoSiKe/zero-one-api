@@ -44,8 +44,8 @@ func TestAccountUsageService_ClaudeWindowCosts(t *testing.T) {
 			require.Len(t, repo.starts, 2)
 			require.True(t, fiveReset.Add(-5*time.Hour).Equal(repo.starts[0]))
 			require.True(t, weeklyReset.Add(-7*24*time.Hour).Equal(repo.starts[1]))
-			require.Equal(t, 1.0, usage.FiveHour.WindowStats.Cost)
-			require.Equal(t, 2.0, usage.SevenDay.WindowStats.Cost)
+			require.Equal(t, new(1.0), usage.FiveHour.WindowStats.Cost)
+			require.Equal(t, new(2.0), usage.SevenDay.WindowStats.Cost)
 
 			// Cached costs remain separated, and a changed reset invalidates the weekly entry.
 			svc.addWindowStats(t.Context(), &account, usage)
@@ -55,8 +55,8 @@ func TestAccountUsageService_ClaudeWindowCosts(t *testing.T) {
 			svc.addWindowStats(t.Context(), &account, usage)
 			require.Len(t, repo.starts, 3)
 			require.True(t, nextReset.Add(-7*24*time.Hour).Equal(repo.starts[2]))
-			require.Equal(t, 1.0, usage.FiveHour.WindowStats.Cost)
-			require.Equal(t, 3.0, usage.SevenDay.WindowStats.Cost)
+			require.Equal(t, new(1.0), usage.FiveHour.WindowStats.Cost)
+			require.Equal(t, new(3.0), usage.SevenDay.WindowStats.Cost)
 			entries := 0
 			svc.cache.windowStatsCache.Range(func(_, _ any) bool { entries++; return true })
 			require.Equal(t, 2, entries)

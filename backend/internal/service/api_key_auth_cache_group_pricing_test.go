@@ -60,7 +60,7 @@ func TestAPIKeyAuthSnapshotGroupPricingRoundTrip(t *testing.T) {
 
 	snapshot := svc.snapshotFromAPIKey(context.Background(), apiKey)
 	require.NotNil(t, snapshot)
-	require.Equal(t, 28, snapshot.Version)
+	require.Equal(t, apiKeyAuthSnapshotVersion, snapshot.Version)
 	require.NotNil(t, snapshot.Group)
 	require.True(t, snapshot.Group.LongContextPricingEnabled)
 	require.True(t, snapshot.Group.ImageCountBilling)
