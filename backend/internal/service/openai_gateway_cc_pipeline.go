@@ -31,6 +31,23 @@ import (
 // （GLM effort 归一化、fast policy、Grok 分支、ClientDisconnect 语义等）仍留在
 // 调用方，属于有意保留的行为差异，不在此强行统一。
 
+// flushBeforeUpstreamRead orders a flush after the lines already buffered by
+// the scanner. The line pump delivers it even while the next read is blocked.
+type flushBeforeUpstreamRead struct {
+	io.Reader
+	pump  *anthropicNativeLinePump
+	flush func()
+}
+
+func (r flushBeforeUpstreamRead) Read(p []byte) (int, error) {
+	select {
+	case <-r.pump.done:
+		return 0, io.EOF
+	case r.pump.events <- anthropicNativeLineEvent{flush: r.flush}:
+		return r.Reader.Read(p)
+	}
+}
+
 // newUpstreamSSEScanner 构造读取上游 SSE 流的行扫描器，按配置放大单行上限。
 func (s *OpenAIGatewayService) newUpstreamSSEScanner(r io.Reader) *bufio.Scanner {
 	scanner := bufio.NewScanner(r)

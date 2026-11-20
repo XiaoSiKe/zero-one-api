@@ -34,8 +34,9 @@ var errAnthropicNativeClientGone = errors.New("client gone")
 // anthropicNativeLineEvent 是行泵交付的单次读取结果：line 为一行 SSE 文本，
 // err 为 scanner 读错误（流自然结束时 next 返回 io.EOF，不经过本字段）。
 type anthropicNativeLineEvent struct {
-	line string
-	err  error
+	line  string
+	err   error
+	flush func()
 }
 
 // anthropicNativeLinePump 以独立 goroutine 泵送 scanner 的行，并对逐行到达
@@ -54,6 +55,12 @@ func newAnthropicNativeLinePump(scanner *bufio.Scanner, interval time.Duration, 
 	if len(configs) > 0 {
 		cfg = configs[0]
 	}
+	p := newAnthropicNativeLinePumpState(interval, cfg)
+	p.start(scanner)
+	return p
+}
+
+func newAnthropicNativeLinePumpState(interval time.Duration, cfg *config.Config) *anthropicNativeLinePump {
 	p := &anthropicNativeLinePump{
 		events:      make(chan anthropicNativeLineEvent, 16),
 		done:        make(chan struct{}),
@@ -63,6 +70,10 @@ func newAnthropicNativeLinePump(scanner *bufio.Scanner, interval time.Duration, 
 	if interval > 0 {
 		p.timer = time.NewTimer(interval)
 	}
+	return p
+}
+
+func (p *anthropicNativeLinePump) start(scanner *bufio.Scanner) {
 	go func() {
 		defer close(p.events)
 		for scanner.Scan() {
@@ -83,7 +94,6 @@ func newAnthropicNativeLinePump(scanner *bufio.Scanner, interval time.Duration, 
 			}
 		}
 	}()
-	return p
 }
 
 // next 阻塞返回下一行。返回 io.EOF 表示上游正常收流；errAnthropicNativeStreamIdle
@@ -100,18 +110,28 @@ func (p *anthropicNativeLinePump) nextOrClientGone(clientGone <-chan struct{}) (
 	if p.timer != nil {
 		timeoutCh = p.timer.C
 	}
-	select {
-	case ev, ok := <-p.events:
-		return p.deliver(ev, ok)
-	case <-timeoutCh:
+	for {
+		var ev anthropicNativeLineEvent
+		var ok bool
 		select {
-		case ev, ok := <-p.events:
-			return p.deliver(ev, ok)
-		default:
-			return "", errAnthropicNativeStreamIdle
+		case ev, ok = <-p.events:
+		case <-timeoutCh:
+			select {
+			case ev, ok = <-p.events:
+			default:
+				return "", errAnthropicNativeStreamIdle
+			}
+		case <-clientGone:
+			return "", errAnthropicNativeClientGone
 		}
-	case <-clientGone:
-		return "", errAnthropicNativeClientGone
+		if ev.flush != nil {
+			// The reader enqueues this marker after all lines from its
+			// previous read. Flush on the response writer's goroutine.
+			ev.flush()
+			p.resetTimer()
+			continue
+		}
+		return p.deliver(ev, ok)
 	}
 }
 

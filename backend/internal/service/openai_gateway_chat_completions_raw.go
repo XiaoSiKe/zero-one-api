@@ -316,14 +316,24 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 	}
 	requestID := resp.Header.Get("x-request-id")
 	writeStreamHeaders := s.newStreamHeaderWriter(c, resp.Header)
-	scanner := s.newUpstreamSSEScanner(resp.Body)
-	pump := newAnthropicNativeLinePump(scanner, anthropicNativeStreamInterval(s.cfg))
-	defer pump.stop()
-
 	var usage OpenAIUsage
 	var firstTokenMs *int
 	clientDisconnected := false
 	clientOutputStarted := false
+	visibleOutputComplete := false
+	flushPending := false
+	flushToClient := func() {
+		if flushPending && !clientDisconnected && clientOutputStarted {
+			if err := flushHTTPStream(c, visibleOutputComplete); err != nil {
+				clientDisconnected = true
+			}
+		}
+		flushPending = false
+	}
+	pump := newAnthropicNativeLinePumpState(anthropicNativeStreamInterval(s.cfg), s.cfg)
+	pump.start(s.newUpstreamSSEScanner(flushBeforeUpstreamRead{Reader: resp.Body, pump: pump, flush: flushToClient}))
+	defer pump.stop()
+
 	pendingLines := make([]string, 0, 8)
 	refusalDetector := newOpenAIChatSilentRefusalDetector(requestBodyLen)
 	var terminal openAIRawStreamTerminalState
@@ -362,7 +372,6 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 
 	var scanErr error
 	sawDone := false
-	visibleOutputComplete := false
 	for {
 		line, err := pump.next()
 		if err != nil {
@@ -394,19 +403,15 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 
 		line = s.replaceModelInSSELine(line, upstreamModel, originalModel)
 		writeLine(line)
+		flushPending = true
 		if line == "" {
 			visibleOutputComplete = visibleOutputComplete || firstTokenMs != nil
-			if !clientDisconnected && clientOutputStarted {
-				if err := flushHTTPStream(c, visibleOutputComplete); err != nil {
-					clientDisconnected = true
-				}
-			}
 			if sawDone {
 				break
 			}
-			continue
 		}
 	}
+	flushToClient()
 
 	resultWithUsage := func() *OpenAIForwardResult {
 		return &OpenAIForwardResult{
@@ -485,17 +490,10 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 				}
 			}
 			if !clientDisconnected {
-				if err := flushHTTPStream(c, visibleOutputComplete); err != nil {
-					clientDisconnected = true
-				}
 				clientOutputStarted = true
+				flushPending = true
+				flushToClient()
 			}
-		}
-	}
-	if scanErr == nil && !clientDisconnected && clientOutputStarted {
-		// Preserve residual bytes at EOF, but it does not delimit an SSE event.
-		if err := flushHTTPStream(c, visibleOutputComplete); err != nil {
-			clientDisconnected = true
 		}
 	}
 	if clientAborted {
