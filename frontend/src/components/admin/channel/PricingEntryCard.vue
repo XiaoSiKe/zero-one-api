@@ -139,6 +139,25 @@
             </div>
           </div>
 
+          <div v-if="enableTierMultipliers" class="mt-3 grid max-w-3xl grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <label class="text-xs text-gray-400">{{ t('admin.channels.form.fastMultiplier') }}</label>
+              <input :value="entry.fast_multiplier" @input="emitField('fast_multiplier', ($event.target as HTMLInputElement).value)"
+                type="number" step="any" min="0.000001" class="input mt-0.5 text-sm" :placeholder="t('admin.channels.form.multiplierPlaceholder')" />
+            </div>
+            <div>
+              <label class="text-xs text-gray-400">{{ t('admin.channels.form.flexMultiplier') }}</label>
+              <input :value="entry.flex_multiplier" @input="emitField('flex_multiplier', ($event.target as HTMLInputElement).value)"
+                type="number" step="any" min="0.000001" class="input mt-0.5 text-sm" :placeholder="t('admin.channels.form.multiplierPlaceholder')" />
+            </div>
+            <div v-if="props.platform === 'openai'">
+              <label class="text-xs text-gray-400">{{ t('admin.channels.form.ultrafastMultiplier') }}</label>
+              <input :value="entry.ultrafast_multiplier" @input="emitField('ultrafast_multiplier', ($event.target as HTMLInputElement).value)"
+                type="number" step="any" min="0.000001" class="input mt-0.5 text-sm" :placeholder="t('admin.channels.form.multiplierPlaceholder')" />
+            </div>
+          </div>
+
+          <!-- Channel token intervals; the group long-context toggle controls whether tiers apply. -->
           <!-- Token intervals (channel-only; group long-context uses official presets) -->
           <div v-if="!hideTokenIntervals" class="mt-3">
             <div class="flex items-center justify-between">
@@ -237,6 +256,42 @@
             />
           </div>
         </div>
+        <div v-if="enableTierMultipliers" class="mt-3 border-t border-gray-200 pt-3 dark:border-dark-600" data-testid="reasoning-effort-multipliers">
+          <div class="flex items-center justify-between gap-2">
+            <label class="text-xs font-medium text-gray-500 dark:text-gray-400">
+              {{ t('admin.channels.form.reasoningEffortMultipliers') }}
+            </label>
+            <button
+              v-if="Object.keys(entry.reasoning_effort_multipliers || {}).length"
+              type="button"
+              class="text-xs text-gray-500 hover:text-red-500"
+              @click="emit('update', { ...entry, reasoning_effort_multipliers: null })"
+            >
+              {{ t('admin.channels.form.clearReasoningEffortMultipliers') }}
+            </button>
+          </div>
+          <p class="mt-1 text-xs text-gray-400">{{ t('admin.channels.form.reasoningEffortMultipliersHint') }}</p>
+          <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+            <label v-for="effort in REASONING_EFFORT_LEVELS" :key="effort" class="text-xs text-gray-500 dark:text-gray-400">
+              {{ effort }}
+              <input
+                :value="entry.reasoning_effort_multipliers?.[effort]"
+                :aria-label="t('admin.channels.form.reasoningEffortMultiplierLabel', { effort })"
+                :aria-invalid="!isValidPositiveMultiplier(entry.reasoning_effort_multipliers?.[effort])"
+                :data-reasoning-effort="effort"
+                @input="updateReasoningEffortMultiplier(effort, ($event.target as HTMLInputElement).value)"
+                type="number"
+                step="any"
+                min="0"
+                class="input mt-0.5 text-sm"
+                :placeholder="t('admin.channels.form.reasoningEffortMultiplierDefault')"
+              />
+            </label>
+          </div>
+          <p v-if="reasoningEffortMultiplierError" role="alert" class="mt-1 text-xs text-red-500">
+            {{ reasoningEffortMultiplierError }}
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -252,6 +307,8 @@ import ModelTagInput from './ModelTagInput.vue'
 import TimePricingSection from './TimePricingSection.vue'
 import type { PricingFormEntry, IntervalFormEntry } from './types'
 import { getPlatformTagClass } from './types'
+import { REASONING_EFFORT_LEVELS, type ReasoningEffortLevel } from '@/constants/channel'
+import { isValidPositiveMultiplier, validateReasoningEffortMultipliers } from './types'
 import type { BillingMode } from '@/api/admin/channels'
 
 const { t } = useI18n()
@@ -261,10 +318,16 @@ const props = withDefaults(defineProps<{
   platform?: string
   hideTokenIntervals?: boolean
   enableTimePricing?: boolean
+  enableTierMultipliers?: boolean
 }>(), {
   hideTokenIntervals: false,
   enableTimePricing: false,
+  enableTierMultipliers: false,
 })
+
+const reasoningEffortMultiplierError = computed(() =>
+  validateReasoningEffortMultipliers(props.entry.reasoning_effort_multipliers, t)
+)
 
 const emit = defineEmits<{
   update: [entry: PricingFormEntry]
@@ -330,6 +393,16 @@ function removeInterval(idx: number) {
 function onModelsUpdate(newModels: string[]) {
   emit('update', { ...props.entry, models: newModels })
 }
+function updateReasoningEffortMultiplier(effort: ReasoningEffortLevel, value: string) {
+  const multipliers = { ...props.entry.reasoning_effort_multipliers }
+  if (value === '') delete multipliers[effort]
+  else multipliers[effort] = value
+  emit('update', {
+    ...props.entry,
+    reasoning_effort_multipliers: Object.keys(multipliers).length ? multipliers : null,
+  })
+}
+
 </script>
 
 <style scoped>

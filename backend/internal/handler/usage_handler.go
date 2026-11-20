@@ -418,6 +418,9 @@ func (h *UsageHandler) Stats(c *gin.Context) {
 	}
 	stats.TotalAccountCost = nil
 	stats.Finance = nil
+	for i := range stats.Endpoints {
+		stats.Endpoints[i].AccountCost = nil
+	}
 	stats.UpstreamEndpoints = nil
 	stats.EndpointPaths = nil
 
