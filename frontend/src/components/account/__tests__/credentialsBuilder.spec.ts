@@ -5,6 +5,9 @@ import {
   HEADER_OVERRIDES_CREDENTIAL_KEY,
   applyAntigravityProjectID,
   applyHeaderOverride,
+  parseHeaderOverrideTemplate,
+  headerOverrideVariableToken,
+  getHeaderOverrideRowErrors,
   applyInterceptWarmup,
   applyOpenCodeGoProtocolRules,
   cloneOpenCodeGoProtocolRules,
@@ -580,5 +583,61 @@ describe('plan_type helpers', () => {
       expect(out).toEqual({ email: 'a@b.c' })
       expect('plan_type' in out).toBe(false)
     })
+  })
+})
+
+describe('header override variables', () => {
+  it('builds the placeholder token in code', () => {
+    expect(headerOverrideVariableToken('user_id')).toBe('{{user_id}}')
+  })
+
+  it('parses known variables mixed with literals', () => {
+    expect(parseHeaderOverrideTemplate('u={{ user_id }};k={{api_key_id}}')).toEqual([
+      { kind: 'literal', text: 'u=' },
+      { kind: 'variable', name: 'user_id' },
+      { kind: 'literal', text: ';k=' },
+      { kind: 'variable', name: 'api_key_id' }
+    ])
+    expect(parseHeaderOverrideTemplate('{"team":"a"}')).toEqual([
+      { kind: 'literal', text: '{"team":"a"}' }
+    ])
+  })
+
+  it('rejects unknown, mistyped and malformed placeholders like the backend', () => {
+    for (const value of [
+      '{{user_email}}',
+      '{{userid}}',
+      '{{}}',
+      'id-{{user_id',
+      '{{USER_ID}}',
+      '{{ {{user_id}} }}',
+      '{{{user_id}}}'
+    ]) {
+      expect(parseHeaderOverrideTemplate(value), value).toBeNull()
+    }
+  })
+
+  it('reports per-row errors', () => {
+    expect(
+      getHeaderOverrideRowErrors([
+        { name: 'x-user', value: '{{user_id}}' },
+        { name: 'x-bad', value: '{{nope}}' },
+        { name: 'X-USER', value: 'dup' },
+        { name: 'authorization', value: 'x' },
+        { name: '', value: '' },
+        { name: '', value: 'orphan' }
+      ])
+    ).toEqual([null, 'invalidVariable', 'duplicateName', 'blockedName', null, 'invalidName'])
+  })
+
+  it('rejects variables on accounts that cannot report identity', () => {
+    const rows = [
+      { name: 'x-relay', value: 'fixed' },
+      { name: 'x-user', value: '{{user_id}}' }
+    ]
+    expect(validateHeaderOverrideRows(rows)).toBeNull()
+    expect(validateHeaderOverrideRows(rows, { allowVariables: true })).toBeNull()
+    expect(validateHeaderOverrideRows(rows, { allowVariables: false })).toBe('variableNotAllowed')
+    expect(validateHeaderOverrideRows([{ name: 'x-user', value: '{{nope}}' }])).toBe('invalidVariable')
   })
 })
