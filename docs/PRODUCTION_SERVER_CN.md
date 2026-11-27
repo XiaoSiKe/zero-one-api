@@ -8,22 +8,20 @@
 |---|---|
 | 规范域名 | `https://api.01yapi.com` |
 | 兼容跳转域名 | `https://app.01yapi.com` |
-| 生产公网 IP | `38.54.110.125` |
-| 主机名 | `zwfgbuha.vm` |
+| 生产公网 IP | `38.189.48.48` |
+| 主机名 | `ser785775345413` |
 | SSH 用户 / 端口 | `root` / `22` |
-| 本机私钥 | `/Users/yangzi/.ssh/zero-one-production_rsa` |
-| 私钥指纹 | `SHA256:V5XWaUIJBrbY6k/5vKAnYSCE8Kk2KkozHDIA1iRty7c` |
 | 已知主机文件 | `/Users/yangzi/.ssh/known_hosts` |
+| 主机 ED25519 指纹 | `SHA256:jRGycftvZobv9mCWauZemAnCzHaa5mBlEikaCZLe86E` |
 
 连接命令：
 
 ```bash
-ssh -o IdentitiesOnly=yes \
-  -i /Users/yangzi/.ssh/zero-one-production_rsa \
-  root@38.54.110.125
+ssh -o StrictHostKeyChecking=yes root@38.189.48.48
 ```
 
-私钥必须保持 `0600`，只存放在受控维护机器上；不要上传到服务器、GitHub、网盘或聊天记录。首次更换主机时应通过控制台核对新指纹，禁止为了省事使用 `StrictHostKeyChecking=no`。
+2026-11-28 已通过折云 VNC 的 `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` 核对现役主机指纹。
+当前 SSH 提供密码登录；通过折云控制台取得现有登录凭据。主机指纹变化后，先用云控制台重新核对，再更新本机的 `known_hosts`。
 
 ## 生产目录与 Compose
 
